@@ -1,0 +1,1084 @@
+Gender, Race, and Economic Status along the Computing
+Education Pipeline: Examining Disparities in Course Enrollment
+and Wage Earnings
+Jayce R. Warner
+jwarner@tacc.utexas.edu
+The University of Texas at Austin
+Austin, Texas, United StatesStephanie N. Baker
+snbaker@tacc.utexas.edu
+The University of Texas at Austin
+Austin, Texas, United StatesMadeline Haynes
+mhaynes@tacc.utexas.edu
+The University of Texas at Austin
+Austin, Texas, United States
+Miriam Jacobson
+mjacobson@tacc.utexas.edu
+The University of Texas at Austin
+Austin, Texas, United StatesNatashia Bibriescas
+bibriescas@austin.utexas.edu
+The University of Texas at Austin
+Austin, Texas, United StatesYiwen Yang
+yy7573@austin.utexas.edu
+The University of Texas at Austin
+Austin, Texas, United States
+ABSTRACT
+Background and Context: Inequities in computing education
+have been identified based on gender, race, ethnicity, and economic
+status. However, extant quantitative research tends to treat demo-
+graphics as siloed categories instead of accounting for the fact that
+many students are members of multiple minoritized groups. There
+is also a conspicuous lack of research that examines equity issues at
+multiple stages of the education pipeline. Objectives: Our research
+questions asked: 1) How are gender, race/ethnicity, and economic
+status related to the likelihood that students will enroll in com-
+puting courses in high school? 2) How are these factors related
+to the likelihood of enrollment in college computing courses? 3)
+How do these factors relate to wage earnings for students who ma-
+jored in computer science in college? Method: This study analyzed
+education and workforce data in the United States using multi-
+level logistic and linear regression analyses to identify disparities
+among students from multiple minoritized groups at three stages
+of life: high school (N=135,961), college (N=199,230), and career
+(N=1,251). Findings: Compounding course enrollment disparities
+were present at the high school level for students who are Black
+or Hispanic/Latino/a and female, economically disadvantaged, or
+both. Similar results were observed at the college level. Only gender
+was a statistically significant predictor of wage earnings five years
+after college graduation, but results of this analysis may be attenu-
+ated by the fact that relatively few students who were members of
+multiple minoritized groups graduated with a computing degree.
+Implications: These findings demonstrate the importance of con-
+sidering students’ intersecting identities when assessing equity in
+computing education. They also lay groundwork for understanding
+how early inequities persist across the education pipeline and how
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than the
+author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or
+republish, to post on servers or to redistribute to lists, requires prior specific permission
+and/or a fee. Request permissions from permissions@acm.org.
+ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland
+©2022 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+ACM ISBN 978-1-4503-9194-8/22/08. . . $15.00
+https://doi.org/10.1145/3501385.3543968understanding disparities at one stage can inform interpretation of
+disparities at subsequent stages.
+CCS CONCEPTS
+•Social and professional topics →K-12 education ;Adult ed-
+ucation ;Race and ethnicity ;Women .
+KEYWORDS
+equity, diversity, gender, race, economic status, course enrollment,
+wage earnings
+ACM Reference Format:
+Jayce R. Warner, Stephanie N. Baker, Madeline Haynes, Miriam Jacobson,
+Natashia Bibriescas, and Yiwen Yang. 2022. Gender, Race, and Economic
+Status along the Computing Education Pipeline: Examining Disparities in
+Course Enrollment and Wage Earnings. In Proceedings of the 2022 ACM
+Conference on International Computing Education Research V.1 (ICER 2022
+V1), August 7–11, 2022, Lugano and Virtual Event, Switzerland. ACM, New
+York, NY, USA, 12 pages. https://doi.org/10.1145/3501385.3543968
+1 INTRODUCTION
+Gender disparities in computer science (CS) education have been a
+persistent problem [ 30]. Female students have been consistently un-
+derrepresented in secondary and postsecondary CS courses, and this
+disparity has carried over into the computing workforce, where the
+number of men significantly outweighs the number of women. Al-
+though gender disparities have been more thoroughly documented,
+other demographic groups have also been shown to be underrepre-
+sented in CS education, including racially/ethnically minoritized
+students and students from low-income backgrounds [ 8]. Despite
+its importance for identifying and supporting minoritized student
+populations, disparities at the intersection of these demographics
+categories are rarely examined in research. Recent studies have
+begun looking at a few of these intersections (e.g., gender and so-
+cioeconomic status), but this is usually in a context specific to one
+level of computing education (e.g., secondary CS courses; [ 15]), and
+we know of no studies to date that have interrogated disparities at
+these demographic intersections for a broader scope of the com-
+puting education pipeline. In this study, we address this research
+gap by using a statewide longitudinal data system in the United
+States (U.S.) to examine differences in CS course enrollment at the
+61ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland Warner, Baker, Haynes, Jacobson, Bibriescas, & Yang
+secondary and postsecondary levels and differences in earnings for
+graduates of postsecondary computing programs.
+In discussing issues of educational equity, it is important to be
+thoughtful about the terms and categories used to describe and
+define different subpopulations and to be transparent about the
+reasons for using those terms and categories. Thus, we offer a brief
+preface of that nature here. Throughout this paper, we discuss
+gender in a binary manner because that is how it is represented
+in the data that were used both in the current study as well as
+in the literature we review. We also discuss economic status as
+a dichotomy largely because that is how it is often measured in
+education data, where common practice is to categorize students as
+being economically disadvantaged or not. Similarly, the categories
+we use to reference race and ethnicity stem from the way race
+and ethnicity are categorized in the data. In naming each of those
+categories, we use the the same terms that are used in the data we
+analyzed or, in instances where we cite previous work, the same
+terms that were used in the articles we reference. When referring to
+multiple groups that are underserved in education, we use the term
+"minoritized." We do so to signify, as it has been done elsewhere [ 33],
+that we conceptualize "minority status" as a socially constructed
+experience rather than an indication of relative quantity.
+2 BACKGROUND
+2.1 CS Enrollment in Secondary Education
+Differences in enrollment rates in secondary CS courses and other
+STEM subjects have been identified across multiple countries. In
+terms of gender disparities, for example, male students were found
+to be 2.5 times more likely than female students to enroll in ad-
+vanced electives in CS and physics in Israel [ 15] and more than
+eight times as likely to enroll in information technology courses
+in Australia [ 18]. A study conducted in Canada noted that females
+make up less than a quarter of students enrolled in high school
+CS courses [ 12]. In U.S. high schools, only 20% to 30% of students
+enrolled in CS are female [ 24,31,36]. In the United Kingdom (U.K.),
+female students were found to take advanced CS exams at a lower
+rate than males [14].
+Secondary course enrollment rates also tend to differ by race/ethnicity
+[9,14]. A report that provides enrollment data across 35 U.S. states
+indicates that in three quarters of the states, high school students
+who are White or Asian were more likely to take CS than students
+who are Black or Hispanic/Latino/a [ 8]. In schools that offer Ad-
+vanced Placement CS courses (which can confer college credit),
+White and Asian students were two to three and a half times more
+likely to take the AP exam than students from racially or ethnically
+minoritized backgrounds [ 7]. Similarly, in British Columbia, First
+Nations students enroll in technology and engineering programs
+at lower rates than White students [35].
+Disparities in secondary CS course-taking are also present in
+terms of economic status. Although economically disadvantaged
+youth make up 54% of high school students in the U.S., they com-
+prise only 41% of students enrolled in high school CS courses [ 7]. A
+study in the U.S. showed that students from lower-income families
+were 11% less likely to take CS classes in general and almost 20%
+less likely to take advanced CS classes than their higher-income
+peers [ 34]. Results of studies conducted in Israel [ 15] and the U.K.[9] suggest that the relationship between economic status and CS
+enrollment may vary by race/ethnicity, gender, or both.
+2.2 CS Enrollment in Postsecondary Education
+Disparities in CS enrollment are found at the postsecondary level as
+well. Females comprised only 15% of CS majors in Ireland [ 11], less
+than 20% in the UK, and 14% in Australia [ 32]. However, in some
+countries, such as Malaysia, Taiwan, and Kenya, the proportion of
+women who study CS was on par with men or higher [ 22]. As of
+2018, only 19% of CS bachelor’s degree holders and less than 30%
+of advanced CS degree holders in the U.S. were women despite the
+fact a greater share of women than men held an undergraduate
+degree or higher [ 16]. Some evidence suggests that the reason for
+CS gender disparities varies by cultural factors within and between
+countries [17, 22].
+Less is known about the relationship between postsecondary
+CS enrollment and either race/ethnicity or economic status. The
+annual Taulbee Survey [ 37], which tracks enrollment trends in post-
+secondary CS programs for a sample of North American institutions
+of higher education, reports enrollment numbers by race and eth-
+nicity (and gender). However, these numbers are not compared
+against any overall racial/ethnic breakdown of students. Thus, it
+is impossible to determine from the report alone whether and to
+what extent there are enrollment disparities between students of
+different races or ethnicities.
+Research on enrollment in STEM courses generally has uncov-
+ered disparities in terms of race/ethnicity and economic status,
+which suggest that similar disparities may exist in CS education
+specifically. For example, a study in the U.K. found that White
+college students were more likely to enroll in STEM courses than
+non-White college students [ 9]. A Canadian study of higher ed-
+ucation showed that First Nations students in British Columbia
+enrolled in technology and engineering programs at lower rates
+than White students [ 35]. In terms of economic status, researchers
+in the U.S. found that women of low socioeconomic status were
+more likely than more affluent women to choose majors with high
+earning potential (e.g., technical fields, health science), whereas
+no difference was detected between men of low and high socioe-
+conomic status [ 21]. Conversely, a study in the U.K. did not find
+any relationship between income and choice of major for women,
+though the authors did note a positive relationship between choos-
+ing a STEM major and women’s socioeconomic position (a measure
+based on factors such as parental education) [9].
+2.3 Wage Earnings
+It is useful to consider the extent that educational inequities carry
+over or are reproduced in the workforce. One way to do this is
+by examining differences in wage earnings. Gender differences in
+earnings have been documented in multiple countries [ 1,2,19],
+and these differences are often most pronounced in STEM fields.
+In the U.S., women working in STEM fields earned approximately
+74% of the median earnings of men in STEM in 2019, while the pay
+gap in the labor market overall was 80% [ 16]. Similar differences
+were found for computing occupations specifically, where women’s
+median wages in the U.S. were 82% of that of men [ 26], a slightly
+wider gap than the 84% average across European countries [29].
+62Disparities in CS Course Enrollment and Wage Earnings ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland
+Most of the available evidence regarding wage disparities in
+computing occupations fails to account for other factors related to
+earnings, such as education level. Some research on wage dispari-
+ties in other occupations, however, has controlled for such factors.
+For example, a study in Norway found that immigrants earned less
+than native Norwegians in both nursing and engineering profes-
+sions after controlling for age and years since graduation [ 19], and
+a U.S. study discovered that Asian and Black chemists received sig-
+nificantly less pay than White chemists with comparable education
+levels [4].
+Examining wage differences between groups in computing oc-
+cupations addresses questions of workforce equality, but wage
+disparities can also be a reflection of inequalities in education. One
+way to measure this is to compare wages between groups holding
+the same degrees regardless of their occupation. Such comparisons
+make a clear connection to education, as they address the question
+of whether the benefits of CS education differ for distinct groups of
+students. In other words, whereas wage disparities between groups
+in the computing profession may be an indication of workforce dis-
+crimination, wage disparities between groups holding computing
+degrees may be an indication of how CS education benefits some
+groups more than others, whether due to differences in the types of
+occupations students enter into, workforce discrimination, or some
+other factor.
+Although some survey data has shown that female CS graduates
+tend to earn less than male CS graduates [ 28], we were unable to find
+any research that makes such comparisons between groups based
+on race/ethnicity or economic factors, nor did we find any studies
+that looked at gender differences while controlling for other factors.
+However, such studies have been conducted for STEM graduates in
+general. For example, one study showed that wage disparities be-
+tween men and women STEM graduates in the U.S. persisted even
+after controlling for multiple factors such as GPA, age, parental
+education, and marital status [ 20]. A study in Poland showed that
+wage disparities between male and female STEM graduates were
+relatively small one year after graduation but steadily grew over
+time, peaking 11 to 16 years post-graduation at an average differ-
+ence of about 28% [38]. In the U.S., Black graduates in STEM have
+been shown to have significantly lower earnings than White STEM
+graduates [20].
+Some research has examined wage disparities at the intersection
+of gender and race but, again, not for CS graduates specifically. For
+example, among science and engineering doctorate recipients in
+the U.S., researchers found that males tended to earn more than
+females across all race/ethnicity groups and that females who were
+Black, Hispanic/Latina, American Indian, or Alaska Native had the
+lowest average salaries when compared to Asian males, Asian fe-
+males, White males, and White females [ 5]. Similarly, an analysis of
+large national datasets in the U.S. showed that for all race/ethnicity
+groups working in STEM, women had lower wages than men, with
+Asian men receiving the highest and Black and Hispanic women re-
+ceiving the lowest earnings [ 16]. These findings in STEM education
+underscore the need to address this research gap in CS education
+by analyzing data through an intersectional lens and not simply
+looking a demographic factors in isolation.3 CURRENT STUDY
+Gender, racial/ethnic, and economic disparities have been found
+across multiple countries and at all stages of the education pipeline,
+but such research in CS education is still nascent and incomplete.
+This study sought to better understand gender, race/ethnicity, and
+economic disparities in CS by including all three demographic cat-
+egories in three multilevel regression analyses designed to predict
+secondary course enrollment, postsecondary course enrollment,
+and wage earnings five years after postsecondary graduation for in-
+dividuals who earned degrees in CS. As noted previously, inequities
+in CS education have been identified for each of these demographic
+factors separately, but little work as examined the intersection of
+these factors. This is surprising given that the importance of inter-
+sectionality for how we consider matters of gender and race has
+been discussed for decades [ 10]. As many students are members
+of multiple minoritized populations, it is important to estimate
+and test the relationship between these factors and the outcomes
+within the same models in order to understand whether and to
+what extent disparities are compounded for students of multiple
+minoritized groups. In other words, are the computing education
+inequities faced by female students, students minoritized based
+on race/ethnicity, and economically disadvantaged students exac-
+erbated when students are members of more than one of these
+groups? We investigated this issue within the context of three
+broader research questions: 1) How are gender, race/ethnicity, and
+economic status related to the likelihood that students will enroll in
+secondary computing courses? 2) How are these factors related to
+the likelihood of enrollment in postsecondary computing courses?
+and 3) How does the gender, race/ethnicity, and economic status of
+students who majored in CS relate to later wage earnings?
+4 METHOD
+4.1 Data Sources
+Data were obtained through the Texas Education Research Center,
+a longitudinal data system that contains course enrollment and
+demographic data for all students enrolled in public schools in the
+state of Texas in the U.S. [ 27]. It also contains basic employment
+information for all individuals who were paid wages in the state.
+Person-level data within the system are linked across time and
+data source type (i.e., education and workforce data) by unique
+identification numbers.
+In secondary education in Texas, CS courses are taught primarily
+at the high school level (grades 9-12, ages 14-18). We selected a
+cohort of students who began high school in 2012, which allowed
+us to track their enrollment in CS courses across four years of high
+school (through 2016) and four years of college (through 2020). Less
+than half of all high schools in the state offered CS courses between
+2012 and 2016. Accordingly, for the analysis of secondary course
+enrollment, we limited our sample to students who attended schools
+that offered one or more CS courses (N=135,961) during these years.
+For the analysis of postsecondary course enrollment, we included
+all high school students who went on to attend college in the state,
+regardless of whether they attended a high school that offered CS
+courses (N=199,230). Using different methods of limiting these two
+samples was purposeful. We wanted to investigate participation in
+CS education distinct from access to CS education. At the secondary
+63ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland Warner, Baker, Haynes, Jacobson, Bibriescas, & Yang
+level, this meant limiting the sample to students who attended
+a high school that offered CS courses. Because most high school
+students are unable to choose which high school they attend (public
+school attendance is primarily based on the location of the student’s
+residence) and because a large number of high schools in the state
+offered no CS courses, including all high school students in the
+sample would have prevented us from being able to determine
+whether disparities in enrollment rates were due to differences in
+who enrolled in CS courses, differences in who had access to CS
+courses, or both. By only including students who attended schools
+that offered CS, we could ensure that any disparities in enrollment
+truly represented disparities in participation and not disparities in
+access or a conflation of the two. At the postsecondary level this
+is not an issue given that students can, for the most part, choose
+the colleges to which they apply and ultimately attend. And even
+in cases where students are limited in their choice of college, the
+fact that nearly all postsecondary institutions in the state (i.e., 95%
+of the 2-year colleges and 97% of the 4-year universities) offered
+CS courses makes it is unlikely that a student would end up in a
+college that did not offer CS. Thus, it was not necessary to limit the
+postsecondary sample in the same way the secondary sample was
+limited. Lastly, for the analysis of wage earnings, we included as
+our sample the cohort of students who graduated with a CS degree
+in 2015 (N=1,251), as this was the latest cohort of CS graduates for
+whom we had wage earnings data five years after graduation.
+4.2 Measures
+Three dependent variables were examined. First, secondary course
+enrollment was a binary variable indicating whether students took
+one or more CS courses in high school. High school courses quali-
+fying as CS were identified in previous work [ 3]. Second, postsec-
+ondary course enrollment was a binary variable indicating whether
+students took one or more CS courses in college, including at the un-
+dergraduate and graduate levels (sometimes referred to as graduate
+and postgraduate levels, respectively). CS courses were identified
+using the Classification of Instructional Programs (CIP) codes [ 13].
+Finally, wage earnings was a continuous measure of individuals’
+earned wages (including wage and salary income) during the first
+quarter of 2020 and was standardized (using z-scores) for the anal-
+ysis.
+The primary independent variables of interest were gender,
+race/ethnicity, and economic status. Gender was included in each
+analysis as a binary variable indicating whether the student was
+identified as female. For race/ethnicity, individuals in the data are
+classified in one of seven mutually-exclusive categories: American
+Indian or Alaska Native, Asian, Black or African American, Hispanic
+or Latino/a, Native Hawaiian or other Pacific Islander, Two or more
+races, or White. Extant data shows that, in the Texas school system,
+Black students and Hispanic/Latino/a students have been consis-
+tently underrepresented in computing courses, whereas Asian stu-
+dents and White students have been consistently overrepresented
+in computing courses [ 6]. Thus, the focus of our analyses was to
+investigate the extent to which the outcomes for Hispanic/Latino/a
+students and Black students differed from Asian students and White
+students. Accordingly, Asian students and White students consti-
+tuted the reference group in terms of race/ethnicity in each analysis,and three binary indicator variables representing whether students
+were Black, Hispanic/Latino/a, or of another race/ethnicity were
+included in the models. Combining certain racial groups into an
+"another race/ethnicity" category also allowed us to include all
+students from the sample in the analysis, as the small number of
+students in some of these groups would have prevented their in-
+clusion in the analysis due to statistical constraints or in reporting
+due to data privacy laws.
+For economic status, a binary indicator was included in each
+model indicating whether the student was economically disadvan-
+taged. For the secondary course enrollment analysis, economic
+disadvantage was defined as qualifying for free or reduced-price
+meals under the National School Lunch Program [ 25]. For the post-
+secondary course enrollment and wage earnings analyses, students
+were identified as economically disadvantaged if they received a
+Federal Pell Grant, which are issued to students demonstrating
+financial need. Additional variables were included in the wage earn-
+ings analysis to control for the level of computing degree obtained
+(i.e., bachelor’s, master’s, or doctoral).
+4.3 Analysis
+Univariate and bivariate statistics for the relevant variables were
+examined to identify any patterns of missing data and ensure that
+the measures were appropriate for use in each of the three analyses.
+No patterns of missing data were detected, and all independent
+variables showed adequate univariate and bivariate distributions.
+Tolerance statistics indicated that no severe multicollinearity was
+present among any of the predictors. Inspection of residuals con-
+firmed the absence of extreme outlying observations.
+Table 1: Overall Proportions by Demographic Category for
+the Secondary Enrollment, Postsecondary Enrollment, and
+Wage Earnings Samples
+Secondary Postsecondary Wage Earnings
+Female .49 .53 .13
+Eco. Dis. .51 .53 .30
+Asian .06 .05 .16
+Black .12 .13 .07
+Hisp./Lat. .44 .45 .21
+White .36 .36 .51
+Another race .03 .02 .06
+The demographic composition of each sample is given in Table
+1. More detailed descriptive statistics for each sample are provided
+in Tables 2, 3, and 4. Table 2 shows the proportions of secondary
+students who enrolled and did not enroll in one or more CS courses
+during four years of high school. These proportions are disaggre-
+gated by the intersection of gender, race/ethnicity, and economic
+status. Table 3 shows the same disaggregated proportions for post-
+secondary students who did and did not take CS across 4 years of
+college. Table 4 provides the means and standard deviations (SD)
+of quarterly wage earnings five years after graduation for students
+who earned degrees in CS.
+Multilevel modeling was used for all analyses to account for the
+nested structure of the data. For the analyses of secondary and
+64Disparities in CS Course Enrollment and Wage Earnings ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland
+Table 2: Secondary Enrollment: Proportions Who Took and Did Not Take CS by Gender, Race, and Economic Status
+Eco. Dis.1Non Eco. Dis. Overall
+No CS CS N No CS CS N N
+Female Asian .82 .18 1,356 .72 .28 2,588 3,944
+Female Black .95 .05 5,617 .95 .05 2,551 8,168
+Female Hispanic/Latina .94 .06 21,612 .94 .06 7,435 29,047
+Female Other .94 .06 634 .91 .09 1,115 1,749
+Female White .95 .05 4,605 .93 .07 18,846 23,451
+Male Asian .63 .37 1,472 .50 .50 2,740 4,212
+Male Black .90 .10 5,759 .85 .15 2,611 8,370
+Male Hispanic/Latino .87 .13 22,584 .81 .19 7,824 30,408
+Male Other .84 .16 694 .75 .25 1,060 1,754
+Male White .82 .18 4,859 .78 .22 19,999 24,858
+Total .90 .10 69,192 .84 .16 66,769 135,961
+1Economically Disadvantaged
+Table 3: Postsecondary Enrollment: Proportions Who Took and Did Not Take CS by Gender, Race, and Economic Status
+Eco. Dis. Non Eco. Dis. Overall
+No CS CS N No CS CS N N
+Female Asian .76 .24 1,727 .78 .22 2,765 4,492
+Female Black .82 .18 9,979 .81 .19 3,745 13,724
+Female Hispanic/Latina .82 .18 36,419 .82 .18 11,553 47,972
+Female Other .84 .16 1,014 .81 .19 1,468 2,482
+Female White .85 .15 8,946 .83 .17 28,593 37,539
+Male Asian .61 .39 1,747 .57 .43 2,854 4,601
+Male Black .78 .22 8,123 .74 .26 3,440 11,563
+Male Hispanic/Latino .78 .22 30,170 .72 .28 10,509 40,679
+Male Other .77 .23 857 .71 .29 1,281 2,138
+Male White .78 .22 6,881 .72 .28 27,159 34,040
+Total .80 .20 105,863 .77 .23 93,367 199,230
+Table 4: Mean Quarterly Wage Earnings (in USD) by Gender, Race, and Economic Status
+Eco. Dis. Non Eco. Dis. Overall
+Mean SD N Mean SD N Mean SD N
+Female Asian 22,894 9,948 8 23,060 10,925 30 23,025 10,597 38
+Female Black 17,313 7,475 10 23,299 7,927 8 19,974 8,052 18
+Female Hispanic/Latina 18,919 7,964 10 22,080 13,474 20 21,027 11,872 30
+Female Other 10,702 1,461 <5 21,495 13,314 <12 18,797 12,375 12
+Female White 17,216 9,474 13 21,887 10,512 55 20,994 10,420 68
+Male Asian 22,422 8,288 50 26,953 13,368 108 25,520 12,154 158
+Male Black 18,417 10,080 22 20,937 11,982 46 20,122 11,389 68
+Male Hispanic/Latino 20,929 8,768 98 24,248 12,206 135 22,852 10,995 233
+Male Other 22,789 7,628 21 20,953 10,830 38 21,607 9,782 59
+Male White 23,540 11,866 145 25,905 14,754 422 25,301 14,100 567
+Overall 23,872 12,675 <385 24,791 13,536 <875 23,872 12,675 1,251
+Note: Estimates, denoted by "<", are given for some counts to comply with data privacy laws
+65ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland Warner, Baker, Haynes, Jacobson, Bibriescas, & Yang
+postsecondary course enrollment, three-level logistic regression
+was employed with students (Level 1 or L1) nested in schools (L2)
+and schools nested in school districts (L3). For the analysis of wage
+earnings, two-level linear regression was used with individuals
+(L1) nested in the schools where they obtained their computing
+degrees (L2). For each dependent variable, three types of models
+were analyzed. Model 1 estimated only the main effects of each
+independent variable. The presence of two or more statistically sig-
+nificant main effects here would indicate that each significant effect
+likely accounts for variation in the outcome that is not explained
+by the other measures. Model 2 estimated the simple effects of the
+race+gender categories and the main effects of the other variables.
+Iterating these models with different race+gender subgroups as
+the reference allowed us to estimate differences in the outcomes
+between specific groups. Model 3 included the same variables as
+Model 2 plus additional terms representing the interaction between
+race and economic status. This allowed us to determine whether the
+effect of economic status differed for different gender+race groups.
+Comparing results across the three models (and to some extent
+within Models 2 and 3) can help determine whether disparities for
+students who were members of two or three minoritized groups
+(i.e., in terms of race, gender, and/or economic status) were com-
+pounded beyond that of students who were members of one or two
+minoritized groups. The statistical significance of the fixed effects
+was determined using a .05 alpha level. Results of each analysis
+are reported in the section below, including tables containing a
+summary of the regression results of each model. Tables containing
+the full set of regression results for each model are provided in the
+appendix.
+5 RESULTS
+5.1 Secondary Computing Courses
+Results of Model 1 (main effects) showed that female students,
+Black students, Hispanic/Latino/a students, and students who were
+economically disadvantaged were less likely than their peers to
+enroll in CS courses (Table 5). Results of Model 2 (simple effects)
+showed all race+gender subgroups to be less likely than Asian males
+and White males to enroll in CS courses, but differences in the
+odds ratios suggested that the disparity for Asian females was less
+severe than for the other female subgroups and that Black females
+may have experienced the greatest disparity (Table 6). Additional
+iterations of the analysis with different reference groups confirmed
+this to be the case. Among males, the disparity was greatest for
+Black students.
+Results of Model 3, which includes terms representing the inter-
+action between gender+race and economic status, indicated that,
+compared to Asian and White males, the effect of economic sta-
+tus was greater for all other race+gender subgroups except those
+already facing the greatest disparities (i.e., Black females and His-
+panic/Latina females), for whom the interaction terms were not
+statistically significant (Table 6).
+The odds ratios reported in the table indicate the difference in
+likelihood of enrolling in CS for a given group compared to the
+reference group. Values less than one signify a decrease in the odds,
+whereas values greater than one indicate an increase in the odds.
+Computing the inverse of an odds ratio can aid in interpretation.Table 5: Multilevel Logistic Regression Results Summary
+(Secondary Enrollment, Model 1)
+Fixed Effects Odds ratio p
+Constant 0.32 .000
+Eco. Dis. 0.70 .000
+Female 0.30 .000
+Black 0.41 .000
+Hispanic/Latino/a 0.57 .000
+Other 0.86 .004
+Random Effects Est.
+Schools (L2) 0.92
+Districts (L3) 0.81
+For example, Table 6 shows that students without economic disad-
+vantaged were 1.19 times more likely (in terms of the odds) to take
+CS than students who were economically disadvantaged (1 ÷0.84
+= 1.19), and the odds of enrolling in CS were 8.33 times greater for
+Asian and White males than Black females (1 ÷0.12 = 8.33).
+Table 6: Multilevel Logistic Regression Results Summary
+(Secondary Enrollment, Models 2 & 3)
+Model 2 Model 3
+Fixed Effects OR1p OR p
+Constant 0.34 .000 0.33 .000
+Eco. Dis. 0.68 .000 0.84 .000
+Female Asian 0.76 .000 0.82 .000
+Female Black 0.14 .000 0.12 .000
+Female Hisp./Latina 0.18 .000 0.16 .000
+Female Other 0.24 .000 0.27 .000
+Female White 0.20 .000 0.21 .000
+Male Black 0.39 .000 0.46 .000
+Male Hisp./Latino 0.55 .000 0.65 .000
+Male Other 0.86 .020 0.95 .529
+Female Asian Eco. Dis. 0.72 .000
+Female Black Eco. Dis. 1.09 .455
+Female Hisp./Latina Eco. Dis. 0.95 .451
+Female Other Eco. Dis. 0.60 .022
+Female White Eco. Dis. 0.74 .001
+Male Black Eco. Dis. 0.67 .000
+Male Hisp./Latino Eco. Dis. 0.67 .000
+Male Other Eco. Dis. 0.68 .005
+Random Effects Est. Est.
+Schools (L2) 0.89 0.90
+Districts (L3) 0.82 0.81
+1Odds Ratio
+The results of these three models suggest that the disparities
+faced by students who are female, Black, Hispanic/Latino/a, or eco-
+nomically disadvantaged are compounded for students who are
+members of two or more of these subgroups. For example, Model
+2 shows that the likelihood of taking CS compared to Asian and
+66Disparities in CS Course Enrollment and Wage Earnings ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland
+White males was lower for Black females (0.14) than it was for both
+Black males (0.39) and non-Black females (0.20 to 0.76). Results
+from Model 3 indicate that, with the exception of Black females
+and Hispanic/Latina females (the two gender+race subgroups with
+the lowest likelihood of taking CS compared to Asian and White
+males), the likelihood of taking CS decreased even more for stu-
+dents in these gender+race subgroups who were also economically
+disadvantaged. This is evidenced by the fact that the terms rep-
+resenting the interaction of gender+race and economic status for
+these groups were statistically significant (p<.05) with odds ratios
+below 1.0 while controlling for the main effects of gender+race and
+economic status.
+5.2 Postsecondary Computing Courses
+Model 1 results showed that students who are female, Black, His-
+panic/Latino/a, or economically disadvantaged were less likely than
+their peers to enroll in postsecondary CS courses.
+Table 7: Multilevel Logistic Regression Results Summary
+(Postsecondary Enrollment, Model 1)
+Fixed Effects Odds ratio p
+Constant 0.34 .000
+Eco. Dis. 0.86 .000
+Female 0.62 .000
+Black 0.92 .000
+Hispanic/Latino 0.94 .000
+Other 0.96 .320
+Random Effects Est.
+School (L2) 0.03
+District (L3) 0.16
+Model 2 results showed that all female subgroups and Black
+males and Hispanic/Latino males were less likely than Asian and
+White males to take CS courses in college. Additional iterations of
+Model 2 utilizing different gender+race subgroups as the reference
+group indicated that, similar to enrollment in secondary CS courses,
+Asian females were more likely than other female subgroups to take
+CS. In contrast to secondary enrollment, however, there were no
+differences in likelihood among non-Asian female subgroups. Model
+3 results showed that, compared to Asian and White males, the
+effect of economic disadvantage was greater for Hispanic/Latino
+males and lower for Asian, Black, and Hispanic/Latina females
+(Table 8).Table 8: Multilevel Logistic Regression Results Summary
+(Postecondary Enrollment, Models 2 & 3)
+Model 2 Model 3
+Fixed Effects OR1p OR p
+Constant 0.37 .000 0.37 .000
+Eco. Dis. 0.85 .000 0.84 .000
+Female Asian 0.72 .000 0.66 .000
+Female Black 0.59 .000 0.55 .000
+Female Hisp./Latina 0.58 .000 0.53 .000
+Female Other 0.54 .000 0.56 .000
+Female White 0.51 .000 0.51 .000
+Male Black 0.78 .000 0.82 .000
+Male Hisp./Latino 0.84 .000 0.91 .000
+Male Other 0.93 .132 0.97 .689
+Female Asian Eco. Dis. 1.29 .001
+Female Black Eco. Dis. 1.12 .042
+Female Hisp./Latina Eco. Dis. 1.15 .000
+Female Other Eco. Dis. 0.92 .470
+Female White Eco. Dis. 1.00 .967
+Male Black Eco. Dis. 0.94 .288
+Male Hisp./Latino Eco. Dis. 0.90 .010
+Male Other Eco. Dis. 0.88 .220
+Random Effects Est. Est.
+School (L2) 0.03 0.03
+District (L3) 0.16 0.16
+1Odds Ratio
+Like secondary CS enrollment, these results indicate compound-
+ing disparities in postsecondary CS enrollment for students who are
+members of multiple minoritized groups. Although both females
+and Black students were less likely to enroll in CS than Asian and
+White males, the odds ratio for Black females was lower than it was
+for both females and Black students overall. The same was true for
+Hispanic/Latina females. The results of Model 3 show some differ-
+ing effects of economic disadvantage by subgroup. Hispanic/Latino
+males were less likely to take CS than Asian and White males, and
+the negative effect of economic disadvantage on the likelihood of
+taking CS was greater for Hispanic/Latino males than it was for
+Asian and White males. In contrast, although Asian females and
+Hispanic/Latina females were less likely to take CS than Asian and
+White males, this difference was somewhat attenuated for Asian and
+Hispanic/Latina females who also faced economic disadvantage.
+5.3 Wage Earnings
+Model 1 results showed that, on average, female CS majors earned
+about one quarter of a standard deviation (approximately $13,000
+USD annually) less than their male counterparts five years after
+graduation (Table 9). No differences in earnings were found between
+individuals who were Black or Hispanic/Latino/a and individuals
+who were Asian or White, nor between those who were econom-
+ically disadvantaged in college and those who were not. In the
+results for Model 2, only the earnings for the Asian female and
+White female subgroups were statistically different (lower) than
+67ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland Warner, Baker, Haynes, Jacobson, Bibriescas, & Yang
+Table 9: Multilevel Linear Regression Results Summary
+(Wage Earnings, Model 1)
+Fixed Effects B p
+Constant -0.11 .105
+Eco. Dis. -0.10 .096
+Female -0.26 .001
+Black -0.17 .129
+Hispanic/Latino/a -0.10 .160
+Other -0.22 .068
+Master’s 0.42 .000
+Ph.D. 1.00 .003
+Random Effects Est.
+Students (L1) 0.91
+Schools (L2) 0.06
+Asian and White males (Table 10). We suspect that the lack of sta-
+tistically significant differences for the other female subgroups may
+be due to the fact that they comprised only a small proportion of the
+sample (less than 5% combined), which resulted in less statistical
+power to detect differences. Because of the lack of statistical sig-
+Table 10: Multilevel Linear Regression Results Summary
+(Wage Earnings, Model 2)
+Fixed Effects B p
+Constant -0.10 .142
+Eco. Dis. -0.10 .091
+Female Asian -0.37 .021
+Female Black -0.26 .267
+Female Hispanic/Latina -0.27 .131
+Female Other -0.43 .128
+Female White -0.32 .009
+Male Black -0.23 .068
+Male Hispanic/Latino -0.13 .104
+Male Other -0.24 .066
+Master’s 0.43 .000
+Ph.D. 1.00 .003
+Random Effects Est.
+Students (L1) 0.91
+Schools (L2) 0.06
+nificance for most of the simple effects of gender+race in Model 2,
+and to avoid further loss of statistical power, we did not include the
+simple effects of gender+race in Model 3. Instead, Model 3 includes
+the main effects (as included in Model 1) plus interaction terms
+between race/ethnicity and economic status. Thus, for comparison
+purposes, we combined Models 1 and 3 in Table 11. Results of Model
+3 indicated there were no interaction effects between race/ethnicity
+and economic status.Table 11: Multilevel Linear Regression Results Summary
+(Wage Earnings, Models 1 & 3)
+Model 1 Model 3
+Fixed Effects B p B p
+Constant -0.11 .105 -0.11 .095
+Eco. Dis. -0.10 .096 -0.08 .285
+Female -0.26 .001 -0.26 .001
+Black -0.17 .129 -0.13 .363
+Hispanic/Latino/a -0.10 .160 -0.08 .391
+Other -0.22 .068 -0.27 .069
+Master’s 0.42 .000 0.42 .000
+Ph.D. 1.00 .003 1.00 .003
+Black Eco. Dis. -0.13 .570
+Hispanic/Latino/a Eco. Dis. -0.07 .638
+Other Eco. Dis. -0.14 .591
+Random Effects Est. Est.
+Students (L1) 0.91 0.91
+Schools (L2) 0.06 0.06
+6 DISCUSSION AND CONCLUSION
+Much of these results align with previous research that has shown
+gender, racial/ethnic, and economic disparities at different stages
+of the computing education pipeline. Similar to what has been
+reported at the secondary [ 7] and postsecondary [ 37] levels, fe-
+male students were far less likely than male students to enroll in
+CS courses. Black students and Hispanic/Latino/a students were
+less likely to take CS courses in high school and in college, simi-
+lar to other studies that found enrollment disparities for racially
+and ethnically minoritized students at the secondary or postsec-
+ondary levels [ 8,9,14,35]. Our results also indicated secondary and
+postsecondary enrollment disparities between students with and
+without economic disadvantage, similar to what has been noted
+elsewhere [ 23,34]. In terms of wage earnings, little work has been
+done to document disparities for CS graduates. Thus, the results
+of this study make an important contribution to the field. More
+work has been done that identifies disparities in earnings for STEM
+graduates generally, however, and there are both similarities and
+differences between the results of the analysis of wage earnings in
+this study and the results of studies in the field of STEM education.
+The wage disparity between men and women CS graduates was
+similar to gender wage gap that has been reported in other STEM
+fields [ 16,20,38]. However, contrary to other research that showed
+disparities in wage earnings for racially/ethnically minoritized stu-
+dents [ 4,19,20], we found no differences in earnings between Black
+or Hispanic/Latino/a CS graduates and their Asian and White peers.
+This study also contributes new insight to the field by analyzing
+these demographic facts within the same models. This is important
+to do because of how these factors are correlated. In the U.S., higher
+proportions of Black and Hispanic/Latino students are economically
+disadvantaged than Asian and White students. This correlation
+then begs the question of whether disparities in CS enrollment
+between students who are Black or Hispanic/Latino and students
+who are Asian or White are really reflecting disparities between
+68Disparities in CS Course Enrollment and Wage Earnings ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland
+students who are and are not economically disadvantaged and,
+conversely, whether differences identified in terms of economic
+status are actually indicative of racial and ethnic inequalities. The
+fact that both types of factors were statistically significant while
+controlling for the other in this study shows that, at least for this
+sample, racial/ethnic inequities exist alongside and in addition to
+inequities in terms of economic status.
+The results of this study also suggest that these disparities are
+sometimes compounded for students who are members of multiple
+minoritized groups. This finding has important implications for
+how we measure and address inequities in computing education.
+For example, it underscores the importance of accounting for the
+intersection of students’ multiple identities when investigating
+equity issues. When monitoring equity, for instance, in terms of
+enrollment rates (whether for a school district, a university, or
+an entire country), disaggregating counts of students by race and
+gender (e.g., number of Black students, number of female students)
+but not race+gender (e.g., number of Black female students) could
+fail to identify disparities for those student populations that are the
+most underrepresented in CS education.
+An important limitation of this study is that the samples were
+comprised of students from only one U.S. state. It is possible that
+results would differ if the analyses were replicated in other U.S.
+states and in other countries. However, the fact that one state pop-
+ulation was used for all three analyses provides some benefit to the
+study as well as it allows for comparisons among the analyses in
+this study to be made more easily. Another limitation, specific to
+the postsecondary analysis, was that only students who attended
+college in state were included. This was unavoidable as course en-
+rollment data were not available for students who attended college
+out of state. However, it is important to note this limitation as it
+may bias the results if there are patterns in terms of the types of
+students who tended to attend college out of state versus in state.
+By examining disparities in secondary and postsecondary course
+enrollment and in wage earnings after postsecondary education,
+this study has shown how inequities persist along the computing
+education pipeline. In beginning this work, we had hoped to inves-
+tigate differences in the likelihood of employment in computing
+professions for CS graduates, as this would have allowed us to con-
+tinue the trend of considering equity in participation in computing
+that we assessed with the analyses of secondary and postsecondary
+enrollment. However, the necessary data was not available to us,
+and so we concluded this investigation of disparities along the ed-
+ucation pipeline with an analysis of differences in wage earnings.
+Future research that connects all three stages in terms of access
+to and participation in computing would serve as a meaningful
+extension of this work.
+ACKNOWLEDGMENTS
+This study was funded through Google’s Computer Science Educa-
+tion Research (CS-ER) Award #93661915
+REFERENCES
+[1]Alexandria Cortés Aguilar and María Alejandra Flórez Vera. 2016. Diferencias
+salariales por género en el departamento de Santander, Colombia. Apuntes del
+CENES 35, 61 (2016), 267–301.
+[2]José-Ignacio Antón, Rafael Muñoz de Bustillo, and Miguel Carrera. 2012.
+¿Lloviendo piedras? La situación de las trabajadoras inmigrantes en el mercadode trabajo español. Estudios de Economía 39, 1 (2012), 53–86.
+[3] Authors. 2019. Anonymized. Anonymized 1 (2019), 1.
+[4]Philip Broyles and Weston Fenner. 2010. Race, human capital, and wage dis-
+crimination in STEM professions in the United States. International Journal
+of Sociology and Social Policy 30, 5/6 (2010), 251–266. https://doi.org/10.1108/
+01443331011054226
+[5]Throy Alexander Campbell and Maria Adamuti-Trache. 2016. Science and engi-
+neering doctorate recipients entering the labor market: income disparities for
+underrepresented minorities. Career and Technical Education Research 41, 2 (2016),
+85–105. https://doi.org/10.5328/cter41.2.85
+[6]Texas Advanced Computing Center. 2021. Texas K-12 Computer Science Education
+Data Dashboard . Journal Article. https://bit.ly/TXCSEd
+[7]Code.org, CSTA, and ECEP. 2020. 2020 state of computer science education: Illumi-
+nating disparities . Report. https://advocacy.code.org/stateofcs
+[8]Code.org, CSTA, and ECEP. 2021. 2021 State of computer science education:
+Accelerating action through advocacy . Report. https://advocacy.code.org/stateofcs
+[9]Natasha Codiroli Mcmaster. 2017. Who studies STEM subjects at A-level and de-
+gree in England? An investigation into the intersections between students’ family
+background, gender and ethnicity in determining choice. British Educational
+Research Journal 43, 3 (2017), 528–553. https://doi.org/10.1002/berj.3270
+[10] Kimberle Crenshaw. 1991. Mapping the Margins: Intersectionality, Identity
+Politics, and Violence against Women of Color. Stanford Law Review 43 (1991),
+1241–1299. https://doi.org/10.2307/1229039
+[11] Paula Doolan. 2014. The Under-Representation of Women in Third Level Computer
+Science Courses in Ireland (dissertation) . Report. University of Dublin.
+[12] Steven Paul Floyd. 2021. Female Enrolment in High School Computer Science
+Courses . IGI Global. https://doi.org/10.4018/978-1-7998-4739-7.ch003
+[13] National Center for Education Statistics. 2020. Classification of Instructional
+Programs. https://nces.ed.gov/ipeds/cipcode
+[14] Brian Fowler and Emiliana Vegas. 2021. How England implemented
+its computer science program . Report. Brookings Institution. https:
+//www.brookings.edu/research/how-england-implemented-its-computer-
+science-education-program/
+[15] Naomi Friedman-Sokuler and Moshe Justman. 2016. Gender streaming and prior
+achievement in high school science and mathematics. Economics of Education
+Review 53 (2016), 230–253. https://doi.org/10.1016/j.econedurev.2016.04.004
+[16] Richard Fry, Brian Kennedy, and Cary Funk. 2021. STEM Jobs See
+Uneven Progress in Increasing Gender, Racial and Ethnic Diversity . Re-
+port. https://www.pewresearch.org/science/2021/04/01/stem-jobs-see-uneven-
+progress-in-increasing-gender-racial-and-ethnic-diversity/
+[17] Sarah Genut, Bnaya Ori, and Yifat Ben-David Kolikant. 2019. Factors Influencing
+Women’s Decision to Study Computer Science: Is It Context Dependent? Issues
+in Informing Science and Information Technology 16 (2019), 127–141. https:
+//doi.org/10.28945/4296
+[18] Moshe Justman and Susan J. Mendez. 2018. Gendered choices of STEM subjects
+for matriculation are not driven by prior differences in mathematical achievement.
+Economics of Education Review 64, 1 (2018), 282–297.
+[19] Hilde Karlsen. 2012. Gender and ethnic differences in occupational positions
+and earnings among nurses and engineers in Norway: Identical educational
+choices, unequal outcomes. Work, Employment & Society 26, 2 (2012), 278–295.
+https://doi.org/10.1177/095001701
+[20] Tetiana Lysenko and Qingfang Wang. 2020. Race/ethnicity, gender, and earnings
+of early career STEM graduates in the U.S. Geographical Review 110, 4 (2020),
+457–484. https://doi.org/10.1080/00167428.2019.1708742
+[21] Yingyi Ma. 2009. Family socioeconomic status, parental involvement, and college
+major choices: Gender, race/ethnic, and nativity patterns. Sociological Perspectives
+52 (2009), 211–234. https://doi.org/10.1525/sop.2009.52.2.211
+[22] Dee Michell, Anna Szorenyi, Katrina Falkner, and Claudia Szabo. 2017. Broad-
+ening participation not border protection: how universities can support women
+in computer science. Journal of Higher Education Policy and Management 39, 4
+(2017), 406–422. https://doi.org/10.1080/1360080x.2017.1330821
+[23] Steve Murphy. 2020. Participation and achievement in technology education:
+The impact of school location and socioeconomic status on senior secondary
+technology studies. International Journal of Technology and Design Education 30,
+2 (2020), 349–366. https://doi.org/10.1007/s10798-019-09499-4
+[24] Adams Nager and Robert Atkinson. 2016. The case for improving U.S. computer
+science education. NCSSS Journal (2016), 18–19.
+[25] U.S. Department of Agriculture. 2021. National School Lunch Program. https:
+//www.fns.usda.gov/nslp
+[26] U.S. Bureau of Labor Statistics. 2021. Highlights of women’s earnings in 2020 .
+Report. https://www.bls.gov/opub/reports/womens-earnings/2020/home.htm
+[27] University of Texas at Austin. 2022. Texas Education Research Center. https:
+//texaserc.utexas.edu/
+[28] Payscale. 2022. 2022 State of the Gender Pay Gap Report . Report. https://www.
+payscale.com/research-and-insights/gender-pay-gap/
+[29] Maricel Sanchez. 2020. #EqualPay: The gender gap in the tech industry . Re-
+port. https://www.eu-startups.com/2020/03/equalpay-the-status-quo-of-the-
+gender-pay-gap-in-the-tech-industry
+69ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland Warner, Baker, Haynes, Jacobson, Bibriescas, & Yang
+[30] Linda J. Sax, Kathleen J. Lehman, Jerry A. Jacobs, M. Allison Kanny, Gloria
+Lim, Laura Monje-Paulson, and Hilary B. Zimmerman. 2016. Anatomy of an
+Enduring Gender Gap: The Evolution of Women’s Participation in Computer
+Science. The Journal of Higher Education 88, 2 (2016), 258–293. https://doi.org/
+10.1080/00221546.2016.1257306
+[31] Allison Scott, Sonia Koshy, Meghana Rao, Laura Hinton, Julie Flapan, Alexis
+Martin, and Frieda McAlear. 2019. Computer science in California’s Schools:
+An analysis of access, enrollment, and equity . Report. Kapor Center. https:
+//www.kaporcenter.org/our-work/research/#Publications
+[32] Sally Smith, Margaret Hamilton, and Khristin Fabian. 2020. Entrepreneurial
+drivers, barriers and enablers of computing students: gendered perspectives
+from an Australian and UK university. Studies in Higher Education 45, 9 (2020),
+1892–1905. https://doi.org/10.1080/03075079.2019.1637840
+[33] Dafina-Lazarus Stewart. 2013. Racially Minoritized Students at U.S. Four-Year
+Institutions. The Journal of Negro Education 82 (2013), 184–197.
+[34] Ryan Torbey, Nicole D. Martin, Jayce R. Warner, and Carol L. Fletcher. 2020.
+Algebra I before high school as a gatekeeper to computer science participation .
+Association for Computing Machinery, Portland, OR, USA, 839–844. https:
+//doi.org/10.1145/3328778.3366877
+[35] Marla Weston and Dianne Biin. 2015. The ancestor project: Aboriginal computer
+education through storytelling. Springer, 287–304.
+[36] Jeff Wyatt, Jing Feng, and Maureen Ewing. 2020. AP Computer Sci-
+ence Principles and the STEM and computer science pipelines . Re-
+port. https://apcentral.collegeboard.org/pdf/ap-csp-and-stem-cs-pipelines.pdf?
+course=ap-computer-science-principles
+[37] Stuart Zweben and Besty Bizot. 2020. 2020 Taulbee Survey . Report. https:
+//cra.org/resources/taulbee-survey
+[38] Lidia Żakowska and Zofia Bryniarska. 2016. Równosc w STEM, szczególnie
+w inzynierii transportowej. Zarzadzanie Publiczne 36 (2016), 355–367. https:
+//doi.org/10.4467/20843968ZP.17.030.6039
+A FULL REGRESSION RESULTS
+A.1 Secondary Computing Courses
+Table 12: Multilevel Logistic Regression Results (Secondary
+Enrollment, Model 1)
+Fixed Effects OR S.E. z p 95% C.I.
+Constant 0.32 0.02 -14.86 .000 0.28 0.37
+Eco. Dis. 0.70 0.02 -15.86 .000 0.67 0.73
+Female 0.30 0.01 -62.98 .000 0.28 0.31
+Black 0.41 0.01 -24.86 .000 0.38 0.44
+Hispanic/Latino/a 0.57 0.01 -23.61 .000 0.55 0.60
+Other 0.86 0.05 -2.89 .004 0.77 0.95
+Random Effects Est. S.E. 95% C.I.
+Schools (L2) 0.92 0.11 0.73 1.15
+Districts (L3) 0.81 0.15 0.56 1.17Table 13: Multilevel Logistic Regression Results (Secondary
+Enrollment, Model 2)
+Fixed Effects OR S.E. z p 95% C.I.
+Constant 0.34 0.03 -14.11 .000 0.29 0.40
+Eco. Dis. 0.68 0.02 -17.03 .000 0.65 0.71
+Female Asian 0.76 0.03 -6.43 .000 0.70 0.82
+Female Black 0.14 0.01 -34.05 .000 0.12 0.16
+Female Hisp./Latina 0.18 0.01 -50.49 .000 0.17 0.19
+Female Other 0.24 0.02 -15.18 .000 0.20 0.29
+Female White 0.20 0.01 -52.48 .000 0.19 0.21
+Male Black 0.39 0.02 -22.71 .000 0.36 0.42
+Male Hisp./Latino 0.55 0.01 -22.28 .000 0.52 0.58
+Male Other 0.86 0.05 -2.32 .020 0.76 0.98
+Random Effects Est. S.E. 95% C.I.
+Schools (L2) 0.90 0.10 0.72 1.13
+Districts (L3) 0.81 0.15 0.56 1.16
+Table 14: Multilevel Logistic Regression Results (Secondary
+Enrollment, Model 3)
+Fixed Effects OR S.E. z p 95% C.I.
+Constant 0.33 0.03 -14.57 .000 0.28 0.38
+Eco. Dis. 0.84 0.03 -4.78 .000 0.78 0.90
+Female Asian 0.82 0.04 -0.40 .000 0.74 0.90
+Female Black 0.12 0.01 -21.89 .000 0.10 0.14
+Female Hisp./Latina 0.16 0.01 -32.98 .000 0.15 0.18
+Female Other 0.27 0.03 -12.14 .000 0.22 0.33
+Female White 0.21 0.01 -46.92 .000 0.20 0.22
+Male Black 0.46 0.03 -13.07 .000 0.40 0.51
+Male Hisp./Latino 0.65 0.02 -12.00 .000 0.61 0.70
+Male Other 0.95 0.07 -0.63 .529 0.82 1.11
+Female Asian Eco. Dis. 0.72 0.07 -3.51 .000 0.59 0.86
+Female Black Eco. Dis. 1.09 0.13 0.75 .455 0.86 1.39
+Fem. Hisp./Lat. Eco. Dis. 0.95 0.07 -0.75 .451 0.82 1.09
+Female Other Eco. Dis. 0.60 0.13 -2.29 .022 0.39 0.93
+Female White Eco. Dis. 0.74 0.06 -3.47 .001 0.62 0.88
+Male Black Eco. Dis. 0.67 0.06 -4.82 .000 0.57 0.79
+Male Hisp./Lat. Eco. Dis. 0.67 0.04 -7.73 .000 0.60 0.74
+Male Other Eco. Dis. 0.68 0.09 -2.81 .005 0.52 0.89
+Random Effects Est. S.E. 95% C.I.
+Schools (L2) 0.89 0.10 0.71 1.12
+Districts (L3) 0.82 0.15 0.55 1.17
+70Disparities in CS Course Enrollment and Wage Earnings ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland
+A.2 Postsecondary Computing Courses
+Table 15: Multilevel Logistic Regression Results (Postsec-
+ondary Enrollment, Model 1)
+Fixed Effects OR S.E. z p 95% C.I.
+Constant 0.34 0.01 -53.45 .000 0.33 0.36
+Eco. Dis. 0.86 0.01 -11.38 .000 0.83 0.88
+Female 0.62 0.01 -42.04 .000 0.61 0.64
+Black 0.92 0.02 -4.33 .000 0.88 0.95
+Hispanic/Latino 0.94 0.01 -3.74 .000 0.92 0.97
+Other 0.96 0.04 -0.99 .320 0.90 1.03
+Random Effects Est. S.E. 95% C.I.
+School (L2) 0.03 0.01 0.02 0.04
+District (L3) 0.16 0.01 0.13 0.19
+Table 16: Multilevel Logistic Regression Results (Postsec-
+ondary Enrollment, Model 2)
+Fixed Effects OR S.E. z p 95% C.I.
+Constant 0.37 0.01 -47.43 .000 0.36 0.39
+Eco. Dis. 0.85 0.01 -11.70 .000 0.83 0.88
+Female Asian 0.72 0.03 -8.52 .000 0.67 0.78
+Female Black 0.59 0.02 -19.48 .000 0.56 0.62
+Female Hisp./Latina 0.58 0.01 -28.24 .000 0.56 0.6
+Female Other 0.54 0.03 -11.15 .000 0.49 0.6
+Female White 0.51 0.01 -37.02 .000 0.49 0.53
+Male Black 0.78 0.02 -9.32 .000 0.74 0.82
+Male Hisp./Latino 0.84 0.02 -9.16 .000 0.81 0.87
+Male Other 0.93 0.05 -1.51 .132 0.84 1.02
+Random Effects Est. S.E. 95% C.I.
+School (L2) 0.03 0.01 0.02 0.04
+District (L3) 0.16 0.01 0.13 0.19Table 17: Multilevel Logistic Regression Results (Postsec-
+ondary Enrollment, Model 3)
+Fixed Effects OR S.E. z p 95% C.I.
+Constant 0.37 0.01 -45.74 .000 0.36 0.39
+Eco. Dis. 0.84 0.02 -6.09 .000 0.79 0.89
+Female Asian 0.66 0.03 -8.70 .000 0.60 0.72
+Female Black 0.55 0.02 -13.5 .000 0.50 0.60
+Female Hisp./Latina 0.53 0.01 -22.68 .000 0.50 0.56
+Female Other 0.56 0.04 -8.41 .000 0.49 0.64
+Female White 0.51 0.01 -32.9 .000 0.49 0.53
+Male Black 0.82 0.03 -4.84 .000 0.75 0.89
+Male Hisp./Latino 0.91 0.02 -3.61 .000 0.86 0.96
+Male Other 0.97 0.06 -0.40 .689 0.86 1.10
+Female Asian Eco. Dis. 1.29 0.10 3.25 .001 1.10 1.51
+Female Black Eco. Dis. 1.12 0.06 2.04 .042 1.00 1.26
+Fem. Hisp./Lat. Eco. Dis. 1.15 0.05 3.50 .000 1.06 1.25
+Female Other Eco. Dis. 0.92 0.11 -0.72 .470 0.74 1.15
+Female White Eco. Dis. 1.00 0.04 0.04 .967 0.92 1.09
+Male Black Eco. Dis. 0.94 0.05 -1.06 .288 0.84 1.05
+Male Hisp./Lat. Eco. Dis. 0.90 0.04 -2.57 .010 0.84 0.98
+Male Other Eco. Dis. 0.88 0.09 -1.23 .220 0.71 1.08
+Random Effects Est. S.E. 95% C.I.
+School (L2) 0.03 0.01 0.02 0.04
+District (L3) 0.16 0.01 0.13 0.19
+A.3 Wage Earnings
+Table 18: Multilevel Linear Regression Results (Wage Earn-
+ings, Model 1)
+Fixed Effects B S.E. z p 95% C.I.
+Constant -0.11 0.07 -1.62 .105 -0.24 0.02
+Eco. Dis. -0.10 0.06 -1.66 .096 -0.22 0.02
+Female -0.26 0.08 -3.25 .001 -0.42 -0.10
+Black -0.17 0.12 -1.52 .129 -0.40 0.05
+Hispanic/Latino/a -0.10 0.07 -1.40 .160 -0.25 0.04
+Other -0.22 0.12 -1.82 .068 -0.45 0.02
+Master’s 0.42 0.10 4.40 .000 0.23 0.61
+Ph.D. 1.00 0.34 2.95 .003 0.33 1.67
+Random Effects Est. S.E. 95% C.I.
+Students (L1) 0.91 0.04 0.84 0.98
+Schools (L2) 0.06 0.02 0.03 0.12
+71ICER 2022 V1, August 7–11, 2022, Lugano and Virtual Event, Switzerland Warner, Baker, Haynes, Jacobson, Bibriescas, & Yang
+Table 19: Multilevel Linear Regression Results (Wage Earn-
+ings, Model 2)
+Fixed Effects B S.E. z p 95% C.I.
+Constant -0.10 0.07 -1.47 .142 -0.23 0.03
+Eco. Dis. -0.10 0.06 -1.69 .091 -0.22 0.02
+Female Asian -0.37 0.16 -2.31 .021 -0.69 -0.06
+Female Black -0.26 0.23 -1.11 .267 -0.72 0.20
+Female Hisp./Lat. -0.27 0.18 -1.51 .131 -0.62 0.08
+Female Other -0.43 0.28 -1.52 .128 -0.97 0.12
+Female White -0.32 0.12 -2.61 .009 -0.56 -0.08
+Male Black -0.23 0.13 -1.83 .068 -0.48 0.02
+Male Hisp./Lat. -0.13 0.08 -1.63 .104 -0.28 0.03
+Male Other -0.24 0.13 -1.84 .066 -0.50 0.02
+Master’s 0.43 0.10 4.46 .000 0.24 0.62
+Ph.D. 1.00 0.34 2.94 .003 0.33 1.67
+Random Effects Est. S.E. 95% C.I.
+Students (L1) 0.91 0.04 0.84 0.98
+Schools (L2) 0.06 0.02 0.03 0.12Table 20: Multilevel Linear Regression Results (Wage Earn-
+ings, Model 3)
+Fixed Effects B S.E. z p 95% C.I.
+Constant -0.11 0.07 -1.67 .095 -0.25 0.02
+Eco. Dis. -0.08 0.08 -1.07 .285 -0.24 0.07
+Female -0.26 0.26 -3.20 .001 -0.42 -0.10
+Black -0.13 0.13 -0.91 .363 -0.41 0.15
+Hisp./Lat. -0.08 0.08 -0.86 .391 -0.25 0.10
+Other -0.27 0.27 -1.82 .069 -0.55 0.02
+Master’s 0.42 0.10 4.40 .000 0.23 0.61
+Ph.D. 1.00 0.34 2.93 .003 0.33 1.67
+Black Eco. Dis. -0.13 0.13 -0.57 .570 -0.58 0.32
+Hisp./Lat. Eco. Dis. -0.07 0.07 -0.47 .638 -0.35 0.21
+Other Eco. Dis. -0.14 0.14 0.54 .591 -0.36 0.63
+Random Effects Est. S.E. 95% C.I.
+Students (L1) 0.91 0.04 0.84 0.98
+Schools (L2) 0.06 0.02 0.03 0.12
+72

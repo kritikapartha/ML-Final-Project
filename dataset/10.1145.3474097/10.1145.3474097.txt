@@ -1,0 +1,741 @@
+52    COMMUNICATIONS OF THE ACM   |  MARCH 2022  |  VOL. 65  |  NO. 3contributed articles
+TECH COMPANIES ARE often criticized for a lack of 
+diversity in their engineering workforce. In recent 
+years, such companies have improved engineering 
+workforce diversity through hiring and retention 
+efforts, according to publicly available diversity 
+reports.a However, we know little about the day-
+to-day, on-the-job experiences of traditionally 
+underrepresented engineers once they join an 
+organization.b
+A core activity of software engineers at many 
+companies is code review , where one or more 
+engineers provide feedback on another engineer’s 
+a See https://www.aboutamazon.com/working-at-amazon/diversity-and-inclusion/  
+ourworkforce-data, https://www.apple.com/diversity/, https://diversity.fb.com/readreport/,  
+https://diversity.google/annual-report/, and https://www.microsoft.com/enus/diversity/.
+b In this article, for convenience we refer to a person involved in code review as an “engineer”  
+even though, as we shall see, non-engineers are also involved in the code review process.code to ensure software quality and 
+spread technical knowledge.1 Beyond 
+software companies, code review has 
+long been practiced in open source 
+software engineering and is emerging 
+as an important practice for scientists.2 
+Code review is fundamentally a deci -
+sion-making process, where reviewers 
+must decide if and when a code change 
+is acceptable; thus, code review is sus -
+ceptible to human biases. Indeed, 
+prior research on open source projects 
+suggests that some code reviews au -
+thored by women are more likely to be 
+rejected than those authored by men.16
+This article provides confirmation -
+al evidence that some demographic 
+groups face more code review push -
+back than others. There is no pub -
+lished research that has studied such 
+differences in a corporate setting.
+Method
+This section describes the setting of 
+this study, the theory that we ground 
+it in, the dependent and indepen -
+dent variables we use, our modeling 
+approach, and the dataset. While we 
+briefly describe the variables we use 
+here, a full description can be found in 
+the supplementary material at https://
+dl.acm.org/doi/10.1145/3474097.
+Setting. Code review at Google 
+is a process that is used in the com -
+pany’s monolithic codebase.14 When 
+a software engineer makes a code 
+change—to add a new feature or fix a The Pushback 
+Effects of Race, 
+Ethnicity, Gender,  
+and Age in  
+Code Review DOI:10.1145/3474097
+Research shows that White, male, and  
+younger engineers receive less pushback  
+than those in other demographics.
+BY EMERSON MURPHY-HILL, CIERA JASPAN,  
+CAROLYN EGELMAN, AND LAN CHENG 
+ key insights
+ ˽Code review, a common practice in 
+software organizations, is susceptible  
+to human biases, where reviewer 
+feedback may be influenced by how 
+reviewers perceive the author’s 
+demographic identity.
+ ˽Through the lens of role congruity theory, 
+we show the amount of pushback  
+code authors receive varies based on 
+their gender, race/ethnicity, and age.
+ ˽We estimate such pushback costs  
+Google more than 1,000 extra engineer 
+hours every day, or approximately  
+4% of the estimated time engineers  
+spend responding to reviewer  
+comments, a cost borne by non-White  
+and non-male engineers.MARCH 2022  |  VOL. 65  |  NO. 3  |  COMMUNICATIONS OF THE ACM     53IMAGE BY MANGOSTARdefect—that code must be reviewed 
+by at least one other engineer. Review -
+ers evaluate the fitness for purpose 
+of the change, as well as its quality. If 
+they have concerns or questions, they 
+express those comments in the code 
+review tool. Most reviewers are engi -
+neers who are on the same team as the 
+author, but reviews can also be per -
+formed across different teams, such 
+as when a software engineer fixes a 
+problem in code that they use but nor -
+mally do not work on. Authors choose 
+their reviewers, but the code review 
+system can also suggest appropriate 
+reviewers. The code review tool pro -
+vides authors and reviewers with op -portunities to learn about each other, 
+including their full names and photos 
+(more in the supplementary material).
+Theory and hypotheses.  Our study 
+is grounded in role congruity theory, 
+which states that a member of a group 
+will receive negative evaluations when 
+stereotypes about the group misalign 
+with the perceived qualities necessary 
+to succeed in a role.3 Applying this to 
+our context, the theory predicts that 
+code reviews will be evaluated nega -
+tively when the author of a code change 
+belongs to a group whose stereotypes 
+do not align with the perceived quali -
+ties of a successful programmer or 
+software engineer. We evaluate three different demographic dimensions 
+across which we predict code review 
+evaluations will vary: gender, race/eth -
+nicity, and age.
+With respect to gender, we hypothe -
+size that reviews of women coders will 
+be more negative than reviews of men. 
+The rationale is the role mismatch be -
+tween “the pervasive cultural associa -
+tions linking men but not women with 
+raw intellectual talent” and that com -
+puter science is perceived by some to 
+require high “innate intellectual tal -
+ent.”7 Likewise, we hypothesize that 
+people who identify as Black, Hispan -
+ic, or Latinx have greater odds of facing 
+negative evaluations than those who54    COMMUNICATIONS OF THE ACM   |  MARCH 2022  |  VOL. 65  |  NO. 3contributed articles
+reviews with high pushback would be 
+in the 90th percentile of each metric: 
+more than nine rounds of review, 48 
+minutes reviewing, and 112 minutes 
+spent by the author. In this study, we 
+adopt that composite measure as our 
+independent variable by modeling 
+whether a review is likely to be identi -
+fied as high pushback, or just “push -
+back” for short.
+Independent variables. The indepen -
+dent variables of primary interest are 
+gender, race/ethnicity, and age. Here, 
+we largely use pre-existing demographic 
+categories that Google maintains as part 
+of reporting requirements under U.S. 
+law. For gender, the reported categories 
+are female or male. Race/ethnicity in -
+cludes Asian+, Black+, Latinx+, Native 
+American+, and White+, where the “+” 
+denotes the fact that engineers can 
+choose multiple race/ethnic identities. 
+For age, we discretize ages into ranges.
+Independent control variables. 
+Drawing on prior research about code 
+review,5,13,14,17 the independent variables 
+used as controls are based on properties 
+of the change, properties of the author, 
+and other variables:
+ •For properties of the change, we 
+model the log value of the number of 
+lines changed, the number of review -
+ers, whether the change contains at 
+least one modification to a file written 
+in a coding language, and several spe -
+cial properties of a review:
+ ˴Did the review require a “read -
+ability” reviewer4—that is, a reviewer 
+certified as an expert in programming 
+language coding standards?
+ ˴Was the review part of the read -
+ability certification process, in which 
+the author’s expertise in program -
+ming language coding standards was 
+being evaluated?
+ ˴Was the review a large-scale 
+change (or LSC), approved either by a 
+local code owner or a globally empow -
+ered one?
+ •For properties of the author of the 
+change, we included the level (senior -
+ity) of the reviewer, how long they have 
+been at Google, and their job family—
+for instance, software engineer, site re -
+liability engineer, etc).
+ •Other variables we captured were 
+the job family of the main reviewer 
+and the relationship between main re -
+viewer and author. By “main reviewer,” 
+we mean the reviewer who has made the most comments, or in the case of a 
+tie, the first reviewer to comment. We 
+model relationships as “insider” when 
+the author and main reviewer work on 
+the same team; otherwise, we define 
+them as “outsider” reviews. While in -
+sider reviews are more common, out -
+sider reviews are necessary when, for 
+example, an author needs to change 
+another team’s code, such as fixing 
+downstream dependencies on an API. 
+Descriptive statistics for all variables 
+are available in the online supplemen -
+tary material.
+Independent interactions variables. 
+Prior work16 suggests that the rela -
+tionship between author and reviewer 
+moderates gender bias effects. To ac -
+count for such a moderating effect, we 
+model the interaction between rela -
+tionship (insider or outsider) and each 
+independent variable (gender, race/
+ethnicity, and age).
+Modeling approach.  Since the de -
+pendent variable was binary—either 
+the change was flagged as receiving 
+pushback or not—we used a mixed-ef -
+fect binomial logistic regression mod -
+el. In this model, to attempt to control 
+for the same engineer appearing re -
+peatedly as an author or reviewer across 
+code reviews, we use author and main 
+reviewer identities as random effects. 
+As in our prior work on pushback,5 we 
+describe the effect size in terms of odds 
+ratios of the primary independent vari -
+ables, as well as their statistical signifi -
+cance. We address potential multicol -
+linearity issues, performing variance 
+inflation factor (VIF) and generalized 
+variance inflation factor (GVIF)6 checks 
+for independent variables; since all 
+continuous variables’ VIF scores were 
+below 1.3 and GVIF scores for categori -
+cal variables were below 1.5, we assume 
+that multicollinearity was not a sub -
+stantial threat to the interpretation of 
+our model. We also ensured the robust -
+ness of our analysis by replicating the 
+study on a different dataset; we found 
+that gender and race/ethnicity effects 
+were very consistent, and age effects 
+were largely consistent (see supple -
+mentary material).
+Dataset.  We analyzed code reviews 
+performed in one of the main code re -
+view tools at Google over a six-month 
+period from the beginning of January 
+2019 through the end of June 2019, 
+subject to the following constraints. identify as White, because, as the Gen -
+eral Social Survey suggests, Americans 
+are less likely to view those groups as 
+possessing innate intelligence.15 On 
+the other hand, we hypothesize that 
+those who identify as Asian will face 
+more positive evaluations than those 
+who identify as White, because Asians 
+are stereotypically viewed as having 
+higher role congruity in engineering 
+fields.8 We make no hypothesis about 
+role congruity for Native Americans, 
+due to a lack of prior research litera -
+ture. Recent research shows that con -
+tributions from White developers in 
+open source are more likely to be ac -
+cepted than those from non-White 
+developers.9 With respect to age, we 
+hypothesize that older engineers are 
+more likely to experience negative re -
+views than younger engineers, because 
+of two major role mismatches:
+ •While there “is a stereotype that 
+older workers have lower ability… 
+and are less productive than younger 
+workers,”11 a great software engineer 
+is expected to be mentally capable of 
+handling complexity and be highly 
+productive.9
+ •While there is a stereotype that 
+older workers “are harder to train, 
+less adaptable, less flexible, and more 
+resistant to change” and “have a lower 
+ability to learn,”11 great software engi -
+neers are expected to be open-mind -
+ed, continuously self-improving, and 
+to not let their understanding stag -
+nate.9
+Dependent variable. The depen -
+dent variable in our predictive model is 
+pushback , defined as “the perception of 
+unnecessary interpersonal conflict in 
+code review while a reviewer is block -
+ing a change request.”5 In prior work, 
+where we did not provide demograph -
+ic breakdowns, we compared several 
+quantitative signals that predicted 
+negative evaluations in two ways rel -
+evant to role congruity theory: 1) a re -
+viewer requesting excessive changes, 
+and 2) a reviewer withholding approv -
+al. The strongest predictors of individ -
+ual engineers’ self-reported pushback 
+were when a code review had a high 
+number of rounds (that is, back and 
+forth between the author and review -
+ers), a high amount of time spent by 
+reviewers, and a high amount of time 
+spent by the author addressing the re -
+viewers’ concerns. In that work, suchMARCH 2022  |  VOL. 65  |  NO. 3  |  COMMUNICATIONS OF THE ACM     55contributed articles
+of the chart shows the model’s inde -
+pendent variables, along with their p 
+values in parentheses. The right half 
+shows the odds ratio for each indepen -
+dent variable. Odds ratios of less than 
+1.0 mean lower odds; odds ratios larger 
+than 1.0 mean higher odds.
+Figure 1(a) displays our control Reviews must have had at least one 
+reviewer (which excludes some experi -
+mental, emergency, and documenta -
+tion changes), and both the author and 
+all reviewers must be full-time-equiva -
+lent Google employees working in the 
+U.S. Changes from authors who had 
+incomplete demographic data were ex -cluded. In sum, this analysis includes 
+more than two million code reviews 
+from over 30,000 authors.
+Results
+Figure 1 displays the results of our 
+mixed-effect regression predicting 
+code-review pushback. The left half Figure 1. Odds ratios from regression analysis predicting pushback in code review for controls (a), the main demographic predictors of 
+interest (b), and the outsider interaction (c). Odds ratios are omitted for non-significant results.
+1.98
+0.03
+2.73
+1.58
+1.58
+0.40
+0.73
+0.51
+0.38
+0.29
+0.61
+0.55
+0.48
+1.54
+1.67
+1.21
+1.54
+1.15
+1.42
+1.10
+1.18
+1.34
+1.48
+1.60
+2.05
+3.21
+1.15
+1.32
+1.76
+2.02
+2.19
+2.79
+3.680 1 2 3 4
+log(linesChanged) (p<.001)
+lscGlobal (p=.794)
+lscLocal (p<.001)
+reviewerCount (p<.001)
+readabilityReviewTRUE  (p<.001)
+needsReadabilityTRUE (p<.001)
+hasCodeFALSE (p<.001)
+4 (p<.001)
+5 (p<.001)
+6 (p<.001)
+7 (p<.001)
+1-2 years (p<.0 01)
+3-5 years (p<.0 01)
+6+ years (p<.001)
+ENG_SRE (p=.2 31)
+ENG_OTHER (p<.001)
+OTHER (p<.001)
+Female (p<.001)
+Black+ (p<.001)
+HispanicOrLatinX+ (p=.013)
+NativeAm erican+ (p= .735)
+Asian+ (p<.001)
+25-29 years (p=.002)
+30-34 years (p<.001)
+35-39 years (p <.001)
+40-44 years (p<.001)
+45-49 years (p<.001)
+50-59 years (p<.001)
+60+ years (p<.001)
+Outsider (p<.0 01)
+Outsider:Fem ale (p=.039)
+Outsider:Black+ (p=.431)
+Outsider:HispanicOrLatinX+ (p=.2 64)
+Outsider:NativeAmerican+ (p=.456)
+Outsider:Asian+ (p=.149)
+Outsider:25-29 years (p=.254)
+Outsider:30-34 years (p=.002)
+Outsider:35-39 years (p<.001)
+Outsider:40-44 years (p<.001)
+Outsider:45-4 9 years (p =.006)
+Outsider:50-59 years (p=.025)
+Outsider:60+ years (p=.220)Changelist Properties
+Author Age 
+(baseline = 18–24 years)
+Relationship:Race/Ethnicity 
+(baseline = Insider:White+)
+Relationship:Age 
+(baseline = Insider:18–24 years)Author Job Level 
+(baseline = 3)
+Author Tenure 
+(baseline = Less th an 1 year)
+Author Job Family 
+(baseline = ENG_SOFT)
+Author Race/Ethnicity 
+(baseline = White+)Odds Ratio
+(a)
+(b)
+(c)56    COMMUNICATIONS OF THE ACM   |  MARCH 2022  |  VOL. 65  |  NO. 3contributed articles
+other places in Figure 1 for non-signif -
+icant factors.
+Figure 1(b) displays results that 
+evaluate our hypotheses—demo -
+graphic predictors of pushback. Since 
+our model uses an interaction effect 
+between demographics and the rela -
+tionship, the first set of demographics 
+should be interpreted as applying to 
+insiders—that is, when the author and 
+main reviewer are on the same team.
+With respect to gender, consistent 
+with the gender correlations observed 
+on GitHub,16 women’s changes have 
+a 1.21 higher likelihood of receiving 
+pushback than changes by men. Like -
+wise, compared to White+ engineers, 
+the odds of pushback are higher on 
+authors who identify as Black+ (1.54), 
+Hispanic or Latinx+ (1.15), and Asian+ 
+(1.42). With respect to age, the results 
+show changes from older engineers 
+have higher odds of pushback com -
+pared to younger engineers, even after 
+accounting for seniority and tenure. 
+For instance, a change authored by an 
+engineer who is 60 years old or older is 
+more than three times likely to receive 
+pushback than that of an author at the 
+same level and tenure who is between 
+18 and 24 years old.
+Figure 1(c) shows the results for 
+outsider code reviews. Overall, the re -
+sults indicate that code reviews from 
+engineers on a different team than the 
+author have higher odds (1.15) of push -
+back. For race/ethnicity and gender, 
+there are few statistically significant 
+differences for insider and outsider 
+code reviews—that is, unlike in prior 
+work,16 relationships are not a sub -
+stantial mediating factor. In the cases 
+where there is a statistically significant 
+interaction, the effect is compounding. 
+For instance, compared to an 18-to-24-
+year-old insider, the model would na -
+ively predict that reviews by outsider 
+authors who are between 30 and 34 
+years old would have 1.36 (1.18 odds 
+for 30–34 years old × 1.15 odds for out -
+siders) greater odds of pushback, but 
+the interaction coefficient indicates 
+that the actual odds of pushback for 
+this group is even higher, at 1.77.
+In summary, these results indicate 
+that regardless of team relationship 
+between author and main reviewer, au -
+thors from some demographic groups 
+face higher odds of pushback during 
+code review than others. Women au -variables. For instance, the first row 
+indicates that the log of the number 
+of lines changed in the code review is 
+significantly (p<.001) correlated with 
+pushback. Changing more lines of code 
+increases the odds of the review being 
+flagged with pushback. On the other 
+hand, the odds of a locally approved, 
+large-scale change (LSC) review—gen -
+erally a low-risk change—being identi -
+fied with pushback is substantially low -
+er (0.02) compared to non-LSC reviews. 
+As the figure indicates, each new re -
+viewer increases the odds of pushback 
+(2.73), as does whether the review is 
+part of the readability certification 
+process (1.58) and whether a certified 
+readability reviewer is required (1.58). 
+A review without code—for instance, 
+documentation only—is less likely to 
+be flagged with pushback (0.4) than a 
+change being reviewed with code.
+As Figure 1(a) indicates, job-rel -
+evant author characteristics also 
+change the odds of pushback. Reviews 
+by more senior-level authors are less 
+likely to receive pushback than those 
+of, for instance, an entry-level engineer 
+(level 3). This confirms findings from 
+prior work5 that more senior engineers 
+are less likely to face pushback. Like -
+wise, a review author who has been at 
+Google for less than a year is more like -
+ly to face pushback than one who has 
+been with the organization longer. In -
+cluding such experience covariates in 
+our model helps isolate demographic 
+factors—covariates which might oth -
+erwise confound results. For instance, 
+Google’s 2020 diversity report states 
+that women tend to have lower attri -
+tion than men, and Native American+ 
+employees have higher attrition than 
+White+ employees.
+Compared to the most common 
+software engineering role—software 
+engineer, or ENG_SOFT—changes 
+authored by other types of engineers 
+(ENG_OTHER, such as research sci -
+entist engineers) and non-engineers 
+(OTHER, such as technical operations 
+employees) are more likely to receive 
+pushback. We did not detect a statisti -
+cally significant difference in the odds 
+of pushback for changes from site 
+reliability engineers (ENG_SRE) com -
+pared to the baseline, regular software 
+engineers. Since pushback for SRE 
+authors was not significant, we omit 
+odds ratios for SREs and in several Some demographic 
+groups face  
+more code review 
+pushback  
+than others.MARCH 2022  |  VOL. 65  |  NO. 3  |  COMMUNICATIONS OF THE ACM     57contributed articles
+References
+1. Bacchelli, A. and Bird, C. Expectations, outcomes, and 
+challenges of modern code review. International 
+Conf. on Software Engineering  (2013), 712-721.
+2. Check Hayden, E. Mozilla plan seeks to debug 
+scientific code. Nature News 501 , 7468 (2013), 472.
+3. Eagly, A.H. and Karau, S.J. Role congruity theory 
+of prejudice toward female leaders. Psychological 
+Review 109 , 3 (2002), 573.
+4. Eby, L.T., McManus, S.E., Simon, S.A., and Russell, 
+J.E. The protege’s perspective regarding negative 
+mentoring experiences: The development of a 
+taxonomy. J. of Vocational Behavior 57 , 1 (2000), 
+1-21.
+5. Egelman, C.D., Murphy-Hill, E., Kammer, E., Hodges, 
+M.M., Green, C., Jaspan, C., and Lin, J. Pushback: 
+Characterizing and detecting negative interpersonal 
+interactions in code review. Intern. Conf. on Software 
+Engineering (2020), 174-185.
+6. Fox, J. and Monette, G. Generalized collinearity 
+diagnostics. J. of the American Statistical Association 
+87, 417 (1992), 178-183.
+7. Leslie, S.J., Cimpian, A., Meyer, M., and Freeland, 
+E. Expectations of brilliance underlie gender 
+distributions across academic disciplines. Science 
+347, 6219 (2015), 262-265.
+8. Leong, F.T. and Hayes, T.J. Occupational stereotyping 
+of Asian Americans. The Career Development 
+Quarterly 39 , 2 (1990), 143-154.
+9. Li, P.L., Ko, A.J., and Begel, A. What distinguishes 
+great software engineers? Empirical Software 
+Engineering 25 , 1 (2020), 322-352.
+10. Murphy-Hill, E., Dicker, J., Hodges, M., Egelman, 
+C.D., Jaspan, C.N.C., Cheng, L., Kammer, L., Holtz, B., 
+Jorde, M.A., Dolan, A.M.K., and Green, C. Engineering 
+impacts of anonymous author code review: A field 
+experiment. Trans. on Software Engineering.  (To 
+appear).
+11. Nadri, R., Rodriguez-Perez, G., and Nagappan, M. On 
+the relationship between the developer’s perceptible 
+race and ethnicity and the evaluation of contributions 
+in OSS. Trans. on Software Engineering. ( To appear).
+12. Posthuma, R.A. and Campion, M.A. Age stereotypes 
+in the workplace: Common stereotypes, moderators, 
+and future research directions. J. of Management 35 , 
+1 (2009), 158-188.
+13. Potvin, R. and Levenberg, J. Why Google stores 
+billions of lines of code in a single repository. 
+Communications of the ACM 59 , 7 (2016), 78-87.
+14. Sadowski, C., Söderberg, E., Church, L., Sipko, M., 
+and Bacchelli, A. Modern code review: A case study 
+at Google. Intern. Conf. on Software Engineering: 
+Software Engineering in Practice (2018), 181-190.
+15. Smith, T.W., Davern, M., Freese, J., and Morgan, S.L. 
+General Social Surveys (2019).
+16. Terrell, J., Kofink, A., Middleton, J., Rainear, C., 
+Murphy-Hill, E., Parnin, C., and Stallings, J. Gender 
+differences and bias in open source: Pull request 
+acceptance of women versus men. PeerJ Computer 
+Science 3 , e111 (2017).
+17. Yu, Y., Wang, H., Filkov, V., Devanbu, P., and Vasilescu, 
+B. Wait for it: Determinants of pull request evaluation 
+latency on Github. Working Conf. on Mining Software 
+Repositories  (2015), 367-371.
+Emerson Murphy-Hill (emersonm@google.com) is a 
+research scientist at Google.
+Ciera Jaspan is a software engineer at Google.
+Carolyn Egelman is a quantitative user experience 
+researcher at Google.
+Lan Cheng is a quantitative user experience researcher 
+at Google.thors face higher odds 
+of pushback than men; 
+Asian, Black, and His -
+panic/Latinx authors 
+face higher odds than 
+White authors; and 
+older authors face 
+higher odds than younger authors.
+Finally, we have presented effect 
+sizes in terms of odds ratios, but what 
+do these differences mean in practi -
+cal terms? We answer this question 
+by approximating the excess cost of 
+pushback during the code review pro -
+cess, particularly in terms of additional 
+rounds of review, one component of 
+pushback.5 We do this by modeling 
+the number of review rounds a change 
+undergoes, subtracting that from a 
+prediction of the number of rounds it 
+would have taken had the author been 
+a White male, and then estimating the 
+time spent by authors addressing com -
+ments in a round of review (details are 
+in the supplementary material, includ -
+ing caveats). We estimate that the total 
+amount of excess time spent during 
+the study period was 1,050 engineer 
+hours per day, or about 4% of the esti -
+mated time engineers spend respond -
+ing to reviewer comments, a cost borne 
+by non-White and non-male engineers. 
+While this number provides one view 
+of the impact of pushback, we would 
+advise readers to interpret this esti -
+mate with caution.
+Discussion and Conclusion
+Compared with prior work, which 
+found that some women faced less-
+successful code reviews when their 
+gender was apparent,16 the results in 
+this paper suggest not only that wom -
+en authors have greater odds of push -
+back as both outsiders and insiders, 
+but that this effect extends to other de -
+mographic groups.
+Unlike in an experimental setting, 
+cross-sectional retroactive studies such 
+as ours cannot conclude with certainty 
+that there’s a causal relationship be -
+tween demographic factors and push -
+back. Potential third variables that we 
+could not control for may exist. For 
+instance, contrary to what we hypoth -
+esized from role congruity theory, we 
+found that Asian engineers faced greater 
+odds of pushback than White engineers. 
+The hidden third variable here may be 
+whether the engineer speaks English as a first language. Those who speak Eng -
+lish as a second language may face more 
+difficulty communicating their intent 
+and rationale during a code review dis -
+cussion, lengthening the time it takes 
+to successfully defend a code review and 
+manifesting as pushback. More broadly, 
+other hidden variables may exist, such 
+as code quality in the change under re -
+view. Our analysis is limited in other 
+ways as well, which we enumerate in the 
+supplementary material.
+We estimated that more than 1,000 
+hours per day is spent at Google re -
+sponding to “excessive” pushback, a 
+cost borne by non-White, non-male, or 
+older engineers. One way to conceptu -
+alize this estimate is as an opportunity; 
+if we can reduce pushback for these 
+groups of engineers, they can spend 
+their time being productive elsewhere. 
+But there’s also an inverse way to con -
+ceptualize this research: White, male, 
+and younger engineers are privileged 
+to receive less pushback than those in 
+other demographics. In either case, we 
+view reducing the gaps between demo -
+graphic groups as a worthwhile goal, 
+and we expect our software to improve 
+as we attempt to do so.
+At Google, a company-wide objec -
+tive is to make our workplace equita -
+ble, and this paper provides one way to 
+measure progress towards this objec -
+tive. Our initiatives to this end are wide-
+ranging, from bias-busting trainingc to 
+anonymous author code review.10 We 
+look forward to seeing whether such 
+initiatives will foster more equitable 
+treatment of different groups of engi -
+neers in the workplace.
+Acknowledgments
+We thank Alison Song, Alyson Palmer, 
+Amir Najmi, Andrea Knight, Annie Jean-
+Baptiste, Ash Kumar, Asim Husain, Ben 
+Holtz, Caitlin Hogan, Collin Green, 
+Dan Friedland, Danny Berlin, David 
+Patterson, David Sinclair, Diane Tang, 
+Elvin Lee, Jill Dicker, Liz Kammer, 
+Luiz André Barroso, Maggie Hodges, 
+Mark Canning, Matthew Jorde, Melody 
+Meckfessel, Melonie Parker, Nina 
+Chen, Rachel Potvin, Ted Smith, and 
+anonymous reviewers for their assis -
+tance throughout this research. 
+c See https://rework.withgoogle.com/guides/
+unbiasing-hold-everyone-accountable/steps/
+give-your-own-unbiasing-workshop/
+Watch the authors discuss  
+this work in the exclusive 
+Communications  video.  
+https://cacm.acm.org/videos/the-
+pushback-effectsThis work is licensed under a http://
+creativecommons.org/licenses/by/4.0/• more online
+Online-only 
+supplementary 
+material for this 
+article can be 
+found at https://
+dl.acm.org/doi/  
+10.1145/3474097.
