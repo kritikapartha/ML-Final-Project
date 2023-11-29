@@ -15,6 +15,7 @@ term_tree = json.load(open("index_terms.json"))
 
 terms = []
 queue = [term_tree]
+keyword_set = []
 
 while(queue):
     curr_dict = queue.pop()
@@ -27,15 +28,16 @@ while(queue):
 with open(f"keywords.txt", "w") as file:
     for i, keyword in enumerate(top_keywords, start=1):
         file.write(f"{keyword.capitalize()}\n")
+        keyword_set.append(f"{keyword.capitalize()}")
 
 acm_words = set(terms)
-keyword_set = set(top_keywords)
-overlapping_keywords = keyword_set.intersection(acm_words)
-print(overlapping_keywords)
+keywords = set(keyword_set)
+overlapping_keywords = keywords.intersection(acm_words)
+overlapping_keywords = sorted(list(overlapping_keywords))
 
-# if overlapping_keywords:
-#     print("Overlapping keywords with 'index_terms.json':")
-#     for keyword in overlapping_keywords:
-#         # print(f"- {keyword}")
-# else:
-#     print("No overlapping keywords with 'index_terms.json'.")
+if overlapping_keywords:
+    print("Overlapping keywords with 'index_terms.json':")
+    for keyword in overlapping_keywords:
+        print(f"- {keyword}")
+else:
+    print("No overlapping keywords with 'index_terms.json'.")
