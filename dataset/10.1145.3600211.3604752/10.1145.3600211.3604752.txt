@@ -1,0 +1,204 @@
+Evaluation of targeted dataset collection on racial equity in face
+recognition
+Rachel Hong
+hongrach@cs.washington.edu
+University of Washington
+Seattle, Washington, USA
+CCS CONCEPTS
+•Computing methodologies →Neural networks; Biometrics ;
+Object recognition ;Matching ;•Social and professional topics
+→Race and ethnicity ;•Information systems →Data mining .
+KEYWORDS
+Algorithmic audit, data collection, face recognition, racial bias in
+computer vision
+ACM Reference Format:
+Rachel Hong. 2023. Evaluation of targeted dataset collection on racial equity
+in face recognition. In AAAI/ACM Conference on AI, Ethics, and Society (AIES
+’23), August 08–10, 2023, Montréal, QC, Canada. ACM, New York, NY, USA,
+2 pages. https://doi.org/10.1145/3600211.3604752
+1 BACKGROUND
+In the last decade, extensive research studies have demonstrated the
+prevalence of demographic biases in machine learning systems, due
+to a lack of representation in training datasets [ 10]. Most notably,
+in the domain of face analysis, standard face datasets include very
+few images of individuals with darker skin tones, and researchers
+have determined that commercial gender classification models have
+much higher error rates for women with darker skin tones [ 3].
+However, facial recognition continues to be used widely: from
+identity verification in mobile devices to public surveillance in
+certain countries, many people interact with these systems in their
+day-to-day lives [ 8]. While some argue for the complete removal of
+facial recognition techologies [ 2], the use of these technologies may
+not disappear. As such, opponents of face recognition along with
+the developers of these systems may both benefit from a careful
+analysis of how the demographic makeup of training datasets may
+impact a model’s performance on various demographic groups.
+In order to remedy past data representation bias, researchers
+have developed several new benchmark face recognition datasets
+that are balanced along demographic attributes such as gender or
+race [ 13,15]. However, these balanced datasets do not completely
+solve model bias as accuracy disparities still persist [ 16]. For ex-
+ample, the optimal allocation of training data by race or gender
+is not always the equally-balanced allocation: Gwilliam et al . [6]
+find that a balanced training set (with equal number of samples
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for third-party components of this work must be honored.
+For all other uses, contact the owner/author(s).
+AIES ’23, August 08–10, 2023, Montréal, QC, Canada
+©2023 Copyright held by the owner/author(s).
+ACM ISBN 979-8-4007-0231-0/23/08.
+https://doi.org/10.1145/3600211.3604752per racial group) obtains a higher accuracy variance across groups
+but the same overall accuracy compared to another training data
+allocation.
+Additionally, curating new datasets requires time and resources,
+and can intrude upon the subpopulation being studied [ 11]. It is
+also incredibly time-consuming to train models on all possible allo-
+cations of racial groups in order to find some “optimal” allocation.
+Rather than searching for the best subgroup allocation for a train-
+ing set of a fixed size, companies may prefer a greedy solution — a
+solution in which new data is added in an add-only manner.
+2 RESEARCH QUESTIONS
+Hence, we focus on the following goal: to examine additional data
+collection and its impacts on the performance of various demo-
+graphic groups.
+Consider the following scenario: an entity (e.g., a company or a
+group of researchers) trains a face recognition model using some
+initial training dataset which lacks data from some racial group.
+Upon evaluation on held-out test data or due to an external bias
+audit, the company realizes their performance lags on that group,
+and now wishes to collect more data from the omitted group. They
+have the budget to collect only a fixed number of samples and
+have limited resources to train additional models (and, perhaps, can
+only train one other model). This process closely follows several
+corporations’ past responses detailed in Raji and Buolamwini [12]
+and allows us to pose these research questions:
+(1)How does additional data from the underrepresented group
+change the test performance for that particular group, as
+well as the test performance for other groups?
+(2)How does data collection targeted towards improving the
+group with the lowest initial performance impact that group’s
+test performance and overall group differences, in compari-
+son to introducing data from other racial groups?
+(3)Are our results consistent across racial groups, datasets, and
+models?
+3 CURRENT WORK
+To answer these questions, we developed an empirical framework
+to evaluate the performance impact of data augmentation by de-
+mographic subgroup. For our framework and analyses, we focused
+onone-to-one facial recognition : given two images of faces, a one-
+to-one facial recognition system is designed to determine whether
+or not those two images are of the same person. We implemented
+this framework for three racially-annotated datasets (BFW [ 13],
+BUPT [ 14,15], and VMER [ 5]) and three state-of-the-art face recog-
+nition models (SE ResNet [ 4], CenterLoss [ 17], and SphereFace [ 9]).
+We summarize the main empirical findings below:
+1006AIES ’23, August 08–10, 2023, Montréal, QC, Canada Hong
+(1)The introduction of samples from some racial group X im-
+proves the performance for every racial group that we tested.
+(Different datasets use different terms. Using the terms in
+the source datasets, e.g., for BUPT [ 14,15], we considered
+images labeled as African, Asian, Caucasian, or Indian.)
+(2)The addition of data from the lowest-performing group im-
+proves that group’s performance the most and closes per-
+formance gaps across racial groups, in comparison to the
+addition of data from other groups. This empirically validates
+the theoretical finding in Abernethy et al . [1] that additively
+sampling from the worst-off group converges to a min-max
+fairness solution.
+(3)Increasing data from the highest-performing group X widens
+performance disparities, regardless of whether the initial
+training dataset contained images from group X, a specific
+counter to the notion that more data and more representation
+reduces discrimination.
+(4)The above findings are consistent across all datasets and
+models we examined, while some findings are different across
+different datasets and models.
+That some findings are different across different datasets and
+models — i.e., that some of our findings are notgeneralizable from
+the analysis of only a single dataset — speaks to the criticality of
+analyzing the full pairing of datasets and models. For example, based
+on our findings, we encourage future works that introduces new
+datasets to re-apply our methodology (and others) as benchmarks
+to evaluate those datasets with known face recognition models.
+4 FUTURE WORK
+The results from our current work motivate several interesting
+explorations that we plan to pursue further.
+4.1 Theoretical direction
+In our experiments, we found that in some cases introducing a
+group markedly improved performance across all groups. We hope
+to better understand under what conditions adding from particular
+groups will generalize across various other demographic groups.
+We plan to use statistical learning theory techniques in order to
+model group distributions and formalize how neural networks learn
+the input-label relationship for the subspace from a particular group.
+This would allow us to also extend from face recognition to other
+machine learning tasks.
+4.2 Subsampling and reweighting methods
+In addition, we plan to design and run additional experiments in
+order to compare how additional data collection performs to other
+pre-processing techniques such as subsampling and reweighting. In
+the field of machine learning robustness, Idrissi et al . [7] show that
+subsampling and reweighting across groups obtains state-of-art
+accuracy; we plan to investigate this finding in relation to group
+fairness domains such as racial bias in face recognition.
+REFERENCES
+[1]Jacob D Abernethy, Pranjal Awasthi, Matthäus Kleindessner, Jamie Morgenstern,
+Chris Russell, and Jie Zhang. 2022. Active Sampling for Min-Max Fairness. In
+International Conference on Machine Learning . PMLR, PMLR, Online, 53–65.[2]Kevin W Bowyer. 2004. Face recognition technology: security versus privacy.
+IEEE Technology and Society Magazine 23, 1 (2004), 9–19.
+[3]Joy Buolamwini and Timnit Gebru. 2018. Gender shades: Intersectional accuracy
+disparities in commercial gender classification. In Proceedings of the 2018 ACM
+Conference on Fairness, Accountability, and Transparency . PMLR, ACM, New York,
+NY, USA, 77–91.
+[4]Qiong Cao, Li Shen, Weidi Xie, Omkar M Parkhi, and Andrew Zisserman. 2018.
+Vggface2: A dataset for recognising faces across pose and age. In 2018 13th IEEE
+International Conference on Automatic Face & Gesture Recognition (FG 2018) . IEEE,
+IEEE, New York, NY, USA, 67–74.
+[5]Antonio Greco, Gennaro Percannella, Mario Vento, and Vincenzo Vigilante. 2020.
+Benchmarking deep network architectures for ethnicity recognition using a new
+large face dataset. Machine Vision and Applications 31 (2020), 1–13.
+[6]Matthew Gwilliam, Srinidhi Hegde, Lade Tinubu, and Alex Hanson. 2021. Re-
+thinking common assumptions to mitigate racial bias in face recognition datasets.
+InProceedings of the 2021 IEEE/CVF International Conference on Computer Vision .
+IEEE, New York, NY, USA, 4123–4132.
+[7]Badr Youbi Idrissi, Martin Arjovsky, Mohammad Pezeshki, and David Lopez-
+Paz. 2022. Simple data balancing achieves competitive worst-group-accuracy. In
+Conference on Causal Learning and Reasoning . PMLR, 336–351.
+[8]Anil K Jain and Stan Z Li. 2011. Handbook of face recognition . Vol. 1. Springer,
+New York, NY, USA.
+[9]Weiyang Liu, Yandong Wen, Zhiding Yu, Ming Li, Bhiksha Raj, and Le Song. 2017.
+Sphereface: Deep hypersphere embedding for face recognition. In Proceedings of
+the 2017 IEEE Conference on Computer Vision and Pattern Recognition . IEEE, New
+York, NY, USA, 212–220.
+[10] Ninareh Mehrabi, Fred Morstatter, Nripsuta Saxena, Kristina Lerman, and Aram
+Galstyan. 2021. A survey on bias and fairness in machine learning. ACM Com-
+puting Surveys (CSUR) 54, 6 (2021), 1–35.
+[11] Amandalynne Paullada, Inioluwa Deborah Raji, Emily M Bender, Emily Den-
+ton, and Alex Hanna. 2021. Data and its (dis) contents: A survey of dataset
+development and use in machine learning research. Patterns 2, 11 (2021), 100336.
+[12] Inioluwa Deborah Raji and Joy Buolamwini. 2019. Actionable auditing: Investi-
+gating the impact of publicly naming biased performance results of commercial
+ai products. In Proceedings of the 2019 AAAI/ACM Conference on AI, Ethics, and
+Society . ACM, New York, NY, USA, 429–435.
+[13] Joseph P Robinson, Gennady Livitz, Yann Henon, Can Qin, Yun Fu, and Samson
+Timoner. 2020. Face recognition: too bias, or not too bias?. In Proceedings of the
+2020 IEEE Conference on Computer Vision and Pattern Recognition . IEEE, New
+York, NY, USA, 0–1.
+[14] Mei Wang and Weihong Deng. 2020. Mitigating bias in face recognition using
+skewness-aware reinforcement learning. In Proceedings of the 2020 IEEE/CVF
+International Conference on Computer Vision . IEEE, New York, NY, USA, 9322–
+9331.
+[15] Mei Wang, Weihong Deng, Jiani Hu, Xunqiang Tao, and Yaohai Huang. 2019.
+Racial faces in the wild: Reducing racial bias by information maximization adap-
+tation network. In Proceedings of the 2019 IEEE/CVF International Conference on
+Computer Vision . IEEE, New York, NY, USA, 692–702.
+[16] Tianlu Wang, Jieyu Zhao, Mark Yatskar, Kai-Wei Chang, and Vicente Ordonez.
+2019. Balanced datasets are not enough: Estimating and mitigating gender bias
+in deep image representations. In Proceedings of the 2019 IEEE/CVF International
+Conference on Computer Vision . IEEE, New York, NY, USA, 5310–5319.
+[17] Yandong Wen, Kaipeng Zhang, Zhifeng Li, and Yu Qiao. 2016. A discriminative
+feature learning approach for deep face recognition. In European Conference on
+Computer Vision . Springer, Springer, New York, NY, USA, 499–515.
+1007

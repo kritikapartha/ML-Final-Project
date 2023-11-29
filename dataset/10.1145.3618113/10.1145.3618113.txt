@@ -1,0 +1,469 @@
+The Influenceofthe Other-RaceEfectonSusceptibilityto Face
+MorphingAtacks
+SNIPTAMALLICK, Schoolof Behavioraland Brain Sciences, The Universityof Texasat Dallas,USA
+GÉRALDINE JECKELN, Schoolof Behavioraland Brain Sciences, The Universityof Texasat Dallas,USA
+CONNOR J.PARDE, Schoolof Behavioraland Brain Sciences, The Universityof Texasat Dallas,USA
+CARLOS D.CASTILLO, Whiting Schoolof Engineering,Johns Hopkins University,USA
+ALICEJ.O’TOOLE, Schoolof Behavioraland Brain Sciences, The Universityof Texasat Dallas,USA
+Facialmorphscreatedbetweentwoidentitiesresemblebothofthefacesusedtocreatethemorph.Consequently,humans
+andmachinesarepronetomistakemorphsmadefromtwoidentitiesforeitherofthefacesusedtocreatethemorph.This
+vulnerability has been exploited in łmorph attacksž in security scenarios. Here, we asked whether the łother-race efectž
+(ORE)Ð the human advantage for identifying own- vs. other-race facesÐ exacerbates morph attack susceptibility for humans.
+Wealsoaskedwhetherface-identiicationperformanceinadeepconvolutionalneuralnetwork(DCNN)isafectedbythe
+race of morphedfaces. Caucasian (CA)and East-Asian(EA) participants performed a face-identity matching task onpairs of
+CA and EA face images in two conditions. In the morph condition, diferent-identity pairs consisted of an image of identity
+łAž and a 50/50 morph between images of identity łAž and łBž. In the baseline condition, morphs of diferent identities never
+appeared. As expected, morphs were identiied mistakenly more often than original face images. Of primary interest, morph
+identiication was substantially worse for cross-race faces than for own-race faces. Similar to humans, the DCNN performed
+more accurately for original face images than for morphed image pairs. Notably, the deep network proved substantially more
+accurate than humans in both cases. The results point to the possibility that DCNNs might be useful for improving face
+identiication accuracy when morphed faces are presented. They also indicate the signiicance of the race of a face in morph
+attacksusceptibility inappliedsettings.
+AdditionalKey Words and Phrases: facemorphing, faceidentiication, facematching, Deep Convolutional Neural Network,
+other-raceefect
+1 INTRODUCTION
+Biometrics-based identiication and veriication systems are deployed widely for a range of security applications,
+suchasbordercontrol.AutomatedBorderControl(ABC)e-gatescommonlyemployface-recognitionsystems
+tocapturealiveimageofatravelertoautomatepassportimageauthenticationusingface-imagematching[ 8].
+If this fails at the live face-recognition stage, the documentation can undergo secondary identity veriication
+by a human border control guard. Accurate identity veriication and face matching of travel documentation are
+criticaltodeterminingborder-crossingeligibility.Thistypeoffaceidentitymatchingtaskwithunfamiliarfacesis
+diicult for both human recognizers, such as border control guards, and commercially deployed face-recognition
+Authors’ addresses: Snipta Mallick, School of Behavioral and Brain Sciences, The University of Texas at Dallas, Richardson, TX, USA,
+snipta.mallick@utdallas.edu; Géraldine Jeckeln, School of Behavioral and Brain Sciences, The University of Texas at Dallas, Richardson, TX,
+USA,geraldine.jeckeln@utdallas.edu;ConnorJ.Parde,SchoolofBehavioralandBrainSciences,TheUniversityofTexasatDallas,Richardson,
+TX, USA, connor.parde@utdallas.edu; Carlos D. Castillo, Whiting School of Engineering, Johns Hopkins University, College Park, MD, USA,
+carlos.d.castillo@gmail.com;AliceJ.O’Toole,SchoolofBehavioralandBrainSciences,TheUniversityofTexasatDallas,Richardson,TX,
+USA,otoole@utdallas.edu.
+Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted without fee provided that
+copies are not made or distributed for proit or commercial advantage and that copies bear this notice and the full citation on the irst page.
+Copyrights forthird-party components ofthiswork must behonored. For allotheruses, contact the owner/author(s).
+© 2023Copyrightheld by the owner/author(s).
+XXXX-XXXX/2023/9-ART
+https://doi.org/10.1145/3618113
+ACM Transactions on Applied Perception2 • Mallick et al.
+systems[13,30ś32].Thechallengesofidentity-matchingwhenfacesareunfamiliarcreateasecurityvulnerability
+thatcan beexploitedto bypass ABC e-gates througha face-morphing attack.
+Facemorphshaveemergedasanewformofidentityfraud[ 7,28].Inaface-morphingattack,amorphedimage
+can be created by blending face images of two or more identities. For instance, a morphed image containing
+a50/50averageoftwoidentitiescanbesubmittedforinclusioninoicialtraveldocumentation.Theliveface
+recognition system may then erroneously verify two diferent individuals for the same passport image. In an
+applied setting, a criminal actor could morph their face with a similar-looking noncriminal accomplice and
+subvertABCe-gates,duetotheresemblanceofthelivefaceimagetothemorph.Face-morphingattackshave
+been determinedto bea feasible methodof deceiving face-recognition systems at ABC e-gates [7].
+Human behavioral studies also indicate that people are susceptible to morph attacks [ 20,31,32]. For example,
+inonestudy[ 31],whenparticipantsweregivenaface-matchingtaskwithoutbeingwarnedaboutcomputer-
+generatedmorphs,50/50morphswereacceptedasgenuineidentitiesathighrates(68percent).Whenparticipants
+were warned about the presence of morphed images, the false acceptance rate of 50/50 morphs was reduced
+signiicantly(21percent)[ 31].Moreover,trainingtoidentifyimageartifactsthatresultedfrommorphgeneration
+(e.g., overlapping hairlines) improved identity-matching performance [ 32]. The combined efects of morph
+detection guidance and training led to higher morph identiication rates than just morph detection guidance
+alone [32], although this performance might have been due, in part, to artifact detection [ 20]. Additionally,
+individualswhoalreadyperformedwellwithdistinguishingbetweentwosimilar-lookingfaceshadbettermorph
+identiication performance[32].
+To address the limitations of morph detection, machine-learning based approaches,including some based on
+Deep-ConvolutionalNeuralNetworks(DCNNs),havebeenleveragedtoautomateface-morphdetection.One
+earlystudyutilizedmicro-texturefeatureextractionandalinearSupportVectorMachine(SVM)todetermine
+if a given image was a morph [ 26]. In comparison to other feature extraction-based methods such as Local
+BinaryPatterns-SVM(LBP-SVM)andLocalPhaseQuantisation-SVM(LPQ-SVM),theSVMusedinthisstudy
+outperformedpreviousalgorithms.AnotherstudycombinedthefeaturesoftwoDCNNs,VGG-19andAlexNet,to
+explorehowtransferlearningcanimpactmorphdetectionindigitalandprint-scannedimages[ 27].Incomparison
+tothemethodsusedinpreviouswork[ 26],suchasLBP-SVMandLPQ-SVM,thecombinedDCNNsperformed
+better onthis task.Additionally,a multiple scales attention convolutional neuralnetwork(MSA-CNN) trained on
+morphartifactsoutperformedothernetworkslikeVGG-19[ 21]andResNet18[ 38].Althoughthesealgorithms
+performedrelativelywell,itishardtocompareperformanceduetovariabilityinnetworkdesignsandmorph
+quality.
+Asmorphingsoftwarerapidlyimprovestoproducehigherqualityimages,morphrecognitioncouldbecome
+even more challenging, due to the reduction of obvious artifacts (e.g. overlapping hairlines). In one recent study
+[20], humans and a VGG-based DCNN were tasked with matching identities in pairs of images that included
+high-qualitymorphs.Thesehigh-qualitymorphsweredesignedtolimitartifactsinthemorphingprocess.Morphs
+weredeinedas50/50combinationsoftwoidentitiesÐoneoftheidentitiesinthemorphedimagematchedthe
+identity of theother faceinthepair. Bothhumans and machines performedpoorly at thistask.
+Individual variationsinsusceptibilitytomorphattacks may be impactedfurtherby thediicultiesassociated
+withcross-racefaceidentiication(e.g.[ 5,16,36]).Theother-raceefect(ORE)describestheindingsthathumans
+recognizefacesoftheirłownžracemoreaccuratelythanfacesofotherraces[ 16,18].Demographicfactorssuchas
+theraceofafacealsoafecttheperformanceofface-recognitionalgorithmssuchasDCNNs[ 4,6,9,12].Although
+there are no consistent indings on how race impacts algorithm accuracy, there is clear evidence that algorithm
+performancecanbeafected byrace-baseddemographicdiferences(e.g.,[ 4,9]).In2019,algorithmssubmitted
+totheFaceRecognitionVendorTest(FRVT)showedevidenceofdemographicdiferencesinface-recognition
+performance [ 9]. For example, analgorithm trained on a datasetofimmigration applicationphotos hadhigher
+ACM Transactions on Applied PerceptionThe InfluenceoftheOther-Race EfectonSusceptibilityto FaceMorphingAtacks • 3
+false positive rates (erroneous matching of two similar-looking people) for West and East African and East-Asian
+populationsthanforEastern Europeanpopulations.
+Concernsaboutalgorithmperformanceacrossvariabledemographicsareexacerbatedinthecaseofmorph
+attacks, especially in airport or border control settings. The high-quality morphs used in [ 20] included some
+diverse faces (6 African American/Black, 16 East Asian, 16 South Asian, and 16 Caucasian). The VGG algorithm
+used in that study was less accurate at identifying morphed images of Black faces than morphed images of East
+Asian,SouthAsian,andWhitefaces.Humanidentiicationaccuracyasafunctionoftheracialcategoryofthe
+facewasnotreported.Althoughthediferencesinalgorithmperformancereportedby[ 20]areofinterest,the
+number/balance of faces across race categories was not controlled enough to provide a direct test of the role of
+raceintheidentiication of morphedimages.
+ThegoalofthisstudywastounderstandhowtheOREinluencesmorphattacksusceptibilityforbothhumans
+andaDCNNalgorithm.Todirectlyexaminethisefect,East-Asian(EA)andCaucasian(CA)participantswere
+recruited to complete a face-matching test. The stimuli we used consisted of original images of EA and CA faces
+and50percentmorphsofsame-racefaces(CA-CAandEA-EAmorphs).Participantswereaskedtodetermine
+if the faces pictured in image pairs showed the same person or diferent people. We compared face-matching
+performanceforsame-raceandother-racemorphsandnon-morphs(baseline).Participantswereunawarethat
+morphedimageswerepresentinthetest.Onthecomputationalside,tocomparehumanandmachineperformance,
+a DCNN [ 29] performed the same task as humans on the same stimuli. To minimize the possibility that morphed
+images could be perceived as łfakež, we presented only the cropped internal regions of the face. The elimination
+of the external face detail (hair, etc.) also removes identity cues that have been accessible to humans in previous
+studies.Becausemostmachine-basedface-identiicationalgorithmsworkonlyontheinternalface,thisstudy
+puts themachine-human comparison on a moreequal footing thanprevious comparisons.
+2 HUMANFACE-IDENTIFICATIONEXPERIMENT
+2.1 Methods
+2.1.1 Design. Theexperimental designincluded threeindependentvariables:participantrace(Caucasian,East
+Asian),face-imagerace(Caucasian,EastAsian),andface-imagetype(morph,baseline).Thelattertwovaried
+within-subjects. Accuracy at matching face identity was measured as the area under the receiver operating curve
+(AUC).
+2.1.2 Participants. A total of 74 students from the University of Texas at Dallas (UTD) participated in this study.
+Thestudywasconductedvirtually,usingMicrosoftTeams,duetothesocial-distancingmeasuresputintopractice
+during the COVID-19 pandemic. Students were recruited using the UTD online sign-up system (SONA) and
+received one course credit as compensation for their participation. All participants were required to be 18 years
+of ageor older, self-identify asCaucasianor EastAsian,and havenormal or corrected-to-normal vision.
+RaceandethnicityeligibilitywasdeterminedviaarecruitmentsurveygeneratedonQualtrics[ 25].Speciically,
+the recruitment survey was linked in the experimental description on SONA. The recruitment survey was
+completed anonymously as follows. The irst section of the survey included the consent form for the study.
+Participantswhoagreedtoparticipateinthestudyproceededwiththeself-identiicationquestion.Intheself-
+identiication question, participants were asked which of the following best described their race or ethnic group:
+(a) East Asian [Thai, Macanese, Japanese, Vietnamese, Chinese, Korean, Taiwanese, Mongolian, and Hong Kong
+heritage],(b)White/Caucasian[Anglo/Europeandescent],(c)OtherAsian,(d)NativeAmericanorAlaskaNative,
+e) Native Hawaiian or Other Paciic Islander, or (f) Other. Participants who selected East Asian or Caucasian
+proceeded with the inal section of the survey. The last section of the survey instructed the participants that
+the experiment required the installation of MS Teams on a computer (phones and tablets were not permitted
+for the experiment). Upon agreeing to complete the experiment using MS Teams on a computer, participants
+ACM Transactions on Applied Perception4 • Mallick et al.
+wereprovidedwith aninvitationcode that allowedthem toenroll in the experiment viaSONA. Afterenrolling,
+participants were provided with a link to the SONA experiment corresponding to their demographic group
+as self-reported in the self-identiication question (i.e., a link for either East-Asian participants or Caucasian
+participants).
+Fourteen participantswere excludeddue tointernet connectioninstability(datacollectionimpediment).The
+inal data included 60 participants. Note that participant recruitment ended when the inal data included 30
+East-Asian participants (20 female, 10 male, 18-27 years old, average age 20.87) and 30 Caucasian participants (22
+female, 8 male, 18-38 years old, average age 22.28). For the survey question łHave you lived in the United States
+your whole life?ž, 21 of 30 EA participants responded łyesž (9 of 30 EA participants responded łnož), and 25 of 30
+CAparticipants respondedłyesž(5 of 30 CAparticipants respondedłnož).
+Apower analysisusingPANGEA[ 37]indicated thata totalof 60participantswouldbesuicienttoobtaina
+powerof0.839foramediumefectsize( d=.5).Thispoweranalysiswascomputedtodetectatwo-wayinteraction
+between face-image race (within-subject, East Asian vs Caucasian) and face-image type (within-subject, Baseline
+vsMorph).1
+2.1.3 Stimuli. Atotalof64face-imagepairswereusedinthisexperiment.Eachface-imagepairwasassigned
+tothemorphcondition(16EastAsianpairs,16Caucasianpairs)orthebaselinecondition(16EastAsianpairs,
+16 Caucasian pairs). The Caucasian and East-Asian groups contained 8 male pairs and 8 female pairs. Both
+conditions (morph and baseline) included 16 same-identity pairs (two images of the same identity) and 16
+diferent-identity pairs (two images of diferent identities of the same race, gender, and age group). For each
+condition, diferent-identity items were created by randomly pairing same-race and same-gender identities.
+Additionally,alldiferent-identityimagepairswereveriiedmanuallytoensurethattheycontainedidentities
+matchingin agegroup. Itis important tonotethat diferent-identitypairswere not created based on similarity
+measures.
+Inthemorphcondition,diferent-identitypairsincludedoneuneditedimage(identityA,image1)andone
+50/50 morph between one image of the same identity (identity A, image 2) and one image of a diferent identity
+(identityB,image1).Same-identitypairswerecreatedusingoneuneditedimage(identityA,image1)andone
+50/50 morph between two diferent images of the same identity (identity A, image 2 and image 3). We used
+morphsinthesame-identitypairstosupporttheSignalDetectionModelmeasures,whichrequirebothsame-
+and diferent-identity pairs in each condition. This ensured also that the performance observed in the morph
+conditionwasderivedfrompeople’sabilitytodistinguishsame-anddiferent-identitypairs,ratherthanmorphed
+and non-morphed images. In the baseline condition, same-identity pairs were created using one unedited image
+(identityA,image1)andonecroppedimageofthesameidentity(identityA,image2).Diferent-identitypairs
+includedoneuneditedimage(identityA,image1)andonecroppedimageofadiferentperson(identityB,image
+1). SeeFigure1 foran exampleof thestimuluspairsforeach condition.
+All morphed imageswere croppedaroundtheface tominimizemorph artifacts. Thealgorithm testedinthis
+experiment operates on the internal face. To do a true machine comparison, these morph artifacts were excluded
+sothe observerswere limited to landmarksthata facial recognitionsystem uses(eyes,nose,facialstructure,etc.).
+Image-morphing software cannot adequately account forhair across diferentimages. When including hair in a
+morphedimage,thehaireitherwillbecomeblurredormustbeadded/renderedafterthefactsothatitappears
+photo-realistic.
+1Note that the design of the power analysis conducted prior to data collection was inaccurate to estimate the sample size required to detect a
+three-way interaction. A secondary analysis was computed to detect a three-way interaction between participant race (between-subject, East
+AsianvsCaucasian),face-imagerace(within-subject,EastAsianvsCaucasian)andface-imagetype(within-subject,BaselinevsMorph).
+Resultsconirmthatatotalof60participants(30perparticipantracegroup)issuicienttoobtainapowerof0.839foramediumefectsize( d
+= .5).
+ACM Transactions on Applied PerceptionThe InfluenceoftheOther-Race EfectonSusceptibilityto FaceMorphingAtacks • 5
+ImageswereselectedfromtheNotreDameDatabase[ 33]andshowedfacesviewedfromthefrontwithneutral
+expressions. The race and gender of the faces in each pair were balanced across the conditions. In each face-
+image pair, the unedited images consisted of images captured in an uncontrolled illumination setting. All image
+manipulations(morphingandcropping)wereexecutedonimagescapturedundercontrolledilluminationand
+performed using the Face Morpher Github repository (Quek, 2019). Additionally, all morphed images underwent
+furthereditingwithPhotoshopandGimptoremoveartifacts(e.g.,secondirises,smoothappearance,overlapping
+noses,etc.).Followingmorphingandcropping,imagesunderwentsharpeninginPhotoshoptoreduceblurred
+complexions.
+2.1.4 Remotetestingprotocol. InordertocomplywiththeCOVID-19social-distancingrequirements,human
+datacollectionwascarriedoutvirtually.Theexperimentwasconductedonlineusingtheremote-controlfeatures
+availableonMicrosoftTeams.Participantswererequiredtocompletetheexperimentonapersonalcomputer.
+Otherdevicessuchasphonesortabletswerenotpermittedforstudyparticipation.Aspectspertainingtothe
+participants’ environment (e.g., lighting, noise, distraction, etc.) were not controlled. All human data were
+stored locally on the experimenter’s computer. The experiment was conducted using PsychoPy v1.84.2 [ 22]. All
+participants usedQualtricssurvey softwareto completetheSelf-identiication survey.
+2.2 Procedure
+Morph BaselineSame Different
+1: Sure they are the same
+2: Think they are he same
+3: Do not know
+4: Think they are not the same
+5: Sure they are not the same
+A) B)
+Fig. 1. A) Morph condition: Face-image pairs included one unedited image and one cropped 50/50 face morph. The face
+morphs were created by blending two images of the same identity ( n= 16) or blending two images of diferent identities ( n=
+16).Baselinecondition:Face-imagepairsincludedoneuneditedimageandonecroppedimageofthesameidentity( n=16)or
+one croppedimageofadiferentidentity ( n=16). B)Example ofaface-matchingtrial.
+2.2.1 Face-matchingtask. Alleligibleparticipantsreceivedaninvitationlinktoparticipateinaconferencecall
+withtheexperimenter.Theface-matchingtaskwasadministeredvirtuallyusingMicrosoftTeams.Theexperiment
+was conducted locally onthe experimenter’s computer. During the experimental session,the subject was given
+permission to view theexperimenters’ screen (via screen sharing) andcontrol the experimenters’mouse and
+keyboardremotely. Aftergiving informedcontrol,theparticipantproceededwiththeface-matching task.
+The face-matching test included a total of 64 trials (Fig. 1B). The face-image pairs in each condition (face-
+image race, face-image type) were presented ina randomized order. Information pertaining to the experimental
+conditions(face-imageraceandface-imagetype)wasnotrevealedexplicitly.Oneachtrial,aface-imagepair
+was presented on the screen. The participants were instructed to determine whether the two images were of the
+sameidentityordiferentidentities.Responseswerecollectedusinga5-pointcertaintyscale(1:Suretheyare
+ACM Transactions on Applied Perception6 • Mallick et al.
+thesame;2:Thinktheyarethesame;3:Donotknow;4:Thinktheyarenotthesame;5:Suretheyarenotthe
+same).Participantsdidnothavearesponsetimelimitandthestimuliremainedonthescreenuntilaresponse
+was entered.
+Aftercompleting the face-matchingtask, the subject was instructed to completea shortdemographicsurvey
+(seeAppendix).2
+2.3 Results
+Data were analyzed using a 2 (participant race: East Asian vs Caucasian) x 2 (face-image race: East Asian vs
+Caucasian) x 2 (face-image type: Baseline vs Morph) mixed-model ANOVA. Face-image race and face-image type
+were submittedaswithin-subjects factorsandparticipantracewas submittedasabetween-subjectsfactor.The
+dependent variable (face-matching accuracy) was measured as the AUC. The AUC was computed based on a
+constructionofthereceiveroperatingcharacteristic(ROC)curve,usingthestandardmethoddescribedin[ 15]
+forLikertscaledata.ThisusesratingscalepointsfromtheLikertascriteriaatwhichhitandfalsealarmrates
+can becomputedand integratedforthecreationof theROC, thereby supportingthecomputationof an AUC.
+In what follows, wereport multiple interactions, including a three-factor interaction amongparticipant race,
+face-image race, and face-image type. For clarity and completeness, we begin with lower order efects. As
+always, interpretations of lower order efects are tentative and subject to change in the presence of higher order
+interactions.Asexpected,participantsperformedmoreaccuratelyforthebaselineimagepairs( M=.841,SE=
+.012,95%CI[0.818,0.865])thanthemorphedimagepairs( M=.725,SE=.011,95%CI[0.703,0.746])(seeFig.2).
+Speciically,therewasamainefectofface-imagetype( F(1,58)=77.283, MSe=0.011,p<.001,2
+=0.571).No
+other main efects weresigniicant.
+Therewasasigniicanttwo-wayinteractionbetweenparticipantraceandface-imagerace.Whenaveraged
+acrossthetwoimagetypes(morphedandbaseline),Caucasianparticipantsweremoreaccurateatidentifying
+Caucasianfacepairs(M=.811,SE=.015,95%CI[.780,.842])thanEast-Asianfacepairs(M=.773,SE=.016,95%CI
+[.741, .806]), and East-Asian participants performed similarly for East-Asian face pairs (M=.781, SE=.016, 95% CI
+[.748, .813]) and Caucasian face pairs (M=.767, SE=.015, 95% CI [.736,.798]). Although this would seem to suggest
+thatonlyCaucasianparticipantsshowtheORE,aninterpretationofthetwo-wayanalysismustawaitananalysis
+of thethree-way interaction. No other two-factorinteractions weresigniicant.
+Ofprimaryinterestforthisstudy,therewasathree-wayinteractionbetweenparticipantrace,face-imagerace,
+and face-image type ( F(1,58) = 4.49, MSe= 0.0073, p= 0.038,2
+= 0.07). Fig. 2 shows that both the East-Asian
+andCaucasianparticipantsfaredequallywellonEast-AsianandCaucasianfacepairsinthebaselinecondition.
+Inthemorphcondition,however,therewasanOREsuchthatEastAsiansperformedmoreaccuratelyonthe
+East-AsianmorphpairsandCaucasiansperformedmoreaccuratelyontheCaucasianmorphpairs.Inotherwords,
+thetwo-factorinteractionwefoundbetween theraceof theparticipants and facewas drivenbythediiculties
+participants had withother-race morphs.
+In summary, the human experiment replicates the well-documented diiculties people have in matching face
+identitieswithmorphedstimuli[ 20,31].Notably,wedidnotindanOREinthebaselineconditionśonlyinthe
+morph condition,aswas evident fromthe pattern of means in the three-factorinteraction.Itisunclear why we
+didnotinda standardOREinthe baselinecondition. Onepossible factorinthe lack ofanOREinthe baseline
+condition is that the local population of students in Dallas is highly diverse and so students would be in constant
+contactwithpeople of many races.3A secondfactor is that,becausethemajorityof both EastAsian(70%) and
+Caucasian(83.33%)participantssampledinthepresentstudyreportedlivingintheUnitedStatestheirwhole
+life,both groupsof participantsmayhaveexperiencedsimilarłfacedietsžand maythereforeperformsimilarly
+2Participantselection(eligibility)was notdetermined by the recruitment survey.
+3https://ospa.utdallas.edu/common-data-set/
+ACM Transactions on Applied PerceptionThe InfluenceoftheOther-Race EfectonSusceptibilityto FaceMorphingAtacks • 7
+when identifying face images of diferent races [ 19]. A third factor is that performance in the baseline condition
+was quite accurate. It may be that the ORE is most easily seen in more challenging conditions, such as with
+morphs.Theindingofacrossoverinteractioninthemorph,butnotthebaselinecondition,isconsistentwiththis
+interpretation.However,it isnotpossibletoknowforsurewhywedidnotind theclassicOREinthebaseline
+condition.Notwithstanding,theresultsindicatetheadditionalchallengeoffaceidentiicationwithother-race
+morphs.
+Additionally,accuracyforsame-identitypairswasmeasuredforallconditions(face-imagetypeandface-image
+race). Accuracy was determined by the proportion of correct responses ("Sure they are the same" or "Think they
+arethesame")endorsedtosame-identityitems.Thedataweresubmittedtoa2(participantrace:EastAsianvs
+Caucasian) x 2 (face-image race: East Asian vs Caucasian) x 2 (face-image type: Baseline vs Morph) mixed-model
+ANOVA.Face-imageraceandface-imagetypeweresubmittedaswithin-subjectsfactorsandparticipantracewas
+submitted as a between-subjects factor. Accuracy (proportion correct) was treated as the dependent variable. The
+resultsdidnotrevealanysigniicantefectorinteraction.Speciically,accuracywasnotsigniicantlydiferentfor
+same-identity image pairs in either face-image type condition (Baseline vs Morph) or face-image race condition
+(East AsianvsCaucasian).
+Fig. 2. Face-identity matching results. Performance was more accurate for baseline pairs (purple and blue bars) than morph
+pairs (green and yellow bars). Notably, other-race morph pairs proved especially dificult for both East-Asian and Caucasian
+participants (green andyellowbars).
+3 DCNN EXPERIMENTS
+3.1 Methods
+3.1.1 NetworkArchitecture. Weusedarecenthigh-performing(cf.[ 17])DCNN[ 29]basedontheResNet-101
+architecture [ 11]. The network contains 101 layers and was trained using the Universe face dataset [ 1,29]. When
+introduced,thedatasetwasnotnamed[ 1],butithasbeenreferredtoinsubsequentpublicationsasthełUniversež
+ACM Transactions on Applied Perception8 • Mallick et al.
+dataset(e.g., [ 29]).Itisacompilationofthreesmallerface-imagedatasets(UMDFaces [ 2],UMDVideos[ 1],and
+MS-Celeb-1M [ 10]), with no additional images added beyond those in the original three datasets. However, a
+semi-automated hierarchical clustering method [ 14] was used toremove incorrectly-labeled images from the
+MS-Celeb-1Mdataset.Intotal,theUniversedatasetcontains5,714,444imagesof58,020identities.Theimages
+withinthisdatasetaresampledtoincludeconsiderablevariationinimageparameters(e.g.,pose,illumination,
+resolution, etc.) across face images of a given identity [ 1,3]. However, the demographic information of the
+identitiescomprisingthedatasetisnotknown.Duringtraining,thenetworkusedCrystalLosswiththealpha
+parametersetto50.Skipconnectionsareusedthroughoutthe101-layerednetworktoretaintheamplitudeofthe
+errorsignal.Aftertrainingwascomplete,theinalfully-connectedlayerofthenetworkwasremovedandthe
+outputfrom thepenultimatelayer(containing512 units)was usedto generateidentity descriptors.
+Wechosethisnetworkbecauseithasbeenusedinprevioushuman-machinecomparisonswithbothexpert
+professionalforensicfaceexaminersanduntrainedparticipants[ 24].Thenetworkperformedmoreaccurately
+than untrained participants and performed at the level of professional forensic face examiners on a challenging
+face-identiication task with a majority of CA faces. In addition, this network has been shown to maintain
+highaccuracyevenacrossconsiderablevariabilityinpose, illumination,andexpression[ 17].Thenetworkhas
+been used also to test performance diferences between CA and EA faces [ 4]. In the multi-race tests, overall
+networkperformance(AUC)wasroughlycomparableforEAandCAfaces.However,atthelowfalsealarmrates
+commonlyusedinsecurityapplications,CAfaceswereidentiiedmoreaccuratelythanEAfaces.Finally,the
+resultsproducedbyDCNNsbasedonaResNet-101architecturehavebeenshowntopossesshighsimilarityto
+perceptualresponsesrecordedinthehumanbrain,asmeasuredusingthełBrainScorežmetric[ 34,35].Combined,
+allofthesefactorscontributedtoourselectionofthenetworkusedinthepresentstudyasanappropriatenetwork
+forour research.
+3.1.2 Procedure. Each of the face images used in the human experiment was processed through the DCNN
+to produce face-image descriptors. All face images were successfully detected and processed by the network
+regardlessof whethertheimagewas manipulated(i.e., editedor morphed).
+For each image pair in the human experiment, the cosine similarity (i.e., normalized dot product) between
+image descriptors was computed. Higher similarity scores were assumed to indicate a higher likelihood that
+the imagesshowed the same identity. To assess networkaccuracy, anAUC was computed from distributions of
+similarityscoresforthesame-and diferent-identitypairsin each condition.
+3.2 Results
+Forimagepairsinthebaseline(i.e.,non-morphed)condition,DCNNface-identiicationaccuracywasperfect
+(AUC = 1.0). For image pairs in the morph condition, DCNN face-identiication accuracy was substantially lower
+(AUC = 0.891). The decrease in DCNN identiication accuracy was more pronounced for Caucasian images
+(baseline AUC =1.0; morphAUC =0.859)thanEast-Asianimages (baseline AUC =1.0; morphAUC =0.922).
+In summary,the DCNNperformedperfectlyonthe baselineimagepairsand lessaccuratelyon themorphed
+imagepairs.Furthermore, theDCNNshowedan accuracyadvantageforEAoverCAmorphpairs.
+4 SUMMARY:HUMANANDMACHINEPERFORMANCE
+Both humans and machines showed an advantage for recognizing baseline over morphed images, consistent
+with previous studies [ 31]. Human participants showed an ORE in the morph condition, but not in the baseline
+condition.AlthoughtheDCNNwasnottestedforacross-overORE,theperformanceofthenetworkwasanalyzed
+as a function of the race of the morphed faces. Overall, the performance of the DCNN surpassed humans on both
+baseline and morphedimagepairs.
+ACM Transactions on Applied PerceptionThe InfluenceoftheOther-Race EfectonSusceptibilityto FaceMorphingAtacks • 9
+Fig.3. DCNN-basedidentificationaccuracyforCaucasianandEast-Asianface-imagepairs.Accuracywaslowerformorphed
+image pairs in comparison to baseline image pairs, and lower for Caucasian morphed image pairs than East-Asian morphed
+imagepairs.
+5 DISCUSSION
+The principles underlying the ORE in humans have been well studied [ 16,18]. In response to the emerging
+security threat posed by face morphs, we analyzed the inluence of participant and stimulus race on morph
+attack susceptibility in humans and a DCNN. The present indings expand our understanding of how participant
+and stimulus race combined inluence face identiication in a morph-attack scenario. Our human behavioral
+results demonstrate that these factors combine to exacerbate the problem of face identiication when images
+are morphed. Speciically, morphspose aparticularly strong challengetoan observerofa diferentrace than
+themorph. The DCNN usedinthisstudy also performedmore accurately than humanparticipants inall cases.
+Thus,despiteitsreduced performance formorphed image pairs,andthe diferences in accuracyforEAandCA
+faces,theDCNNwasalwaysthemoreaccurateface identiicationłsystemž.Theindingsfromthisstudyhave
+signiicantimplicationsforunderstandinghowracecouldbiashumanandalgorithmicdecision-makinginborder
+controlscenarios. Weconsider each of theseimplications in turn.
+This is the irst study to assess systematically the role of participant race and face-image race on morph
+identiication.Thiswasaccomplishedbyconductingacompletecross-overdesign.Thus,CaucasianandEast-
+Asian participants were tested on CA and EA face-image pairs. The present study provides evidence that for
+morphedimages,morph-attacksusceptibilityisincreasedwhentheobserverandfaceareofdiferentraces.In
+addition to the use of a cross-over design, the present study provides a more direct test of the role of race in
+the identiication of morphs for humans and machines. First, we controlled for the possibility that people could
+detectartifactsinmorphedimagesbycroppingthefacestoincludeonlytheinternalface.Thisalsomadefora
+moreequitablecomparisonbetweentheDCNN,whichworksonlyontheinternalface,andhumans.Second,
+we removed face-image artifacts (e.g., overlapping irises, smooth complexions) that were introduced during the
+ACM Transactions on Applied Perception10 • Mallick et al.
+morphing process. Additionally, this study used morphed image pairs for same-identity comparisons to ensure a
+commongroundtruthbetween same-and diferent-identitycomparisons.
+The inding that DCNN performance was more accurate for East-Asian than Caucasian morphed-imagepairs
+underscorestheunpredictabilityofalgorithmsforfacesofdiferentraces.Althoughitisclearthattheperformance
+of DCNNs are afected by demographics, the source of these efects is less clear and remains an active and open
+areaofresearch[ 4,9]. Previousstudieshaveindicatedthat algorithms thatoriginated in Chinatended tohave
+lower false positive rates on East-Asian faces, although it is not clear whether this diference resulted from
+training, optimization, or some other unknownparameter of the algorithms [ 9]. This type of race bias has been
+demonstrated also in pre-DCNN algorithms. Earlier algorithms developed in Western countries (e.g. France,
+Germany,theUnitedStates)performedmoreaccuratelyonCaucasianfaces,whereasalgorithmsdevelopedin
+East Asian countries (e.g., China, Japan, Korea) performed more accurately on East-Asian faces. Again, however,
+the source of the efects is not known [ 23]. In the current study, diferences in the performance of the DCNN on
+EA and CAfaces could likewise have resulted from avariety of factors,including imbalancesinthe trainingset
+composition (age, race, etc.), as well as image quality diferences [ 4,9]. Notwithstanding the demographic efects,
+theDCNNusedinthis study faredfarbetterthanhumans on both baseline and morphedimages.
+This study lays the groundwork to conduct future assessments for how the observer race and face race could
+afect morph identiication across multiple races. Onelimitation of this experiment is the consideration of only
+two racial groups, a limit that can be overcome in future work by expanding the range of racial diversity of
+participants and face images. Concomitantly, there is a wide diversity of demographic efects in DCNNs [ 9].
+Thus, it is incumbent on algorithm users to carefully test and validate the performance of speciic algorithms for
+morphs of diferent race faces intended for particular applications (e.g., airports in diferent locations around the
+world).
+The results show that the ORE exacerbates the diiculties associated with morph identiication. As fraudsters
+ind new and creative ways of bypassing ABC e-gates, this study elucidates a path forward to mitigate the
+incidence of morph attacks by investigating how race inluences humans and algorithms. The indings have
+implications for nationalandinternational security measures andunderscore the complexities ofmorphed face
+identiication byhumans and algorithms.
+ACKNOWLEDGMENTS
+Funding providedbyNational EyeInstitute GrantR01EY029692-04to AOTand CDC.
+REFERENCES
+[1]Ankan Bansal, Carlos Castillo, Rajeev Ranjan, and Rama Chellappa. 2017. The do’s and don’ts for cnn-based face veriication. In
+Proceedingsof the IEEEinternational conferenceoncomputervision workshops . 2545ś2554.
+[2]Ankan Bansal, Anirudh Nanduri, Carlos D Castillo, Rajeev Ranjan, and Rama Chellappa. 2017. Umdfaces: An annotated face dataset for
+training deep networks. In 2017IEEEinternational joint conferenceonbiometrics (IJCB) . IEEE, 464ś473.
+[3]AnkanBansal,RajeevRanjan,CarlosDCastillo,andRamaChellappa.2018. Deepfeaturesforrecognizingdisguisedfacesinthewild.In
+Proceedingsof the IEEEConferenceonComputer VisionandPattern RecognitionWorkshops . 10ś16.
+[4]JacquelineGCavazos,PJonathonPhillips,CarlosDCastillo,andAliceJO’Toole.2020. Accuracycomparisonacrossfacerecognition
+algorithms:Whereareweon measuring racebias? IEEEtransactionsonbiometrics,behavior,andidentityscience 3,1(2020), 101ś111.
+[5]Patrick Chiroro and Tim Valentine. 1995. An investigation of the contact hypothesis of the own-race bias in face recognition. The
+Quarterly Journal of Experimental Psychology SectionA 48, 4(1995), 879ś894.
+[6]Pawel Drozdowski, Christian Rathgeb, Antitza Dantcheva, Naser Damer, and Christoph Busch. 2020. Demographic bias in biometrics: A
+survey on an emerging challenge. IEEETransactionsonTechnology andSociety 1,2(2020), 89ś103.
+[7]MatteoFerrara,AnnalisaFranco,andDavideMaltoni.2014. Themagicpassport.In IEEEInternationalJointConferenceonBiometrics .
+IEEE, 1ś7.
+[8] Frontex.2015. BestPracticeTechnicalGuidelines forAutomated BorderControl (ABC)Systems.
+[9] Patrick J Grother, MeiL Ngan,KayeeK Hanaoka, et al. 2019. Face recognitionvendortest part3: demographicefects. (2019).
+ACM Transactions on Applied PerceptionThe InfluenceoftheOther-Race EfectonSusceptibilityto FaceMorphingAtacks • 11
+[10]Yandong Guo, Lei Zhang, Yuxiao Hu, Xiaodong He, and Jianfeng Gao. 2016. Ms-celeb-1m: A dataset and benchmark for large-scale face
+recognition.In ComputerVision–ECCV2016:14thEuropeanConference,Amsterdam,TheNetherlands,October11-14,2016,Proceedings,
+PartIII 14 . Springer, 87ś102.
+[11]Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. 2016. Deep residual learning for image recognition. In Proceedings of the IEEE
+conferenceoncomputervision andpattern recognition . 770ś778.
+[12]Brendan F Klare, Mark J Burge, Joshua C Klontz, Richard W Vorder Bruegge, and Anil K Jain. 2012. Face recognition performance: Role
+ofdemographicinformation. IEEETransactionsonInformationForensics andSecurity 7,6(2012), 1789ś1801.
+[13]Robin SS Kramer, Sophie Mohamed, and Sarah C Hardy. 2019. Unfamiliar face matching with driving licence and passport photographs.
+Perception 48, 2(2019), 175ś184.
+[14]Wei-AnLin,Jun-ChengChen,andRamaChellappa.2017. AProximity-AwareHierarchicalClusteringofFaces. arXiv:1703.04835[cs.CV]
+[15] NeilAMacmillan andCDouglasCreelman.2004. Detectiontheory:A user’s guide . Psychologypress.
+[16]Roy S Malpass and Jerome Kravitz. 1969. Recognition for faces of own and other race. Journal of personality and social psychology 13, 4
+(1969), 330.
+[17]Brianna Maze, Jocelyn C. Adams, James A. Duncan, Nathan D. Kalka, Tim Miller, Charles Otto, Anil K. Jain, W. Tyler Niggel, Janet
+Anderson, Jordan Cheney, and Patrick Grother. 2018. IARPA Janus Benchmark - C: Face Dataset and Protocol. 2018 International
+ConferenceonBiometrics (ICB) (2018), 158ś165.
+[18]Christian A Meissner and John C Brigham. 2001. Thirty years of investigating the own-race bias in memory for faces: A meta-analytic
+review.Psychology,Public Policy,andLaw 7,1(2001), 3.
+[19]SeyedMortezaMousaviandIpekOruc.2020. Tuningoffaceexpertisewitharaciallyheterogeneousface-diet. VisualCognition 28,9
+(2020), 523ś539.
+[20]SophieJNightingale,ShrutiAgarwal,andHanyFarid.2021. Perceptualandcomputationaldetectionoffacemorphing. JournalofVision
+21, 3(2021), 4ś4.
+[21] Omkar MParkhi,Andrea Vedaldi,AndrewZisserman, et al. 2015. Deep facerecognition.. In BMVC, Vol.1.6.
+[22] Jonathan W Peirce. 2007. PsychoPyÐpsychophysics softwarein Python. Journal of neurosciencemethods 162,1-2(2007), 8ś13.
+[23]P Jonathon Phillips,Fang Jiang,Abhijit Narvekar, Julianne Ayyad,and AliceJO’Toole. 2011. An other-race efect for face recognition
+algorithms. ACM TransactionsonAppliedPerception(TAP) 8,2(2011), 1ś11.
+[24]PJonathonPhillips,AmyNYates,YingHu,CarinaAHahn,EilidhNoyes,KelseyJackson,JacquelineGCavazos,GéraldineJeckeln,
+Rajeev Ranjan, Swami Sankaranarayanan, et al .2018. Face recognition accuracy of forensic examiners, superrecognizers, and face
+recognitionalgorithms. Proceedingsof the National Academy of Sciences (2018), 201721355.
+[25] Qualtrics. 2019. Qualtrics,2019. https://www.qualtrics.com/
+[26]R. Raghavendra,Kiran Raja,and ChristophBusch. 2016. Detecting MorphedFace Images. https://doi.org/10.1109/BTAS.2016.7791169
+[27]R. Raghavendra, Kiran B. Raja, Sushma Venkatesh, and Christoph Busch. 2017. Transferable Deep-CNN Features for Detecting Digital
+and Print-Scanned Morphed Face Images. In 2017 IEEE Conference on Computer Vision and Pattern Recognition Workshops (CVPRW) .
+1822ś1830. https://doi.org/10.1109/CVPRW.2017.228
+[28]R. B. Raghavendra; Kiran Raja; Sushma Venkatesh; Christoph Busch. 2017. Transferable Deep-CNN Features for Detecting Digital
+and Print-Scanned Morphed Face Images. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)
+Workshops .
+[29]Rajeev Ranjan,Ankan Bansal, Hongyu Xu, Swami Sankaranarayanan,Jun-ChengChen,Carlos D Castillo, and Rama Chellappa.2018.
+Crystallossandquality poolingforunconstrained faceveriicationandrecognition. arXivpreprintarXiv:1804.01159 (2018).
+[30]KayL Ritchie, Michael O Mireku, and Robin SSKramer. 2020. Faceaverages and multiple images in a live matchingtask. British Journal
+of Psychology 111,1(2020), 92ś102.
+[31]DavidJRobertson,RobinSSKramer,andAMikeBurton.2017. FraudulentIDusingfacemorphs:Experimentsonhumanandautomatic
+recognition. PLoSOne 12, 3(2017), e0173319.
+[32]David J Robertson, Andrew Mungall, Derrick G Watson, Kimberley A Wade, Sophie J Nightingale, and Stephen Butler. 2018. Detecting
+morphedpassportphotos:Atrainingandindividualdiferencesapproach. Cognitiveresearch:principlesandimplications 3,1(2018),
+1ś11.
+[33]Cathy L Schott and Matthew Sharpe. 2010. FRVT 2006 and ICE 2006 large-scale experimental results. IEEE Transactions on Pattern
+AnalysisandMachine Intelligence 32, 5(2010), 831.
+[34]Martin Schrimpf, Jonas Kubilius, Ha Hong, Najib J Majaj, Rishi Rajalingham, Elias B Issa, Kohitij Kar, Pouya Bashivan, Jonathan
+Prescott-Roy, Kailyn Schmidt, et al .2018. Brain-score: Which artiicial neural network for object recognition is most brain-like? BioRxiv
+(2018), 407007.
+[35]Martin Schrimpf, Jonas Kubilius, Michael J Lee, N Apurva Ratan Murty, Robert Ajemian, and James J DiCarlo. 2020. Integrative
+Benchmarking to Advance Neurally Mechanistic Models of Human Intelligence. Neuron(2020). https://www.cell.com/neuron/fulltext/
+S0896-6273(20)30605-X
+ACM Transactions on Applied Perception12 • Mallick et al.
+[36]PamelaMWalkerandJamesWTanaka.2003. Anencodingadvantageforown-raceversusother-racefaces. Perception 32,9(2003),
+1117ś1125.
+[37] J Westfall.2015. PANGEA: PowerAnalysis forGeneral ANOVAdesigns. 2015.
+[38]Le-BingZhang,JuanCai,FeiPeng,andLongMin.2022. MSA-CNN:FaceMorphingDetectionviaaMultipleScalesAttentionConvolutional
+Neural Network . 17ś31. https://doi.org/10.1007/978-3-030-95398-0_2
+ACM Transactions on Applied PerceptionThe InfluenceoftheOther-Race EfectonSusceptibilityto FaceMorphingAtacks • 13
+A APPENDIX
+Fig.4. DemographicSurvey
+ACM Transactions on Applied Perception

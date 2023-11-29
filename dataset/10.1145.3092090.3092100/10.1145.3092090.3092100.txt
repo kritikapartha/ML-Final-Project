@@ -1,0 +1,828 @@
+Determining Ethnicity of Immigrants using Twitter Data  
+M Saravanan  
+Ericsson Research India  
+Ericsson India Global Services Pvt. Ltd  
+SP Infocity, Perungudi, Chennai  600096, India  
+E-mail: m.saravanan@ericsson.com  
+ABSTRACT  
+Immigration is a drive r of demographic change  and finding 
+present location information of the immigrant population is a 
+challenging  task for anyone looking to move to a new place.  
+People tend to settle in a new place within their own community 
+and actively seek out areas where they can be hom e with their 
+own. Census data taken on once in several years is  often 
+unreliable to help the t ravelers  due to the sheer gap between 
+available details  and the incessant movement of people in a short 
+span of time . The proposed method leverages the power of social 
+media to attain up-to-date information to understand the migration 
+patterns of the regul ar travelers . Using the real time data provided 
+via the public tweets on Twitter, deep learning algorithms are 
+applied to classify the user’s race and ethnicity. For this paper, we 
+considered Twitter users of three different communities from 
+certain states  in the United States of America. Through the 
+analysis of the large volume of tweets  initially  we have built a 
+lexical knowledge base  in the training phase . In our experiment, 
+we have witnessed a deeper understanding of the users based on 
+their race and et hnicity and we hope  that the tool can help those 
+looking to travel or settle abroad . It m akes the task little bit easier 
+for them by finding more people of their own community  in a 
+specific location to book the hotel nearby and enjoy their stay . 
+Keywords  
+Ethnicity, Twitter, Convolutional Neural Network, Immigrants, 
+Social Network Analysis  
+ 
+1. INTRODUCTION  
+      Travelling to a new country or a new place can be daunting 
+without proper guidelines. Finding people from their own country 
+or the same community is one thing that makes the transition 
+easier. Social media profiles are a simple  way to find such people, 
+although p rofile information such as name, age, location can 
+sometimes be mis leading (for example User Name: Texas Health, 
+location:  Wonderland). If anyone creates a learning system with 
+this background, it will lead to a weak model of text classification and won’t be able to produce a reliable result.  In these modern 
+days, most mobile phone users are logged on to the social media 
+services throughout the day. This presents an opportunity for it to 
+be used as a very effective tool for information extraction and 
+mining of data collected based on user’s pattern. One has to look 
+at very recent history to see where we saw th e full impact of 
+social media, even in grave situations. Researchers mentioned in 
+their report that after the catastrophic earthquake on 12 January 
+2010 in Haiti, people published several texts, photo and videos 
+sharing their situation via social networkin g sites Twitter, 
+Facebook, YouTube, etc  [1]. This led to the Red Cross receiving 
+US$8 million in donations directly from users of different social 
+networking sites . Facebook’s new feature of marking people as 
+“safe” proved to be highly effective during the  Chennai floods of 
+November 2015 [2] ; relief operations could be targeted to hard hit 
+areas based on this sort of data. One might also recollect how 
+people used social media and specially twitter to keep up to date 
+with information during the Boston Marath on Bombings [3] and 
+how Boston Police Department used it to provide updates on the 
+capture of the Boston Bombers.  
+      In this paper, we choose data generated from Twitter in 
+identifying and understanding user’s race/ethnicity. We chose 
+twitter because wi th over 310 million monthly active users 
+sending 500 million tweets daily, it provides rich real -time data 
+for information extraction. The information present in user's 
+twitter feed can be explored for the purpose of classification. 
+Following is the list o f features to be considered for classifying a 
+user because the way a user tweets reflects his personal interest, 
+his social circle and to which ethnic group he belongs to (for 
+example an American will tweet and follow more about Baseball 
+compared to an Ind ian who will do the same for Cricket). Hence , 
+we attempt to predict demographics of users in a country (US) 
+with the help of deep learning model which runs Convolutional 
+Neural Network (CNN) algorithm [4 , 5] on the user's twitter feed.  
+Our main focus in th is paper is to:  
+i) Predict the race/ethnicity  of a user in a country (US) by 
+considering only 3 ethnic group patterns for initial study - 
+Chinese, Indian and Mexican.  
+ii) Guide a user at the time of migration or visit by providing 
+them information of the location to stay and communicate 
+with the people of his race/ethnicity.  
+ 
+       On determining these, a user will be able to book a room in a 
+specific location where the community of his choice is living. 
+This is the expected outcome of the study  and it is  organized as 
+follows. Section 2 describes the previous work done in predicting 
+demographics, classification of people using social media and 
+how migration and social media are related. Section 3 describes 
+the technological inputs and section 4 addresses t he challenges 
+and the relevant assumptions for model building. Addressing the 
+nature of twitter data set is made in Section 5 and Pre -processing 
+and Model building are explained in Section 6 and 7. Permission to make digital or hard copies of all or part of this work for 
+personal or classroom use is granted without fee provided that copies are 
+not made or distributed for profit or commercial advantage and that copies 
+bear this notice and the full citation on the first page. Copyrights for 
+components of this work owned by others than the author(s) must be 
+honored. Abstracting with credit is permitted . To copy otherwise, or 
+republish, to post on servers or to redistribute to lists, requires prior 
+specific permission and/or a fee. Request permissions 
+from  Permissions@acm.org . 
+MISNC '1 7, July 17 - 19, 2017 , Bangkok, Thailand  
+Copyright is held by the owner/author(s). Publication rights licensed to 
+ACM.  
+ACM 978 -1-4503 -4129 -5/16/08 … $15.00   
+DOI:  http://dx.doi.org/10.1145/3092090.3092100Consequently, evaluation and results are given in Section 8 and 9. 
+Finally in section 10 we draw conclusions and outline the future 
+work.  
+2. Related Works  
+       Members of the society  use a plethora of services to 
+access and share information, photos, opinions, etc to show 
+their community i nvolvement. During the We nchuan 
+Earthquake in China  in 2008 , a girl used Baidu Bar (similar 
+to Wiki) to show the appropriate helicopter landing point 
+for disaster relief [ 6]. During th at time , web forums were 
+also used as effective media for raising donations [ 7] and 
+creating virtual communities for message distribution [ 8]. 
+A Chinese  microblogging site, Weibo, was extensively  
+used during the year 2010 when Yushu Earthquake struck 
+in China [ 7]. People used these microblogging sites to 
+spread the earthquake information, express  their emotions, 
+and update the disaster situations. MS Share Point, Twitter 
+and web forums were  the other social media  exercised  
+extensively during  the Haiti Earthquake in the year 2010. 
+MS Share Point was used by the U.S Air Force mainly to 
+inform  about  disaster situations and to share professional 
+knowledge of relief operations [6 ]. Moreover, a web forum 
+was used by the U.S Navy to inform about medical supplies 
+and ground equipment related to the afflicted local areas [ 9]. 
+A mobile based application for classifying Twitter text was 
+also developed in order for quick message identification 
+[10]. The information from these can also be used to 
+predict demographics  of the users . 
+        Social media plays a key role in understanding the 
+migration patterns of individuals and demographics of a 
+place  [11]. Social media also helps in determining gender 
+in addition to ethnicity. This can be done by analyzing the 
+first names of the Twitter users with an already existing list. 
+This however leads to discrepancies as s ome names will be 
+common to both men and women. In one of the research 
+studies, the authors [1 2] predicted the demographics by 
+comparing the last name of the users to the commonly used 
+last names of an ethnic group but it lacked reliability as not 
+all the users provide their real names. Aron and his 
+colleagues [1 3] predict the demographics of Twitter users 
+on the basis of whom they follow. They used a distantly 
+labeled dataset consisting of web traffic demographic data 
+from Quantcast [ 14] and paired them wi th the twitter 
+followers of that site. A machine learning approach to 
+Twitter users in [1 5, 16] discusses linguistic content of the 
+user's tweet feed and his social network structure to predict 
+whether the user is an African or not. They did not address 
+immigrant population and the dataset which they used for 
+ethnicity was not flexible or generic. N -gram models, 
+simple sociolinguistic features (e.g., presence of emoticons), 
+statistics about the user’s immediate network (e.g., number 
+of followers/friends) an d communication behavior (e.g., 
+retweet frequency) were studied and presented by the 
+authors in [ 17,18,19]. In our work, we will use the 
+communication behavior, social networking patterns and 
+also use text mining on the user's twitter feed to determine 
+the ethnicity of a particular user.          In this paper, we use tweets of users belonging to a 
+particular ethnicity/race as a training set for preparing a 
+CNN model  [5,20] and test the user samples for 
+categorizing them into different ethnicity . For this, w e have 
+preprocessed the data by accomplishing the NLP tasks such 
+as semantic parsing, search query retrieval and sentence 
+modelling  [21]. Layers with convol utional  filters generated 
+in this process can be utilized by CNN [ 22, 23]. The rest of 
+the paper dea ls with data preparation and training the 
+classification model using CNN on twitter feeds. We have 
+tested with sample data set to prove the efficiency of the 
+model.  
+3.   Technological Inputs  
+ 
+       In this paper, we have explored different interesting 
+technologies relating to processing of twitter data for 
+classification purpose. There are various ways to stream 
+twitter data for data collection. We will discuss our 
+approach and different technologies used in processing and 
+retrieving details from twitte r for classification task.  
+3.1 REST API  
+      Twitter data is analyzed using REST API [2 4]. During 
+the process, the following are considered:  
+i) New tweets can be added  
+ii) Profile of an author can be read  
+iii) Analysis of follower data  
+       REST API uses OAuth to identify twitter applications 
+and provides JSON responses in the process. The responses 
+returned include entity and retweets. These are default 
+return values unless the respective parameters are set to be 
+false. The number of times a request can be made is  limited. 
+This is considered on a per -user basis. All requests need to 
+be authenticated and hence there is no chance of 
+unauthenticated calls. Rate limits are generally divided into 
+15-minute intervals. The requests are divided into the 
+following: 15 calls  for every 15 minutes and 180 search 
+calls for every 15 minutes. This can help to fetch 3,000 
+tweets and in our work, we fetched the user’s last 200 
+tweets.  
+3.2 Twitter  Streaming API  
+      The Streaming APIs [2 3] give developers low latency 
+access to Twitt er’s global stream of Tweet data. It allows 
+two types of subscriptions. There are either subscription to 
+specific keywords or to a user timeline. Confirmation that 
+pushed messages consisting of tweets and other events 
+indicate that the streaming client has  properly been 
+implemented. Twitter offers several streaming endpoints, 
+each customized to certain use cases relevant to Public 
+Streams, User Streams and Site Streams.  
+ 
+3.3 Differences between Streaming and RESTHTTP connection should be kept open to connect to the 
+streaming API while an application that connects to the 
+API will not be able to connect in response to the user 
+request. Here we have rewritten the process that is different 
+from the general process to handle HTTP request which is 
+used to run the code to establish connection to the 
+streaming API as shown in Figure 1. 
+Figure 1. User Request to Twitter  
+3.4   TensorFlow  
+       TensorFlow [2 5] is an open source software library for 
+numerical computation using data flow graphs. Nodes in the graph 
+represent mathematical operations, while the graph edges 
+represent the multidimensional data arrays (tensors) 
+communicated between them. It has a flexible architecture and 
+deploying computation to various devices becomes easy [2 6]. The 
+API provided in Tensorflow helps the developer to run a deep 
+learning model and embed it to our requirements using a few lines 
+of codes. We have inherited a library from TensorFlow to model a 
+CNN.  TensorFlow has several built -in optimizers, and we have 
+used the Adam optimizer which is provided by Diederik Kingma 
+et al [ 27]. It is a first -order gradient -based optimization of 
+stochastic objective functions, based on adaptive estimates of 
+lower -order moments. This has a number of adv antages, which 
+includes straightforward implementation, computational 
+efficiency, less memory requirements and invariance to diagonal 
+rescaling of gradients. Hence, this is used for problems with huge 
+data and/or parameters. The method is also appropriate for non -
+stationary objectives and problems with very noisy and/or sparse 
+gradients. The hyper -parameters have intuitive interpretations and 
+typically require little tuning. CNN in our model has embedding 
+matrix for each word as a hyper parameter and by tun ing them in 
+specific direction, loss is reduced. The direction is determined by 
+gradient propagation provided by Adam optimizer  [27]. 
+ 
+3.5 NLTK  
+        NLTK [ 28] is a leading platform for building python 
+programs to work with human language data. It provi des easy -to-
+use interfaces for over 50 corpora and lexical resources such as 
+WordNet, along with a suite of text processing libraries for 
+classification, tokenization, stemming, tagging, parsing, and 
+semantic reasoning, wrappers for industrial -strength NLP  libraries.  
+ 
+3.6 Tweepy         Tweepy [ 29] is a flexible python library which is used to 
+access the Twitter API. First we need to register our client 
+application with Twitter. Then we create a new application and 
+once we are done, it generates a consumer token and secret key. 
+For each session of twitter data requests, we need to use this token 
+and secret key for authentication and once it gets authorized, 
+Tweepy will start fetching the tweets as per the query given.  
+auth = tweepy.OAuthHandler(consumer_key,  consumer_secret)  
+auth.set_access_token(access_key, access_secret)  
+api = tweepy.API(auth)  
+new_tweets=api.user_timeline(screen_name='Obama’, 
+count=200,max_id=oldest)  
+       
+The first 3 lines takes care of authorization and the 4th line fetches 
+200 tweets of  a user whose screen name is 'Obama'.  
+       The purpose of this work is to predict the ethnicity of 
+immigrants using a social media site called Twitter. The tweets 
+collected from the users will be used to classify them into 
+different races. The focus here  is not on detecting from which 
+place the tweet was originated, instead predicting the ethnicity of 
+the user who tweeted. The unique keywords used by a particular 
+group are used as a defining feature of that group to help in 
+running a classification model.  In this work we have taken 3 races 
+Chinese, Indian, Mexican (Hispanic). Details are provided in 
+Section 4 and 5 regarding the reason for the 3 races chosen in US 
+territory. So after training, different users were chosen and our 
+classifier as per its learn ing from 3 unique lexical sources, 
+classifies users into specific race or ethnicity.  
+4. Challenges and Assumptions  
+4.1 Challenges  
+i) There has been a study in detecting a user's location, that is, the 
+place from where the tweet is being tweeted. Tags like home 
+detection in Twitter takes the ground truth that the home of the 
+user is the place from where the tweet is originating, but th ey do 
+not distinguish among population as to who are the native people 
+of a place and who are the immigrants. In this paper, we are 
+particularly interested to help the immigrants to find the own 
+community’s location. Research work addressing the benefits o f 
+immigrant population is very less. There are ways of identifying 
+immigrant samples by using frequently used first names of a 
+particular race for classification or by making use of web traffic 
+data extracted from Quantcast [14 ] to know about the list of a reas 
+of interest of a particular race. All of these features do not directly 
+help to apply any specific machine learning model which can 
+classify the users based on the text of the tweets.  
+ii) Ethnicity/race detection was chosen because it is really diffic ult 
+to identify people on a city -wise or state -wise basis. Even 
+country -wise is not easy except few countries like Spain and 
+Germany where most of the people tweet in their own native 
+language, so their identification is visible among the huge twitter 
+dataset. As we go deeper in analyzing the data, that is, from 
+country -wise to state -wise and then to city -wise, the level of 
+finding more distinguishing features increases because let's say for 
+example, taking India as an example, people generally tweet in 
+English, and their likes and behavior on twitter does not show 
+unique features of their native cities or states. By considering the 
+country like US, identifying immigrants belonging to which of the 
+counties/states is difficult to find because of the high numb er 
+migrants mixed with local population as shown in Figure 2.Figure 2.  Ten Source Countries with the largest Populations in 
+the United States as Percentages of the Total Foreign -Born 
+Population: 2011  
+ 
+iii) There are very few literatures for learning to implement recent 
+deep learning models in text mining. As deep learning is a new 
+area of machine learning research, the libraries are limited and we 
+have to confine our work to those libraries only.  
+iv) Twitter data is easily available and though twitter g ives access 
+to its 1% of its source data , this in itself is equivalent to a few  
+million tweets. A proper query should be constructed in order to 
+get the appropriate tweets which will be useful. For example, for 
+predicting the result of Brexit voting’s , twe ets with #Brexit 
+#VoteToLeave #VoteToRemain #Leave #Remain will give us 
+strong samples of tweets and will help in making the classification 
+model strong. Weak samples do not give distinguishing feature. 
+So, knowledge of using relevant keywords is a great c hallenge for 
+collecting the samples for our purpose.  
+                   Figure 3.  Country -wise Immigrant details  
+ 
+ 4.2 Assumptions  
+       In this paper, our classification model is trained with respect 
+to three races, Hispanics (Mexicans), Chinese and Indians. As we 
+can see in the pie chart ( Figure 3), top 3 immigrant groups in the 
+US are Mexicans, Indians and Chinese. Hence we have chosen the 
+samples from the same three groups for analysis. We will discuss 
+the reason of choosing the country US for our work in Section 5.  
+1. Using the census data and from other sources, for each of the 
+above mentioned races, top cities having the highest population 
+of that respective race were chosen and the users collected from 
+those cities were assumed to be belonging to t hat race.  
+2. The unique keywords for each race obtained from their tweet's 
+text was used as distinguishing feature in our classification 
+methodology.  
+3. Each line of text is considered to be a tweet in this work. So 
+tweets must be separated from each other by ne w line . 
+ 
+ 
+Figure 4.  Most populated Twitter Cities  
+ 
+5.  Nature of Twitter Data  Set 
+       There are a couple of reasons as to why twitter users from the 
+US were chosen for this paper:  
+i) United States is one of the country has the highest target  of 
+immigrant population  [30], being home to 19% of the world's 
+immigrants according to Telegraph News, UK as shown in Figure 
+3. So, a higher immigrant population  means that there are more 
+chances of finding twitter users who are immigrants and these are 
+the users who are of prime importance to us. We don’t want to 
+address the native twitter audience.  
+ii) Sysomos Inc., [ 31] one of the world’s leading social media 
+analytics companies, conducted an extensive study to document 
+twitter’s growth and how people a re using it. According to their 
+report (April 2014), US has the highest number of twitter users 
+(Figure 4). 62.14% of total twitter users from all over the world. 
+So the probability of getting tweets from immigrants increases 
+because US has the highest num ber of immigrants as well as 
+majority of the twitter users.  
+iii) Moreover, 4 of th e top 5 cities with the biggest t witter 
+populations are US cities namely New York, Los Angeles, San 
+Francisco and Boston  as shown in . Also Los Angeles is home to 
+highest number of the Chinese immigrant  population  and New 
+York has a 'Little India' square pointing to be large Indian 
+immigrant population.  
+iv) Counties like Andorra  and Luxembourg have more than 50%  
+of their  population as immigrants but they have less than 5%population using Twitter. These would severely restrict the 
+sample size, and hence they were not chosen . 
+       For Mexican tweet samples, we have used Twitter's 
+Streaming API to get tweets from the Los Angeles County and 
+Harris County as per the c ensus  pattern [32 ]. We queried and 
+obtained 1883 unique users from these 2 counties and then for 
+each user using their 'screen_names', we used Twitter's REST API, 
+to download each user's 200 most recent t weets. Since each user 
+may not be actively tweeting, we had s ome users for whom we 
+got less than 200 tweets. Overall , we had 377K(35.9MB) tweet 
+sample s for the Mexican population.  
+       Similarly, for  the Chinese tweet sample, we downloaded 
+tweets from top 10 US cities by highest Chinese -American 
+population and the y were in Monterey Park, Arcadia, San Marino, 
+San Gabriel, Alhambra, Rowland Heights, Rosemead, Hacienda 
+Heights, South Pasadena, and Wallnut. From each city, using 
+Twitter's Streaming API, we obtained 2792 unique users and 
+again for each user we downloade d 200 tweets. So overall we had 
+558K (53.16 MB) tweet samples for the Chinese population.  
+       Similarly, for collecting the Indian tweet sample, we 
+downloaded tweets from the US cities where there is a 'Little 
+India', that is, the places where there are  Indian shops, Indian 
+grocery stores, Indian restaurants etc. 'Little India' or 'Little Indian 
+Square' were chosen because these places have high majority of 
+Indian immigrants as per census as well as concentration o n 
+Indian style marketplace which means t here are more Indians 
+staying in the se neighborhoods. Hence we have obtained 1,654 
+unique users and after downloading 200 tweets for each user, we 
+generated 331K (31.2 MB) tweet samples for the Indian 
+population. Based on the size of the samples present in  each 
+location, w e have categorized data set into two sizes for our 
+experiments  which are shown in Table 1.  
+             Table 1 .  Characteristics of the test datasets  
+Dataset  No.Of 
+Users  Length of 
+Sentence(max)  Vocabulary 
+Size Vocabulary 
+considered for      
+Training  
+1 100 22 539 837 
+2 300 24 1330  837 
+ 
+6. Preprocessing of Tweets  
+       Python's NLTK library was used for preprocessing and 
+filtering the data. The f ollowing steps should be followed for 
+preprocessing all extracted tweets:  
+i) All the hyperlinks mentioned in the tweets were removed as 
+they were not useful.  
+ii) All the mentions of user names or screen names were removed. 
+Usernames and screen  names are mentioned by using '@' 
+character in front of that name.  
+iii) At the starting of some tw eets, there is mention of a phrase 'rt' 
+which indicates given tweet is a retweet. So the word 'rt' was 
+removed as it was not useful.  
+For example: Given a tweet: “rt @PinkCamoTO @HatfieldAnne 
+can we have lunch first.”  
+After filtering removing @ and rt: “can  we have lunch first”  
+iv) All the words which had non -ASCII character s were removed 
+as they don’t give any meaningful keyword s.  v) All the stop  words were removed. We have utilized NLTK stop  
+words lists for this purpose.  
+For example: Given a tweet “I am a t Taj Hotel eating lunch.”  
+After the removal of stop words , the remaining words are “Taj 
+Hotel  eating lunch”  
+vi) If any bigram or a trigram had a stop  word as one of the word s, 
+then that bigram or a trigram was discarded.  
+For example: Given a tweet “He was  taking money of big old 
+person.”  
+Valid bigrams: “taking money”, “big old”, “old person”.  
+Valid trigrams: “big old person”  
+vii) Hyphen separated word were considered as a single word. For 
+example, 'good -hearted' was considered as a single wor d. 
+       After preprocessing including filtering the input tweets 
+(removing hashtags etc), we took all the unigrams which were  
+mentioned by more than 4 users, all the bigrams which were 
+mentioned by more than 1 user and all the trigrams for each 
+race/ethnicity. We got 362 unique unigrams, 1136 bigrams, 14063 
+trigrams for the Mexican sample. For the Indian sample, we 
+obtained 275 unique unigrams, 389 bigrams, 9617 trigrams and 
+for the Chin ese sample, we attained 213 unique unigrams, 440 
+bigrams and 9330 trigrams. In this process, we found  quite a large 
+number of trigrams present in  each group of sample s.  
+      For the training set, we have used the unique unigram list of 
+each race as a dic tionary of that race. Test data comprises of 
+tweets from users of New York as it has maximum number of 
+twitter user and has  a diverse population  concerning  diverse races. 
+We perform analysis on 2 different sizes of test data. First on 100 
+users, then on 30 0 users. Each user will be classified into some 
+race or ethnic group and the result will be evaluated.  Now we will 
+discuss the way of running CNN model on both data sets.  
+ 
+7.  Model Preparation  
+7.1   Training  
+      The training set and the test set are loa ded separately for 
+processing  in CNN model . Since training set consists of unigrams, 
+they don’t require any preprocessing. Test data is cleaned, that is, 
+same as the preprocessing of training data is done as explained in 
+Section 6. Each sentence correspond s to a tweet. We derived the 
+maximum sentence length from the test data and training data. 
+Each sentence (both training and test) is then padded to the 
+maximum sentence length. Special tokens are appended to make 
+all the sentences equal in length. The toke ns are denoted by 
+<PAD>.  Thus, by g rouping the data in a batch becomes easy and 
+can be done efficiently. Suppose our training set looks like the 
+following  (since they are unigrams)  : 
+Food  Money Cash Hitting  
+*In the training set, each unigram is a sentence  of length one.  
+and our test data should be  
+“I am having a great day”  
+“Can you just stop staring at me.”                 
+“Please help me out.  
+*Maximum sentence length from training and test data=7  
+Now the training set becomes  
+Food <PAD><PAD><PAD><PAD><PAD> <PAD>.Money <PAD><PAD><PAD><PAD><PAD><PAD>.  
+Cash <PAD><PAD><PAD><PAD><PAD><PAD>.  
+Hitting <PAD><PAD><PAD><PAD><PAD><PAD>.  
+and test set becomes:  
+“I am having a great day <PAD>.”  
+“Can you just stop staring at me.”  
+“Please help me out <PAD><PAD><PAD>.”  
+       We made each sentence of  the same length  by appending it 
+with equal number of <PAD> , so that, there is uniformity in test 
+and training set. Hence, we build separate vocabulary index for 
+training set sentences and separate vocabulary index for test set 
+sentences and use the respective vocabulary index to map each 
+word to an integer from 0 to vocabulary size for both training and 
+test sentences. After this, each sentence now becomes a vector of 
+integers. In the above mentioned example, vocabulary for trainin g 
+set becomes: [Cash, Food, Hitting, Money,  <PAD>] . Vocabulary 
+for test set becomes: [I, am, having, a, great, day,  Can, you,  just, 
+stop,  staring,  at, me, Please,  help,  out, <PAD>]. And each word in  
+the vocabulary  is sorted in lexicographic order and index ed. So 
+index for cash  is 0, then 1 for Food  and so on. So now training set 
+becomes:  [1,4,4,4,4,4,4],  [3,4,4,4,4,4,4],  [0,4,4,4,4,4,4],  
+[2,4,4,4,4,4,4]].  Similarly, same thing is done for test set as well.  
+ 
+7.2. Embedding Layer  
+       After converting the v ocabularies into a lexicographic order 
+and assigning them indices, we move to the convolutional neural 
+network part which converts text into real numbers (the process is 
+known as word embedding). Many machine learning algorithms 
+which follow deep net archi tecture do not work on strings of plain 
+text, instead work on vectors of continuous values. The 
+conversion will be considered as one of the dimensionality 
+reduction methods which is basically used for semantic parsing of 
+sentences for extracting meaningful  text and enabling natural 
+language understanding. To be able to predict the text, contextual 
+similarity of the text needs to be known . The vectors which are 
+created by the word embedding preserve these kinds of 
+similarities.  
+        The first layer we define is the embedding layer, which maps 
+vocabulary word indices into low -dimensional vector 
+representations. It’s essentially a lookup table that we learn from 
+data. So now after this, each word will have an embedding vector 
+of size 128  (more size more f eatures). The values of the 
+embedding vectors were learnt by the model as the training goes 
+on. It starts with giving random values to embedding vector of all 
+the words of training and test dataset. As it learns, the value 
+changes in a specific direction d epending on the loss and as a 
+result accuracy increases.  
+ 
+7.3   Convolution and Max -Pooling Layer  
+       Pooling is a process of selective routing of features from  one 
+stage to the next stage. It is basically a sample based discretization 
+process. The main  objective is to down sample  an input 
+representation by reducing the vector size dimensionally and 
+allowing for assumptions. This pooling layer takes small 
+rectangular blocks from the convolutional layer and then 
+subsamples it to produce a single output fro m the block. It is 
+called as max pooling because we are taking the maximum of the 
+block we are pooling.        In our case , this layer performs convolution over our 
+embedding matrix with 3 different filter sizes - 3, 4 and 5. Filter 
+size of 3 means  that it will perform convolution over embedding 
+matrices of 3 words of a sentence at a time. So, as a result, the 
+same window performs convolution 128 times for th ose 
+embedding matrices of 3 words and then slides by one -one word 
+at a time. Performing convolution m ultiple times leads better and 
+more accurate result s and max pooling means extracting the 
+maximum value from the embedding matrices after the 
+convolution was performed.  
+      After convolution, Rectified Linear unit ( ReLu ) is applied to 
+the embedding mat rices by learning a large negative bias term for 
+its weights (process of adding bias) . It is the most popular 
+activation function of the deep neural networks.  Max pooling 
+helps in taking out the word which has distinct features or in other 
+words which is m ore particular to a class. For example, “She is 
+bad”. If we are doing sentiment analysis, out of those three words, 
+bad will be pooled out as a result of max pooling because it points 
+to negative sentiment and other 2 are neutral. Since we have 3 
+filter si zes and each have 128 filters, we will get a 3x128 max 
+pooled values for a single sentence.  Figures 5 and 6 will describe 
+the entire procedure of layered approach and Figure 7 shows the 
+final implemented CNN model  
+Figure 5 . Different layers of CNN ModelFigure 6 . Three  different layers of CNN along with  
+              Non-Linearity and Bias  Adding  
+ 
+ 
+7.4   Dropout Layer  
+       Deep neural networks generally contain multiple nonlinear 
+hidden layers and these layers make them very powerful to learn 
+complex relationships between their inputs and outputs. These 
+complicated relationships introduce noise at the time of sampling 
+which leads to overfitting. It stops the training process and affects 
+the performance of the validation set.  The dropout layer i s 
+introduced here to address these issues. It solves the problem of 
+overfitting as well as provides a way of combining many different 
+neural network architectures . Dropout is perhaps the most popular 
+method to regularize convolutional neural networks.  A f raction of 
+neurons is disabled stochastically thus forcing them to learn 
+individually. The same ReLu Non Linearity  is applied here as an 
+activation function. The advantage of using it as an efficient 
+gradient propagation. As gradient operating is used to propagate 
+in a specific dire ction in order to reduce loss, n on-linearity is 
+applied to make the steps of gradient proper.  
+ 
+                              Figure 7 .  Final CNN Model  
+7.5   Scores and Prediction  
+       The final p redictions were made by perfor ming  matrix 
+multiplication and selecting the class with the highest score. Raw 
+scores are converted into normalized probabilities by applying 
+Softmax function . Softmax function is a normalized exponential 
+function. The output of this function represents a categorical 
+distribution which act as a probability distribution over k different 
+possible outcomes. It is used in the final layer of the convolutional 
+neural networks and applied to classification problems.  The 
+function is given by  
+  (1) 
+Here the notatio ns 
+
+c
+dzde
+1 works as a regularizer and being the 
+output laye r of the neural network, a softmax function  can be 
+represented graphically as a layer with c neurons.  
+  
+8.  Evaluation Measure  Using the predicted scores, we can define the loss function. The 
+loss is to be defined as a measurement of the error in our network 
+and our goal is to minimize it. The standard loss function for 
+categorization problems is the cross -entropy loss. Tensorflow 's 
+softmax_cross_entropy() function measures the probability error 
+in discrete classification tasks in which the classes are mutually 
+exclusive (each entry is in exactly one class). It computes the 
+cross entropy of the result after applying the softmax fun ction  [25]. 
+In this paper, a tweet is labelled with one and only one label, a 
+user can be a Mexican, a Chinese or an Indian but not all the 3 at a 
+time or 2 at a time. This function calculates the cross -entropy loss 
+for each class, given the score and the correct input labels. Finally,  
+the average of the losses is derived.  The cross entropy loss has the 
+form:  
+ 𝐿𝑖=−𝑙𝑜𝑔(𝑒𝑓𝑦𝑖
+∑𝑒𝑓𝑗𝑗)                                                                      (2) 
+or equivalently, it can be written as:  
+𝐿𝑖=−𝑓𝑦𝑖+𝑙𝑜𝑔(∑𝑒𝑓𝑗𝑗 )                                                             (3) 
+where we are using the notation 𝑓𝑗 to mean the j -th element of the 
+vector of class scores f. The full loss for the dataset is the mean of 
+𝐿𝑖 overall training examples t ogether with a regularization term 
+𝑅(𝑊). The function inside the logarithm in the first formula is 
+called Softmax function and it takes the vector of real -valued 
+score and squashes into a vector of values between zero and one 
+that sum to one.  
+ 
+9.  Results  
+       The proposed method uses social media data such as twitter 
+data to understand the immigrant patterns of the samples . The user 
+tweets have been analyzed to determine t he ethnicity of the 
+immigrant. W e have chosen samples from the three group s such 
+as Mexican, Chinese and I ndian. For the training set, we have 
+used the unique unigram list of each race as a dictionary of that 
+race. Test data comprises of tweets from users of New York as it 
+has maximum number of twitter user and has a diverse population, 
+that is, users  belonging to diverse races. Each user will be 
+classified into more specific r ace or ethnic group and  the sample 
+results with its loss and accuracy are shown in figure 8.  Results 
+clearly  shows  that classification accuracy reaches almost one for 
+most of the cases with negligible loss value. C onvolution neural 
+network model is applied to classify the race.  Convolutional 
+Maxpool  layer with three different filter sizes of 3,  4 and 5 were 
+analyzed and the results plotted accordingly  as shown in fi gure 9 . 
+In each filter, it down  sampled the input data by reducing the 
+vector size and it became easier for considering the assumptions. 
+Using the prediction scores, we evaluated that a user can be a 
+Mexican, a Chinese or an Indian but not all the 3 at a t ime or 2 at 
+a time.  Accuracy and loss for test data sets of sizes 100 and 300 
+are measured  in this process . In each step the loss and the 
+accuracy of the predictions are plotted as the training goes on. 
+After training of each batch of training set, a test data is passed for 
+evaluation. In this way, as more and more batches are trained, the 
+loss reduces and the accuracy increases such that a prediction of 
+user belongs to a Chinese or Mexican or I ndian  is improved . So 
+after training  multiple times , different users were chosen and our 
+classifier as per its learning from 3 unique lexical sources, 
+classifies users into specific race or ethnicity . F-measure value is 
+80% and it shows the better performance of our model in the 
+present implementation.Figure 8 .  Loss and Accuracy results for classifying the test data   
+                             
+Predicted Accuracy  of the test data (100 tweets)           predicted Accuracy of the training data(300 tweets)  
+ 
+Convolution - Maxpool Layer,after down sampling  (For filter Size 3)  -  Hyber -parameters value tuning (W & B)  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Convolution - Maxpool Layer after down sampling  (For filter Size 4) - Hyber -parameters value tuning (W B)  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Convolution - Maxpool Layer  (For filter Size 5) - Hyber -parameters value tuning (W & B)  
+       
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Cross entropy  Loss for test data(  100 tweets)   Cross entropy Loss for training data(300 tweets)Figure  9.   Measures - Accuracy, Convolution Maxpool Layer (Filter sizes 3, 4, and 5) and Loss  
+ 
+ 
+10.   Conclusion  and Future Works  
+       Tensorflow library utilized in this paper is very versatile in 
+implementing deep neural networks. It has various built -in 
+optimizers, but we have used Adam optimizer in our 
+implementation. Unlike other methods like Naive -Bayes, SVM, 
+KNN, there is no need o f initializing word embedding’s matrix 
+when using Convolutional Neural Network for NLP tasks because 
+it learns the embedding values on its own as training goes on. 
+Convolution and max pooling of CNN used in NLP tasks give the 
+same help as they provide in i mage recognition tasks, that is, 
+pooling out the word with maximum features. So, CNN when 
+used for sentence classification can pool out words which are 
+closer to a specific word rather than choosing some neutral 
+indicating words. So, by applying CNN in twi tter data, we have 
+classified the samples into one of either Chinese or Mexican or 
+Indian. This will help us understand the availability of immigrant 
+population in the specific area of interest  (or searched  by) to the 
+new user. This way one can determine t he ethnicity of immigrant 
+population living in specific location of the selected country.  
+      The real bottleneck of this work is in deciding the features 
+which uniquely identif y ethnicity, like Chinese people mentioning 
+about Chinese celebs, or Indians  about Diwali. For getting tweets 
+with distinct features for respective races, we need to query the 
+Twitter API accordingly. If we want to identify the ethnicity on 
+the basis of food and restaurants, we need to search for #yelp, 
+#eating, #ate, #lunch, #din ner, #food. We need to improve our 
+searches with exhaustive features in the available tweets in order 
+to generate more powerful model which remove the deficiency 
+and increase the prediction level.  
+Reference  
+ 
+[1] Huiji Gao, Geoffray Barbiar and Robecca Gool sby.  
+“Harnessing the crowdsourcing power of social media for 
+disaster relief”, IEEE Intelligent Systems, 2011.  
+[2]  https://www.facebook.com/about/safetycheck/  
+[3] http://www.govtech.com/public -safety/Social -Media -Big-
+Lessons -from -the-Boston -Marathon -Bombing.html  
+[4] Yoon Kim, “ Convolutional Neural Network for Sentence 
+Classification ”, Proceedings of the 2014 Conference on 
+Empirical Methods in Natural Language Processing 
+(EMNLP), pages 1746 –1751, October 25 -29, 2014, Doha, 
+Qatar.  
+[5] N. Kalchbrenner, E. Grefenstette, P. Blunsom. “ A 
+Convolutional Neural Network for Modelling Sentences” , 
+In Proceedings of ACL 2014.  
+[6] Wei, Z., Qingpu, Z., We, S., and Lei, W., " Role Of Social 
+Media In Knowledge Management During Natural 
+Disaster Management ", Advances in information 
+Sciences  and Service Sciences (AISS), 2012  
+[7] Qu, Y., Huang, C., Zhang, P., and Zhang, J., " Harnessing 
+Social Media in Response to Major Disasters ", CSCW 
+2011 Workshop: Designing Social and Collaborative 
+Systems for China, 2011  [8] Lu, Y., and Yang, D., " Information exchange in virtual 
+communities under extreme disaster condit ions", 
+Decision Support Systems, 50(2), 2011, pp. 529 -538. 
+[9] Goggins, S.P., Mascaro, C., and Mascaro, S., " Relief Work 
+after the 2010 Haiti Earthquake: Leadership in an Online 
+Resource Coordination Network ", CSCW’12, 2012  
+[10] Caragea, C., Mcneese, N., J aiswal, A., Traylor, G., Kim, 
+H.W., Mitra, P., Wu, D., Tapia, A.H., Giles, L., and 
+Jansen, B.J., " Classifying text messages for the H aiti 
+earthquake ", Proceedings of the 8th International 
+ISCRAM Conference, 2011  
+[11] Rianne Dekker and Godfried Engbersen, “ How social media 
+transform migrant networks and facilitate migration.”, 
+Novermber 2012, IMI, University of Oxford.  
+[12] Alan Mislove, Sune Lehmann, Yong -Yeol Ahn, Jukka -Pekka 
+Onnela, J.Neils Rosenquinst, “ Understanding 
+demographics of Twitter Users”,  Twitt er-ICWSM 
+conference.  
+[13]  Aron Culotta, Nirmal Kumar Ravi, Jennifer Cutler, 
+“Predicting the Demographics of Twitter Users from 
+Website Traffic Data”, Proceedings of the Twenty -Ninth 
+AAAI Conference on Artificial Intelligence.  
+[14] www.quantcast.com  
+[15] Marco Pennacchiotti, Ana -Maria Popescu, “ A Machine 
+Learning Approach to Twitter User Classification”, 
+Proceedings of the Fifth International AAAI Conference 
+on Weblogs and Social Media, 2011  
+[16] Rao, D.; D., Y.; Shreevats, A.; and Gupta, M, “ Classifying 
+Latent User Attributes in Twitter” . In Proceedings of 
+SMUC -10, 710 –718, 2010  
+[17] LeCun, L. Bottou, Y. Bengio, P. Haffner. “ Gradient -based 
+learning applied to document recognition”,  In 
+Proceedings of the IEEE, 86(11):22782324, November, 
+1998.  
+[18] Yih, K. To utanova, J. Platt, C. Meek. “ Learning 
+Discriminative Projections for Text Similarity Measures”,  
+Proceedings of the Fifteenth Conference on 
+Computational Natural Language Learning, 2011.  
+[19] W. Yih, X. He, C. Meek, “ Semantic Parsing for Single -
+Relation Que stion Answering”,  In Proceedings of ACL 
+2014.  
+[20] Y. Shen, X. He, J. Gao, L. Deng, G. Mesnil. “ Learning 
+Semantic Representations Using Convolutional Neural 
+Networks for Web Search”,  In Proceedings of WWW 
+2014  
+[21] R. Collobert, J. Weston, L. Bottou, M. Ka rlen, K.Kavukcuglu, 
+P. Kuksa, Natural Language Processing (Almost) from 
+Scratch . Journal of Machine  Learning Research 12:2493 –
+2537  
+[22] Rie Johnson, Tong Zhang, “ Semi -supervised Convolutional 
+Neural Networks for Text Categorization via Region 
+Embedding”, Advances in Neural Information Processing 
+Systems 28 (NIPS 2015)  
+[23]  https://dev.twitter.com/rest/public  
+[24] http://docz.io/doc/1134353/convolutional -neural -networks -
+for-sent-ence-classification  
+[25]  https://www.tensorflow.org/[26] https://www.eventbrite.es/e/entradas -google -experts -summit -
+tensor flow -machine - learning -for-everyone  
+[27] Diederik Kingma, Jimmy Ba, “ Adam – A Method for 
+Stochastic Optimization ”, 3rd International Conference 
+for Le arning Representations'15, 2015  
+[28] ht tp://www.nltk.org  
+[29] http://docs.tweepy.org/en/v3.5.0/auth_tutorial.html  
+[30] http://www.migrationpolicy.org/programs/data -
+hub/charts/us -immigrant -population - state-and-county  
+(census source).  
+[31] https://sysomos.com/inside -twitter (Sysomos Research ) 
+[32]  https://en.wikipedia.org/wiki/List_of_U.S._counties_  
+with_Hispanic_or  _Latino_ majority_populations  
+(wikipedia).

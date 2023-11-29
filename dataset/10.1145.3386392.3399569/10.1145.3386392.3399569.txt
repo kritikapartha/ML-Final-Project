@@ -1,0 +1,638 @@
+Mitigating Demographic Bias in AI-based Resume Filtering
+Ketki V. Deshpande
+ketkid1@umbc.edu
+University of Maryland,
+Baltimore County
+Baltimore, MDShimei Pan
+shimei@umbc.edu
+University of Maryland,
+Baltimore County
+Baltimore, MDJames R. Foulds
+jfoulds@umbc.edu
+University of Maryland,
+Baltimore County
+Baltimore, MD
+ABSTRACT
+With increasing diversity in the labor market as well as the work
+force, employers receive resumes from an increasingly diverse pop-
+ulation. However, studies and field experiments have confirmed
+the presence of bias in the labor market based on gender, race,
+and ethnicity. Many employers use automated resume screening
+to filter the many possible matches. Depending on how the auto-
+mated screening algorithm is trained it can potentially exhibit bias
+towards a particular population by favoring certain socio-linguistic
+characteristics. The resume writing style and socio-linguistics are a
+potential source of bias as they correlate with protected characteris-
+tics such as ethnicity. A biased dataset is often translated into biased
+AI algorithms and de-biasing algorithms are being contemplated.
+In this work, we study the effects of socio-linguistic bias on resume
+to job description matching algorithms. We develop a simple tech-
+nique, called fair-tf-idf, to match resumes with job descriptions in
+a fair way by mitigating the socio-linguistic bias.
+CCS CONCEPTS
+•Information systems ;•Computing methodologies →Ma-
+chine learning approaches;
+KEYWORDS
+tf-idf, fair machine learning, job recommendation, term weighting
+ACM Reference Format:
+Ketki V. Deshpande, Shimei Pan, and James R. Foulds. 2020. Mitigating
+Demographic Bias in AI-based Resume Filtering. In Adjunct Proceedings of
+the 28th ACM Conference on User Modeling, Adaptation and Personalization
+(UMAP ’20 Adjunct), July 14–17, 2020, Genoa, Italy. ACM, New York, NY,
+USA, 8 pages. https://doi.org/10.1145/3386392.3399569
+1 INTRODUCTION
+According to Glassdoor, a popular job search engine and a review
+site, on an average a company receives around 250 resumes for each
+job posting, and the number can be even higher for Fortune 500
+companies. Out of these, only four to six qualified candidates are
+called for an interview [ 11]. As the internet became the preferred
+place for posting as well as accepting job applications, an increasing
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than ACM
+must be honored. Abstracting with credit is permitted. To copy otherwise, or republish,
+to post on servers or to redistribute to lists, requires prior specific permission and/or a
+fee. Request permissions from permissions@acm.org.
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+©2020 Association for Computing Machinery.
+ACM ISBN 978-1-4503-7950-2/20/07. . . $15.00
+https://doi.org/10.1145/3386392.3399569number of companies have started using software for filtering out
+the resumes. Only a handful of qualified candidate resumes are
+actually seen by recruiters or hiring managers. According to a
+study published in 2015, almost 75% of the recruiters and/or talent
+managers use software for recruiting or applicant tracking [ 14]. The
+recruiting software is trained on a training dataset that is subject to
+biases in the actual process of hiring, which may be transferred [ 1].
+Studies in the past have proven that discrimination based on gender
+[5], race [ 4], and ethnicity [ 16] is prevalent in job market even when
+the employer claims to be an “Equal Opportunity Employer.” If the
+training data, which consists of details of actual hired candidates,
+is not diverse enough, the resulting software can produce biased
+recommendations [ 8]. Linguistic and accent differences are a major
+contribution in generating prejudiced impressions against women,
+minority groups or non-native speakers [6].
+We center our study on discriminatory behavior in the auto-
+mated matching component of the hiring process regarding the
+origin country of the applicants, potentially arising from socio-
+linguistic tendencies. To mitigate the socio-linguistic bias in resume
+screening process, we propose de-biasing methods that penalize
+matching keywords that are typical to one section of society while
+encouraging matching keywords that are common among all de-
+mographics. Five different methods are evaluated based on fairness
+and accuracy measures. The experiments show that our proposed
+method, fair-tf-idf with Sigmoid Transformation, provides an ad-
+justable balance between accuracy and fairness, and leads to the
+most desirable fairness/accuracy result according to our criteria.
+2 RELATED WORK
+In the past, many studies have been conducted which demonstrated
+the bias in recruitment with respect to gender, race, ethnicity or
+the accents of the applicants. Some of the studies focused on racial
+discrimination in the recruitment process, e.g. [ 4], which confirmed
+the presence of bias in labor market based on race.
+[4] demonstrated that interview calls received were almost 50%
+higher for white sounding names compared African-American
+sounding names. They further show that by increasing the quality
+of resumes the interview calls were increased by 30% for white
+sounding names as compared to a marginal increase for African-
+American sounding names. Another such study conducted in 2009
+targeted racial as well as ethnic discrimination in a job market in
+Canada [16].
+In the book “Weapons of Math Destruction” [ 15], O’Neil dis-
+cusses a personality test conducted by companies before hiring
+the candidates which was designed by experts that may not take
+into account any feedback. Candidates who get red-lighted as a
+result of this automated screening test suffer without knowing the
+reason. She also explains in detail how the bias in training data
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+268(past human decisions in this case) is inherited by machine learning
+algorithms. O’Neil illustrates this with an example of the screening
+process of a medical school which was highly biased [ 13]. When
+the school decided to build a computer model for screening the ap-
+plicants, they captured the bias from previous human decisions and
+the resulting algorithm discriminated against non-native English
+speaking candidates and female candidates [13].
+Rudinger et al., in 2017 [ 17] studied social bias in natural lan-
+guage inference corpora and how it is susceptible to amplifica-
+tion. They demonstrated that the hypotheses of Stanford Natural
+Language Inference (SNLI) consist of various types of stereotypes
+including gender-based, age-based, racial or religious bias.
+While the previous studies were mostly field experiments and
+did not talk about their application to training a machine learning
+algorithm, numerous recent studies have been conducted to find out
+the impact of biased data on the trained machine learning models
+[1]. Numerous debiasing methods have been proposed, several of
+which are summarized by [ 3]. Notable studies that have addressed
+“fairness” focused on two different approaches. Some studies like
+Feldman et. al. [ 9] proposed methods to make the the dataset unbi-
+ased, whereas others like Bolukbasi et. al. [ 5] proposed a debiasing
+algorithm for achieving fairness. [ 5] showed that word embeddings
+trained on very general input data like news articles display gender-
+biased word associations. They proposed an algorithm to “de-bias”
+the word embeddings to reduce gender stereotypical associations.
+While previous works including [ 2,5] have proposed debiasing
+algorithms for text data, they mainly focused on word embeddings.
+Our method instead focuses on debiasing tf-idf representations.
+3 DATASET
+We studied nationality bias in automated resume filtering in the
+context of a relatively pluralistic nation, Singapore. The popula-
+tion of Singapore consists of three major ethnic groups: Chinese,
+Malaysian and Indian. Around 43% of its population consists of
+foreign born people. As we wanted to study the socio-linguistic bias,
+which can be a result of the different linguistic styles being used in
+different countries, we selected the resumes of candidates born in
+China, Malaysia and India. We used 135 resumes of candidates ap-
+plying to accounting and finance jobs in Singapore collected by Jai
+Janyani,1consisting of 45 candidates each from Chinese, Malaysian
+and Indian origin, the primary demographics in Singapore. We
+manually selected the resumes from the said dataset based on care-
+fully reading and understanding the origin of candidates. Only the
+resumes where origin of the candidates can be clearly inferred were
+selected for this study. The categorization of resumes into Chinese,
+Indian or Malaysian origin was done based on the education or ini-
+tial employment records. For example, candidates were categorized
+as Chinese origin if they have completed all or initial education
+in China and/or have started their employment in China and then
+moved to Singapore or applied for a job in Singapore.
+To assess and mitigate the bias in matching job descriptions
+and resumes, we manually collected 9 finance and accounting job
+postings from a popular job site with 3 postings from each country
+(China, India and Malaysia). Although our focus is on nationality-
+based AI hiring discrimination in Singapore, we used the job ads
+1https://github.com/JAIJANYANI/Automated-Resume-Screening-System
+Figure 1: A 𝑡-SNE plot showing all the collected resumes and
+job postings, based on tf-idf features.
+posted by people from those countries since we could use the na-
+tional origin as a ground truth label for the nationality of the people
+who posted the ads. Finally, all job-resume pairs were annotated
+according to whether the candidate was qualified for the job (a
+binary label), by three annotators. The majority vote was used to
+determine the final ground truth label regarding whether the can-
+didate was a “match” for the job or not. The aim of the study is to
+match the resumes with the job postings in an unbiased way irre-
+spective of the country in which they were posted. For example, for
+a job posting from China, the possibility of resumes getting selected
+from all the three countries should be equal and only depend on
+the qualifications of candidates rather than their country of origin.
+4 THE BIAS EXPLAINED
+An AI-based resume filtering algorithm aims to find resumes that
+match the job postings. The standard text-based document retrieval
+approach [ 12] uses tf-idf vectors to represent each query and each
+document [ 10]. In our case, a job advertisement is considered a
+“query” and a resume is a document to retrieve. We rank the match
+of a resume and a job posting based on the cosine similarity of the
+job posting vector and the resume vector. In our experiments, we
+selected the top 5 resumes for a particular job posting based on the
+cosine similarity between them. Our first goal is to examine the
+fairness behavior of this standard approach.
+It was observed that out of all the resumes selected by our algo-
+rithm, around 46.66% were from Malaysia, 42.22% were from India,
+while Chinese resumes formed only 11.11% of the total selected
+resumes. To formally define and quantify fairness, we used the
+following𝑝% Fairness Measure in our study:
+𝐹𝑎𝑖𝑟𝑛𝑒𝑠𝑠𝑀𝑒𝑎𝑠𝑢𝑟𝑒 =𝑃(𝑚𝑎𝑡𝑐ℎ|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 1)
+𝑃(𝑚𝑎𝑡𝑐ℎ|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 2), (1)
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+269Table 1: Fairness Measure and Accuracy for Tf-idf
+Country (of Job Posting) Fairness Measure Accuracy
+China 0.7272 90
+India 0.0526 80
+Malaysia 0.0526 100
+Overall 0.0723 90
+where𝑃(𝑚𝑎𝑡𝑐ℎ|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 1)is the value from the demographic
+with the lowest match probability value given a fixed demographic
+of job posting and 𝑃(𝑚𝑎𝑡𝑐ℎ|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 2)is the value from the
+demographic with the highest match probability value given a fixed
+demographic of job posting.
+This widely used fairness metric is adapted from the 80% rule
+for disparate impact analysis, a legal criterion which identifies
+discriminatory behavior if the ratio is less than 0.8 [ 7]. Here, the𝑝%
+is expressed as a ratio between 0 and 1, rather than a percentage.
+The lower the value of Fairness Measure, the more “unfair” it is
+in terms of disparity. We found that the fairness properties varied
+greatly with respect to the country of the job posting (Table 1).
+The overall fairness measure across all job postings came out to be
+0.0723, very far below the legal threshold of 0.8.
+To evaluate the accuracy of the matching process, we labeled all
+possible job-candidate matches using the majority vote from our
+three annotators. For this part of the experiment, we considered
+only the top 5 resumes retrieved. The accuracy of the tf-idf method
+varied by country but was generally high, being 90% accurate overall
+(Table 1).
+We used a𝑡-SNE plot [ 18] to visualize all the tf-idf representa-
+tions of resumes and job postings together in two dimensions in
+order to better understand the tf-idf algorithm’s disparate behavior
+(Figure 1). We observe substantial clustering of resumes by national
+origin, especially for the Chinese resumes. It is visible that many
+job postings are closer to Malaysian-origin resumes, whereas fewer
+postings were near Chinese origin resumes. Also, it can be seen that
+Chinese job postings are closer to Chinese origin resumes than any
+other job postings, making it difficult to match Chinese resumes
+to non-Chinese ads. These factors may partly explain the large
+differences in the fairness metrics between countries.
+To more closely examine the reasons for these demographic
+differences, we plotted word clouds to show the top words used by
+applicants from each country of origin. Figures 2, 3 and 4 show word
+clouds for China, India and Malaysia respectively. It is visible from
+the word clouds that, apart from the common words “financial,”
+“management,” “business” and “accounting,” location words like
+“China,” “India” and “Malaysia” are also the most frequent terms.
+The tf-idf weighting did not strongly down-weight those terms, as
+the terms typically appear in only those resumes which belong to
+the candidates from that particular country (and similarly for the job
+ads). Such differences in language patterns between demographics
+could explain a substantial fraction of the disparity.
+Figure 2: Word cloud for resumes from China.
+Figure 3: Word cloud for resumes from India.
+5 METHODOLOGY
+The above results strongly suggest that systematic differences in
+word usage between demographic groups can substantially con-
+tribute to disparate behavior in job-resume matching methods such
+as tf-idf-based document retrieval. This phenomenon is consistent
+with studies on the impact of sociolinguistic bias in human hir-
+ing decisions [ 6]. Accordingly, we proposed and evaluated various
+approaches for fairly matching resumes to job descriptions, by mit-
+igating bias due to sociolinguistic behavior. Our overall approach
+is to modify tf-idf to correct for demographic bias in word usage.
+5.1 Fair-tf-idf
+We propose a new method called fair-tf-idf, where we re-weight the
+previously calculated tf-idf values with an extra fairness term to
+make the word features fair for all demographics. Analogously to
+the𝑝% Fairness Measure (Equation 1), we perform the re-weighting
+of the tf-idf values in a manner inspired by the legal criterion for
+discrimination, the 𝑝-% rule [ 7]. We calculate a fairness term for
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+270Figure 4: Word cloud for resumes from Malaysia.
+each term𝑡, which we call the ‘p-ratio(𝑡)’. For each term, the ‘p-
+ratio(𝑡)’is calculated as:
+𝑝-𝑟𝑎𝑡𝑖𝑜(𝑡)=𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 1)
+𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 2), (2)
+where𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 1is the demographic with the lowest 𝑃(𝑡|
+𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐)and𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 2is the demographic with the high-
+est𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐). To calculate the fairness weight, we first
+calculate𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐), where𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐)repre-
+sents the probability that a word toccurs in documents which
+come from one demographic group. For example, if a word oc-
+curs in 20 out 45 documents, where all the 45 documents are from
+a same demographic group (country of origin in this case), then
+𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐)is20
+45.
+We then obtain the ‘fair-tf-idf’ by multiplying the tf-idf value
+of every term 𝑡by its ‘p-ratio’ :
+fair-tf-idf(𝑡)=tf(𝑡)×𝑝-ratio(𝑡).
+The p-ratio( 𝑡) is always between 0 and 1. The effect of fair-tf-idf
+essentially is that, if a word occurs equally in resumes from all the
+3 demographics, then the values 𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 1)and𝑃(𝑡|
+𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 2)would be same, and the fair-tf-idf value will be
+equal to its tf-idf. For those words which never occur in one of the
+demographics, however, the value of fair-tf-idf becomes zero.
+The tf-idf vectors are thus converted into a reweighted “fair-tf-
+idf”vectors for all the 135 resumes and job postings. We normalize
+the tf-idf vectors to unit length and use the cosine similarity with a
+given job posting to rank the resumes, then select, e.g., the top-5
+resumes.
+5.2 Fair-tf-idf with Sigmoid Transformation
+Although intuitive, the direct use of fair-tf-idf, as described above,
+has a few limitations. Fair-tf-idf negated the effect of the idf weight-
+ing for certain stopwords, giving them more weight again (see
+experiments below). This is because fair-tf-idf increased the rela-
+tive weights of words that are common among all the demograph-
+ics, which typically includes stopwords. A second concern is that
+the method does not provide users with the ability to control the
+Figure 5: The Effect of the Sigmoid Transformation on the
+𝑝-ratio.
+fairness/fidelity trade-off. To address both of these concerns, we
+further propose an enhanced method in which the p-ratio ’s are
+passed through a sigmoid transformation before multiplying them
+with the tf-idf:
+fair-tf-idf(𝑡)=tf(𝑡)×idf(𝑡)×transformation(𝑝-ratio(𝑡)), where
+𝑡𝑟𝑎𝑛𝑠𝑓𝑜𝑟𝑚𝑎𝑡𝑖𝑜𝑛(𝑝-ratio(𝑡))=𝜎(𝜆(𝑝-ratio(𝑡)−𝜏)) (3)
+and𝜎is the sigmoid function,
+𝜎=1
+1+𝑒−𝑥. (4)
+The𝜏in the above transformation function is a translation param-
+eter which roughly determines the cut-off point in terms of the
+p-ratio to keep the tf-idf unchanged, i.e. it encodes a degree of
+tolerance in the demographic differences of the terms (see Figure
+5). The value of 𝜏should generally be set between 0 and 1. The
+hyperparameter 𝜆>0is a scaling parameter which determines
+how sharply the weights drop off. The effect of this transforma-
+tion is roughly that, for 𝜆≥50or so, the terms whose p-ratio is
+at least around 𝜏are kept with approximately their original tf-idf
+weight, and the remaining “unfair” words below the cut-off point
+are sharply discounted. This keeps the relative weight of stop words
+and other relatively “fair” words unaffected, which helps to solve
+the stop-words issue.
+5.3 Term Frequency (TF) Baseline
+Tf-idf was introduced as an enhancement in information retrieval by
+adding a term weighting system along with term frequency (tf) to
+de-emphasize common words [ 10]. But in our case, for matching re-
+sumes to job postings, we suspected that tf-idf might down-weight
+the keywords such as educational degrees or skills. We therefore
+also considered a simple term frequency method as a baseline. The
+tf baseline is performed analogously to the other methods, using
+cosine similarity for ranking the resumes.
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+271Table 2: Comparison — Percentage of resumes selected from each demographic
+Percentage of Selected Resumes
+Country of Candidate
+Method China India Malaysia
+TF-IDF 11.11 42.22 46.66
+TF 8.88 43.33 47.77
+Fair TF-IDF 25.5 33.33 41.11
+Fair TF 17.77 36.66 45.55
+Fair TF-IDF Sigmoid ( 𝜆=50,𝜏=0.6) 26.66 31.11 42.22
+Limiting Number of Resumes (LNR) 33.33 33.33 33.33
+Table 3: Comparison — Fairness Measure for each demographic
+Fairness Measure
+Country of Job Posting
+Method China India Malaysia Overall
+TF-IDF 0.7272 0.0526 0.0526 0.0723
+TF 0.5833 0 0.0583 0
+Fair TF-IDF 0.3846 0.2142 0.5833 0.3673
+Fair TF 0.4 0.1428 0.3846 0.3571
+Fair TF-IDF Sigmoid ( 𝜆=50,𝜏=0.6) 0.5 0.4615 0.4615 0.923
+Limiting Number of Resumes (LNR) 1 1 1 1
+5.4 Fair TF Baseline
+For completeness, we consider a baseline where we multiply the
+term frequency with our 𝑝-ratio(𝑡) term:
+fair-tf(𝑡)=tf(𝑡)×𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 1)
+𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 2),
+where𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 1is the demographic with the lowest 𝑃(𝑡|
+𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐)and𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐 2is the demographic with the high-
+est𝑃(𝑡|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐).
+5.5 Limiting Number of Resumes (LNR)
+Baseline
+In this baseline method, limiting the number of resumes (LNR), we
+used simple tf-idf terms, but fixed the number of resumes that can
+be matched from each demographic with the given job posting to
+be proportional to the number of applicants from that demographic,
+to ensure parity. As the proportions of resumes that are matched
+from each demographic, 𝑃(𝑚𝑎𝑡𝑐ℎ|𝑑𝑒𝑚𝑜𝑔𝑟𝑎𝑝ℎ𝑖𝑐), are equal, the
+results are always fair in the sense that the 𝑝%Fairness Measure is
+1, which is the optimal value.
+The major drawback with this method, however, is that we need
+to have demographic labels for every resume at test time while match-
+ing the resumes with job postings. Since this demographic infor-
+mation is legally protected in many contexts, it may be difficult
+to obtain for test users. In contrast, our approach only needs de-
+mographic labels for the training data, which are often easier to
+obtain. The parity constraint can also be very harmful to the ac-
+curacy of the matching when there are demographic skews in the
+qualified candidates per individual positions, as we will see in our
+experiments below.6 EVALUATION
+We evaluated all five methods based on both accuracy and the𝑝%
+Fairness Measure, using all 135 resumes and 9 job postings. We
+also reported 𝑡-SNE plots showing the position of resumes and job
+postings in two-dimensional space after performing de-biasing.
+6.1 p% Fairness Measure
+Table 2 compares the percentage of total resumes from each de-
+mographic that were selected as a match to all the 9 job postings
+for each of the methods. We observe that the results are relatively
+fair with the fair-tf-idf and fair-tf-idf with Sigmoid Transformation
+methods. The Sigmoid Transformation method has two hyperpa-
+rameters which affect the results. For Table 2, we used default
+untuned hyperparameter values, 𝜆=50and𝜏=0.6, which leaves
+the tf-idf weights of words with 𝑝-ratio(𝑡)>0.6relatively undis-
+turbed, while setting the rest to approximately 0 (see Figure 5). We
+study the impact of these hyperparameters in the next section. Note
+that the baseline method which limits the number of resumes (LNR)
+always selects an equal proportion of the resumes per demographic.
+This means that the Fairness Measure will always be 1, which is
+the maximum value. Table 3 compares the 𝑝% Fairness Measures of
+each of the demographic as well as the overall Fairness Measure.
+The results show that the Fairness Measure value is best when
+using fair-tf-idf with the Sigmoid Transformation method, except
+for the LNR baseline.
+6.2 Impact of Hyperparameters on Fairness
+The fair tf-idf with Sigmoid Transformation method has two hyper-
+parameters to set, 𝜆and𝜏. We performed experiments to study the
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+272Table 4: Comparison — Accuracy of each Method
+Accuracy (Percentage)
+Country of Job Posting
+Method China India Malaysia Overall
+TF-IDF 90 80 100 90
+TF 100 90 90 93.33
+Fair TF-IDF 70 80 70 73.33
+Fair TF 80 60 80 73.33
+Fair TF-IDF Sigmoid ( 𝜆=55,𝜏=0.32) 80 80 100 86.66
+Limiting Number of Resumes (LNR) 80 60 90 76.66
+Figure 6:𝑝% Fairness Measure for 𝜆=35, varying 𝜏.
+Figure 7:𝑝% Fairness Measure for 𝜆=50, varying 𝜏.
+impact of the hyper-parameter values, reporting few graphs which
+display how the 𝑝% Fairness Measure changes with the values of 𝜆
+and𝜏.
+The graphs plotted in the Figures 6 – 8 show that the 𝑝% Fairness
+Measure changes drastically with the cut-off value 𝜏. The fairness
+generally dips after around 𝜏=0.6, which is due to the top of the
+“S” in the sigmoid curve being shifted past the maximum value of
+Figure 8:𝑝% Fairness Measure for 𝜆=65, varying 𝜏.
+𝑝-ratio(𝑡)=1.0, which results in a “J-shaped” weighting curve,
+instead of an “S-shaped” curve. The 𝜆hyperparameter also signifi-
+cantly impact the performance. Among the different 𝜆s we tested,
+the peak fairness measure was achieved when 𝜆=35.
+6.3 Accuracy
+The accuracy is calculated by the percentage of correctly matched
+resumes among the top N resumes selected by a system. We used
+three annotators to determine resume matches. We provided an-
+notators with anonymous resumes, where we masked the demo-
+graphic information. They were asked to annotate a job-resume pair
+as a match if the required education and/or experience correctly
+matches the job description. A candidate was considered a match
+even if he or she was overqualified for the job. We disregarded
+language requirements in the annotations. Annotators were asked
+to annotate all the other cases as “no-match.” We used a major-
+ity vote by the annotators to determine the final label and used
+this in system evaluation. We calculated average inter-annotator
+agreement and got the average Kappa value of 0.55.
+Our aim is to make selection of resumes fair for each demo-
+graphic without losing much of the accuracy.
+Table 4 compares the total accuracy of each method along with
+per-demographic accuracy. It can be observed from Table 4 that the
+baseline which limits the number of resumes from each nationality
+(LNR) has an accuracy rate of 76.66% overall, substantially lower
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+273Figure 9:𝑡-SNE plot for Tf Method.
+than the original TF-IDF method. This method has a perfect 1 𝑝%
+Fairness Measure. However, the LNR method needs nationality la-
+bels for each resume during testing and predicting time so that the
+equal proportion of resumes can be selected. Having labels for na-
+tionality is not always practical in many contexts, since applicants
+may not be willing to provide this sensitive information.
+The accuracy for fair-tf-idf with Sigmoid Transformation, at
+86.66%, was the best of the fair algorithms, while simultaneously
+achieving excellent fairness compared to the baselines other than
+LNR. The total accuracy values for all the other fair baseline meth-
+ods lie between 73% and 77%.
+6.4 Visualization
+We also created some visualizations to demonstrate how our pro-
+posed de-biasing methods were effective in selecting the resumes
+fairly. The𝑡-SNE plots in Figures 9– 11 represent all the resumes
+plotted in 2-dimensional space using three of the methods men-
+tioned in the previous section. For clarity and ease of compari-
+son, only one job description has been plotted along with the 135
+resumes. The plots illustrate the matching behavior due to any
+demographic clustering behavior in the resumes, and similarities
+between the job posting and the resumes.
+In the plot for TF method (Figure 9), it can be seen that most
+of the Malaysian and Indian resumes are close to the job posting.
+So, when resumes were selected using cosine similarity it picked
+most of the Malaysian and Indian resumes. In contrast, the Chinese
+resumes are further away from the job posting. Most of the resumes
+are also clustered according to their demographics, which is likely
+to cause disparity in the matching.
+Figures 10 and 11 represent the 𝑡-SNE plots of all the resumes
+and the same job posting after applying fair-tf-idf and fair-tf-idf
+Figure 10:𝑡-SNE plot for Fair-tf-idf Method.
+Figure 11:𝑡-SNE plot for Fair-tf-idf with Sigmoid Transfor-
+mation Method.
+with the Sigmoid Transformation respectively. After applying these
+techniques, it can be observed that the job posting is close to sev-
+eral resumes from each demographic. It can also be observed that
+resumes with the same country of origin are no longer strongly clus-
+tered into different regions, but have substantial overlap. This was
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+274Table 5: Top Words from China before and after de-biasing
+Before de-biasing After de-biasing
+china management
+management financial
+financial research
+business investment
+investment business
+research credit
+university finance
+finance company
+company university
+kong fund
+especially the case when applying fair-tf-idf with the Sigmoid Trans-
+formation, making improved demographic parity in the matching
+much more likely to occur.
+6.5 Top Words
+We also compared the 10 top words from each demographic before
+and after applying fair-tf-idf with the Sigmoid Transformation in
+Table 5. The main differences are that the words “China” and “Kong”
+(as in “Hong Kong"), common words in Chinese resumes, are no
+longer top word after applying the de-biasing method. It seems
+that our method down-weights nationality-specific proper nouns,
+which can be a source of bias. In contrast, the word “credit”, which
+was not present before de-biasing, was promoted to the top word
+list after de-biasing. Other job-related keywords such as “financial, ”
+“management,” and “business,” remain in the top word list. This is
+important since these words are very relevant for matching.
+7 CONCLUSION AND FUTURE WORK
+We have studied how socio-linguistic patterns can lead to demo-
+graphic bias in text-based algorithms for matching resumes to job
+postings, and we proposed several fair modifications to the tf-idf
+matching method to correct for these issues. It can be seen from
+our experimental results that our proposed fair-tf-idf with Sigmoid
+Transformation method performs well in de-biasing the data and
+selecting resumes fairly and accurately. The parity in the distri-
+bution of selected resumes was improved compared to the results
+when no de-biasing was performed, as quantified by the 𝑝% Fair-
+ness Measure, with relatively little loss in accuracy compared to
+traditional tf-idf matching.
+Along with the fair matching of resumes to job postings, we
+expect that this method can be extended to provide debiased career
+recommendations to applicants. Thus the model is not only useful
+for recruiters but also for the applicants.
+We also believe this method can be generalized and used in
+other contexts. For example, in addition to nationality, the same
+method can be used to mitigate gender bias in text retrieval. In
+fact, the proposed method can be used to improve the fairness
+of a wide range of text processing applications where tf-idf text
+representations are used.
+The main limitation of this study was that only a small number
+of resumes was collected due to the burden of data annotation. In
+the future, we plan to collect and annotate a larger resume datasetto further validate our results. This will facilitate the development
+and use of fair deep neural network models for matching job posts
+and resumes.
+ACKNOWLEDGMENTS
+This work was performed under the following financial assistance
+award: 60NANB18D227 from U.S. Department of Commerce, Na-
+tional Institute of Standards and Technology. This material is based
+upon work supported by the National Science Foundation under
+Grant Nos IIS 1850023; IIS1927486. Any opinions, findings, and
+conclusions or recommendations expressed in this material are
+those of the author(s) and do not necessarily reflect the views of
+the National Science Foundation.
+REFERENCES
+[1]S. Barocas and A.D. Selbst. 2016. Big data’s disparate impact. Cal. L. Rev. 104
+(2016), 671.
+[2]Schmidt Ben. 2015. Rejecting the gender binary: a vector-space operation. Retrieved
+April 12, 2020 from http://bookworm.benschmidt.org/posts/2015-10-30-rejecting-
+the-gender-binary.html
+[3]R. Berk, H. Heidari, S. Jabbari, M. Kearns, and A. Roth. 2018. Fairness in Criminal
+Justice Risk Assessments: The State of the Art. In Sociological Methods and
+Research 1050 (2018), 28.
+[4]Marianne Bertrand and Sendhil Mullainathan. 2003. ARE EMILY AND GREG
+MORE EMPLOYABLE THAN LAKISHA AND JAMAL? A FIELD EXPERIMENT
+ON LABOR MARKET DISCRIMINATION. American Economic Review 94, 9873
+(July 2003), 991–1013. https://doi.org/10.3386/w9873
+[5]Tolga Bolukbasi, Kai-Wei Chang, James Zou, Venkatesh Saligrama, and Adam
+Kalai. 2016. Man is to Computer Programmer as Woman is to Homemaker?
+Debiasing Word Embeddings. In Advances in Neural Information Processing
+Systems. Curran Associates, Inc., 4349–4357.
+[6]Faye K Cocchiara, Myrtle P Bell, and Wendy J Casper. 2014. Sounding “Different”:
+The Role of Sociolinguistic Cues in Evaluating Job Candidates. Human Resource
+Management 55, 3 (November 2014), 463–477. https://doi.org/10.1002/hrm.21675
+[7]Equal Employment Opportunity Commission. 1978. Guidelines on employee
+selection procedures. C.F.R. 29 (1978), 1607.
+[8]J. Dastin. 2018. Amazon scraps secret AI recruiting tool that showed bias against
+women. Reuters (2018).
+[9]Michael Feldman, Sorelle A. Friedler, John Moeller, Carlos Scheidegger, and
+Suresh Venkatasubramanian. 2015. Certifying and Removing Disparate Impact.
+InProceedings of the 21th ACM SIGKDD International Conference on Knowledge
+Discovery and Data Mining (Sydney, NSW, Australia) (KDD ’15). Association for
+Computing Machinery, New York, NY, USA, 259–268. https://doi.org/10.1145/
+2783258.2783311
+[10] Salton Gerard and Christopher Buckley. 1988. Term-weighting approaches in
+automatic text retrieval. Information Processing & Management 24 (1988), 513–523.
+Issue 5. https://doi.org/10.1016/0306-4573(88)90021-0
+[11] Glassdoor. 2019. 50 HR and Recruiting Stats for 2019. Glassdoor. Retrieved
+January 12, 2020 from https://www.glassdoor.com/employers/resources/hr-and-
+recruiting-stats-2019
+[12] Anna Huang. 2008. Similarity Measures for Text Document Clustering. New
+Zealand Computer Science Research Student Conference, Christchurch, New
+Zealand.
+[13] Stella Lowry and Gordon Macpherson. 1988. A blot on the profession. British
+medical journal (Clinical research ed.) 296, 6623 (1988), 657.
+[14] J.P. Medved. 2015. Recruiting Software Impact Report. Capterra. Retrieved
+January 12, 2020 from https://www.capterra.com/recruiting-software/impact-of-
+recruiting-software-on-businesses
+[15] Cathy O’Neil. 2016. Weapons of Math Destruction (1st. ed.). Crown Publishing
+Group, New York, Chapter Getting a Job.
+[16] Philip Oreopoulos. 2011. Why Do Skilled Immigrants Struggle in the Labor Mar-
+ket? A Field Experiment With Thirteen Thousand Resumes. American Economic
+Journal: Economic Policy 3 (2011), 148–71. https://doi.org/10.1257/pol.3.4.148
+[17] Rachel Rudinger, Chandler May, and Benjamin Van Durme. 2017. Social Bias in
+Elicited Natural Language Inferences. In Ethics in Natural Language Processing,
+Proceedings of the First ACL Workshop. 74–79.
+[18] Laurens van der Maaten and Geoffrey Hinton. 2008. Visualizing Data using
+t-SNE. Journal of Machine Learning Research 9 (2008), 2579–2605.
+Session 5: Fairness in User Modeling, Adaptation 
+and Personalization (FairUMAP 2020) 
+ 
+UMAP ’20 Adjunct, July 14–17, 2020, Genoa, Italy
+275

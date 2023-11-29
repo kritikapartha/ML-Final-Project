@@ -1,0 +1,941 @@
+Machine-based Stereotypes: How Machine Learning Algorithms
+Evaluate Ethnicity from Face Data
+Leon Nascimento
+leon.nascimento@edu.unirio.br
+Universidade Federal do Estado do
+Rio de Janeiro
+Rio de Janeiro, Rio de Janeiro, BrazilGleison Santos
+gleison.santos@uniriotec.br
+Universidade Federal do Estado do
+Rio de Janeiro
+Rio de Janeiro, Rio de Janeiro, BrazilAna Cristina Bichara Garcia
+ana.bichara@uniriotec.br
+Universidade Federal do Estado do
+Rio de Janeiro
+Rio de Janeiro, Rio de Janeiro, Brazil
+ABSTRACT
+Context: Soft biometrics is a field that aids traditional biomet-
+rics through attribute identification using descriptors such as hair
+type, ethnicity, or gender. When employed to large search sets, al-
+lows optimization of the search space, thus increasing performance.
+Problem: Ethnicity classification is controversial due to unclear
+or stereotypical definitions used for classifying individuals, pro-
+ducing incorrect results. While there are many applications that
+use face images to ascertain ethnicity, no extensive study has been
+done to map these approaches. Solution: A literature survey of the
+strategies, data, and results used for ethnicity classification is em-
+ployed to understand how the issue is being treated in the literature.
+IS Theory: Considering the societal nature of ethnicity, applica-
+tions that evaluate ethnicity are subjected to Social Shaping Of The
+Technology. Investigating these applications can help identify the
+societal influence of those technologies. Methods: We present a
+systematic literature review (SLR) to map the algorithms, types,
+sources of the data, and results obtained for classifying ethnicity
+based on the human face. Summary of Results: Many algorithms
+are currently used to ascertain ethnicity from face images. These
+algorithms may use information from the whole face or opt to use
+partial regions of the face. The strategies may use symbolic data
+about the face, like face measurements, or use subsymbolic data.
+The classification performance appears to be stagnated. However,
+datasets overrepresent White, Black, and Asian subjects, with few
+datasets being balanced. Contributions and Impacts in the IS
+area: This study offers an up-to-date look at how ethnicity classifi-
+cation is done, the data used, and the way society may be shaping
+technology.
+CCS CONCEPTS
+•Social and professional topics →Race and ethnicity ;•Com-
+puting methodologies →Machine learning ;•General and ref-
+erence→Surveys and overviews .
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than the
+author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or
+republish, to post on servers or to redistribute to lists, requires prior specific permission
+and/or a fee. Request permissions from permissions@acm.org.
+SBSI ’23, May 29–June 01, 2023, Maceió, Brazil
+©2023 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+ACM ISBN 979-8-4007-0759-9/23/05. . . $15.00
+https://doi.org/10.1145/3592813.3592901KEYWORDS
+Race and Ethnicity, Ethnicity Classification, Machine Learning,
+Fairness
+ACM Reference Format:
+Leon Nascimento, Gleison Santos, and Ana Cristina Bichara Garcia. 2023.
+Machine-based Stereotypes: How Machine Learning Algorithms Evaluate
+Ethnicity from Face Data. In XIX Brazilian Symposium on Information Sys-
+tems (SBSI ’23), May 29–June 01, 2023, Maceió, Brazil. ACM, New York, NY,
+USA, 8 pages. https://doi.org/10.1145/3592813.3592901
+1 INTRODUCTION
+The human face is a major source of information regarding iden-
+tity. From it, information such as age, gender, and ethnicity can be
+obtained. In the context of soft biometrics, such information can
+automatically extracted from human face images using machine
+learning methods [ 31,35]. In particular, ethnicity information is
+considered controversial due to vague definitions and its implica-
+tions in many applications where ethnicity data is used to reduce
+the search space or create profile clusters, like video surveillance
+systems, image search queries, and social interactions [ 11,23,74].
+While significant advances have been made in feature extraction
+from face images, it still presents a relevant ethical challenge due
+to the possibility of incorrect classification of individuals, causing
+social consequences when used on systems that rely on ethnicity
+classification [38].
+Contemporary literature discusses ethnicity as a social construct.
+Grosfoguel [25] discusses how ethnicity is currently seen as the
+cultural identity of a group, which is often based on shared ancestry,
+language or cultural traditions. At the same time, the term "race" is
+seen as a loose categorization based on physical similarities among
+human populations [ 25,83]. However, many social initiatives take
+into consideration visual attributes of subjects in order to apply
+affirmative actions.
+Considering that the choice of classifying a person within a
+group is affected by the social background of the evaluator, the task
+can be considered subjective, specially considering phenomena like
+the well-documented "other-race effect" [ 14,47,65]. This choice
+may be only consensus among the same group as the labeler and
+be considered incorrect in different social contexts [76].
+Moreover, it is known that society shapes the concepts of eth-
+nicity, and by consequence, technologies and methods involving it,
+understanding the capabilities and limitations of these strategies
+may allow a deeper understanding of the challenges it may present.
+Thus, evaluating this influence is an investigation based on the
+theory of Social Shaping of Technology, as proposed in [94].
+159SBSI ’23, May 29–June 01, 2023, Maceió, Brazil Nascimento, Santos and Bichara Garcia.
+To aid in this task, this study seeks to map how ethnicity is classi-
+fied using machine learning algorithms through an SLR, exploring
+the types of data used and some socio-technical aspects influencing
+the current literature. It aims to list the algorithms used, the type of
+data used for classification, the source of the data used for training
+the models, and the accuracy of these models.
+Besides the introduction, this paper has the following structure:
+Section 2 provides the background on automated ethnicity clas-
+sification and its socio-cultural involving ethical issues; Section
+3 describes the research methods; Section 4 and 5 presents the
+results and discussion, respectively; Section 6 presents our final
+considerations.
+2 BACKGROUND
+Humans have tried to classify one another since early history. How-
+ever, only in the 18thcentury that the current race categories (i.e.:
+White, Asian, Black, Latino and Indian ) became standardized and
+widely used [ 45]. The categories were based on attributes such as
+hair type, skin color, the shape of the teeth, and skull morphology
+to divide humans into groups.
+Currently, ethnicity reporting in the scientific literature is en-
+couraged to clearly describe how the ethnicity classification was
+done (e.g., Self-report, Investigator observed, or Survey-based), em-
+phasize the adjectival use over the noun form for (i.e., Black men
+vs. Blacks) and specify nonspecific groups instead of simply using
+the term "other" [20].
+2.1 Machine Learning in Soft Biometrics
+As previously mentioned, soft biometrics is a field that concerns
+itself with the extraction of ’soft’ attributes that can be summarized
+into verbal descriptors. Instead of evaluating that a person has a
+height of 1.93m, a soft biometrics application could classify this
+person as a ’tall’ person. This information is very useful to aid the
+construction and retrieval of metadata that improves query times,
+reduces the search space and improve performance [15, 31].
+The data sources can be diverse, including face images, body
+images, gait footage, clothing, or even imprints such as hand or
+fingerprints, which can be used to determine gender, age, and eth-
+nicity [ 26,31,61,63]. Given the complexity of the task, a large
+assortment of machine learning algorithms make the toolset of soft
+biometrics.
+Dantcheva et al . [15] surveyed the field, evaluating feature ex-
+traction and classification methods used in soft biometrics. They
+showed that for extracting features, methods such as Histogram of
+Gradients (HOG), pixelwise Principal Component Analysis (PCA),
+Local Binary Patterns (LBPs), Gabor Wavelets, and other extractors
+were widely used for Age, Gender, and Ethnicity tasks. Meanwhile,
+supervised learning algorithms such as Support Vector Machines
+(SVMs), Linear Discriminant Analysis (LDAs), and K-Nearest Neigh-
+bours were ubiquitous. By the time the study was published, few
+Deep Learning based applications were mapped by the authors.
+2.2 Ethnicity classification algorithms from
+face images
+Ethnicity classification is a subset of soft biometrics. The earliest
+documented work on the topic is the application of Random BinaryForests and Decision Trees for ethnicity classification by Gutta et al .
+[29]. In the study, the authors evaluated 1009 subjects in grayscale
+face images categorized into four ethnicities obtained by consensus
+among laboratory staff. This study opened the gates for new re-
+search into automated ethnicity classification, with the field seeing
+new developments in the use of face images for ethnicity classi-
+fication [ 48,75,81]. Hosoi et al . [33] developed an algorithm for
+detecting and classifying ethnicity from faces using Gabor wavelets
+and eye iris information, evaluating three very distinct groups
+(White, Asian and Black subjects) within a very small dataset. Sub-
+sequent approaches tried using color information [ 97], texture and
+shape information [17], local descriptors [12, 59], and so forth.
+In a recent effort to map out the field, Guo et al . [27] surveyed the
+use of algorithms for multi-ethnic face feature recognition. They
+evaluated three major ethnic groups (White, Black, and Asian) and
+a selection of the datasets and algorithms used for ethnic classifica-
+tion. Unfortunately, the study was not exhaustive nor systematic.
+Nor did the authors dove into the strategies used for classification
+and the nature of data used for the task. That means that, since [ 15]
+and [ 26], no recent comprehensive study to map the initiatives of
+ethnicity classification has been done.
+2.3 Ethical concerns regarding the use of
+ethnicity information
+Affirmative actions are considered one of the most important poli-
+cies developed in the post-civil rights era [ 85]. They are employed
+in many societies concerning historical aspects related to ethnicity
+to mitigate inequity and improve diversity [ 72,93]. To access the
+affirmative actions, individuals must claim belonging to a group,
+which may be done through self-declaration or consensus. This
+poses a challenge as membership criteria may not be well defined
+and be exploited by ill-intentioned individuals seeking the benefits
+of affirmative actions [ 8,21,99]. Countermeasures, such as veri-
+fication committees, may add even more challenges, as without
+clearly defined guidelines, subjectivity may influence fair access to
+affirmative actions [46].
+Williams and Edge [94] point, in the seminal work ’The Social
+Shaping of Technology’, that technologies do not exist in a vacuum
+and are shaped by the dominant values of society, be it economical,
+social or political. Likewise, it implies that technologies used to
+classify ethnicity will be influenced by the concepts of ethnicity
+within a given social context. In this difficult scenario, soft biomet-
+rics applications trained on well-defined ethnic groups may aid the
+classification by reducing the influence of evaluator subjectivity
+and crystallizing and explaining ethnicity concepts as defined by
+different social groups, separated by both geography and time.
+3 RESEARCH METHOD
+We conducted a Systematic Literature Review (SLR) considering
+Page et al. [67] and Schoormann et al. [79] guidelines.
+We used the PICOC model to aid the search string. We defined the
+Population as ’Ethnicity Classification Algorithms’, Intervention
+as ’Use of facial images, ” Comparison as ’Type of Algorithm Used,
+Type of Data Used, Source of Data Used,’ Outcome as ’Accuracy
+and Errors,’ and Content as ’Soft Biometrics Applications.’
+160Machine-based Stereotypes: How Machine Learning Algorithms Evaluate Ethnicity from Face Data SBSI ’23, May 29–June 01, 2023, Maceió, Brazil
+From these items, we derived two research questions (RQs) (see
+Table 1), placed into two categories based on their focus: (i) the
+strategies used, the type of classification done and their results,
+which we dubbed Method Centric Questions ; and (ii) the type of data
+used, the source of the data and the availability of the data used,
+which we dubbed Data Centric Questions .
+Group Research Questions
+Method
+Centric
+QuestionsRQ1. What are the techniques being used for identify-
+ing ethnicity from face images?
+RQ2. What are the ethnicities being identified?
+RQ3. What is the classification performance of models
+and what metrics have been used to evaluated them?
+Data Centric
+QuestionsRQ4. What type of face information has been used for
+ethnicity identification?
+RQ5. What are the datasets used to train the models?
+Table 1: Research questions by group
+The search string refinement included fine-tuning the keywords
+based on the terms obtained from the described PICOC model.
+While testing, we noticed a considerable number of studies related
+to "data race detection", which is unrelated to the subject of this
+study. Since the term "race" means both a competition based on
+speed and a group that share phenotypical traits. Hence, our queries
+removed the term “race detection”. The final query string used is:
+(RACE OR ETHNICITY OR RACIAL) AND (CLASSIFICATION OR
+DETECTION OR IDENTIFICATION OR RECOGNITION) AND (FACE
+OR FACIAL) NOT "RACE DETECTION" .
+We used the following data sources for referral and query for
+articles: ACM Digital Library, IEEE eXplore, Google Scholar, Scopus,
+and Science Direct. We applied the search string on the title, abstract,
+and keyword fields.
+Considering Guo et al . [27] review was published in 2016, we
+opted to define the study timeframe starting from there so we
+could identify articles showing the current developments in the
+field since the last review. Due to this, we included in our ar-
+ticle pool articles that met the following criteria: a) The study
+specifies the algorithm used; b) The study’s primary goal is race
+classification/detection/identification through machine learning;
+c) The study uses only facial image data; and d) The study was
+written in the last five years. Then, studies that met the follow-
+ing criteria were removed from the article pool: a) Race classifica-
+tion/detection/identification is a secondary aspect of the study (e.g.
+Benchmarking studies) and; b) The study implementation/archi-
+tecture was not a paper’s contribution (e.g., Application studies).
+The articles were selected by the first author and discussed with
+the other authors. Disagreements were resolved by vote. The first
+author summarized the results according to the research questions
+posed. The authors evaluated the extracted data before the writing
+of this review.
+4 RESULTS
+The use of the query string yielded 815 articles. After removing for
+duplicates, the number of articles was reduced to 688. By evaluating
+the screening criteria, the final pool of articles to 54, which were
+selected for reading by the authors. Fig. 1 summarizes the results ofthe search procedure performed in this study. The data extraction
+results may be viewed at zenodo.org/record/7430540.
+Figure 1: Flowchart depicting the article selection process
+4.1 Strategies used for ethnicity detection (RQ1)
+Two broad categories of strategies are being used to determine
+ethnicity from image data based on the feature extraction strategy.
+The first category includes articles that classify ethnicity based
+on evaluating texture attributes (see [ 24] and [ 71]), manipulations of
+color spaces (see [ 54,70]), or the use of facial landmarks to measure
+facial attributes (see [ 96]). We dubbed this category as Explicit
+Feature Backed Methods (EFBM) because these methods rely on
+an explicit representation of the face before evaluating the ethnicity
+data. The most common approaches observed were the use of LBPs,
+HOG, face landmark measurements, and pixel distribution analysis
+(Gray-Level Co-occurrence matrices, Color moments, and others).
+Table 2 summarizes the results.
+Category Quantity Strategies Employed
+Explicit Feature
+backed methods25 Texture Information: [ 52,54,55,69,
+71, 77]
+Skin Color Information: [ 3,6,9,24,
+52, 54, 64, 68–70, 78]
+Face Geometry Information: [ 1,28,
+49, 50, 96]
+Hidden Feature
+backed methods29 Convolutional Neural Networks: [ 2,
+4, 7, 16, 34, 40, 51, 53, 86, 92, 95, 98]
+Transfer Learning: [ 5,10,19,22,32,
+36, 37, 43, 80, 87, 89, 90]
+Other architectures: [ 5,18,30,36,37,
+44, 60, 82]
+Table 2: Types of feature extraction strategies observed
+The latter category presents articles that classify ethnicity based
+on extracting features using algorithms that obtain intermediate
+representations that are not human-readable, like Convolutional
+Neural Networks (CNNs, see [ 95] and [ 86] ) and other deep archi-
+tectures such as Deep Belief Networks. We dubbed this category as
+Hidden Feature Backed Methods (HFBM) because no previously
+known representation is used to extract the features of the face,
+which is hidden from the investigator. The use of transfer learning
+in CNNs, derived from pre-trained models such as VGG-16, ResNet,
+161SBSI ’23, May 29–June 01, 2023, Maceió, Brazil Nascimento, Santos and Bichara Garcia.
+and others, was one of the most used approaches in this category.
+Overall, CNNs are ubiquitous in this category.
+Regardless of the technique used for feature extraction, many
+classification strategies were employed in the studies evaluated (see
+Table 3). Among them, ANN-Based methods and SVMs were the
+most popular among the studies’ methods, followed by the use of
+decision trees or random forests. While most of these strategies
+rely on supervised learning methods, Achkar et al . [1] transposed
+the data points into a Kendall space and from there grouped the
+facial data according to clusters, which were only later referred to
+ethnicity, being remarkable as the one of the few studies who opted
+for an unsupervised technique.
+Algorithm Articles
+Support Vector Ma-
+chines (SVMs)[3, 9, 24, 30, 32, 37, 39, 54, 64, 68, 71, 73]
+Random Forests and
+Decision Trees[3, 30, 69, 70, 82, 96]
+K-Nearest Neighbors [42, 54, 91]
+Clustering [5, 49, 50, 56]
+ANN-Based Classifiers [1,2,4–7,10,16,18,19,22,30,34,36,40,43,
+51,53,60,64,78,80,82,84,86,87,89,90,92,
+95, 98]
+Table 3: Articles by classification algorithm used
+4.2 Ethnicities evaluated (RQ2)
+Most of the studies used labels derived from the traditional classi-
+fication of races. Within this framework, the Asian subjects were
+represented most, followed by White, Black, and Indian ethnicities.
+A remarkable under-representation of Latino/Hispanic and Middle
+Eastern groups was observed. The groups "Asian," "White," "Black,"
+and "Indian" represents nearly 90% of all categories classified in
+studies (see Figure 2).
+Figure 2: Pareto representation of number of times an eth-
+nicity was present in a study
+4.3 Strategies classification performance (RQ3)
+There is a direct segue from the previous topics regarding the vary-
+ing degrees of success from applying the different feature extractionstrategies. As previously noted, two main families of approaches to
+classify ethnicity are divided according to the extraction method
+of features. Table 4 show the successes of the approaches using
+accuracy as the main method of comparison. Accuracy was chosen
+due to being the most frequent metric used in the studies, despite
+providing biased results for unbalanced datasets [ 13]. We observed
+that most studies (46 out of 51, or 85,19%) preferred reporting ac-
+curacy. Other metrics reported were Confusion matrices (29,63%),
+F1-Scores (20,37%), and ROC Curves (16,67%).
+The studies that employed EFBM obtained better results when
+looking at the best-reported accuracy for any given ethnicity and
+the mean accuracy. However, the lower boundary is higher in stud-
+ies that employ HFBM, which means that even in worse conditions,
+HFBM approaches may perform better than EFBM. Overall, the
+mean accuracy of the algorithms hovers around 85%.
+The average accuracy in studies seems to hover around the 85%
+mark, with possible increases coming in the next years as HFBM
+methods mature. Individual accuracies, datasets traits and metrics
+used by article can be viewed at zenodo.org/record/7430540.
+Feature Extraction Highest Accuracy Mean Accuracy Lowest Accuracy
+Explicit Feature Extraction 89,27% 84,71% 78,06%
+Hidden Feature Extraction 86,51% 83,18% 79,03%
+Overall 89,16% 85,14% 80,14%
+Table 4: Average Accuracies by feature extraction method
+4.4 Type of face information used for ethnicity
+detection (RQ4)
+Being a major source of information regarding human identity, the
+choice of the facial input for ethnicity classification may leverage
+or hinder the algorithms’ capabilities to determine a correct ethnic
+label for the presented face. We observed 5 types of facial data used
+for ascertaining a given subject’s ethnicity. Figure 3 summarizes
+the type of data utilized and is further developed in Table 5.
+Figure 3: Types of facial information used for ethnicity clas-
+sification.
+4.5 Data used to train the models (RQ5)
+We identified over 30 different datasets that have been used for
+race prediction. Among these articles evaluated, it was common
+to see authors using a general-purpose dataset to race prediction
+or even using datasets dedicated for facial identification and other
+face-based visual tasks. Many studies did not find suitable datasets
+available at the time of publication and needed to build a tailored
+162Machine-based Stereotypes: How Machine Learning Algorithms Evaluate Ethnicity from Face Data SBSI ’23, May 29–June 01, 2023, Maceió, Brazil
+Type of Data What is it Examples
+Eye and Iris The use of information exclusive
+to the orbital area, such as the
+shape of eyes or the distance be-
+tween. But also, the color of the
+iris, shape, and other relevant in-
+formation.[53, 78, 82]
+Nose The use of information about the
+shape and size of the nose bridge,
+nostrils, and tip[50]
+Partial face The use of selected parts of the hu-
+man face, including, but not lim-
+ited to, the region around the eyes
+and ears, mouth and eyes, facial
+shape, and others.[6,10,19,49,52,64,69–71,
+78, 96]
+Whole face The use of raw face images, which
+may or may not be aligned for the
+ethnicity classification. Here are
+all studies which do not crop the
+face into subareas.[1–5,7,9,16,18,22,24,28,
+30,32,34,36,37,39,40,42–
+44,51,54–56,60,68,73,77,
+80,84,86,87,89–92,95,98]
+3D Face The use of 3D representations of
+the whole or partial face, which
+may or may not be projected onto
+a 2D plane afterwards[19, 49, 50, 96]
+Table 5: Type of facial information used for classification
+dataset. Over 1/3 of the studies compiled their own datasets, which
+adds another layer of technical complexity to the already difficult
+task of classifying ethnicity from the face due to inconsistency.
+Many custom made datasets were made due to the need of tailor
+the algorithms to be trained for specific populations in their studies,
+like observed in Gao et al . [22] , Jilani et al . [37] , Heng et al . [32]
+and Srinivas et al . [84] . In other situations, the need for a custom
+dataset was due to the specific data type used, such as in Lv et al .
+[50]. Table 6 shows the most often cited datasets observed.
+5 DISCUSSION
+We evaluated the literature regarding the current state of the use of
+machine learning algorithms used for the task of ethnicity classifi-
+cation. The results indicate that currently, ethnicity classification
+algorithms may be divided into two large groups based on feature
+extraction methods: those using EFBM, using data such as mea-
+surements, LBPs, or HOG; and those who rely on HFBM to obtain
+information using strategies based on deep learning strategies, like
+CNNs. While the EFBM has been the basis of ethnicity classification
+since the first document study [ 29], we have noticed that studies
+using HFBM have been increasing since 2017, surpassing EFBM
+studies since 2021.
+These strategies find similar comparative success in performance
+aspects, as noted, with the field appearing to be currently on a
+plateau. Some studies, in both categories, perform exceedingly bet-
+ter than the average accuracy observed, like Bagchi et al . [6], Mo-
+hammed and Sajjanhar [54], Putriany et al . [70] , Saliha et al . [77] ,
+which achieved accuracy results higher than 98% using EFBM ap-
+proaches and Fan et al . [19] , Wu et al . [95] , whose results are over
+99% using HFBMs. However, we noted that the number of classes
+evaluated has a high impact on the classification performance, em-
+phasizing the importance of careful classification design and high-
+quality inputs over a sheer number of examples in classification
+tasks [57, 58].Dataset Number of
+face imagesDedicated
+dataset?Publicly
+Available?
+UTKFaces dataset 23000 ✗ ✓
+ND-Iris-0405 26272 ✗ ✓
+Multi-Ethnicity Iris 60310 ✓ ✗
+CASIA-Iris V3 Dataset 18197 ✗ ✓
+IMP dataset 630* ✓ ✗
+FERET dataset 14126 ✗ ✓
+Cohn Kanade 2300 ✗ ✓
+CMU Multipie Dataset 7500+ ✗ ✓
+BUPT Dataset 1.300.000+ ✗ ✓
+Chicago Faces Dataset 597 ✗ ✓
+Pakistani Faces Dataset 463 ✓ ✓
+CMIN Dataset 353 ✓ ✗
+FRGC v2 4007 ✗ ✓
+BU3D-FE 2500 ✗ ✓
+Lookalike Dataset 6016 ✗ ✓
+MUCT dataset 3755 ✗ ✓
+Caltech Dataset 165 ✗ ✓
+CVL Dataset 468 ✗ ✓
+SCUT-FBP 5500 ✗ ✓
+CelebA 20000 ✗ ✓
+Morph II dataset 55134 ✗ ✓
+CJK Dataset 2315 ✓ ✗
+Regions of China Dataset 1217 ✓ ✗
+IMDB Dataset 17954 ✗ ✓
+FairFace Dataset 97000 ✓ ✓
+Age, Gender and Ethnicity
+Dataset27305 ✓ ✓
+CAS-PEAL 99504 ✗ ✓
+VN-Faces 6100 ✓ ✓
+VMER 3300000 ✓ ✓
+Table 6: Most frequently used datasets
+Regarding classification metrics, classification accuracy is the
+most often reported metric. While better metrics exist, they are
+less reported than classification accuracy, specially when studies
+compare their approaches to the current state-of-art. This needs
+to be taken carefully, as datasets used for ethnicity classification
+are often imbalanced, and the use of accuracy may induce wrong
+conclusions about the successes of the approaches used.
+While most studies focused on utilizing the whole face of individ-
+uals for the assessment. We also noted the use of partial information
+of the face, like the eye, nose, and iris. These strategies may prove
+useful in resource-constrained contexts, as they reduce the amount
+of information needed for analysis, but currently share the same
+success as the complete face approaches [53, 78].
+Considering the source of the data used, a third of the studies
+needed to customize or create datasets for their own use, implying
+that there may be a scarcity in specialization or availability of cur-
+rent datasets. The datasets available currently are often based on
+traditional ethnicity categories. However, the existence of many
+very specialized datasets (such as in And and Prince [5], Gao et al .
+[22], Heng et al . [32] , Jilani et al . [37] , Terada et al . [89] ) suggests
+that technologies used for ethnicity classification are being shaped
+by their social context, as implied by the Social Shaping of Tech-
+nology theory [94].
+Regarding the more general-purpose datasets, an overrepresen-
+tation of Asian, Caucasian, Black, and Indian groups was evidenced.
+Since these categories mirror the categories used since the 18th
+century, they may prove not as accurate when evaluating faces
+163SBSI ’23, May 29–June 01, 2023, Maceió, Brazil Nascimento, Santos and Bichara Garcia.
+from countries with complex ethnic dynamics. In particular, as
+observed, middle-eastern and Hispanic-latino groups are widely
+underrepresented.
+In the case of the middle-eastern representation, two main issues
+are important to discuss. First, concepts of middle-eastern ethinicity
+are not often discussed in eastern works, which use stereotypical
+representations that are rejected by middle-eastern individuals [ 66].
+While the group is not very miscegenated due to religious and
+political motives [ 62], concepts of middle-eastern ethnicity are
+not clear or often present in studies. The opposite is observed for
+Latino-Hispanic subjects, whose mixing of races pose challenges in
+groups like the "Mestizos" and "Pardos" of Iberoamerica, where the
+traditional race boundaries are not as well defined and increase the
+challenge of ethnicity classification [88].
+These attributes in the current literature highlight the influence
+of Social Shaping of Technology. Since the reporting of ethnicity
+followed the historical notation, we observed that the majority of
+algorithms that classify humans according to ethnicity are shaped
+to classify the same classes. Many studies try to focus on their local
+ethnical groups (see [ 5,39,41] for some examples), which is an
+indicative that systems shaped for localized social contexts are in
+demand and may present a better fit than general-purpose models.
+Comparing our findings to the works of Dantcheva et al . [15] , a
+surge in deep learning methods was observed. While the previous
+review had a very comprehensive mapping of ethnicity classifica-
+tion algorithms, the large majority of the algorithms reported were
+based on traditional machine learning strategies. Meanwhile, we ob-
+served an inversion trend, with deep learning methods surpassing
+the 51% mark on prevalence in studies.
+Regarding limitations, the study only covers a restricted part of
+the timespan of ethnicity classification algorithms as it focuses on
+the last five years of publication. Another limitation is the focus
+on classification performance rather than computing performance.
+While some algorithms may have acceptable classification scores,
+they may be expensive to train and run on limited resources.
+Regarding threats to validity, as mapped by Zhou et al . [100] ,
+there is, as mentioned above, the restriction of timespan (to treat
+it, we used well-known and wide-range digital libraries in the In-
+formation System area), biases in study selection (to minimize
+the risk of authors’ interpretation influencing the selection criteria,
+the protocol was defined and revised by all authors), and lack of
+standardized terminologies (while our search strategy consid-
+ered both "ethnicity" and "race," the reporting is not homogeneous
+in literature and may risk omission of relevant studies).
+The results found in this study reinforce how complex classifying
+ethnicity is. As can be seen, the lack of consensus, use of general-
+purposed datasets, and imbalance of ethnicities representation in
+those datasets make the task very challenging in the context of
+automated classification. Due to this, IS using such algorithms may
+give wrong results and cause unfairness. However, the silver lining
+is that with the resolution of some of the issues presented, better
+results may be reached using the strategies presented, allowing
+IS to better understand how the concept of ethnicty is defined
+across social groups and enabling the development of tools using
+of these techniques to mitigate unfairness and detect possible fraud
+in affirmative actions.6 CONCLUSIONS
+This study evaluated how machine learning algorithms are cur-
+rently being used to determine ethnicity from face data. Ethnicity
+classification is a complex task subject to both technical and social
+aspects, making it an important challenge for application in soft
+biometrics. While accuracy seems to be on a plateau, the increase
+in HFBM approaches may improve the performance of ethnicity
+classification in the upcoming years. Researchers should exercise
+caution when utilizing ethnicity classification algorithms due to
+the possibility of misclassification due to the overrepresentation
+of Asian, White, Black, and Indian ethnicities. Our future works
+will evaluate and measure the difference between using general-
+purpose algorithms, trained on general-purpose datasets, against
+regionalized and contextualized datasets. We intend to understand
+the influence of social notions of ethnicity on the classification
+accuracy of algorithms in ethnically diverse cultures like Brazil.
+ACKNOWLEDGMENTS
+The authors are grateful for the financial support of UNIRIO (Edital
+PPQ-UNIRIO 03/2021) and FAPERJ (210.688/2019, 211.437/2021).
+REFERENCES
+[1]Roger Achkar, GabyAbou Haidar, Mireille el Assal, Danny Habchy, Diala al Ashi,
+and Tarek Maylaa. 2019. Ethnicity Recognition System using Back Propagation
+Algorithm of an MLP. (2019), 1–5. https://doi.org/10.1109/ACTEA.2019.8851071
+[2]Mazida A. Ahmed, Ridip Dev Choudhury, and Kishore Kashyap. 2020. Race
+estimation with deep networks. Journal of King Saud University - Computer and
+Information Sciences (2020). https://doi.org/10.1016/j.jksuci.2020.11.029
+[3]Sadam Al-Azani and El-Sayed M. El-Alfy. 2019. Ethnicity recognition under
+difficult scenarios using HOG. (2019), 1–5. https://doi.org/10.1049/cp.2019.0176
+[4]Tarik Alafif, Zeyad Hailat, Melih Aslan, and Xuewen Chen. 2017. On Classifying
+Facial Races with Partial Occlusions and Pose Variations. (2017), 679–684.
+https://doi.org/10.1109/ICMLA.2017.00-82
+[5]Norah A. Al-Humaidan And and Master Prince. 2021. A Classification of Arab
+Ethnicity Based on Face Image Using Deep Learning Approach. IEEE Access 9.0
+(2021), 50755–50766. https://doi.org/10.1109/ACCESS.2021.3069022
+[6]Chhandak Bagchi, D. Geraldine Bessie Amali, and M. Dinakaran. 2019. Accu-
+rate Facial Ethnicity Classification Using Artificial Neural Networks Trained
+with Galactic Swarm Optimization Algorithm. In Information Systems Design
+and Intelligent Applications , Suresh Chandra Satapathy, Vikrant Bhateja, Rad-
+hakhrishna Somanah, Xin-She Yang, and Roman Senkerik (Eds.). Singapore,
+123–132.
+[7]Talha Imtiaz Baig, Talha Mahboob Alam, Tayaba Anjum, Sheraz Naseer, Abdul
+Wahab, Maria Imtiaz, and Muhammad Mehdi Raza. 2019. Classification of
+Human Face: Asian and Non-Asian People. (2019), 1–6. https://doi.org/10.1109/
+ICIC48496.2019.8966721
+[8]Chris Ballentine. 1983. Who is a Negro–Revisisted: Determining Individual
+Racial Status for Purposes of Affirmative Action. U. Fla. L. Rev. 35 (1983), 683.
+[9]Fabiola Becerra-Riera, Nelson Méndez Llanes, Annette Morales-González, Heydi
+Méndez-Vázquez, and Massimo Tistarelli. 2019. On Combining Face Local
+Appearance and Geometrical Features for Race Classification. In Progress in
+Pattern Recognition, Image Analysis, Computer Vision, and Applications , Ruben
+Vera-Rodriguez, Julian Fierrez, and Aythami Morales (Eds.). Cham, 567–574.
+[10] David Belcar, Petra Grd, and Igor Tomičić. 2022. Automatic Ethnicity Classi-
+fication from Middle Part of the Face Using Convolutional Neural Networks.
+Informatics 9, 1 (2022). https://doi.org/10.3390/informatics9010018
+[11] Sebastian Benthall and Bruce D. Haynes. 2019. Racial Categories in Machine
+Learning. In Proceedings of the Conference on Fairness, Accountability, and
+Transparency (Atlanta, GA, USA) (FAT* ’19) . New York, NY, USA, 289–298.
+https://doi.org/10.1145/3287560.3287575
+[12] Elhocine Boutellaa, Abdenour Hadid, Messaoud Bengherabi, and Samy Ait-
+Aoudia. 2015. On the use of Kinect depth data for identity, gender and ethnicity
+classification from facial images. Pattern Recognition Letters 68 (2015), 270–277.
+https://doi.org/10.1016/j.patrec.2015.06.027 Special Issue on “Soft Biometrics”.
+[13] Paula Branco, Luís Torgo, and Rita P. Ribeiro. 2016. A Survey of Predictive
+Modeling on Imbalanced Domains. ACM Comput. Surv. 49, 2, Article 31 (aug
+2016), 50 pages. https://doi.org/10.1145/2907070
+[14] Graham Byatt and Gillian Rhodes. 2004. Identification of own-race and other-
+race faces: Implications for the representation of race in face space. Psychonomic
+164Machine-based Stereotypes: How Machine Learning Algorithms Evaluate Ethnicity from Face Data SBSI ’23, May 29–June 01, 2023, Maceió, Brazil
+Bulletin & Review 11, 4 (2004), 735–741.
+[15] Antitza Dantcheva, Petros Elia, and Arun Ross. 2016. What Else Does Your
+Biometric Data Reveal? A Survey on Soft Biometrics. IEEE Transactions on
+Information Forensics and Security 11, 3 (2016), 441–467. https://doi.org/10.1109/
+TIFS.2015.2480381
+[16] Sujitha Juliet Devaraj, R. Catherine Joy, I. Santhosh, and I. C. Kevin. 2021. Deep
+Learning Based Facial Feature Detection for Ethnicity Recognition. In Smart
+Computing Techniques and Applications , Suresh Chandra Satapathy, Vikrant
+Bhateja, Margarita N. Favorskaya, and T. Adilakshmi (Eds.). Singapore, 527–534.
+[17] Huaxiong Ding, Di Huang, Yunhong Wang, and Liming Chen. 2013. Facial
+ethnicity classification based on boosted local texture and shape descriptions.
+In2013 10th IEEE International Conference and Workshops on Automatic Face and
+Gesture Recognition (FG) . 1–6. https://doi.org/10.1109/FG.2013.6553815
+[18] Mingxing Duan, Kenli Li, Xiangke Liao, Keqin Li, and Qi Tian. 2019. Features-
+Enhanced Multi-Attribute Estimation with Convolutional Tensor Correlation
+Fusion Network. ACM Trans. Multimedia Comput. Commun. Appl. 15.0 (2019).
+https://doi.org/10.1145/3355542
+[19] Yicheng Fan, Qijun Zhao, and Daning Wang. 2020. On 3d Face Attributes Anal-
+ysis Using Deep Learning: A Preliminary Case Study on Gender and Ethnicity
+Recognition. (2020), 69–73. https://doi.org/10.1145/3421558.3421569
+[20] Annette Flanagin, Tracy Frey, Stacy L Christiansen, and AMA Manual of Style
+Committee. 2021. Updated guidance on the reporting of race and ethnicity in
+medical and science journals. JAMA 326, 7 (Aug. 2021), 621–627.
+[21] Matheus Freitas and Rayza Sarmento. 2020. As falas sobre a fraude: análise das
+notícias sobre casos de fraudes nas cotas raciais em universidades em Minas
+Gerais. Revista Brasileira de Estudos Pedagógicos 101, 258 (Aug. 2020). https:
+//doi.org/10.24109/2176-6681.rbep.101i258.4262
+[22] Shixin Gao, Chuisheng Zeng, Mingze Bai, and Kunxian Shu. 2020. Facial Ethnic-
+ity Recognition Based on Transfer Learning from Deep Convolutional Networks.
+(2020), 310–314. https://doi.org/10.1109/AEMCSE50948.2020.00073
+[23] Timnit Gebru. 2019. Oxford Handbook on AI Ethics Book Chapter on Race and
+Gender. https://doi.org/10.48550/ARXIV.1908.06165
+[24] Asma El Kissi Ghalleb, Safa Boumaiza, and Najoua Essoukri Ben Amara. 2020.
+Demographic Face Profiling Based on Age, Gender and Race. (2020), 1–6. https:
+//doi.org/10.1109/ATSIP49331.2020.9231835
+[25] Ramán Grosfoguel. 2004. Race and Ethnicity or Racialized Ethnicities?: Identities
+within Global Coloniality. Ethnicities 4, 3 (2004), 315–336. https://doi.org/10.
+1177/1468796804045237 arXiv:https://doi.org/10.1177/1468796804045237
+[26] Bingchen H. Guo, Mark S. Nixon, and John N. Carter. 2019. Soft Biometric
+Fusion for Subject Recognition at a Distance. IEEE Transactions on Biometrics,
+Behavior, and Identity Science 1, 4 (2019), 292–301. https://doi.org/10.1109/
+TBIOM.2019.2943934
+[27] YiJun Guo, Guljamal Ubul, Nurbiya Yadikar, Mutallip Mamut, and Kurban Ubul.
+2020. A Survey of Multi-Ethnic Face Feature Recognition. In Proceedings of the
+2020 9th International Conference on Computing and Pattern Recognition (Xiamen,
+China) (ICCPR 2020) . New York, NY, USA, 168–173. https://doi.org/10.1145/
+3436369.3437412
+[28] Rishi Gupta, Sandeep Kumar, Pradeep Yadav, and Sumit Shrivastava. 2018. Iden-
+tification of Age, Gender, & Race SMT (Scare, Marks, Tattoos) from Uncon-
+strained Facial Images Using Statistical Techniques. In 2018 International Con-
+ference on Smart Computing and Electronic Enterprise (ICSCEE) . 1–8. https:
+//doi.org/10.1109/ICSCEE.2018.8538423
+[29] S. Gutta, H. Wechsler, and P.J. Phillips. 1998. Gender and ethnic classification of
+face images. In Proceedings Third IEEE International Conference on Automatic Face
+and Gesture Recognition . 194–199. https://doi.org/10.1109/AFGR.1998.670948
+[30] Skander Hamdi and Abdelouahab Moussaoui. 2020. Comparative study between
+machine and deep learning methods for age, gender and ethnicity identification.
+(2020), 1–6. https://doi.org/10.1109/ISIA51297.2020.9416549
+[31] Bilal Hassan, Ebroul Izquierdo, and Tomas Piatrik. 2021. Soft biometrics: a survey.
+Multimedia Tools and Applications (March 2021). https://doi.org/10.1007/s11042-
+021-10622-8
+[32] Zhao Heng, Manandhar Dipu, and Kim-Hui Yap. 2018. Hybrid Supervised
+Deep Learning for Ethnicity Classification using Face Images. (2018), 1–5.
+https://doi.org/10.1109/ISCAS.2018.8351370
+[33] S. Hosoi, E. Takikawa, and M. Kawade. 2004. Ethnicity estimation with facial
+images. In Sixth IEEE International Conference on Automatic Face and Gesture
+Recognition, 2004. Proceedings. 195–200. https://doi.org/10.1109/AFGR.2004.
+1301530
+[34] Changhun Hyun and Hyeyoung Park. 2017. Recognition of Facial Attributes
+Using Multi-Task Learning of Deep Networks. (2017), 284–288. https://doi.org/
+10.1145/3055635.3056618
+[35] Rachael E. Jack and Philippe G. Schyns. 2015. The Human Face as a Dynamic
+Tool for Social Communication. Current Biology 25, 14 (2015), R621–R634.
+https://doi.org/10.1016/j.cub.2015.05.052
+[36] Md. Jewel, Md. Ismail Hossain, and Tamanna Haider Tonni. 2019. Bengali
+Ethnicity Recognition and Gender Classification using CNN amp; Transfer
+Learning. (2019), 390–396. https://doi.org/10.1109/SMART46866.2019.9117549[37] Shelina Khalid Jilani, Hassan Ugail, Ali Maina Bukar, and Andrew Logan. 2019.
+On the Ethnic Classification of Pakistani Face using Deep Learning. (2019),
+191–198. https://doi.org/10.1109/CW.2019.00039
+[38] Shelina Khalid Jilani, Hassan Ugail, Ali M. Bukar, Andrew Logan, and Tasnim
+Munshi. 2017. A Machine Learning Approach for Ethnic Classification: The
+British Pakistani Face. In 2017 International Conference on Cyberworlds (CW) .
+170–173. https://doi.org/10.1109/CW.2017.27
+[39] Shelina Khalid Jilani, Hassan Ugail, Ali M. Bukar, Andrew Logan, and Tasnim
+Munshi. 2017. A Machine Learning Approach for Ethnic Classification: The
+British Pakistani Face. (2017), 170–173. https://doi.org/10.1109/CW.2017.27
+[40] Ayşe Kale and Oğuz Altun. 2021. Age, Gender and Ethnicity Classification from
+Face Images with CNN-Based Features. In 2021 Innovations in Intelligent Systems
+and Applications Conference (ASYU) . 1–6. https://doi.org/10.1109/ASYU52992.
+2021.9598986
+[41] Ayşe Kale and Oğuz Altun. 2021. Age, Gender and Ethnicity Classification from
+Face Images with CNN-Based Features. (2021), 1–6. https://doi.org/10.1109/
+ASYU52992.2021.9598986
+[42] Sasan Karamizadeh and Shahidan M. Abdullah. 2018. Race classification using
+gaussian-based weight K-nn algorithm for face recognition. The Journal of
+Engineering Research 6 (2018).
+[43] Akbir Khan and Marwa Mahmoud. 2019. Considering Race a Problem of Transfer
+Learning. (2019), 100–106. https://doi.org/10.1109/WACVW.2019.00022
+[44] Khalil Khan, Jehad Ali, Irfan Uddin, Sahib Khan, and Byeong-hee Roh. 2021.
+A Facial Feature Discovery Framework for Race Classification Using Deep
+Learning. (2021). https://doi.org/10.48550/ARXIV.2104.02471
+[45] Rotem Kowner and Walter Demel. 2015. Race and Racism in Modern East Asia:
+Interactions, Nationalism, Gender and Lineage . Brill, Leiden, The Netherlands.
+https://doi.org/10.1163/9789004292932
+[46] Sarah Lempp. 2019. With the eyes of society? Doing race in
+affirmative action practices in Brazil. Citizenship Studies 23, 7
+(2019), 703–719. https://doi.org/10.1080/13621025.2019.1651090
+arXiv:https://doi.org/10.1080/13621025.2019.1651090
+[47] D Stephen Lindsay, Philip C Jack, and Marcus A Christian. 1991. Other-race
+face perception. Journal of applied psychology 76, 4 (1991), 587.
+[48] Xiaoguang Lu and Anil K. Jain. 2004. Ethnicity identification from face images.
+InBiometric Technology for Human Identification (Society of Photo-Optical Instru-
+mentation Engineers (SPIE) Conference Series, Vol. 5404) , Anil K. Jain and Nalini K.
+Ratha (Eds.). 114–123. https://doi.org/10.1117/12.542847
+[49] Chenlei Lv, Zhongke Wu, Xingce Wang, Zhang Dan, and Mingquan Zhou.
+2020. Ethnicity classification by the 3D Discrete Landmarks Model measure
+in Kendall shape space. Pattern Recognition Letters 129.0 (2020), 26–32. https:
+//doi.org/10.1016/j.patrec.2019.10.035
+[50] Chenlei Lv, Zhongke Wu, Dan Zhang, Xingce Wang, and Mingquan Zhou. 2019.
+3D Nose shape net for human gender and ethnicity classification. Pattern
+Recognition Letters 126.0 (2019), 51–57. https://doi.org/10.1016/j.patrec.2018.11.
+010 Robustness, Security and Regulation Aspects in Current Biometric Systems.
+[51] Jacek Mazurkiewicz and Arkadiusz Podziewski. 2020. Ethnicity Classification
+System Based on Human Face Picture. In Reliability and Statistics in Transporta-
+tion and Communication , Igor Kabashkin, Irina Yatskiv, and Olegas Prentkovskis
+(Eds.). Cham, 430–439.
+[52] Ahmad Saeed Mohammad and Jabir Alshehabi Al-Ani. 2017. Towards ethnicity
+detection using learning based classifiers. (2017), 219–224. https://doi.org/10.
+1109/CEEC.2017.8101628
+[53] Ahmad Saeed Mohammad and Jabir Alshehabi Al-Ani. 2018. Convolutional
+Neural Network for Ethnicity Classification using Ocular Region in Mobile
+Environment. (2018), 293–298. https://doi.org/10.1109/CEEC.2018.8674194
+[54] Ahmed Abdulateef Mohammed and Atul Sajjanhar. 2017. Investigation of
+Gender and Race Classification for Different Color Models. (2017), 1–8. https:
+//doi.org/10.1109/DICTA.2017.8227450
+[55] Ahmed Abdulateef Mohammed and Atul Sajjanhar. 2017. Robust single-label
+classification of facial attributes. (2017), 651–656. https://doi.org/10.1109/
+ICMEW.2017.8026324
+[56] David A. Molina, Leonardo Causa, and Juan Tapia. 2020. Reduction of Bias for
+Gender and Ethnicity from Face Images using Automated Skin Tone Classifica-
+tion. (2020), 1–5.
+[57] Pablo Del Moral, Sławomir Nowaczyk, and Sepideh Pashami. 2022. Why Is
+Multiclass Classification Hard? IEEE Access 10 (2022), 80448–80462. https:
+//doi.org/10.1109/ACCESS.2022.3192514
+[58] Laura Morán-Fernández, Verónica Bólon-Canedo, and Amparo Alonso-Betanzos.
+2022. How important is data quality? Best classifiers vs best features. Neuro-
+computing 470 (2022), 365–375. https://doi.org/10.1016/j.neucom.2021.05.107
+[59] Ghulam Muhammad, Muhammad Hussain, Fatmah Alenezy, George Bebis,
+Anwar M. Mirza, and Hatim Aboalsamh. 2012. Race Classification From Face
+Images Using Local Descriptors. International Journal on Artificial Intelligence
+Tools 21, 05 (2012), 1250019. https://doi.org/10.1142/S0218213012500194
+[60] Wing W. Y. Ng, Zixin Zhou, and Ting Wang. 2021. Fine-Grained Facial Ethnicity
+Recognition Based on Dual Convolutional Autoencoders. (2021), 235–240. https:
+//doi.org/10.1109/ICICIP53388.2021.9642208
+165SBSI ’23, May 29–June 01, 2023, Maceió, Brazil Nascimento, Santos and Bichara Garcia.
+[61] Mark S. Nixon, Bingchen H. Guo, Sarah V. Stevenage, Emad S. Jaha, Nawaf Al-
+mudhahka, and Daniel Martinho-Corbishley. 2017. Towards automated eyewit-
+ness descriptions: describing the face, body and clothing for recognition. Visual
+Cognition 25, 4-6 (2017), 524–538. https://doi.org/10.1080/13506285.2016.1266426
+arXiv:https://doi.org/10.1080/13506285.2016.1266426
+[62] U.S. Department of State. 2005. Marriage to Saudis. https://web.archive.org/
+web/20120614045804/http://travel.state.gov/travel/cis_pa_tw/tw/tw_931.html
+[63] E O Omidiora, O. Ojo, N.A. Yekini, and T.O. Tubi. 2012. Analysis, Design and
+Implementation of Human Fingerprint Patterns System “Towards Age & Gender
+Determination, Ridge Thickness To Valley Thickness Ratio (RTVTR) & Ridge
+Count On Gender Detection. International Journal of Advanced Research in
+Artificial Intelligence 1, 2 (2012). https://doi.org/10.14569/IJARAI.2012.010210
+[64] Mohd Zamri Osman, Mohd Aizaini Maarof, Mohd Foad Rohani, Nilam Nur Amir
+Sjarif, and Nor Saradatul Akmar Zulkifli. 2020. A multi-color based features
+from facial images for automatic ethnicity identification model. Indonesian
+Journal of Electrical Engineering and Computer Science 18, 3 (June 2020), 1383.
+https://doi.org/10.11591/ijeecs.v18.i3.pp1383-1390
+[65] Alice J. O’Toole and Vaidehi Natu. 2013. Computational perspectives on the
+other-race effect. Visual Cognition 21, 9-10 (2013), 1121–1137. https://doi.org/10.
+1080/13506285.2013.803505 arXiv:https://doi.org/10.1080/13506285.2013.803505
+[66] Burcu Ozcelik. 2021. Introduction: confronting the legacy and contempo-
+rary iterations of racial politics in the Middle East. Ethnic and Racial Stud-
+ies44, 12 (2021), 2155–2166. https://doi.org/10.1080/01419870.2021.1919312
+arXiv:https://doi.org/10.1080/01419870.2021.1919312
+[67] Matthew J Page, Joanne E McKenzie, Patrick M Bossuyt, Isabelle Boutron,
+Tammy C Hoffmann, Cynthia D Mulrow, Larissa Shamseer, Jennifer M Tetzlaff,
+Elie A Akl, Sue E Brennan, Roger Chou, Julie Glanville, Jeremy M Grimshaw,
+Asbjørn Hróbjartsson, Manoj M Lalu, Tianjing Li, Elizabeth W Loder, Evan
+Mayo-Wilson, Steve McDonald, Luke A McGuinness, Lesley A Stewart, James
+Thomas, Andrea C Tricco, Vivian A Welch, Penny Whiting, and David Mo-
+her. 2021. The PRISMA 2020 statement: an updated guideline for report-
+ing systematic reviews. BMJ 372 (2021). https://doi.org/10.1136/bmj.n71
+arXiv:https://www.bmj.com/content/372/bmj.n71.full.pdf
+[68] Irham Pratama and Felix Kurniadi. 2020. Ethnicity Classification Based On Facial
+Features Using Viola-Jones Algorithm. IJNMT (International Journal of New
+Media Technology) 7, 1 (Jul. 2020), 39–42. https://doi.org/10.31937/ijnmt.v6i2.917
+[69] Tiani Tiara Putri, Ema Rachmawati, and Febryanti Sthevanie. 2020. Indonesian
+Ethnicity Recognition Based on Face Image Using Uniform Local Binary Pattern
+(ULBP) and Color Histogram. (2020), 1–5. https://doi.org/10.1109/ICICoS51170.
+2020.9299103
+[70] Dinda Mareta Putriany, Ema Rachmawati, and Febryanti Sthevanie. 2021. In-
+donesian Ethnicity Recognition Based on Face Image Using Gray Level Co-
+occurrence Matrix and Color Histogram. IOP Conference Series: Materials Sci-
+ence and Engineering 1077, 1 (feb 2021), 012040. https://doi.org/10.1088/1757-
+899X/1077/1/012040
+[71] Hafidh Fikri Rasyid, Kurniawan Nur Ramadhani, and Febryanti Sthevanie. 2018.
+Mongoloid and Non-Mongoloid Race Classification from Face Image Using
+Local Binary Pattern Feature Extractions. (2018), 329–332. https://doi.org/10.
+1109/ICoICT.2018.8528783
+[72] Sean F. Reardon, Rachel Baker, Matt Kasman, Daniel Klasik, and Joseph B.
+Townsend. 2018. What Levels of Racial Diversity Can Be Achieved with
+Socioeconomic-Based Affirmative Action? Evidence from a Simulation Model.
+Journal of Policy Analysis and Management 37, 3 (April 2018), 630–657. https:
+//doi.org/10.1002/pam.22056
+[73] Abdul Rehman, Gulraiz Khan, Aiman Siddiqi, Abdullah Khan, and Usman Ghani
+Khan. 2018. Modified Texture Features from Histogram and Gray Level Co-
+occurence Matrix of Facial Data for Ethnicity Detection. (2018), 1–6. https:
+//doi.org/10.1109/IMTIC.2018.8467231
+[74] Daniel Riccio, Genny Tortora, Maria De Marsico, and Harry Wechsler. 2012.
+EGA — Ethnicity, gender and age, a pre-annotated face database. In 2012 IEEE
+Workshop on Biometric Measurements and Systems for Security and Medical
+Applications (BIOMS) Proceedings . 1–8. https://doi.org/10.1109/BIOMS.2012.
+6345776
+[75] S. Md. Mansoor Roomi, S.L. Virasundarii, S. Selvamegala, S. Jeevanandham,
+and D. Hariharasudhan. 2011. Race Classification Based on Facial Features. In
+2011 Third National Conference on Computer Vision, Pattern Recognition, Image
+Processing and Graphics . 54–57. https://doi.org/10.1109/NCVPRIPG.2011.19
+[76] Paul Ruvolo, Jacob Whitehill, and Javier R Movellan. 2013. Exploiting common-
+ality and interaction effects in crowdsourcing tasks using latent factor models.
+InNeural Information Processing Systems. Workshop on Crowdsourcing: Theory,
+Algorithms and Applications . Citeseer.
+[77] Mezzoudj Saliha, Behloul Ali, and Seghir Rachid. 2019. Towards large-scale face-
+based race classification on spark framework. Multimedia Tools and Applications
+78, 18 (June 2019), 26729–26746. https://doi.org/10.1007/s11042-019-7672-7
+[78] Amer A. Sallam, Muhammad Nomani Kabir, Athmar N. M. Shamhan, Heba K.
+Nasser, and Jing Wang. 2021. A Racial Recognition Method Based on Facial Color
+and Texture for Improving Demographic Classification. In Proceedings of the
+11th National Technical Seminar on Unmanned System Technology 2019 , ZainahMd Zain, Hamzah Ahmad, Dwi Pebrianti, Mahfuzah Mustafa, Nor Rul Hasma
+Abdullah, Rosdiyana Samad, and Maziyah Mat Noh (Eds.). Singapore, 843–852.
+[79] Thorsten Schoormann, Dennis Behrens, Michael Fellmann, and Ralf Knackstedt.
+2021. On Your Mark, Ready, Search: A Framework for Structuring Literature
+Search Strategies in Information Systems. 558–575. https://EconPapers.repec.
+org/RePEc:spr:lnichp:978-3-030-86790-4_38
+[80] Sefik Ilkin Serengil and Alper Ozpinar. 2021. HyperExtended LightFace: A Facial
+Attribute Analysis Framework. (2021), 1–4. https://doi.org/10.1109/ICEET53442.
+2021.9659697
+[81] G. Shakhnarovich, P.A. Viola, and B. Moghaddam. 2002. A unified learning
+framework for real time face detection and classification. In Proceedings of Fifth
+IEEE International Conference on Automatic Face Gesture Recognition . 16–23.
+https://doi.org/10.1109/AFGR.2002.1004124
+[82] Maneet Singh, Shruti Nagpal, Mayank Vatsa, Richa Singh, Afzel Noore, and
+Angshul Majumdar. 2017. Gender and ethnicity classification of Iris images using
+deep class-encoder. (2017), 666–673. https://doi.org/10.1109/BTAS.2017.8272755
+[83] Chris Smaje. 1997. Not just a Social Construct: Theorising Race and Ethnicity.
+Sociology 31, 2 (1997), 307–327. https://doi.org/10.1177/0038038597031002007
+arXiv:https://doi.org/10.1177/0038038597031002007
+[84] Nisha Srinivas, Harleen Atwal, Derek C. Rose, Gayathri Mahalingam, Karl
+Ricanek, and David S. Bolme. 2017. Age, Gender, and Fine-Grained Ethnicity
+Prediction Using Convolutional Neural Networks for the East Asian Face Dataset.
+(2017), 953–960. https://doi.org/10.1109/FG.2017.118
+[85] Stephen Steinberg. 2018. Occupational apartheid in America: Race, labor market
+segmentation, and affirmative action. In Without justice for all . Routledge,
+215–233.
+[86] Gurram Sunitha, K. Geetha, S. Neelakandan, Aditya Kumar Singh Pundir, S.
+Hemalatha, and Vinay Kumar. 2022. Intelligent deep learning based ethnicity
+recognition and classification using facial images. Image and Vision Computing
+121.0 (2022), 104404. https://doi.org/10.1016/j.imavis.2022.104404
+[87] Muhammed Talo, Betul Ay, Semiha Makinist, and Galip Aydin. 2018. Bigailab-
+4race-50K: Race Classification with a New Benchmark Dataset. (2018), 1–4.
+https://doi.org/10.1109/IDAP.2018.8620759
+[88] Edward Telles. 2022. Studies on Racial Classification in Latin America. In
+Routledge Handbook of Afro-Latin American Studies . Routledge, 155–165. https:
+//doi.org/10.4324/9781003159247-17
+[89] Takuma Terada, Ryusuke Kimura, and Yen–Wei Chen. 2022. Three-Dimensional
+Facial Ethnicity Identification Based on Cylindrical Projection and Deep Learn-
+ing. (2022), 01–04. https://doi.org/10.1109/ICCE53296.2022.9730761
+[90] Muhammad Umair and Muhammad Naqeeb Nazir. 2021. Classification of
+Demographic Attributes from Facial Image by using CNN. (2021), 68–73.
+https://doi.org/10.1109/ICAI52203.2021.9445248
+[91] Cunrui Wang, Qingling Zhang, Wanquan Liu, Yu Liu, and Lixin
+Miao. 2019. Expression of Concern: Facial feature discovery for
+ethnicity recognition. WIREs Data Mining and Knowledge Dis-
+covery 9, 1 (2019), e1278. https://doi.org/10.1002/widm.1278
+arXiv:https://wires.onlinelibrary.wiley.com/doi/pdf/10.1002/widm.1278
+[92] Pingyu Wang, Fei Su, and Zhicheng Zhao. 2017. Joint multi-feature fusion
+and attribute relationships for facial attribute prediction. (2017), 1–4. https:
+//doi.org/10.1109/VCIP.2017.8305036
+[93] Natasha Warikoo and Utaukwa Allen. 2020. A solution to multiple problems:
+the origins of affirmative action in higher education around the world. Studies
+in Higher Education 45, 12 (2020), 2398–2412. https://doi.org/10.1080/03075079.
+2019.1612352 arXiv:https://doi.org/10.1080/03075079.2019.1612352
+[94] Robin Williams and David Edge. 1996. The Social Shaping of Technology.
+Research Policy 25 (09 1996), 865–899. https://doi.org/10.1016/0048-7333(96)
+00885-2
+[95] Xulei Wu, Peijiang Yuan, Tianmiao Wang, Doudou Gao, and Ying Cai. 2018. Race
+Classification from Face using Deep Convolutional Neural Networks. (2018),
+1–6. https://doi.org/10.1109/ICARM.2018.8610704
+[96] Baiqiang Xia, Boulbaba Ben Amor, and Mohamed Daoudi. 2017. Joint gender,
+ethnicity and age estimation from 3D faces: An experimental illustration of
+their correlations. Image and Vision Computing 64.0 (2017), 90–102. https:
+//doi.org/10.1016/j.imavis.2017.06.004
+[97] Yiting Xie, Khoa Luu, and Marios Savvides. 2012. A robust approach to facial eth-
+nicity classification on large scale face databases. In 2012 IEEE Fifth International
+Conference on Biometrics: Theory, Applications and Systems (BTAS) . 143–149.
+https://doi.org/10.1109/BTAS.2012.6374569
+[98] Lu Xu, Heng Fan, and Jinhai Xiang. 2019. Hierarchical Multi-Task Network
+For Race, Gender and Facial Attractiveness Recognition. (2019), 3861–3865.
+https://doi.org/10.1109/ICIP.2019.8803614
+[99] Tseming Yang. 2005. Choice and fraud in racial identification: The dilemma of
+policing race in affirmative action, the Census, and a color-blind society. Mich.
+J. Race & L. 11 (2005), 367.
+[100] Xin Zhou, Yuqin Jin, He Zhang, Shanshan Li, and Xin Huang. 2016. A Map of
+Threats to Validity of Systematic Literature Reviews in Software Engineering.
+In2016 23rd Asia-Pacific Software Engineering Conference (APSEC) . https://doi.
+org/10.1109/apsec.2016.031
+166
