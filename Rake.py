@@ -33,6 +33,7 @@ with open(f"keywords.txt", "w") as file:
 acm_words = set(terms)
 keywords = set(keyword_set)
 overlapping_keywords = keywords.intersection(acm_words)
+overlapping_keywords = sorted(list(overlapping_keywords))
 
 if overlapping_keywords:
     print("Overlapping keywords with 'index_terms.json':")
