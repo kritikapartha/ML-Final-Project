@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 
 # Replace 'url' with the actual URL of the ACM Digital Library page
-url = 'https://dl-acm-org.ezproxy.lib.vt.edu/doi/10.1145/3508072.3508106#sec-terms'
+url = 'https://dl-acm-org.ezproxy.lib.vt.edu/doi/10.1145/3508072.3508228#sec-terms'
 
 # Send a request to the URL and get the HTML content
 response = requests.get(url)
