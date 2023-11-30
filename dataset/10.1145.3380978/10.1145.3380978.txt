@@ -1,0 +1,889 @@
+29Will Online Digital Footprints Reveal Your Relationship Status? An
+Empirical Study of Social Applications for Sexual-Minority Men
+JIANGTAO WANG, Lancaster University, United Kingdom
+JUNYI MA, Peking University, China
+YASHA WANG∗,Peking University, China
+NING WANG, Peking University, China
+LEYE WANG, Peking University, China
+DAQING ZHANG, Peking University, China
+FENG WANG, Peking University, China
+QIN LV, University of Colorado Boulder, USA
+With the increasing social acceptance and openness, more and more sexual-minority men (SMM) have succeeded in creating
+and sustaining steady relationships in recent years. Maintaining steady relationships is beneficial to the wellbeing of SMM
+both mentally and physically. However, the relationship maintaining for them is also challenging due to the much less
+supports compared to the heterosexual couples, so that it is important to identify those SMM in steady relationship and
+provide corresponding personalized assistance. Furthermore, knowing SMM’s relationship and the correlations with other
+visible features is also beneficial for optimizing the social applications’ functionalities in terms of privacy preserving and
+friends recommendation. With the prevalence of SMM-oriented social apps (called SMMSA for short), this paper investigates
+the relationship status of SMM from a new perspective, that is, by introducing the SMM’s online digital footprints left on
+SMMSA (e.g., presented profile, social interactions, expressions, sentiment, and mobility trajectories). Specifically, using a
+filtered dataset containing 2,359 active SMMSA users with their self-reported relationship status and publicly available app
+usage data, we explore the correlations between SMM’s relationship status and their online digital footprints on SMMSA and
+present a set of interesting findings. Moreover, we demonstrate that by utilizing such correlations, it has the potential to
+construct machine-learning-based models for relationship status inference. Finally, we elaborate on the implications of our
+findings from the perspective of better understanding the SMM community and improving their social welfare.
+CCS Concepts: •Information systems →Data mining ;•Human-centered computing →User models ;•
+Social and professional topics →Relationship Status.
+Additional Key Words and Phrases: Sexual-minority men, relationship status, online digital footprints.
+∗This is the corresponding author
+Authors’ addresses: Jiangtao Wang, Lancaster University, lancaster, United Kingdom, jiangtao.wang@lancaster.ac.uk; Junyi Ma, Peking
+University, Beijing, China, majunyi@pku.edu.cn; Yasha Wang, Peking University, Beijing, China, wangyasha@pku.edu.cn; Ning Wang, Peking
+University, Beijing, China, 1500012633@pku.edu.cn; Leye Wang, Peking University, Beijing, China, leyewang@pku.edu.cn; Daqing Zhang,
+Peking University, Beijing, China, dqzhang@sei.pku.edu.cn; Feng Wang, Peking University, Beijing, China, wangfeng2013@pku.edu.cn; Qin
+Lv, University of Colorado Boulder, Boulder, USA, qin.lv@colorado.edu.
+Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee provided that
+copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first
+page. Copyrights for components of this work owned by others than ACM must be honored. Abstracting with credit is permitted. To copy
+otherwise, or republish, to post on servers or to redistribute to lists, requires prior specific permission and/or a fee. Request permissions from
+permissions@acm.org.
+©2020 Association for Computing Machinery.
+2474-9567/2020/3-ART29 $15.00
+https://doi.org/10.1145/3380978
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:2 •Wang et al.
+ACM Reference Format:
+Jiangtao Wang, Junyi Ma, Yasha Wang, Ning Wang, Leye Wang, Daqing Zhang, Feng Wang, and Qin Lv. 2020. Will Online
+Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for Sexual-Minority Men. Proc.
+ACM Interact. Mob. Wearable Ubiquitous Technol. 4, 1, Article 29 (March 2020), 23 pages. https://doi.org/10.1145/3380978
+1 INTRODUCTION
+Sexual-minority men (SMM) is referred to the group of gay, bisexual, and other men who have sex with men.
+The community of SMM suffer from discriminations and social stigma because of their homosexual identities,
+and their relationships have been a source of controversy [ 19] [18]. In recent decades, despite the continuous
+prejudice and obstacles in some cultures, the overall societal attitudes towards SMM’s relationship worldwide
+have been becoming more and more tolerant. One direct evidence is that an increasing number of countries or
+regions recognize same-sex marriage in law [ 19]. In some other cultures, although the legal marriage has not
+been legalized yet, we have witnessed the increasing openness. For example, increasing numbers of people in
+China now regard the choice of sexual orientation as individual freedom and basic human right.
+As a result of the increasing acceptance and tolerance in the society, more and more SMM have succeeded in
+creating and sustaining steady relationships [ 3].Maintaining the steady relationships is beneficial to the wellbeing
+of SMM both mentally and physically, which was indicated by a number of recent studies [ 1,6,21,35,55,58]. For
+example, authors in [ 58] revealed that condomless anal sex, which increases the risk of HIV infection, was less
+frequent for SMM who were in steady relationships. Studies such as [ 1,6,21,35] suggested that having steady
+partners play an important role in mitigating HIV transmission. Moreover, through a health interview survey
+in California, the authors of [ 55] found that being in a steady relationship was associated with lower levels of
+psychological distress for SMM.
+Despite the above advantages of the relationships, maintaining it in a harmonious condition is very challenging
+for SMM due to the following reasons. First, there will be extremely high pressure when one of the partners gets
+into tough situations (e.g., serious illness or economic dilemma). In similar situations, the heterosexual partners
+usually get many external supports (e.g., daily life care or financial assistance) from both the society and their
+families/relatives. However, many studies revealed that such support is extremely inadequate for SMM [ 12]. For
+example, when one gay man suffers from certain serious illness, his partner not only has to care for a dying
+partner through a long illness, but also experiences the hopelessness without the equal supports available to
+heterosexual ones [ 15]. Second, there are some conflicts which become big threats to the relationship maintenance
+for SMM. One of the biggest conflicts is related to the disclosure of the relationships. When the partners disagree
+about the extent to which they should disclose their relationship, problems can ensue and the resolution of such
+conflicts may be central to keeping successful relationship over time [ 23]. The negotiation of household task
+divisions is another more challenging issue for SMM than heterosexual partners, and the failures of negotiation
+often lead to the conflict and crisis in keeping the relationships [30].
+Therefore, it is of vital importance of providing relevant assistance to SMM in steady relationships, which
+will eventually help them maintain their relationships in a good condition. For example, we can provide the
+information (e.g., the address and the time of services) of some related social organizations or therapists. Also, we
+can forward information about relevant workshops or some chicken-soup articles on how to maintain harmonious
+relationships. One straightforward way is that we provide such assisted information to all SMM, and those who
+need it will see it. However, this information broadcasting way has shortcomings. First, it will bring intrusiveness
+and discomfort to others who do not really need it. For example, SMM not in the relationships may be more
+interested to receive information about how to find the perfect partners rather than those saying how to take
+care of the adopted kids in the gay family. Second, the content of some information may not be inappropriate
+for certain populations. For example, articles about sex relationships management should not be delivered to
+all SMM. Thus, in order to provide more precise and personalized assistance in relationship maintaining and
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:3
+management, it is significantly important to identify those who are in steady relationships. However, as the
+community of SMM is rather hidden, the identification is very difficult.
+In additional to the benefit in providing the personalized assistance, knowing SMM’s relationship and its
+correlations with other features that people left on the application is also beneficial for the service providers of
+SMMSA in optimizing the apps’ functionalities. First, it provides a privacy alert and guidance for the interface
+design. To protect the users’ privacy, SMMSA usually allow users to hide their relationship status shown on
+the apps. However, our findings in this paper revealed a potential risk , that is, an adversary may infer users’
+relationship status with other publicly visible features on the app. Thus, this study also provides guidance for the
+service provider to design better privacy preserving mechanisms (e.g., suggesting users to hide other correlated
+information if they do not want to disclose their relationship status). Second, identifying the status can help
+optimize the friend recommendation, which is one of the key functionalities in the social apps. For example, the
+app can recommend more friends with common interests to those in steady relationships, while recommending
+more friends with appropriate dating profiles (e.g., matched sex role and age) to those not in steady relationships.
+Given the popularity of smartphones and the mobile Internet, a large number of SMM-oriented mobile social
+apps (we call them SMMSA for short) have emerged in recent years (e.g., Grindr1, Blued2and Jack’d3), which
+provide SMM with opportunities to find nearby homosexual friends. These apps have a large number of active
+users, through which many SMM make friends and update postings [ 7,42,57]. For example, Blued, the most
+popular SMMSA in China, claimed to have more than 40 million users in 2018 [ 11]. One direct way is that we can
+use users’ self-reported relationship status in these apps. However, some apps may not design such a field, or
+even if with it, many people do not fill this field when they start to use the apps. For example, in the dataset of
+our study, only 2000+ out of 7000+ users report this attribute.
+The rising use of these apps resulted in a proliferation of multi-modality data for the SMM community (e.g.,
+profiles, postings, social relationships and mobility), which are referred to as online digital footprints in the
+paper. These digital footprints usually reflect the pattern of online behavior, which is associated with people’s
+physical attributes [ 2,5]. With such intuition in mind, it may be possible that we can investigate the correlations
+between their digital footprints and relationship status, and further use such correlations to infer the SMMSA
+users’ relationship status. Thus, we raise a novel research question in this paper: are the online digital footprints
+of SMMSA users correlated with their relationship status? If the answer is yes, then what are the significantly
+correlated features? Can we use these features to identify SMM in steady relationship status? To the best of our
+knowledge, we are the first to investigate this research question.
+In this work, using a filtered dataset regarding a popular SMMSA in China (with 2,359 active users in a
+mid-sized city), we characterize users’ profiles and online behavior from different aspects of digital footprints,
+and study their correlations with users’ relationship status. This dataset makes our study feasible as it contains
+both users’ self-reported relationship status (i.e., being in a steady relationship or not) and other types of data
+(e.g., profiles, friendship list, postings, check-in time and locations, and so on). Based on this dataset and extracted
+variables, we conduct an extensive analysis to explore how the online digital footprints may correlate with
+relationship status and present a set of interesting findings in terms of presented profiles, social interactions,
+expressions & sentiment, and spatial-temporal patterns. Besides these findings regarding individual variables,
+we also demonstrate that by exploiting such correlations, we can extract combinations of features and adopt
+machine-learning methods to infer SMM’s relationship status accurately.
+The major contributions of our study consist of the following:
+1https://www.grindr.com/about/
+2https://www.blued.com/intl/
+3http://www.jackd.mobi/
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:4 •Wang et al.
+(1) To the best of our knowledge, we are the first to investigate SMM’s relationship status from the perspective
+of SMM-oriented social apps. We exploit a dataset from a popular SMMSA in China to characterize users’ features
+from different aspects of online digital footprints and explore its correlations with users’ relationship status.
+(2) We conduct an extensive study of inter-variable correlations and establish a set of interesting findings
+regarding how the digital footprints left on social apps correlate with their relationship status. Specifically, we
+found that users with different relationship status behave differently in presented profiles, social interactions,
+expressions, sentiment, and spatial-temporal patterns.
+(3) We extract a set of features based on the findings and demonstrate the feasibility of constructing a machine-
+learning model to accurately infer SMM’s relationship status (i.e., whether someone is in a steady relationship or
+not). We also present the implications of our findings and proposed model from different perspectives.
+2 RELATED WORK
+There are several terms in the state-of-the-art literatures having the same meaning with SMM, such as homosexual
+men, men who have sex with men (MSM), gay men, and so forth. In this paper, we use the term SMM consistently
+when summarizing the related works to avoid the confusion. The related studies can be roughly divided into the
+following categories.
+Relationship status for SMM. Several research works have investigated the relationship status of SMM, and
+most of them studied its correlation with SMM’s offline behaviors, especially for physical and mental health.
+Many literatures such as [ 1,6,21,35] revealed that sustaining steady relationships plays an important role in
+mitigating HIV transmission.The authors of [ 58] concluded that condomless anal sex was more common for men
+who were not in a steady relationship. Moreover, some other studies [ 20,55] explored how the relationship status
+affects mental health. For example, from the California Health Interview Survey, the authors of [ 55] found that
+having a steady partner was associated with lower levels of psychological distress for individuals in same-sex
+relationships. Similarly, research in [ 20] even pointed out that discriminatory environments and bans on same-sex
+marriage are detrimental to mental health, and suggested that legalizing same-sex marriage contributes to better
+health for them. Although the above-mentioned literatures also investigate SMM’s relationship status, they
+mainly focus on SMM’s offline behaviors or conditions rather than online behaviors on social apps.
+Self-presentation in SMMSA and disclosure. These SMMSAs have become particularly popular among
+SMM and raised a range of questions about self-presentation, visibility to others, and impression formation
+[25]. The authors in [ 8] explored how people manage potentially stigmatized identities in using these apps
+and what types of information they use to self-present in the absence of a detailed profile. The authors in [ 47]
+investigated the effects of intimate self-disclosure and sexting via private messaging on internalized homophobia
+and loneliness. The results suggested that the uses of SMMSA was negatively associated with loneliness. The
+study in [ 10] indicated that co-situation affects how and whether Grindr users and their behaviors are visible to
+others. The study in [ 16] examined how gay men present themselves across different cultures, and the results
+demonstrate that Chinese gay men are less likely to show their faces than American gay men, because of the
+stronger stigma of homosexuality in China. The authors in [ 24] argued that sexual health-related language in
+social apps can be used as a sensor to provide insights into discourse among particular communities.
+App usage motivation. SMM may use these apps for different purposes, and several recent literatures
+studied usage motivation. Through the uses and gratifications approach, the authors of [ 22] discussed the needs
+and motivations that bring SMM online to social apps, how they manage multiple identities online, and the
+resulting gratifications of their online activities. Through a case study involving more than 500 participants, the
+investigation in [ 51] revealed six usage motivations of SMM’s mobile dating apps: social inclusion, sex, friendship,
+entertainment, romantic relationships, and location-based search. From the perspective of HCI design, the authors
+of [26] studied how to optimize SMM dating apps’ functionality to meet the requirements of users with different
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:5
+usage motivations. Although people always think that the ultimate goal of SMMSA is to enable face-to-face
+contact, the authors of [ 48] challenged this assumption and argued that these apps have succeeded not because
+they extended social relationships, but because they established amateur porn platforms. There is also a group of
+literatures that analysed the relationship between the usage of SMMSA and risk behaviors for HIV infection. For
+example, the study in [ 17] analysed the associations of unprotected anal sex with partners found via Grindr in
+young SMM in Los Angeles, and found that the average number of partners varied according to sexual behaviors,
+especially whether partners were found on apps. The authors of [ 56] assessed risk behaviors of those using
+SMMSA, and reported that partners found via the SMMSA were more likely to have unprotected anal sex. The
+authors in [ 31] and [ 7] found that SMMSA users have a higher average number of sex partners and more frequent
+HIV testing than app nonusers. Interested readers of SMMSA usage and risk behaviors for HIV infection are
+referred to the literature review in [41] for more details.
+The above two categories of literatures also focus on the analysis of SMMSAs, which serve as good inspirations
+and motivations for our research. For example, they provided us with a number of references to explain the
+findings we get in our study and elaborate their implications. However, these works did not investigate the
+correlation between SMMSA users’ online digital footprints and their relationship status, which is a novel research
+question.
+Attribute inference in general social networks. Beyond the above literature about SMMSA, there are also
+a number of research work such as [ 13,28,40,53], which infer different profile attributes in general online social
+networks. Their motivations are generally framed from the perspective of privacy preserving. In the online
+social networks, a user’s public data could be the list of pages or music liked or shared by the user, as well as
+the user’s friend lists. There studies have demonstrated that an attacker can use a machine learning classifier
+to infer a target user’s private attributes (e.g., gender, cities lived, and political view) based on the user’s public
+data on social network. However, the above studies are mainly for general online social networks with different
+motivations and implications. To the best of our knowledge, we are the first to investigate the relationship status
+inference on SMM-oriented social network.
+3 DATASET DESCRIPTION
+In the section, we will first present the overview of the dataset together with the process of its collection and
+pre-processing. Then, we discuss the reliability and generalizability of the dataset, which is important for the
+feasibility of this study.
+3.1 Data Collection and Pre-Processing
+The data we use in this study are collected through a popular SMMSA in China4. With millions of active users,
+the app provides a number of functionalities, including updating personal profiles, sharing personal real-time
+location, viewing nearby users, posting content, following other users, and so forth. The original dataset is
+collected through a national population health project in China, which enables several on-going studies for the
+welfare of SMM. The study in this paper only uses a subset of the entire dataset based on pre-processing. With
+this in mind, we first introduce the collection process of the original data set, and then describe the specific
+pre-processing for this study.
+Original Dataset Collection. In the original national project, more than 7000 active app users in a mid-sized
+city5are randomly recruited as participants to provide their screen names. The researchers choose this city for
+data collection due to the following two reasons. First, this city has relatively large number of SMM and SMMSA
+users in China. Second, through the collaboration with a Non-Governmental Organizations for SMM community
+4To protect users’ privacy and avoid bringing stigma to app service provider, we choose not to mention the app’s name in this paper.
+5To preserve user’ privacy and avoid bringing stigma to this city, the named of city is kept as anonymous in this paper.
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:6 •Wang et al.
+in this city, the researchers have the channel to recruit SMM volunteers for supporting our study (e.g., labeling
+SMM-dedicated gathering places, verifying the self-reported relationship status, providing some insights about
+our findings, etc.). During this process, each participant is provided with a consent form, in which the researchers
+clearly state the purpose of the research and type of data to be collected. Then, with the provided screen name
+as the searching index, the researchers collect their publicly available app usage data (e.g., profiles, friendship,
+check-in locations, etc.) by writing a crawler. Thus, the original dataset spans from April 6, 2017 to Sept 28, 2017,
+covering more than 7000 active users in a mid-sized city with their app usage data (e.g., profiles, friendship,
+check-in locations, etc.).
+Specific Pre-Processing for this Study. In this study, we use the relationship status in the profile data, which is
+a binary label indicating whether the user is in a steady relationship or not. Thus, we only import the data of
+those who have provided the relationship status (in total of 2,778 users). Besides, through further analysis of the
+original data set, we found that, during the time span of this data set, 419 of the 2,778 users have changed their
+relationship status labels at least one time. Since SMM users may not modify the status in the app immediately
+after the change of their actual status, this subset of users were excluded in our study to ensure the rigor of
+the results. Therefore, the filtered data set we used for data analysis includes 2,359 users with self-reported
+relationship status labels and various types of app usage data on the SMMSA. Among the 2,359 users, 230 were in
+steady relationships and 2,129 were not.
+3.2 Ethical and Privacy Considerations
+We took careful steps in this study to protect user privacy and preserve the ethics of research, and make sure
+that it is compliant with the best-known practice of data mining research. (1) This study has been approved by
+the research ethical committee of the authors’ institutes. (2) We have completely anonymized the dataset before
+data mining, and the data are stored and processed on a private and HIPPA-compliant cloud server with strict
+access control. (3) The overall process of data collection is compliant with the public privacy policy of the service
+provider of the SMMSA, where we follow two important rules [ 52]. One is that we only collect and use data that
+are publicly available on the app, and the other is that the collected data together with the results of analysis will
+only be used for research purposes. (4) Last but not least, following the spirit of GDRP (General Data Protection
+Regulation)6released by the European Union in 2018, we have anonymized the name of the application and the
+name of the city throughout the article. This could better preserve users’ privacy and avoid bringing stigma to
+sexual minorities or to the application provider.
+3.3 Discussion of Reliability and Generalizability
+In the perspective of our research goal, there are two major concerns regarding the usability of dataset. The first
+concern is the reliability of users’ self-reported relationship status. If many users lie about their relationship status
+on the app, then the data analysis results will not be convincing. The second concern is the generalizability, that
+is, are the users in our dataset representative compared to millions of SMMSA users? Without this information,
+the analysis results and inference model will lose the generalizability. To address these two concerns, we have
+conducted the following verifications before doing the data analysis.
+First, we organize an interview with 50 randomly volunteers who are also SMMSA users, in which we ask
+them if their reported relationship status on the app is true. 96% of them (i.e., 48 volunteers) have confirmed
+that the reported one is true. We believe that the users’ self-reported relationship status is generally reliable,
+and we elaborate the reasons as follows. If people lie about their relationship status, there are generally two
+cases: (a) Users in steady relationships report that they are not in. The partners are generally the users of the
+same application, so that their partners will easily detect the lie and feel uncomfortable. For this reason, the
+6https://gdpr-info.eu/ (General Data Protection Regulation)
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:7
+interviewees commonly insist that this situation is very rare, as users in steady relationships generally avoid
+letting their partners think that they are lying on the relationship status. (b) Users not in steady relationships report
+that they are in. The main purpose of these kinds of applications is dating, so that falsely claim being in steady
+relationships will reduce the chances of attracting dating partners. For this reason, the interviewees commonly
+believe that people are not motivated to do so. By summarizing the above two cases, we believe that the reported
+relationship status is generally reliable, which can support the subsequent data analysis in our study as we have
+more than 2000 sampled users. In fact, for the state-of-the-art research work of attribute inference (e.g., gender)
+in social network applications, the reliability of labels is a common problem as they are usually filled by users
+without any verification. Most of these works consider the user-filled value as ground truth without doing any
+reliability check. On the contrary, we discuss and check their reliability before using them in the model training.
+Although this process cannot fully guarantee the reliability of each self-provided label, we believe that it can
+inspire similar types of research work in the future.
+Second, we have conducted a verification to check if the users in our dataset are representative compared
+to millions of SMMSA users. We investigate the age distribution of SMMSA users in China. According to the
+authors of [ 14], the SMMSA users are mainly between 20-29 years old and they constituted 59.9% of all users. For
+younger men (< 20 years of age), they constituted 4.0% of SMMSA users. For older men (> 30 years of age), they
+constituted 36.1% of all users. Among our sampled users, 3.7% of users claimed that they are less than 20 years old
+and 59.9% are between 20-29 years old. For users more than 30 years old, they constituted 36.4% of our sampled
+users. The result of chi-square test reveals that the difference between the two age distribution is not significant
+(𝜒2= 0.08, p = 0.96079), which indicates that the SMMSA users we sampled are representative to some degree.
+4 APP USAGE DIFFERENCE ON DIFFERENT RELATIONSHIP STATUS
+In this section, we examine and present the difference of online digital footprints for SMMSA users with different
+relationship status. Specifically, we demonstrate their correlations in the following aspects: profile presentation,
+social interaction, expression & sentiment, and spatial-temporal patterns. For each aspect, we first describe
+the data analysis process and then show our findings. For the convenience of presentation, we use acronym
+SMM-SD for SMM in steady relationships and SMM-NSD for SMM not in steady relationships. In this section,
+single-variable statistic test is firstly adopted to filter out variables that are not significantly correlated, which
+reduces the number of independent variables. Then, regression analysis is further used to reduce the effect of
+multicollinearity and reveal the true effects of each independent variable after considering all other variables.
+4.1 Profile Presentation
+Profile data are the first thing to fill out when users register on the SMMSA, which display the most essential and
+straightforward traits of SMMSA users. Our foremost question is: Do SMM with different relationship status
+present different profiles? We examine the profile data by using t-test on numerical attributes including height,
+weight, age and the color usage of profile image, and chi-square test on categorical attributes including sex role
+and app usage purpose. We find that age, sex role, the color usage of profile image, and app usage purpose have
+significant correlations with users’ relationship status.
+Age. In general, we find that SMM-SD are older. The average age of SMM-SD is 29.57, while that of SMM-NSD
+is 27.81 (t-value = 2.35, p-value = 0.02). To further understand the difference, we plot the cumulative distribution
+function (CDF) in Figure 1, in which the CDF curve of SMM-SD is lower, indicating that SMM-SD are older. For
+example, the proportion of users younger than 33 years old are 76.52% for SMM-SD, and it is 83.98% for SMM-
+NSD. This difference is consistent with literatures for general population (including both SMM and non-SMM
+individuals) [34], that is, the older someone is, the more likely he is in a steady relationship.
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:8 •Wang et al.
+0%10%20%30%40%50%60%70%80%90%100%
+18 28 38 48 58 68 78CDF
+AgeSMM-SD SMM-NSD
+Fig. 1. SMM in steady relationship are generally older
+Sex Role. According to [ 50], there are three sex roles related to sex positions for SMM. SMM with top role are
+those who penetrate, SMM with bottom role are those who receive penetration, and a versatile role engages in
+both activities or is open to engaging in either activity. SMMSA users usually self-report their sex role in the
+application. But this field is optional, and users are allowed to leave it blank. So there are 4 possible attribute
+values for sex role in our research: top, bottom, versatile and blank/unknown. We compare the distribution of sex
+role values for those in or not in steady relationships. We find that for SMM-SD: 42% are top and 9% are bottom,
+while 23% are top and 22% are bottom for those SMM-NSD. We further plot the role proportion separated by
+relationship status in Figure 2. It illuminates that SMM-SD have a higher proportion of top role than SMM-NSD
+(𝜒2-value = 44.951, p-value«0.01). In order to further understand this phenomenon, we search for some literatures
+that may provide reasons and explanations. For example, authors in [ 4,44] pointed out that "active" men (i.e., top
+men) are usually more masculine and more likely to create long-term steady relationships with their partners.
+App Usage Purpose. The SMMSA allows users to fill in their purposes of using the app, and there are five
+possible choices in the checkbox, including "chatting", "dating", "looking for bromeo" (bromeo), "looking for
+boyfriend" (boyfriend) and "looking for gym buddy" (gym buddy). A user could select at most three of them or
+leave this check box blank. We compare the proportion of each app usage motivation in different relationship
+status. As shown in Figure 3, we find the proportion distribution is discrepant in these two groups. Then we use
+chi-square test to examine the difference. We find that SMM-NSD are more interested in finding dating partner
+(𝜒2value=14.34, p-value«0.01) and boyfriend ( 𝜒2value = 64.377, p-value«0.01).
+Profile Image. We extract several widely used computational aesthetics features (CA) to describe the color
+usage of profile image [ 46]. Specifically, we describe the HSV (hue, saturation, and value) statistic of profile
+image by extracting the average of hue, the average of saturation, the average of value, the standard deviation
+of saturation, and the standard deviation of value. We also describe the warm and cool color usage of profile
+image by extracting the percentage of different color pixels. For warm color, we calculate the average percentage
+of orange, pink, red, white, brown, and yellow pixels. For cool color, we use the average percentage of black,
+blue, grey, green, and purple pixels. We compare the average of CA features in different relationship status,
+and find that SMM-SD are more likely to use profile image with lower saturation and warm color. Specifically,
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:9
+0%5%10%15%20%25%30%35%40%45%
+blank bottom versatile topProportion
+Sex RoleSMM-SD SMM-NSD
+Fig. 2. Difference in sex role distribution
+0%5%10%15%20%25%30%35%
+chat date bremeo boyfriend gym buddyProportion
+PurposeSMM-SD SMM-NSD
+Fig. 3. Difference in app usage purpose
+the average saturation of SMM-SD is 82.82, while the average saturation of SMM-NSD is 75.13(t-value=-2.11,
+p-value«0.01). The warm color percentage of SMM-SD is 4.71%, while that of the SMM-NSD is only 3.24%
+(t-value=2.13, p-value«0.01). As for the cool color, the cool color percentage of SMM-SD is 12.28%, while that of
+the SMM-NSD is 14.35%(t-value=-2.84, p-value«0.01). To understand the potential reasons behind these findings,
+we turn to some psychological research. According to the research about color theory, warm color are often
+said to be related with active and positive emotion [ 9,33]. Considering that being in a steady relationship was
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:10 •Wang et al.
+associated with positive psychology [ 55], our findings about user’s profile image are in consistent with previous
+studies to some degree.
+4.2 Social Interactions
+The SMMSA dataset also includes rich information regarding the social interactions among users. For example,
+with the follower and following data, we can reconstruct the friendship network, which charactrizes the friendships
+among users. In addition to the network structure, we also incorporate users’ feedbacks to other users’ postings
+into the social interaction information. For example, users can make thumb-up and comments on others’ postings.
+Then another interesting question is: Do SMM in different relationship status present different social interaction
+features? To explore this, we compare the features in social network structure and feedback to postings.
+Social Network Structure. We use the follower and following data to re-construct the friendship network.
+We explore several variables, including the number of followers and followings, the number of friends (a pair of
+users who are each other’s followers are defined as friends according to the rule of the SMMSA in this study),
+the number of blocked users, etc. Besides, we also examine other metrics such as degree and centrality, which
+are the essential measures of a node’s importance in the social network research community [ 38]. The average
+number of friends are 13.14 and 14.77 for SMM-SD and SMM-NSD, respectively, which is not significantly
+different (t-value=0.60, p-value=0.55). Although the number of friends is not significantly different, we have other
+interesting findings as described below.
+First, we were wondering if the SMMSA users make friends selectively and purposely. For SMM-SD, 16.3% of
+their friends are also in steady relationships, while for SMM-NSD, the number is only 9.2%. The difference is
+statistically significant (t-value=6.64, p-value«0.01). We can see that SMM-NSD are more willing to make friends
+with others who are also not in steady relationships. It might imply that those users intend to make friends with
+more dating-related or sex-related purposes, which is consistent with our findings in the app usage purpose
+described in Section 4.1.
+Then, as SMM-NSD tend to be more willing to make friends with those also not in steady relationships, we
+make a deeper hypothesis that they are more likely to be exposed to harassment [ 27]. For this reason, some
+of them will turn to the anti-harassment mechanism (i.e., blocking someone) provided by the SMMSA more
+frequently [ 48]. Thus, we choose the number of blocked users (from the blacklist information in the dataset)
+as a measure for the degree of harassment they encountered, because more harassment might lead to a longer
+blacklist. The average number of blocked users for SMM-SD is 13.93, and 18.92 for SMM-NSD. It shows that
+SMM-NSD have more blocked users (t-value=4.94, p-value « 0.01). As the number of friends is not significantly
+different for these two groups, it may imply that SMM-NSD are more vulnerable to harassment and therefore
+block more. We also plot the cumulative distribution function (CDF) for SMM in different relationship status
+by the number of blocked users respectively in Figure 4. As shown in the figure, the CDF curve of SMM-SD is
+higher, which means that they have fewer blocked users. Moreover, there is a noticable rise of SMM-NSD around
+50 blocked users. This is because the block limit of regular users is 50 for the app, but for those who have passed
+verification required by the app, they can block more than 50.
+In summary, it is possible that SMM-SD may be less willing to seek friends for dating or sex purposes on the
+SMMSA and therefore receive less harassment. In contrast, SMM-NSD might be more willing to find friends
+who are also not in steady relationships, because they are more likely to respond to sex-related or dating-related
+requests. Correspondingly, they will receive more harassment and block more requests. This is in agreement
+with what the authors in [ 1,6,21,35] revealed, that is, reducing the number of partners plays an important role
+in mitigating HIV transmission, since SMM-NSD are more likely to seek more sex partners.
+Friends’ Feedback to Postings. As for the posting, we compare the number of thumb-ups and comments
+users received in different relationship status. It turns out the number of thumb-ups and comments are linked to
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:11
+relationship status. Specifically, the average number of thumb-ups and comments received per posting is 14.18
+and 2.03 respectively for SMM-SD, while 10.72 thumb-ups and 1.62 comments respectively for SMM-SD, and the
+difference of both these two indicators are significant (t-value=3.31, p-value«0.01, t-value = 3.66, p-value«0.01).
+So we can see that SMM-SD receive more feedbacks in their postings.
+4.3 Expression and Sentiment
+Users can express themselves through postings in the SMMSA. Are SMM in steady relationships more likely to
+express themselves? Are they expressing more positively or more negatively? We compare the proportion of users
+who ever published postings, the number of postings, the average length of their postings and the sentiment of
+SMM in different relationship status. The analysis results indicate that, among those variables, the proportion of
+users ever published postings and the sentiment of postings are significantly correlated with relationship status.
+Expression Willingness. We first verify two variables, i.e., number of postings and length of their postings.
+We found that the average number of postings is 22.13 for SMM-SD while 21.66 for SMM-NSD (t-value=0.23,
+p-value=0.82). Besides, the average length of postings is 761.54 characters for SMM-SD while 652.31 characters for
+SMM-NSD (t-value=1.15, p-value=0.25). Thus, the difference is not statistically significant on these two variables.
+Then, we divide SMM in each relationship status into two groups: users with postings (i.e., having at least one
+posting) and users without postings. The proportion of users without postings is 30%, for SMM-SD is 30%, 37% for
+SMM-NSD, and the difference is significant ( 𝜒2value=4.47, p-value=0.03). To demonstrate the result more clearly,
+we plot the proportion of users who ever posted or nerver posted in different relationship status in Figure 5. We
+can see that SMM-SD are more willing to express themselves in terms of postings.
+Sentiment. Given that SMM-SD are more willing to express themselves, do they express more positively?
+We apply a widely-used open API called SnowNLP7, which focuses on sentiment analysis for Chinese text, to
+analyze the sentiment of each posting published by SMMSA users. The sentiment score returned by this API is a
+real number between 0 and 1, where 0 represents totally negative and 1 represents totally positive. The average
+sentiment score is 0.67 for SMM-SD, 0.63 for SMM-NSD, which indicates that SMM-SD express more positively
+in their postings (t-value=2.60, p-value«0.01).
+In summary, we can see that SMM-SD not only are more willing to express themselves through postings, but
+also express more positively.
+4.4 Spatial-Temporal Patterns
+The SMMSA also provides check-in records including time and location, which build a bridge between online
+behavior and offline activities in the real world. Knowing that SMM in different relationship status behave
+differently online, we further ask the question: Do they present divergent activity modes in the real world? Do
+they go to similar places? Do they use the SMMSA during similar time periods? To answer those questions, we
+have conducted the following analyses.
+Mobility Pattern. First, we check the total number of check-ins, but find it to be not significantly different
+(124.96 vs. 122.96 for SMM in steady relationships or not, t-value = 0.23, t-test). Then, literatures such as
+[21,37,49,55] show that SMM always meet or gather in some places (e.g., gay bar, bathroom, and parks). We
+try to find places where SMM are likely to gather in the city we focus on. With check-in records of all users in
+the dataset (one check-in record includes a user identification number, timestamp, longitude, and latitude), we
+construct a heatmap in the city we study (see Figure. 6(left)). However, there are many common places such
+as subway stations, restaurants and malls, where both SMM and non-SMM groups will visit and thus are not
+semantically meaningful for SMM. For this reason, we invited 11 voluntary SMMSA users in our target city to
+help select real SMM dedicated gathering places on the heatmap. Finally, based on their votes, we get eight places
+7https://pypi.org/project/snownlp/0.11.1/
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:12 •Wang et al.
+0%10%20%30%40%50%60%70%80%90%100%
+0 10 20 30 40 50 60CDF
+Number of Blocked UsersSMM-SD SMM-NSD
+Fig. 4. SMM not in steady relationship have more blocked users
+0%10%20%30%40%50%60%70%
+Never Posted PostedProportionSMM-SD SMM-NSD
+Fig. 5. Difference in proportion of users with or without posting
+from those candidate locations (see Figure. 6(right)). To examine their visit modes, we calculate the distance from
+their check-in locations to these SMM dedicated gathering places. If the distance is less than a threshold, say 200
+meters, we regard this check-in as a visit to a SMM dedicated gathering place. We define a metric 𝑃𝑖=𝐻𝑖/𝑉𝑖,
+where𝑉𝑖is the total number of check-ins for user i and 𝐻𝑖is the number of check-ins by user i to those SMM
+dedicated gathering places. We find that the average 𝑃𝑖is 3.0% and 3.69% for SMM-SD and SMM-NSD, respectively,
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:13
+Fig. 6. left: locations with more check-ins in the city; right: selected locations as SMM dedicated gathering places8
+which is significantly different ( 𝜒2value= 37.61, p-value«0.01). It shows that SMM-NSD visit gathering places
+more frequently.
+Check-in Time Distribution. We also have interesting findings on the check-in time distribution. To explore
+this, we plot the average check-in counts in every four hours during a day. As demonstrated in Figure 7top, there
+are 7 waveforms representing the check-in pattern from Monday to Sunday, and each waveform consists of 6
+points. The starting point shows check-in counts from 0:00 am to 4:00 am and the end point shows the check-in
+count from 20:00pm to 24:00pm. We find that compared with the blue curve (SMM-SD), the red curve (SMM-NSD)
+has a prominent pointed end on the upper right on weekdays. What is more, the red curve is generally higher
+than the blue curve on weekends. We can see that SMM-NSD perform check-ins more frequently in the evening
+of weekdays and nearly the whole day of weekends than SMM-SD. Thus, we make a hypothesis that SMM with
+different relationship status may have different check-in time distribution during worktime and non-worktime.
+Then we further divide the check-in time into worktime and non-worktime, where worktime is 9:00am-5:00pm
+on weekdays and non-worktime is the rest of the week. Then we sum up check-in counts in different relationship
+status to compare their check-in time distribution patterns. We compare the average counts and the proportion
+of check-ins. The proportion of check-in counts during worktime is 35% for SMM-SD, 29% for SMM-NSD, so
+SMM-SD are more likely to check-in during worktime than SMM-NSD ( 𝜒2value = 40.62, p-value«0.01, chi-square
+test).
+4.5 Multi-variable Regression Analysis and Summary of Findings
+A limitation of the above single variable analysis method is that variables may affect each other. Thus, in order
+to make the analysis result more rigorous, we further perform a regression analysis, that is, applying variables
+verified by single variable hypothesis testing to the logistic regression model. According to the results of the
+8To preserve privacy and avoid bringing stigma to the city we study, the name of locations has been eliminated from the map.
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:14 •Wang et al.
+0123456
+Mon Tue Wed Thu Fri Sat SunLogin Count
+TimeSMM-SD SMM-NSD
+00.20.40.60.811.21.41.61.8
+0 4 8 12 16 20 24Check -in  Count
+TimeSMM-SD SMM-NSD
+Fig. 7. Difference in check-in time distribution. top: Check-in time distribution; bottom: Taking Wednesdays as the example
+to show check-in counts in weekdays
+regression analysis in Table 1, the variable #TotalComment is not significant. We guess it might be caused by the
+multi-collinearity, as some other variables may be highly correlated with the variable #TotalComment, which makes
+the results to be potentially confounded. Thus, we further calculate the PCCs (Pearson correlation coefficient) to
+test the correlation between #TotalComment (i.e., number of comments a user has received) and other variables.
+Table 2shows the results of the PCCs. From these results we can find that the variable #TotalComment is highly
+correlated with the variable #TotalDig (i.e., the number of thumb-ups a user has received).
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:15
+Table 1. The result of the regerssion analysis (***: p < 0.001, **: p < 0.01, *: p < 0.05)
+Dimensions Variables Coef p-value Illustration
+ProfileAge 0.0127 *** User’s age
+Role0 -0.6070 *** Whether report bottom role
+Role0.5 0.1215 *** Whether report versatile role
+Role1 0.7832 *** Whether report top role
+ForDate -0.7964 *** Whether have the purpose of dating
+ForBoyfriend -1.4542 *** Whether have the purpose of looking
+for boyfriend
+#Saturation -1.1143 *** The mean saturation of the user’s pro-
+file image
+#warmColor -0.2180 ** The average percentage of orange,
+pink, red, white, brown, and yellow
+pixels
+#coolColor 1.0501 *** The average percentage of black, blue,
+grey, green, and purple pixels
+Social Interactions#BlackCount -0.0208 *** The number of blocked users
+#MateFriend 0.2656 *** The number of friends who are in
+steady relationships
+MateFriendPortion 0.0284 *** The proportion of frineds who are in
+steady relationships
+#TotalComment -0.0002 The number of comments users re-
+ceived
+#TotalDig 0.0002 *** The number of thumb-ups users re-
+ceived
+Expression and Sentiment#PostCount 0.0031 *** The number of posts users published
+SentiScore 0.3262 *** Users’ sentiment score
+Spatial-Temporal PatternsWorkTimePortion 0.0101 *** The proportion of check-in counts
+during worktime
+HotPoiPortion 0.0022 *** The proportion of visiting SMM gath-
+ering places
+Table 2. The results of the Pearson correlation analysis with TotalCommant
+Variables Age Role0.5 ForDate #BlackCount #MateFriend ForBoyfriend
+PCCs 0.0371 -0.0220 -0.0254 0.0437 0.0298 0.0165
+Variables Role0 #Saturation #coolColor WorkTimePortion Role1 #TotalDig
+PCCs -0.0147 0.0240 0.0201 0.0380 -0.0242 0.7221
+Variables #PostCount SentiScore HotPoiPortion MateFriendPortion #warmColor
+PCCs 0.0507 -0.0165 0.0480 0.0088 0.0091
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:16 •Wang et al.
+Based on the extensive correlation analysis we have described above, we can summarize our findings as follows.
+In terms of users’ presented profiles, we have found that: 1) SMM in steady relationships are generally older. 2)
+Top role makes up a higher proportion for SMM in steady relationships. 3) SMM not in steady relationships are
+more interested in finding dating partner and boyfriend. 4) SMM in steady relationships prefer profile image with
+lower saturation and warm color such as orange, pink, red, and yellow.
+In terms of social interactions, we have found that: 1) SMM not in steady relationships are more likely to make
+friends with those also not in steady relationships. 2) SMM not in steady relationships have more blocked users
+in their blacklists. 3) SMM in steady relationships receive more feedbacks to their postings.
+In terms of expressions and sentiment indicated by postings, we have found that: 1) SMM in steady relationships
+are more willing to express themselves in terms of postings. 2) SMM in steady relationships express more positively
+in their postings.
+In terms of spatial-temporal patterns shown in check-in locations and time, we have found that: 1) SMM not in
+steady relationships visit their dedicated gathering places more frequently. 2) SMM in steady relationship are
+more likely to check-in during worktime than those not in steady relationships.
+5 RELATIONSHIP STATUS INFERENCE
+In the previous section, we demonstrate that SMM in steady relationships or not behave differently on the SMMSA
+from several aspects. With this in mind, another interesting question is that: Can we utilize this difference to infer
+one’s relationship status? In this section, we answer this question by validating the predictive power.
+5.1 Feature Extraction and Evaluation
+The descriptive analysis in Section 4 have demonstrated the app usage difference in four aspects for SMMSA users
+with different relationship status. However, although such indicated difference provide important inspiration for
+building the inference model, we should also note that the descriptive analysis and building a predictive model
+are two different threads [ 43]. Statistic-based descriptive analysis is designed for findings about the correlations
+between variables, while predictive models are designed to make the most accurate predictions possible without
+much expectation to be particularly interpretable.
+With the different goals and process, although the correlated variables obtained from the statistic-based
+descriptive analysis provide important insights and inspirations for the feature extraction in the predictive model
+building (i.e., telling us the directions to extract features), it does not necessarily mean that these correlated
+factors can be directly treated as the features in machine learning model. When establishing the predictive model,
+more sophisticated features should be extracted and further transformed or selected. For example, in terms of
+sentiment analysis in Section 4, we only demonstrate that an SMMSA user’s relationship status correlates to
+the average emotionally positive score. However, in the feature extraction phase, we also exploit the variance
+of a user’s emotionally positive score as a feature as it does contribute to the predictive model, though it is not
+statistically significant as a single variable. Besides, it is true that some features may be collinear with others, but
+we will leave it to the learning-based classification algorithms and feature selection modules to handle.
+In summary, to train a good model for relationship status inference, we are inspired to extract 20 features
+falling into four sets, namely profile-based features, social interaction based features, expression and sentiment
+based features, and spatial-temporal patterns based features, which is summarized in Table 3.
+We first justify the effectiveness of the extracted features, using the data shown in Table 4, where a Logistic
+Regression (LR) model is employed to study the performance of individual sets of features and their combinations.
+Due to the space limit, we present the performance of four combinations. From the results demonstrated in
+Table 4, incorporating all feature sets in the model can obtain the best performance in terms of accuracy, precision,
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:17
+Table 3. Features for building the inference model
+Dimension Feature Description
+Profile-based features Age, role, sex degree of profile image, purpose-chat, purpose-boyfriend,
+purpose-date, verified or not, saturation of profile image, ratio of profile
+image’s warm color and cool color pixels
+Social interaction based
+featuresnumber of followers, number of followings, ,number of blocked users,
+number of friends not in steady relationship
+expression and sentiment
+based featuresaverage sentiment score, variance of sentiment score, total number of
+postings, number of postings per day, number of thumb-up per posting,
+number of comments per posting.
+Spatial-temporal pattern
+based featurescheck-in count in gathering places, check-in in count in other places,
+ratio of check-in count in working time
+Table 4. RL-based classification comparison under different combinations of features (SI, PF, ES and ST represent social
+interaction, profile, expression and sentiment, and spatial-temporal pattern, respectively).
+Feature combinations Accuracy Precision F1 score False positive rate False negative rate
+SI 0.587 0.585 0.558 0.362 0.467
+SI+PF 0.706 0.721 0.697 0.261 0.326
+SI+PF+ES 0.717 0.727 0.711 0.261 0.304
+SI+PF+ES+ST 0.728 0.733 0.725 0.261 0.283
+F1 score, false positive rate and false negative rate compared to other combinations. The results demonstrate that
+the extracted four sets of features are effective in inferring relationship status.
+5.2 Learning Models and Performance
+As we have binary relationship labels in our dataset (i.e., in a steady relationship or not), we perform the
+relationship status inference as a binary classification task. In our dataset, we observe that the number of SMM-
+NSD is much larger than the number of SMM-SD, which introduces the data imbalance problem. To this end, we
+use an undersampling-based approach in [ 32] to address this issue as data pre-processing. That is, we sample
+several subsets from the majority class (i.e., users who are not in steady relationships), and combine each of them
+with the records with minority class (i.e., the SMM-SD users)
+Then, on the undersampled dataset, we apply several widely used machine models as baselines, including
+Decision Tree (DT), Logistic Regression (LR), Support Vector Machine (SVM), Random Forest (RF), Bernouli Naive
+Bayes (BNB), Gaussian Naive Bayes (GNB), Gradient Boosting Classifier (GBC) and Ridge Regression (Ridge)
+to train the classification models, which provides a good coverage of state-of-the-art feature-based learning
+models. All the classification models are trained and tested by using 5-cross validation approach. We have also
+added the Probabilistic Guess (PG) baseline which directly infer the relationship status according to the ratio of
+these two groups on our collected datasets. Besides, we also compare different classifiers with a human-based
+classifier (called HUMAN). In this baseline, 7 volunteers are recruited, and each of them is asked to view the same
+set of publicly available pages belonging to 100 randomly selected SMMSA users (including profiles, postings,
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:18 •Wang et al.
+Table 5. Classification performance comparison of different learning models
+Method Accuracy Precision F1 score False positive rate False negative rate
+PG 0.521 0.555 0.185 0.085 0.888
+DT 0.663 0.640 0.674 0.383 0.289
+LR 0.750 0.739 0.747 0.255 0.244
+SVM 0.739 0.723 0.739 0.277 0.244
+RF 0.674 0.667 0.667 0.319 0.333
+BNB 0.597 0.576 0.618 0.468 0.333
+GNB 0.510 0.500 0.081 0.042 0.955
+GBC 0.717 0.727 0.711 0.261 0.304
+Ridge 0.706 0.725 0.682 0.234 0.356
+Human 0.530 0.531 0.515 0.440 0.500
+social relationships, and check-in locations) and then make a judge about their relationship status. Then, we use
+majority voting methods to infer the relationship status of each SMMSA user.
+The classification performance comparison is shown in Table 5with the metrics of accuracy, precision, F1
+score, false positive rate and false negative rate. Here we should also note that when calculating the false positive
+and false negative rate, we regard the SMM-SD as positive cases because of primary motivation of this paper is
+to identify SMM in steady relationships. From this table, we can draw the following conclusions. First, most of
+the learning-based classification models, which use the full set of extracted features in this study, significantly
+outperform the human-based classifier. Previous studies have discussed several major advantages of computers
+over humans in dealing with such classification problems. For example, segalin et al. think that computers have
+the ability to store a large amount of information, which is difficult for humans to access [ 45]. Wei et al. believe
+that computers can utilize a tremendous amount of information to optimize the judgmental accuracy, while
+humans may be affected by various biases sometimes [ 54]. Second, among these learning models, LR model
+achieves the best performance in terms of accuracy, precision, F1 score and false positive rate, while GNB is the
+worst on these metrics. Both LR and SVM obtain the best false negative rate. Although we have conducted a
+multi-variable regression analysis, we still can’t keep variables are independent of each other. Given that the
+independence between variables is the main modeling assumption of GNB, we believe that it is the correlation
+between variables that affect the effectiveness of GNB [ 36]. Third, by comparing the performance of RL with that
+in Table 4, we can see that the model can be improved by the undersampling operation.
+6 DISCUSSIONS
+In this section, we first present some practical implications of our findings in Section 6.1, that is, how they may
+benefit real-world applications. Then, we point out some limitations and present interesting research directions
+for future work in Section 6.2.
+6.1 Implications
+This work is primarily motivated by the requirement of identifying SMM in steady relationships so that they can
+receive relevant service delivery. However, the potential benefits and implications of this study are beyond this
+inference model, which may be used to better understand the SMM community and improve their welfare .
+Better Understanding About SMM Community. This paper is a descriptive analysis of how SMM both in and
+outside a steady relationship behaviorally differ in their interactions with a popular dating app in China. We dig
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:19
+deep into finding statistically significant correlations in behavior between those two groups. Some of findings
+are in line with our common sense, which is not surprising. For example, the order people are more likely to be
+in the steady relationships. Another finding falling to this category is that people outside steady relationships
+are more interested in finding dating partners. However, some of the findings are more interesting and even
+unexpected. For example, we found that SMM in steady relationship are more willing to express themselves
+through postings and express more positively. To seek the potential reasons and behavioral insights behind,
+we turn to some literatures about the psychological research in the community of SMM. Through a large-scale
+interviews and surveys, the authors of research work such as [ 39,55] revealed that SMM with steady partners
+has less trouble in terms of psychological problems (e.g., stress, depression, and anxiety). With this in mind, our
+finding from the perspective of digital footprints is in consistent with it, which provide an impressive reminder
+that we need to take care of the psychological wellbeing of SMM outside steady relationships more seriously.
+Another interesting thing is that, through the analysis of time-stamped check-in data, we found that the SMM in
+steady relationships use the SMMSA more frequently in working time. To explore the reason behind it, we further
+conducted an interview with ten SMM volunteers, and many of them clarify that this is because SMM-SD are
+more likely to disclose their sexual orientation to others, so that they often feel free to use it in their workplaces.
+In contrast, SMM-NSD tend to hide their sexual orientation, so that they are more cautious to activate the app
+at their workplaces. Typical statements from the interviewee of SMM-NSD are "I rarely use it in the workplace,
+because it will make me feel embarrassed if someone knows I am using the gay dating app" and"I only check the app
+when going to some more private space in the company (e.g., the restroom)". This finding indirectly reflects the fact
+that this community still suffer from severe social stigma in China. So, how about the situations in other cultures
+or countries (e.g., countries allowing for same-sex marriage, or others holding even lower tolerance than China)?
+Will there be a significance difference? This motivates the researchers including us for future studies if similar
+data of the counterpart apps in other countries can be obtained.
+Optimizing the Design of SMMSA. The findings of our research help to optimize the functionality of SMMSA.
+First, it provides a privacy alert for service providers of social apps. To protect user privacy, most of the SMMSAs
+set the checkbox of relationship status as optional, and users can choose to leave this field blank if they are not
+willing to disclose it. However, our findings revealed a potential risk of privacy leakage, that is, an adversary may
+infer users’ relationship status with other clues on the app. With this in mind, our findings also provide guidance
+for the service provider to design better privacy preserving mechanisms. For example, the apps can recommend
+users to hide other discriminative information (e.g., number of blocked users) if they do not want to disclose
+their relationship status. Second, in terms of friend recommendation, users with different relationship status may
+have different preferences [ 27], and identifying the status can help optimize the friend recommendation modules.
+For example, the app can recommend more friends with common interests to those in steady relationships, while
+recommending more friends with appropriate dating profiles (e.g., matched sex role and age) to those not in
+steady relationships.
+Obtaining Large-scale Dataset for Research. Although there have been much social science research focusing
+on how relationship status may influence SMM’s behavior [ 1,6,21,35], the common remaining challenge lies
+in data collection. In these studies, researchers recruited participants in some SMM dedicated gathering places
+(e.g., gay bar, parks, bathrooms), and acquired their relationship status through questionnaires and interviews.
+However, due to existing homophobia, discrimination and stigma towards homosexuality, many SMM choose to
+hide their sexual orientation, as such this group remains extremely hidden. Thus, although this is an effective
+approach in a small scale (e.g., on a university campus), it is difficult to acquire a large number of samples with
+labelled relationship status at a larger scale (e.g., city, state or even nation scale). The findings in our study
+provide a promising way of automatically constructing a larger-scale dataset with much less cost. With the
+extracted features and learning model, we can accurately infer the relationship status of a large number of SMM.
+It may assist sociologists to better evaluate its influence on SMM’s behavior at a large scale, and ultimately
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:20 •Wang et al.
+provide references or even evidence for policymakers or lawmakers. For example, using more data with inferred
+relationship status labels, we can assess whether a steady relationship really help to control HIV transmission. If
+this is true, then allowing same-sex marriage is not only a human right that is "politically correct", but also plays
+an extremely positive role in public health management [29].
+6.2 Limitations and Future Work
+As the pioneering study of exploring SMM’s relationship status from their SMMSA usage data, our work still has
+several aspects to improve and is promising to explore new research directions for SMM-related research.
+Beyond the Binary Label. In this study, we only use the self-reported binary label in the SMMSA as the
+relationship status, which indicates whether a person has a steady homosexual relationship or not. However,
+in terms of the relationship status of SMM, there are many other indicators [ 21,37,49,55], such as number of
+partners, marriage status9, children adoption status, etc. In the future, we plan to conduct a deeper investigation
+of SMM’s relationship status by introducing more indicators.
+Evaluating and Improving the Generalizability. Through an interesting dataset, we reveal several interesting
+findings and indicate the potential power of the inference model. However, the generalizability of the model
+should be further evaluated in other contexts. First, we should further test the model to see if they are also
+effective for users without reporting their relationship status (i.e., the non-reporters). This is because we cannot
+currently prove that self-reporters are not different from non-reporters on their behaviors, though they quite
+reasonably could be. In future work, we plan to recruit a number of SMM volunteers (e.g., 500 volunteers) who did
+not report their relationship status on the dating apps, and verify if our model can accurately predict their status.
+Second, although we have demonstrated that the dataset is representative to some degree (by comparing with the
+age distribution statistics in China in Section 3), a question may arise as to if the data can successfully represent
+all SMMSA users worldwide. For example, as illustrated in [ 16], the usage behavior of SMM users across different
+cultures may be diverse. Hence, one promising research direction is to collect more data on other apps (e.g.,
+Grindr and Jack’d), and then study if the findings and model can be transferred, or any other different findings will
+be obtained. In summary, our work provides a novel and interesting perspective to investigate the relationship
+status with SMMSA usage data, but computing a more generalized model for helping SMM worldwide still needs
+more efforts in terms of wider data collection, more sophisticated model training and evaluation.
+Utilizing Unlabeled Data. In this work, we only used data from users who reported relationship status labels
+while discarding the data of unlabeled users. Actually, semi-supervised machine learning methods (e.g., co-training
+algorithms) may help improve the inference accuracy with unlabeled data [ 59]. However, as the users’ relationship
+status may have changed during the time span and we do not know the time point of change, it is difficult to
+utilize the unlabeled data in the learning process, and this is the reason why we did not use unlabeled data in this
+study. In our future work, one promising way is training a classifier to infer whether one’s relationship status has
+changed, and then use it to select unlabeled data to enable semi-supervised learning methods.
+Balancing the Privacy Preserving and Inference Accuracy. In order to improve the inference accuracy, it would
+need to ask permission to gather private information, which raises more privacy threats. If we intend to use the
+proposed approach in real-world settings, this should be carefully considered. We need to seek a trade-off between
+the prediction accuracy and the privacy preserving, which should be further considered in the future work. If the
+contribution of a certain set privacy-sensitive features is limited in terms of accuracy, we should consider if it is
+worth collecting and injecting them into the classification model. For example, the spatial-temporal features only
+contribute slightly to the relationship status inference, but these features are rather sensitive to collect. In this
+case, if the application does not have a very high accuracy requirement, we would better to exclude them from
+the model.
+9Same-sex marriage has become legal in some countries, but China is currently not one of them.
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:21
+7 CONCLUSION
+Motivated by the requirement of identifying SMM with steady relationships to enable more precise services, this
+paper has presented an empirical study of relationship status for SMM from the mobile social app’s perspective.
+Our study is based on a dataset collected from a popular SMMSA in China. The filtered dataset contains 2,359
+active users in a mid-sized city with their self-reported relationship status and multi-modality app usage data
+during a period of more than five months. We conducted a comprehensive correlation analysis from multiple
+aspects, including profile, social interactions, expression and sentiment, and spatial-temporal patterns. With
+significant correlations, we extracted a number of features for relationship status inference via machine learning
+algorithms. Finally, we elaborated on the implications of our findings from several perspectives, which show the
+potential significance in better understanding SMM and improving their social warfare.
+ACKNOWLEDGMENTS
+This work was mainly funded by NSFC Grant (No.91546203).
+REFERENCES
+[1]Barry D Adam, Trevor A Hart, Jack Mohr, Todd Coleman, and Julia Vernon. 2017. HIV-related syndemic pathways and risk subjectivities
+among gay and bisexual men: a qualitative investigation. Culture, Health & Sexuality 19, 11 (2017), 1254–1267.
+[2]Tim Althoff, Pranav Jindal, and Jure Leskovec. 2017. Online actions with offline impact: How online social networks influence online
+and offline user behavior. In Proceedings of the tenth ACM international conference on web search and data mining. 537–546.
+[3]Veanne N Anderson. 2018. Cisgender men and trans prejudice: Relationships with sexual orientation and gender self-esteem. Psychology
+of Men & Masculinity 19, 3 (2018), 373.
+[4]J Michael Bailey, Peggy Y Kim, Alex Hills, and Joan AW Linsenmeier. 1997. Butch, femme, or straight acting? Partner preferences of gay
+men and lesbians. Journal of personality and social psychology 73, 5 (1997), 960.
+[5]Fabrício Benevenuto, Tiago Rodrigues, Meeyoung Cha, and Virgílio Almeida. 2009. Characterizing user behavior in online social
+networks. In Proceedings of the 9th ACM SIGCOMM conference on Internet measurement. 49–62.
+[6]Chris Beyrer, Stefan D Baral, Chris Collins, Eugene T Richardson, Patrick S Sullivan, Jorge Sanchez, Gift Trapence, Elly Katabira, Michel
+Kazatchkine, Owen Ryan, et al .2016. The global response to HIV in men who have sex with men. The Lancet 388, 10040 (2016), 198–206.
+[7]Cedric H Bien, John M Best, Kathryn E Muessig, Chongyi Wei, Larry Han, and Joseph D Tucker. 2015. Gay apps for seeking sex partners
+in China: implications for MSM sexual health. AIDS and Behavior 19, 6 (2015), 941–946.
+[8]Jeremy Birnholtz, Colin Fitzpatrick, Mark Handel, and Jed R Brubaker. 2014. Identity, identification and identifiability: The language
+of self-presentation on a location-based mobile dating app. In Proceedings of the 16th international conference on Human-computer
+interaction with mobile devices & services. 3–12.
+[9]Ake Bjerstedt. 1960. Warm-cool color preferences as potential personality indicators: preliminary note. Perceptual and Motor Skills 10, 1
+(1960), 31–34.
+[10] Courtney Blackwell, Jeremy Birnholtz, and Charles Abbott. 2015. Seeing and being seen: Co-situation and impression formation using
+Grindr, a location-aware gay dating app. New media & society 17, 7 (2015), 1117–1136.
+[11] Blued. 2018. Introduction of Buled. https://www.blued.com/cn/aboutus.html.
+[12] Kaylee E Burnham, Dean G Cruess, Moira O Kalichman, Tamar Grebler, Chauncey Cherry, and Seth C Kalichman. 2016. Trauma
+symptoms, internalized stigma, social support, and sexual risk behavior among HIV-positive gay and bisexual MSM who have sought
+sex partners online. AIDS care 28, 3 (2016), 347–353.
+[13] Zhipeng Cai, Zaobo He, Xin Guan, and Yingshu Li. 2016. Collective data-sanitization for preventing sensitive information inference
+attacks in social networks. IEEE Transactions on Dependable and Secure Computing 15, 4 (2016), 577–590.
+[14] Bolin Cao, Chuncheng Liu, Gabriella Stein, Weiming Tang, John Best, Ye Zhang, Bin Yang, Shujie Huang, Chongyi Wei, and Joseph D
+Tucker. 2017. Faster and riskier?: Online context of sex seeking among men who have sex with men in China. Sexually transmitted
+diseases 44, 4 (2017), 239.
+[15] Benjamin D Capistrant, Lindsey Lesher, Nidhi Kohli, Enyinnaya N Merengwa, Badrinath Konety, Darryl Mitteldorf, William G West, and
+BR Rosser. 2018. Social Support and Health-Related Quality of Life Among Gay and Bisexual Men With Prostate Cancer.. In Oncology
+nursing forum, Vol. 45.
+[16] Lik Sam Chan. 2016. How sociocultural context matters in self-presentation: A comparison of US and Chinese profiles on Jack’d, a
+mobile dating app for men who have sex with men. International Journal of Communication 10 (2016), 20.
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.29:22 •Wang et al.
+[17] Dustin T Duncan, William C Goedel, Christopher B Stults, William J Brady, Forrest A Brooks, Jermaine S Blakely, and Daniel Hagen.
+2018. A study of intimate partner violence, substance abuse, and sexual risk behaviors among gay, bisexual, and other men who have sex
+with men in a sample of geosocial-networking smartphone application users. American journal of men’s health 12, 2 (2018), 292–301.
+[18] Cally Gatehouse, Matthew Wood, Jo Briggs, James Pickles, and Shaun Lawson. 2018. Troubling Vulnerability: Designing with LGBT
+Young People’s Ambivalence Towards Hate Crime Reporting. In Proceedings of the 2018 CHI Conference on Human Factors in Computing
+Systems. 1–13.
+[19] Evan Gerstmann. 2017. Same-sex Marriage and the Constitution. Cambridge University Press.
+[20] Gilbert Gonzales. 2014. Same-sex marriage—A prescription for better health. New England Journal of Medicine 370, 15 (2014), 1373–1376.
+[21] Jeremy Greenwood, Philipp Kircher, Cezar Santos, and Michèle Tertilt. 2017. The role of marriage in fighting HIV: A quantitative
+illustration for Malawi. American economic review 107, 5 (2017), 158–62.
+[22] David Gudelunas. 2012. There’s an app for that: The uses and gratifications of online social networks for gay men. Sexuality & Culture
+16, 4 (2012), 347–365.
+[23] Andrea Guschlbauer, Nathan Grant Smith, Jack DeStefano, and Daniel E Soltis. 2019. Minority stress and emotional intimacy among
+individuals in lesbian and gay couples: Implications for relationship satisfaction and health. Journal of Social and Personal Relationships
+36, 3 (2019), 855–878.
+[24] Oliver L Haimson, Jed R Brubaker, and Gillian R Hayes. 2014. DDFSeeks same: sexual health-related language in online personal ads for
+men who have sex with men. In Proceedings of the SIGCHI Conference on Human Factors in Computing Systems. 1615–1624.
+[25] Mark J Handel and Irina Shklovski. 2012. Disclosure, ambiguity and risk reduction in real-time dating sites. In Proceedings of the 17th
+ACM international conference on Supporting group work. 175–178.
+[26] Jean Hardy and Silvia Lindtner. 2017. Constructing a desiring user: Discourse, rurality, and design in location-based social networks. In
+Proceedings of the 2017 ACM Conference on Computer Supported Cooperative Work and Social Computing. 13–25.
+[27] Mitchell Hobbs, Stephen Owen, and Livia Gerber. 2017. Liquid love? Dating apps, sex, relationships and the digital transformation of
+intimacy. Journal of Sociology 53, 2 (2017), 271–284.
+[28] Jinyuan Jia and Neil Zhenqiang Gong. 2018. Attriguard: A practical defense against attribute inference attacks via adversarial machine
+learning. In 27th{USENIX }Security Symposium ( {USENIX }Security 18). 513–529.
+[29] Philip M Kayal. 2018. Bearing witness: Gay men’s health crisis and the politics of AIDS. Routledge.
+[30] Maura Kelly and Elizabeth Hauck. 2015. Doing housework, redoing gender: Queer couples negotiate the household division of labor.
+Journal of GLBT Family Studies 11, 5 (2015), 438–464.
+[31] Justin J Lehmiller and Michael Ioerger. 2014. Social networking smartphone applications and sexual health outcomes among men who
+have sex with men. PloS one 9, 1 (2014).
+[32] Xu-Ying Liu, Jianxin Wu, and Zhi-Hua Zhou. 2008. Exploratory undersampling for class-imbalance learning. IEEE Transactions on
+Systems, Man, and Cybernetics, Part B (Cybernetics) 39, 2 (2008), 539–550.
+[33] Bruce MacEvoy. 2009. Color temperature.
+[34] Wendy D Manning, Susan L Brown, and Krista K Payne. 2014. Two decades of stability and change in age at first union formation.
+Journal of Marriage and Family 76, 2 (2014), 247–260.
+[35] Sharif Mowlabocus. 2016. Gaydar culture: Gay men, technology and embodiment in the digital age. Routledge.
+[36] Andrew Y Ng and Michael I Jordan. 2002. On discriminative vs. generative classifiers: A comparison of logistic regression and naive
+bayes. In Advances in neural information processing systems. 841–848.
+[37] Abigail Ocobock. 2013. The power and limits of marriage: Married gay men’s family relationships. Journal of Marriage and Family 75, 1
+(2013), 191–205.
+[38] Evelien Otte and Ronald Rousseau. 2002. Social network analysis: a powerful strategy, also for the information sciences. Journal of
+information Science 28, 6 (2002), 441–453.
+[39] John E Pachankis. 2014. Uncovering clinical principles and techniques to address minority stress, mental health, and related health risks
+among gay and bisexual men. Clinical Psychology: Science and Practice 21, 4 (2014), 313–330.
+[40] Jianwei Qian, Xiang-Yang Li, Chunhong Zhang, and Linlin Chen. 2016. De-anonymizing social networks and inferring private attributes
+using knowledge graphs. In IEEE INFOCOM 2016-The 35th Annual IEEE International Conference on Computer Communications. IEEE,
+1–9.
+[41] Artur Acelino Francisco Luz Nunes Queiroz, Álvaro Francisco Lopes de Sousa, Telma Maria Evangelista de Araújo, Francisco Braz Milanez
+de Oliveira, Maria Eliete Batista Moura, and Renata Karina Reis. 2017. A review of risk behaviors for HIV infection by men who have
+sex with men through geosocial networking phone apps. Journal of the Association of Nurses in AIDS Care 28, 5 (2017), 807–818.
+[42] Pamela Anne Quiroz. 2013. From Finding the Perfect Love Online to Satellite Dating and ‘Loving-the-One-You’re Near’ A Look at
+Grindr, Skout, Plenty of Fish, Meet Moi, Zoosk and Assisted Serendipity. Humanity & Society 37, 2 (2013), 181–185.
+[43] Bruce Ratner. 2017. Statistical and Machine-Learning Data Mining:: Techniques for Better Predictive Modeling and Analysis of Big Data.
+Chapman and Hall/CRC.
+[44] Theo GM Sandfort. 2005. Sexual orientation and gender: Stereotypes and beyond. Archives of Sexual Behavior 34, 6 (2005), 595–611.
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.Will Online Digital Footprints Reveal Your Relationship Status? An Empirical Study of Social Applications for ... •29:23
+[45] Cristina Segalin, Fabio Celli, Luca Polonio, Michal Kosinski, David Stillwell, Nicu Sebe, Marco Cristani, and Bruno Lepri. 2017. What
+your facebook profile picture reveals about your personality. In Proceedings of the 25th ACM international conference on Multimedia.
+460–468.
+[46] Crisitina Segalin, Alessandro Perina, Marco Cristani, and Alessandro Vinciarelli. 2016. The pictures we like are our image: continuous
+mapping of favorite pictures into self-assessed and attributed personality traits. IEEE Transactions on Affective Computing 8, 2 (2016),
+268–285.
+[47] Samuel Hardman Taylor, Jevan Alexander Hutson, and Tyler Richard Alicea. 2017. Social consequences of Grindr use: Extending
+the Internet-enhanced self-disclosure hypothesis. In Proceedings of the 2017 CHI Conference on Human Factors in Computing Systems.
+6645–6657.
+[48] Evangelos Tziallas. 2015. Gamified eroticism: Gay male “social networking” applications and self-pornography. Sexuality & Culture 19, 4
+(2015), 759–775.
+[49] Debra Umberson, Mieke Beth Thomeer, Rhiannon A Kroeger, Amy C Lodge, and Minle Xu. 2015. Challenges and opportunities for
+research on same-sex relationships. Journal of Marriage and Family 77, 1 (2015), 96–111.
+[50] Steven G Underwood. 2012. Gay men and anal eroticism: Tops, bottoms, and versatiles. Routledge.
+[51] Chad Van De Wiele and Stephanie Tom Tong. 2014. Breaking boundaries: The uses & gratifications of Grindr. In Proceedings of the 2014
+ACM international joint conference on pervasive and ubiquitous computing. 619–630.
+[52] Lita Van Wel and Lambèr Royakkers. 2004. Ethical issues in web data mining. Ethics and Information Technology 6, 2 (2004), 129–140.
+[53] Svitlana Volkova, Yoram Bachrach, Michael Armstrong, and Vijay Sharma. 2015. Inferring latent user properties from texts published in
+social media. In Twenty-Ninth AAAI Conference on Artificial Intelligence.
+[54] Xingjie Wei and David Stillwell. 2017. How smart does your profile image look? Estimating intelligence from social network profile
+images. In Proceedings of the tenth ACM international conference on web search and data mining. 33–40.
+[55] Richard G Wight, Allen J LeBlanc, and MV Lee Badgett. 2013. Same-sex legal marriage and psychological well-being: findings from the
+California Health Interview Survey. American journal of public health 103, 2 (2013), 339–346.
+[56] Hailey Winetrobe, Eric Rice, Jose Bauermeister, Robin Petering, and Ian W Holloway. 2014. Associations of unprotected anal intercourse
+with Grindr-met partners among Grindr-using young men who have sex with men in Los Angeles. AIDS care 26, 10 (2014), 1303–1308.
+[57] Shangwei Wu and Janelle Ward. 2018. The mediation of gay men’s lives: A review on gay dating app studies. Sociology Compass 12, 2
+(2018), e12560.
+[58] Tien Ee Dominic Yeo and Yu Leung Ng. 2016. Sexual risk behaviors among apps-using young men who have sex with men in Hong
+Kong. AIDS care 28, 3 (2016), 314–318.
+[59] Wang Zhan and Min-Ling Zhang. 2017. Inductive semi-supervised multi-label learning with co-training. In Proceedings of the 23rd ACM
+SIGKDD International Conference on Knowledge Discovery and Data Mining. 1305–1314.
+Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., Vol. 4, No. 1, Article 29. Publication date: March 2020.

@@ -151,7 +151,7 @@ if not os.path.exists(OUTPUT_DIR):
 
 all_results = []   
 
-for search_term in terms:
+for search_term in terms[::-1]:
     results = search_acm(search_term)
     
     print(f"Outputing {len(results)} results for term: {search_term}")

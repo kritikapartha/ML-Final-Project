@@ -1,0 +1,819 @@
+Providing Paradigm Orientation without Implementational Handcuffs 
+Howard E. Shrobe 
+Symbolics, Inc. and MIT AI Lab. 
+hes~zermatt.lcs.mit.edu 
+Abstract 
+Why is it hard to implement a Knowledge Rep- 
+resentation or Reasoning tool that people actually 
+use? 
+The claim of this paper is that there is a strong un- 
+derlying tension in this endeavor which has lacked 
+an adequate technical answer until recently. This 
+is the tension between the real need to provide 
+strong paradigm oriented guidance in a tool and 
+the equally real need to free the developer from im- 
+plementational handcuffs that prevent integration 
+and heterogeneity. 
+This paper presents Joshua, a system which pro- 
+vides syntactically uniform access to heteroge- 
+neously implemented knowledge bases. Its power 
+comes from the observation that there is a Protocol 
+of Inference underlying a broad class of representa- 
+tion and reasoning tasks which consists of a small 
+set of abstract actions. We use object-oriented 
+programming techniques to capture this protocol 
+and to provide both implementational flexibility 
+and paradigm oriented guidance with little runtime 
+cost. 
+1 The Quandary 
+Why is it hard to implement a Knowledge Representation or 
+Reasoning tool that people actually use? 
+The claim of this paper is that there is a strong underly- 
+ing tension in this endeavor which has lacked an adequate 
+technical answer until recently. This is the tension between 
+the real need to provide strong paradigm oriented guidance 
+in a tool and the equally real need to free the developer from 
+implementational handcuffs that prevent integration and het- 
+erogeneity. 
+Paradigm oriented guidance comes from tailoring a tool to the 
+viewpoint of a problem solving paradigm which dictates the 
+choice of representation and control structure. The paradigm 
+assumes the role of a pair of glasses which helps see the prob- 
+lem in a clearer light. However, when mismatched to the 
+problem the paradigm blurs rather than focusses, leading to 
+unclear implementation and hackery. 
+Most applications axe heterogeneous in that they incorporate 
+subproblems with different relevant paradigms; in addition, 
+they axe often dominated by components for which normal 
+procedural programming is the right medium. A tool which 
+provides strong paradigm oriented guidance might well pre- 
+vent the flexiblity needed to employ the relevant vehicle in the 
+right place. Rather than a set of focussing glasses it becomes 
+a set of handcuffs. 
+Lacking methods for resolving this tension, most systems 
+have suffered from at least one of the following problems: . Some axe overly restrictive in their choices of supported 
+paradigms, data structures and representations. 
+e Others provide a grab-bag of mechanisms but little guid- 
+ance about where they axe appropriate or how to map 
+between a task analysis and the available mechanisms. 
+• Virtually all provide no means for integration at a level 
+higher than that of Lisp. 
+• Virtually all erect a syntactic barrier between the AI 
+system and its surrounding procedural framework (e.g., 
+Lisp). 
+• Virtually all make it very difficult to incorporate existing 
+facillties which were not coded within the framework. 
+The outline of this discussion is as follows: First we dis- 
+cuss the notion of problem solving paradigms (equivalently: 
+generic tasks or problem solving methods) and why they con- 
+stitute a reasonable organizing principle for the application 
+of AI. Next we argue that paradigm specific systems can be- 
+come straightjackets leading to hackery and an undue fasci- 
+nation with "Universal" representations. We then describe 
+how we attempt to resolve this tension using the notion of a 
+Protocol of Inference. Finally we discuss our experience with 
+implementing this idea in the Joshua system. 
+2 Problem Solving Paradigms as an 
+Organizing Principle 
+An AI programming system should provide direct linguistic 
+support for a problem solving paradigm. By a problem solving 
+paradigm I mean a way of looking at a class of similar tasks 
+with similar solutions; a paradigm is characterized by: 
+• Its Knowledge Representation for Factual Information. 
+• Its Knowledge Representation for Inferential Informa- 
+tion. 
+• Its built-in Control Structure which dictates which infer- 
+ences are preferred and at what times it is appropriate 
+to draw these inferences. 
+I assume that there axe a relatively small number (i.e. a num- 
+ber more like 100 than 1,000,000) problem solving paradigms 
+which underly most expert problem solving. (The terms prob- 
+lem solving method and generic task problem solver [2] have 
+also been used to convey roughly the same idea). Therefore 
+one major goal of implementing KR and reasoning systems is 
+to provide direct linguistic support for these basic approaches 
+to problem solving. 
+By direct linguistic support I mean a set of provided pro- 
+gramming language features which directly map onto the 
+representational and control elements of the problem solving 
+paradigm. 
+135 SIGART Bulletin Vol. 2, No. 3A problem solving paradigm is an abstract method. It is 
+applied to a specific problem solving task by instanti&ting it 
+with: 
+s A technical vocabulary for the problem domain which 
+gives expression to an appropriate set of abstractions. 
+0 A set of known base facts expressed in the knowledge 
+representation of the paradigm. 
+• A set of inference methods similarly expressed in the 
+form dictated by the paradigm. 
+2.1 Example Problem Solving Paradigms 
+AI research to date has identified and characterized a few 
+problem solving paradigms in the terms outlined above. 
+One such paradigm is Model-Based troubleshooting. In this 
+paradigm the representation for factual information is a hi- 
+erarchical decomposition of an object into a wiring diagram. 
+Inferential information consists of behavioral models which 
+can compute the intended output of a device give its inputs 
+and which in addition can infer what some of the inputs 
+must be give observations of the outputs. The underlying 
+control structure consists of two passes: The first is a simula- 
+tion pass in which dependencies are recorded; the second is a 
+tracing pass in which discrepencies between predictions and 
+observations are traced back to specific components. This 
+paradigm has been studied considerably over the last several 
+years; [3] presents TDL, one of many languages tailored to 
+this paradigm. 
+Another well studied paradigm is Constraint Directed 
+scheduling [8]. Here the factual representation describes the 
+production environment and the desired orders and their due 
+dates. The inferential information is in the form of active 
+constraints (capturing temporal relationships, rules for use 
+of the equipment, etc.) which detect their violation within 
+a partially constructed schedule. The control structure is 
+a form of heuristic search which attempts to minimize the 
+number and severity of violated constraints. 
+Several other paradigms have been named and characterized 
+as generic task problem solvers by Chandresekaran and as 
+problem solving methods by McDermott. 
+2.2 The Goal: Providing Direct Support for 
+Problem Solving Paradigms 
+An extensive catalogue of well characterized problem solving 
+paradigms could constitute an engineer's handbook for task 
+analysis and knowledge based system construction. It would 
+represent a new plateau of maturity in the field. 
+Capturing these paradigms with linguistic support in a lan- 
+guage has a natural appeal. One could expect the following 
+benefits: 
+By establishing the knowledge representation and proce- 
+dural framework, the language designer provides strong 
+guidance to the application developer. Certain kinds of 
+information are called for (and others are not) and the 
+ways in which is information is to be expressed is made 
+dear. In effect, the language designer gives the appli- 
+cation builder a pair of glasses with which to view the 
+world. 
+This languages establishes a clear and active vehicle for 
+knowledge acquisition. By focussing on a specific problem solving paradigm an 
+implementor may exploit the constraints of the domain 
+to build a highly efficient special purpose problem solv- 
+ing language. Such efficiency is obtalnab]e precisely be- 
+cause the language need only support the limited expres- 
+Sive needs of this particular paradigm; such a language 
+cannot support general problem solving. A common ex- 
+ample is a language tailored to dealing exclusively with 
+objects-attribute-value triples. The popularity of frame- 
+like languages is accounted for by the fact they are very 
+efficient in this limited domain, even though they axe in- 
+capable of dealing with full quantification or predicates 
+of higher arity. 
+Capturing the framework in a programming language 
+provides a clear separation between the problem solv- 
+ing paradigm and the knowledge specific to each prob- 
+lem. Lacking this separation, the two axe hopelessly 
+intertwined, leading to unclear implementation in the 
+short run and unmanageable maintenance problems in 
+the long run. 
+2.3 Paradigms as Handcuffs 
+The problem with this approach is that many tasks naturally 
+decompose into components for which there are distinct rel- 
+evant paradigms. The more one commits the whole system 
+to a single specific paradigm, the more likely it becomes that 
+some component of the system will be utterly mismatched to 
+that paradigm. If a single implementation language strongly 
+associated with g specific paradigm is selected for the whole 
+system then serious mismatches will result, transforming each 
+of the virtues of the paradigm specific language into a vice. 
+For example, Clancy's retrospective critique of Mycin iden- 
+tities three distinct phases each representative of distinct 
+paradigms. The first phase is aggregation and abstraction 
+of the evidence, the second phase is the abdutive leap and the 
+third phase is instantiation and refinement of the hypothe- 
+sis. The first seems much like a frame-matching problem, 
+the third seem to be naturally matched to taxonomic rep- 
+resentations while the second seems to be the one part of 
+Mycin for which Rules (in the sense of modular empirical as- 
+sociations between symptoms and underlying causes) are the 
+appropriate representation. 
+However, the implementation vehicle (Emycin) emphasized 
+one specific paradigm (abductive leap) at the expense of the 
+others. This paradigm has a specific representation (rules as 
+empirical associations) and a limited control regime (back- 
+ward chaining) tailored to its needs. In the case of Mycin, 
+this was intentionally very limited and it could not express 
+other time-honored procedural capabilities (such as iteration 
+or dialog control) that axe needed in other components of 
+the system. This forced the developers of Mycin to abuse 
+the representations and reasoning mechanisms provided into 
+doing things for which they were ill-suited. 
+This phenomenon has occurred repeatedly; it seems to plague 
+almost all large AI systems. In XCON, for another example, 
+it occurs because OPS which reasonably matches some of the 
+opportunistic reasoning needed in configuration has no direct 
+means for expressing sequencing. However, the sequencing of 
+contexts in XCON is one of the key ideas. This resulted in the 
+need for an "utter hack": the conflict resolution mechanism 
+was used to build subroutine sequencing. 
+A paradigm provides a pair of glasses with which to view 
+the world; these may either bring things into sharp focus 
+or totally distort one's perception. The paradigm dictates a 
+SIGART Bulletin Vol. 2, No. 3 136representational and control framework which, in turn, lead 
+to a set of preferred data structures and control elements. 
+A system containing many components each oriented to a 
+specific paradigm therefore risks becoming a tower of babel 
+in which the components of the system cannot talk to one 
+another. 
+2.4 The Appeal (and Liabilities) of the 
+Universal 
+The obvious way to avoid the Tower of Babel problem is to 
+use a universal representation. In practice, two such universal 
+languages have dominated the field: Predicate Calculus and 
+Lisp. 
+PC has admirable formal properties and is extremely expres- 
+sive. However, its expressiveness has historically forced im- 
+plementators to employ uniform algorithms and data struc- 
+tures capable of supporting its generality. It, therefore, be- 
+comes impossible to capitalize on the constraints present in 
+any particular task domain. In addition, it is difficult to 
+incorporate an external system which uses different data rep- 
+resentations, such as a relational database, without special 
+purpose kludgery. Furthermore, each such system requires 
+different kindgery. Finally, it is a very poor representation 
+for procedural information. 
+This has led to a fairly broad concensus among practioners 
+that, if one wants to build a practical system, then the ap- 
+propriate strategy is to start from Lisp and build what you 
+need. This approach has the advantage that the power and 
+flexibility of Lisp really does help and that one is freed from 
+virtually all handcuffs. However, this approach leaves little 
+room for amortization of effort; each new system starts from 
+scratch and requires monumental energy. 
+Thus universal languages suffer from problems that are the 
+mirror image of those suffered by languages attempting to 
+provide direct support for specific paradigms: 
+* They do not provide strong guidance on how to proceed 
+since anything is possible. 
+They often preclude capitalizing on the specific con- 
+straints of a domain, since everything must be sup- 
+ported. 
+• They often become awkward in representing what needs 
+to be expressed since everything must be expressible. 
+3 Joshua and the Protocol of Inference 
+The Joshua system had several goals: 
+Our first goal was to provide a uniform vehicle (at 
+least at its surface level) for integrating diverse capabil- 
+ities at a level higher than Lisp. 
+The second of our goals was to be able to incorporate 
+an ever growing number of subsystems providing di- 
+rect linguistic support for specific problem solv- 
+ing paradigms. Within each of these we aspire to ex- 
+ploit as many highly etficient and specialized techniques 
+as possible. 
+Our third goal was to preserve access to Lisp be- 
+cause of its excellent facilities for capturing procedural 
+information, for flexible structuring of data, and for high 
+level user interfaces. 3.1 Uniformly Accessible Heterogeneous 
+Representations 
+Joshua is a statement oriented language in the tradition of 
+Planner, Conniver and QA4. It supports antecedent and con- 
+sequent inferences (with a rule language) and include truth- 
+maintenance as a basic facility. Joshua's syntax is uniform 
+and statement-oriented; statements are delimited by brackets 
+and loglc-variables are indicated by a leading question mark. 
+Free logic-variables are, as usual, universally quantified; pat- 
+tern matching is based on unification. 
+The core of Joshua is provided by the two generic ]unctions 
+TELL and ASK. TELL adds a statement to the data base of 
+known facts and then performs whatever antecedent infer- 
+ences are possible. ASK takes two arguments, the first of 
+which is the query; the second argument, called the continu- 
+ation, is a function which is called in a binding context cre- 
+ated by unifying the query and matching statements. The 
+continuation is called once for each statement satisfying the 
+query whether this statement is explicitly present or is de- 
+duced. Many of Joshua's deductive capabilities are built us- 
+ing forward and backward-chaining rules. A Truth Main- 
+tenance System provides the ability to make and retract as- 
+sumptions, to explain the reason for believing any statement, 
+or to find the set of statements supporting any conclusion in 
+the database. 
+The distinguishing characteristics of Joshua are: 
+There is a Uniformly Accessible but Heteroge- 
+neous Data Base of Statements. The two functions 
+ASK and TELL provide the interface to this database. 
+Ask queries the data base, finding facts which explic- 
+itly match the query as well as those implied by back- 
+ward chaining rules and other inferential capabilities. 
+Tell inserts a statement and computes its consequences 
+by invoking forward chaining rules and other inferential 
+capab~ties. ASK and TELL may implement their behav- 
+ior in any manner desired and the statements may be 
+represented using a vsxlety of different data structures. 
+The contract of Ask and Tell is functional, not imple- 
+mentational. 
+There is a Fine-Gralned Protocol of Inference in 
+which each distinct step of processing a statement is 
+identified and made accessible. This protocol is hierax- 
+chical as well as fine-grained. ASK, TELL, rule compila- 
+tion, rule triggering and truth maintenance are all parts 
+of this protocol as are their component steps. To use a 
+novel set of data structures, for example, one needs to 
+change only a few, small steps of the protocol. 
+Each step of the protocol is a Gener/c Function, 
+i.e., an abstract procedure whose concrete implementa- 
+tion is found by dispatching on the data types of its ar- 
+guments. The generic functions are implemented using 
+object-oriented programming techniques (in particular 
+Flavors or CLOS). Statements are regarded as instances. 
+Predicates are identified with the classes. The protocol 
+steps are implemented as methods. 
+There is a modular inheritance scheme which al- 
+lows facilities to be identified and reused. The 
+classes corresonding to predicates are the leaves of an 
+inheritance lattice. A more abstract class in this lattice 
+is thought of as a model for implementing part or all of 
+the protocol, supplying Methods only for those few pro- 
+tocol steps that it handles in a unique way. Inheritance 
+of methods happen at compile time; there is no run-time 
+cost. 
+137 SIGART Bulletin Vol. 2, No. 3• There is a well-crafted default implementation of 
+each step of the protocol provided in the system. How- 
+ever, the protocol is hierarchical, so modifications can 
+be focused on lower level protocol steps, preserving the 
+gross structure. Most models continue to use most of 
+the default methods, thus satisfying the Principle of In. 
+creraentality that the effort required to effect a modifi- 
+cation of behavior should be proportional to the size of 
+the changed behavior. 
+These features allow Joshua to incorporate outside tools eas- 
+ily and use specialized representations where desirable. 
+3.2 The Protocol of Inference 
+The structure of the Protocol of Inference is shown in Figure 
+1. Each step of the protocol corresponds to a generic function 
+that dispatches on the type of the statement being processed. 
+We implement each statement as a Instance of a class, where 
+the class corresponds to the Predicate of the statement. The 
+classes are organized in an inheritance lattice with each class 
+providing some protocol methods and inheriting others from 
+more abstract classes. (There axe two current implementa- 
+tions, one utilizing flavor and the other uses CLOS). 
+The Protocol has major steps for tell, ask, and en- 
+try points for truth-aaintenance, rule-compilation and 
+rule-indexing; it has minor steps corresponding to the de- 
+tails of how each of the major actions is performed. For 
+example, Tell is concerned with installing new information. 
+Its components are Justify, which is the interface to the 
+TMS, Insert, which manages the actual data indexing, and 
+map-over-forward-rule-triggers which invokes forward- 
+chaining rules using the Rete network. 
+The advantage of exposing this structure is modularity: If one 
+only wants to modify how the data is indexed, one doesn't 
+have to reimplement all the behavior of Tell. Instead one 
+need only provide a new Insert method; the rest of the be- 
+havior can be inherited from the defauits provided with the 
+system. If one wants to modify how rules are indexed, one 
+only has to provide a locate-trigger method. The imple- 
+mentor should define these methods at a place in the lat- 
+tice of classes so that only the desired statements inherit the 
+new behavior. If, for example, there is a specialized indexing 
+scheme which works well for a restricted class of statements 
+we can easily make that set of statements take advantage of 
+the technique, while all other statements continue to use the 
+more general techniques provided as the system default. 
+For example, the statement [value-of (addend al )10] is 
+an instance of the value-of class; this class inherits from 
+the class for predication (all statements inherit from this 
+class); in the default implementation it also inherits from 
+the dn-nodel class which provides discrimination-network 
+data indexing. The predication class provides the gross 
+structure of the ask and tell protocol steps in its ask and 
+tell methods. The dn-lodel class provides a specific kind 
+of data indexing by supplying methods for the insert and 
+locate-forwerd-rule-trigger protocol steps. 
+The generic function for each protocol step dispatches on 
+the type of a statement to determine, using the inheritance 
+lattice, which method to run. For example, the generic func- 
+tion for the tell protocol step when applied to a value-of 
+predication executes the tell method inherited from the 
+predication class. This tell method calls several other 
+generic functions, in particular the one for the insert pro- 
+tocol step. This method is inherited from the more specific 
+tin-model class. In both the Flavors and CLOS implementa~ tions , inheritance is a compile-time operation which incurs 
+no run-time cost. 
+In the remainder of the paper we illustrate how Joshua 
+can provide direct support for a specific problem solving 
+paradigm (Model Based Troubleshooting). We will first show 
+how a model based troubleshooter may be naively imple- 
+mented in Joshua using its default capabilities. Then we will 
+critique this solution, pointing out inefficiencies that result 
+from the mismatch between the model-based troubleshoot- 
+ing paradigm and the generality of Joshua's default facilities. 
+Finally we will show how the Protocol of Inference enables 
+one to utilize data structures that more directly match the 
+paradigm and to conduct more of the specific inferences man- 
+dated by the paradigm within the implementation. This will 
+lead to a dramatic improvement in performance, even though 
+it will leave unchanged all of the knowledge level structures of 
+the original solution. 
+4 Using Joshua to Build a Model Based 
+Troubleshooter 
+In the remainder of the paper we illustrate how Joshua 
+can provide direct support for a specific problem solving 
+paradigm (Model Based Troubleshooting). We will first show 
+how a model based troubleshooter may be naively imple- 
+mented in Joshua using its default capabilities. Then we will 
+critique this solution, pointing out inefficiencies that result 
+from the mismatch between the model-based troubleshoot.. 
+ing paradigm and the generality of Joshua's default facilities. 
+Finally we will show how the Protocol of Inference enables 
+one to utilize data structures that more directly match the 
+paradigm and to conduct more of the specific inferences man- 
+dated by the paradigm within the implementation. This will 
+lead to a dramatic improvement in performance, even though 
+it will leave unchanged all of the knowledge level structures of 
+the original solution. 
+We can use Joshua's default facilities to build a naive im- 
+plementation of the Model Based Troubleshooting paradigm 
+(similar to those in [4, 9, 5]. The simulator for the circuit 
+is built by defining rules which describe the behaviors of 
+adders, multipliers, and wires (including the ability to in- 
+fer inputs from observations of outputs); the wiring diagram 
+is described by Tell'lug what components are present and 
+how they are connected. The simulation is run by Te11'ing 
+the initial values for the inputs of the circuit, causing the 
+forward chaining rules to model the behavior of the compo- 
+nents and wires; the TMS records the propagations for use in 
+the second phase of the paradigm. A backward-chaining rule 
+captures the notion of a discrepency, a point in the circuit at 
+which the predicted and observed values disagree. 
+Joshua provides well-crafted default implementations for all 
+of its standard facilities. Discrimination networks are used for 
+data and rule indexing. Forward chaining rules use a Rete 
+network [7] to merge the bindings from matching the separate 
+trigger patterns. There is a rule compiler that transforms the 
+rule's patterns and actions into Lisp code. Using these default 
+facilities we achieve performance comparable to that of other 
+well-implemented tools. 
+4.1 The Problem with the Naive 
+Implementation 
+This style of implementation does little to capture the spirit 
+of the model-based troubleshooting paradigm. Because of 
+this, it fails to capitalize on the constraints of the domain 
+and it incurs some inefficiency. For example, metering of this 
+SIGART Bulletin Vol. 2, No. 3 138Protocol Function Name 
+Tell 
+Insert 
+Map-over-forward-rule-triggers 
+Untell 
+Ask 
+Ask-Data 
+Fetch 
+Ask-Rules 
+Map-Over-Backwaxd-Rule-Triggers 
+Ask-Questions 
+Map-Over-Backward-Question-Triggers 
+Justify 
+Unjustify 
+Notice-Truth-Value-Change 
+Act-On-Truth-Value-Change 
+Current-Justification 
+All-Justifications 
+Support 
+Nontrivial-Tms-P 
+Add-Rule-Trigger 
+Delete-Rule-Trigger 
+Locate-Rule-Trigger 
+Prefetch-Forward-Rule-Matches 
+Write-Rule-Matcher 
+Positions-Rule-Matcher-Can-Skip 
+Dat &-Is-Guar anteed-Varlable- Free 
+Expand-Forward-Rule-Trigger 
+Expand-Backward-Rule-Action 
+Clear 
+Say 
+Figure Behavior 
+Adds information to database, triggers antecedent deductions. 
+Data indexing component of Tell. 
+Triggers forward rules. 
+Undoes the effect of tall. 
+Queries database, triggers consequent deductions. 
+Factual database querying component of Ask. 
+Data Indexing component of Ask (called by Ask-Data). 
+Satisfy queries by running rules (called by Ask). 
+Find relevant backward rules 
+Satisfy queries by dialog with the user (call by Ask). 
+Find relevant questions. 
+Provide a TMS Justification. 
+Removes TMS Justification. 
+Update internal data when an assertion changes truth value. 
+Take actions in response to an assertion changing truth value. 
+Returns current justification of an assertion. 
+Returns all justifications of an assertion. 
+Returns premises ultimately justifying an assertion. 
+Returns T if the assertion is involved in a real TMS. 
+Insert a rule trigger in the rule database. 
+Removes a rule trigger from the rule database. 
+Index a rule trigger in the rule database. 
+Find assertions matching a newly inserted rule trigger. 
+Write a pattern matcher 
+Identify parts of pattern guaranteed to be checked by indexing. 
+Can the data contain logic variables. 
+"Macroexpand" clauses in If part of rule 
+"Macroexpand" clauses in If part of rule 
+Reset data base to initial state. 
+Print an assertion prettily. 
+1: The Protocol of Inference 
+implementation indicated that during the execution of the 
+troubleshooting procedure the Rete Network's etficiency was 
+only 5%. This means that the system wasted a lot of effort 
+trying to trigger rules. One reason for this is clear: The wire 
+rule, show in figure 2, contains two trigger patterns, each of 
+which contains only variables. 
+If [and [value-of (?componentl ?terminal1) ?value] 
+[wire (?conponentl ?ternina.ll) 
+(?component2 ?terminal2)]] 
+Then [value-of (?component2? terminal2?) ?value] 
+Figure 2: The Troublesome Wire Rule 
+This means that the Rete network will try to merge every 
+Wire statement with every value-of statement, failing in 
+most cases. There are several other mismatches between 
+the problem and the implementation structure. The uniform 
+statement-oriented syntax of Joshua is a reasonable means 
+for ezpressing the problem solving strategy. However, the 
+statement-oriented indexing scheme needed to support this 
+expressive generality provides a poor implementation for our 
+specific problem since it cannot exploit its constraints. 
+TDL [3] is one of many language frameworks tailored to this 
+problem solving paradigm; it uses data structures mirroring 
+the connectivity and topology of the circuit that better ex- 
+ploit the limitations of our problem domain. We would like to 
+exploit this in Joshua without changing our rules or our trou- 
+bleshooting procedures since these constitute the "knowledge 
+level" of the program. Finally, we want to avoid writing a large amount of code simply to take advantage of an existing 
+set of data structures. All three of our goals can be achieved 
+simultaneously using Joshua's Protocol of Inference. 
+4.2 Using the Protocol to Capture the 
+Paradigm's Spirit 
+Figure 3 shows the natural implementation technique for a 
+model-based trouble-shooting system. These structures can 
+be thought of as a set of classes, objects and their slots. 
+The objects are used to represent components of the circuit, 
+the slots are used to represent terminals, e.g. the addend 
+of adder-l; the facets of the slot are used to represent the 
+value of the signal present at the terminal, the set of other 
+terminals wired to it, etc. The classes are used to hold data 
+shared among all instances of a class, in particular, the set of 
+relevant rule triggers to invoke whenever a particular slot is 
+modified or queried. 
+This representation exploits the object-orlented nature of the 
+problem in several ways: First, the topology of the data struc- 
+tures is identical to that of the circuit. Second, facts are in- 
+dexed locally. Third, rules are indexed locally. Thus, to add 
+or retrieve information or to draw an inference one need only 
+follow a small number of pointers. In particular, notice that 
+wires are represented by direct links between connected ter- 
+minals, instead of the troublesome wire rule shown in Figure 
+2. The Joshua system includes such a subsystem which is 
+interfaced completely usi.g ~he Protocol of Inference. 
+Let us consider what we needed to do to make Joshua able 
+to incorporate it. The trouble-shooting program has two 
+broad categories of statements: The first category consists 
+139 SIGART Bulletin Vol. 2, No. 3Rile-10, Rule-12, ... 
+I Fwrd slots rules | Questions 
+I I/ Rules 
+Prototype Si;~w i 
+[ .Value/ Wlres ~.Wires Value 
+Mult-i 
+Figure 3: The Paradigm Specific Implementation 
+of type-of, and wire statements which describe the topol- 
+ogy of the circuit. The second category includes value-of 
+and observed-value-of statements which carry information 
+about the value (or inferred value) of signals in the circuit. 
+The trouble-shooting program is primarily an antecedent rea- 
+soning system, so our attention will be focused on what meth- 
+ods we need to provide for the component steps of the tell 
+protocol. For the first category of statements our strategy 
+was as follows: When we tell a type-of statement, e.g. 
+[type-of A1 adder], we will build a object representing A1 
+that is an instance of the adder class. This object has 
+slots for each of al's terminals, and each of these has sev- 
+eral facets, one of which is the wires facet. When we tell 
+a wire statement, e.g. [wire (product el) (addend al)], 
+we will add pointers to the wires facet of both mentioned 
+terminals so that the product terminal of 11 points to the 
+addend terminal of al and vice versa. The insert protocol 
+method is the right level of the tell protocol to control this. 
+Similarly, we only need to provide an insert method for wire 
+statements which updates the wires facet of the appropriate 
+slot. Also for each of these statement types we provide a 
+fetch method (the step of the ask protocol responsible for 
+locating the data) so that we can retrieve the data. Other 
+than this, all processing of these statements uses the default 
+facilities. 
+The second category of statements deals with signal val- 
+ues. Our strategy for these is to store value-of and 
+observed-value-of statements in the slots of an object rep- 
+resenting the terminal mentioned in the statement. To do 
+this we needed ouly to provide an insert protocol method 
+for value-of and observed-value-of statements. 
+In addition, we want to store our rules locally; for example, 
+a rule about adders with the pattern [VALUE-0F (?addend 
+?al) ?v], should store its trigger in the Ford-Rules facet of the addend slot of the adder dass. To do this we 
+only need to provide locate-forward-rule-triggers and 
+map-over-forward-rule-triggers protocol methods. This 
+modification changes the rule indexing scheme for this type 
+of statement. 
+4.3 Reasoning Within the Paradigm Specific 
+Component 
+These data structures can perform certain deductions far 
+more efficiently that can our rules. Since the data struc- 
+tures exactly mirror the topology of the wires in the circuit 
+being modelled we should use them to model the propagata- 
+tion of signals along wires. To do this, we only need to 
+add a small amount of code (as an :after method) to the 
+insert method for value-of and observed-value-of state- 
+ments, conflict-at statements are also more efficiently de- 
+duced within the model. A conflict-at statement should be 
+deduced anytime the value and observed-value at a termi- 
+nal disagree. To perform this inference, we again add code to 
+the insert protocol method for each of these statements; this 
+checks to see if we know both the value and observed-value 
+at this terminal. If so, and if they disagree, then we tell the 
+appropriate conflict-at statement. 
+These inferences are now performed by a component of the 
+system which is tailored to the specific problem solving 
+paradigm. Because of the specificity these inferences can be 
+very efficient, involving only the following of a few predeter- 
+mined pointers. 
+The whole system behaves like a model-based troubleshooter. 
+However, it is not just behaving like one, it is one embedded 
+in the more general Joshua framework. Incorporating this 
+paradigm specific component only required a few small proto- 
+col methods, without reprogramming any "knowledge-level" 
+SIGART Bulletin Vol. 2, No. 3 140Default Paradigm Specific 
+Rules fired 37 5 
+Time 0.302 sec 0.089 sec 
+Rete Merging 42/774 (5%) 10/26 (38%) 
+Figure 4: Relative Effectiveness of The Two Techniques 
+structures such as our rules and troubleshooting procedures. 
+Finally, although we've tailored this part of our system to 
+the style of reasoning found in model-based troubleshooters, 
+nothing we've done prevents us from using more general pur- 
+pose facilities in other parts of our system. 
+4.4 The Proof of the Pudding 
+The fact that each of these protocol steps can be tailored for 
+any class of statements has allowed us to easily implement 
+the object-oriented data-indexing and rule retrieval schemes 
+relevant to model-based troubleshooting. We have presented 
+enough of the details to show the relative ease with which 
+these facilities can be used. It is worth noting that we did 
+not change the way that Joshua manages all assertions, only 
+those which we felt needed special handling. Other state- 
+ments are handled in the default manner. All told, we needed 
+to write about six protocol methods, each of them containing 
+only a few lines of code. 
+Figure 4, comparing the default and paradigm specific imple- 
+mentations, illustrates the power of this approach. 
+Several facts are worth noticing here. First, the number of 
+rule executions went down by a factor of 7. This is because 
+more of the reasoning happens within the paradigm specific 
+component of the system. In particular, there is no longer 
+a need for rules to propagate information along the wires. 
+Second, the program ran over 3 times faster. Finally, the 
+specialized implementation is much more selective; far fewer 
+attempts are made to merge assertions through the Rete net- 
+work and, of these, a much higher percentage succeed. 
+5 Other Extensions 
+So far we've seen an example of how the process of providing 
+specialized protocol steps can lead to dramatic improvements 
+in efficiency. But this is not the only advantage. It is proba- 
+bly more significant that Joshua provides a simple means for 
+incorporating an existing tool which was designed outside its 
+context. 
+One brief example of this is the incorporation of an ATMS. 
+The default TMS in Joshua is similar to that in [10]. How- 
+ever, much of the more current literature on Model-Based 
+Troubleshooting [5] has an ATMS [6] as part of a substrate 
+for enabling diagnosis of multiple faults. Incorporating these 
+capabilities involves only building a new class (a mlzln) which 
+is mixed in with the existing TMS class. This new class pro- 
+vides an instance variable to hold the ATMS label and :after 
+methods for the justify protocol step which propagates the 
+labels. After the simulation phase of the troubleshooting pro- 
+cedure, the labels of the conflict-at predications contain 
+the information needed to drive the ATMS based diagnosis 
+procedure. 
+The protocol has also used to extend Joshua to meet the 
+needs of a variety of applications. One interesting example 
+is given by a large troubleshooting system for PBX swith- 
+ces. In this application the Joshua Object sytem described 
+above was used to model the structure of the PBX and the 
+types of error that the PBX may report to a technician. The application has also made extensive use of the protocol to 
+facilitate the capturing of test cases in real time. This is 
+clone by using :before and :after methods which "journallze" 
+key TELL andASK steps of each diagnostic session for later 
+examination. An extensive data base of test cases has been 
+develped in this way which has been used to verify that new 
+versions of the diagnostic system have at least the capability 
+of previous versions. 
+A third application illustrating the power of the Protocol is 
+an automatic mesh generator built to support advanced finite 
+element analysis. Here, an application written using another 
+tool was rewritten using Joshua. The protocol allowed the 
+appplication to be simplified by using special purpose geo- 
+metric data indexing techniques and by embedding significant 
+parts of the reasoning within these techniques. The overall 
+system retained its initial appearance of a rule-base operat- 
+ing on a collection of facts. However, the resulting system 
+was both smaller and an order of magnitude faster. 
+6 Comparison to Other Approaches 
+The core problem addressed by Joshua has been studied 
+widely in AI. Much of the literature on Metw.Level reasoning, 
+for example [12], has been motivated by the need to com- 
+bine disparate systems into a coherent whole. Compared to 
+Joshua, most of these systems pay a price at run-time for their 
+flexibility since, at least in principle, they must deduce how to 
+do any deduction. The Krypton [1] system also has the goal of 
+combining disparate facilities, using a theorem-prover as the 
+glue. Theory Resolution [13] provides the theoretical frame- 
+work for this system. Also [11] describes a means for com- 
+bining disparate decision procedures into a larger, uniform 
+decision procedure. Joshua lacks the theoretical foundations 
+of these systems. However, it seems to provide a broader and 
+more flexible framework which provides stronger guidance for 
+how to actually implement a heterogeneous system. 
+7 Conclusions 
+AI has suffered from an inability to consolidate its gains in the 
+form of programming languages that capture the essence of 
+its problem solving paradigms. Systems which try to support 
+specific paradigms often feel like straightjackets preventing 
+access to other paradigms and to normal procedural capabil- 
+ities. 
+A key failure of previous systems has been their inability to 
+provide strong paradigm oriented guidance without imple- 
+mentational handcuffs. Joshua and its Protocol of Inference 
+address these problems in several ways. 
+• Joshua is organized around a uniformly accessible 
+heterogeneous database, whose interface is the two 
+generic functions aBk and tell. These provide the ab- 
+straction level necessary to allow statements to be stored 
+in whatever manner is most convenient and efficient. 
+Special purpose inference procedures can be invoked at 
+this interface. 
+• Joshua's core routines are carefully structured into a 
+Protocol of Inference. This allows a Joshua pro- 
+grammer to use specialized data structures and proce- 
+dures without having to abandon the general purpose 
+framework. Specialized approaches can be provided by 
+supplying only a few simple methods. 
+• The Protocol of Inference also facilitates the assimila- 
+tion of existing facilities which enriches the Joshua 
+141 SIGART Bulletin Vol. 2. No. 3environment. 
+• It removes syntactic barriers. Joshua's deductive fa- 
+cilities and Lisp are closely integrated and easily mixed. 
+Joshua, therefore, creates the possibility of an integrating 
+facility which can combine disparate AI techniques into a 
+coherent total system. 
+References 
+[1] R.J. Brachman, R.E. Fikes, and H.J. Levesque. Kryp- 
+ton: A functional approach to knowledge representation. 
+IEEE Computer, 14(10):67-73, 1983. 
+[2] B. Chandrasekaran. Towards a functional architecture. 
+In International Joint Conference on Artifial Intelli- 
+gence, pages 1183-1197. IJCAI87, 1987. 
+[3] It. Davis and H. Shrobe. Representing structure and 
+behavior of digital hardware. Computer, 16(10), October 
+1983. 
+[4] It. Davis, H. Shrobe, W. Hamscher, K. Wieckert, 
+M. Shirley, and S. Polit. Diagnosis based on descriptions 
+of structure and function. In National Con]erence on 
+Artificial Intelligence, pages 137-142, Pittsburgh, Pa., 
+1982. AAAI. 
+[5] J. deKleer and B. Williams. Reasoning about multiple 
+faults. In National Conference on Artificial Intelligence, 
+pages 132-139, Philadelphia, Pa., 1986. AAAI. 
+[6] Johan deKleer. An assumption-based truth maintenance 
+system. Artificial Intelligence, 28:127-162, 1986. 
+[7] C. Forgy. Rete: A fast algorithm for the many pat- 
+tern/many object pattern match problem. Artificial In. 
+telligence, 19:17-38, 1982. 
+[8] Mark Fox. Constraint directed search: A case study of 
+job-shop scheduling. Technical Report CMU-CS-83-161, 
+Carnegie-Mellon University, December 1983. 
+[9] M.It. Genesereth. The use of design descriptions in au- 
+tomated diagnosis. Artificial Intelligence, 24:411--436, 
+1984. 
+[10] D.A. McAllester. An outlook on truth maintenance. 
+Technical Report Memo 551, MIT Artificial Intelligence 
+Laboratory, 1980. 
+[11] G. Nelson and D. Oppen. A simplifier based on efficient 
+decision algorithms. In Fifth ACM Symposium on Prin- 
+ciples of Programming Languages, pages 141-150. ACM, 
+January 1978. 
+[12] S. Itussel. The compleat guide to mrs. Technical Re- 
+port KSL-85-12, Stanford Knowledge Systems Labora- 
+tory, 1985. 
+[13] M.E. Stickel. Theory resolution: Building in nonequa- 
+tional theories. In National Conference on Artificial 
+Intelligence. American Association for Artificial Intel- 
+ligence, 1983. 
+SIGART Bulletin Vol. 2, No. 3 142

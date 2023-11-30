@@ -1,0 +1,198 @@
+A Spatial Orientation and Information System for Indoor 
+Spatial Awareness
+Rongxing Li
+Boris Skopljak
+Shaojun He
+Pingbo Tang
+Mapping and GIS Lab at the Ohio State University 
+2070 Neil Ave, Hitchcock Hall 470
+Columbus, OH-43210
+(1)614-292-4302
+li.282@osu.eduAlper Yilmaz
+Jinwei Jiang 
+Photogrammetric Computer Vision Laboratory at the Ohio 
+State University
+2070 Neil Ave, Hitchcock Hall 470
+Columbus, OH-43210
+(1)614-292-4302
+yilmaz.15@osu.edu
+ABSTRACT
+Timely and precision indoor spatial awareness is critical for a 
+variety of facility management and building emergency response scenarios, such as facility manager navigation for regular building system maintenance, and firefighter navigation. Since indoor envi-ronments do not have GPS coverage and many indoor spaces have similar appearances, people under stress tend to lose their spatial awareness and have difficulty in analyzing their surroundings for completion of their tasks or finding a safe-haven. State-of-art indoor navigation solutions collectively use the magnetic field of the Earth, or deploy a wireless sensor network serving as spatial reference framework to achieve high precision localization. The magnetic field based approaches have decreased performance in areas with objects having strong magnetic fields, while the wire-less sensor-network based approaches involve substantial invest-ments into the wireless infrastructure. Moreover, complex indoor environments usually cause complicated interactions between the wireless sensors and the indoor objects, which pose additional technical challenges. The research presented in this paper explores an indoor navigation solution composed of passive sensors and uniquely integrates data acquired from an Inertial Measurement Unit (IMU), a camera system (vision sensor), and a step sensor for precision tracking of the trajectory of a user. Contrary to other methods, the proposed system does not rely on magnetic field sensing and a wireless sensor networks. The developed algorithms exploit the IMU signals for localization, the vision sensors for heading estimation and the step sensor for detecting stationary phases of the foot based. An Extended Kalman Filter (EKF) inte-grates this information and achieves disclosure error of 5% oftracking accuracy on average. Preliminary experimental results show the potential of this approach in urban setting.Categories and Subject Descriptors
+C.3 [ Special-Purpose and Application-Based Systems ]: Real-
+time and embedded 
+systems
+General Terms
+Algorithms, Management, Measurement, Performance, Reliabili-ty, Experimentation, Security, Human Factors, Theory
+Keywords
+Navigation, Information System, Spatial Disorientation, Extended Kalman Filter, Sensor Network
+1. INTRODUCTION
+A variety of indoor applications require timely and precision na-vigation for improving productivities of personal while ensuring their safety in their environments. This requirement poses tech-nical challenges on developing a practical indoor navigation sys-tem. For instance, in case of a fire emergency, fire fighters need to be aware of their locations and the spatial relationships among them and the people to be evacuated in real-time, so that they can evaluate how safe their current and next locations are and make timely decisions for executing their tasks. In such scenarios, many building spaces have similar appearances, and fire fighters can lose their spatial orientation [3]. An indoor navigation system without using unavailable GPS signals is necessary and remains an unresolved problem. 
+This paper presents initial efforts of developing an on-suit naviga-
+tion system requiring no aids from magnetic field sensing systems and wireless sensor networks. The on-suit sensors include an IMU, a step sensor, and a stereo camera system. The general con-cept is to adopt an Extended Kalman Filter (EKF) based approach for real-time integrated data processing of data from multiple on-suit sensors to generate real-time indoor navigation information. Existing efforts of integrating vision sensors with IMU and step sensor systems can only handle vision data with very limited fre-quency (e.g., 3 frames per second) [2] and are not evaluated for indoor human navigation applications, which generally requires higher image taking rates for capturing the fast changes of the 
+Permission to make digital or hard copies of all or part of this work for 
+personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. To copy otherwise, or republish, to post on servers or to redistribute to lists, requires prior specific permission and/or a fee.ACM SIGSPATIAL GIS 2010 , November 2, 2010, San Jose, CA, USA. 
+Copyr ight 2
+010 ACM 1-58113-000-0/00/0010…$10.00.
+10environments surrounding a moving person [7]. Our efforts in the 
+presented research focus on improving the robustness and reliabil-ity of the vision data processing and integrating vision data de-rived information with the spatial information derived from the data collected by the IMU and step sensor to address these limita-tions. In addition, we are exploring spatial information visualiza-tion techniques for effective navigation information delivery on small on-suit displays.
+2. RELATED WORK
+Obtaining position from inertial sensors (i.e. gyroscopes and acce-lerometers) has been applied for over 100 years now. Major breakthrough happened with Ring Laser Gyros (RLG), Fiber Op-tic Gyros (FOG), and Micro-Electro-Mechanical Systems (MEMS) gyros and accelerometers technologies that have enabled advances in military and commercial inertial navigation capabili-ties. A very consistent overview of the technology development is brought by Barbour, 2008 [8].
+As the IMU is getting smaller there is a large number of research-
+ers investigating the use of IMUs for pedestrian navigation in GPS denied environment [9], [10] [9, 10  which format? Please check it]. In these studies, results from the IMU as the primary sensor were aided by other sensors in order to compensate for the IMU bias drift. Most existing indoor navigation solutions either integrate a compass sensing the magnetic field to correct drifting problems of IMU based solution [5], or rely on the data signals from multiple wireless sensors installed on reference points distri-buted in a building and the subject wearing the system to calibrate the localization results [6]. Other instruments investigated include radio-frequency identification (RFID) [16], barometer [17] and even the human body, using fuzzy logic [18]. 
+These approaches involving magnetic compass encounters serious 
+performance decreases in areas with strong magnetic materials, while the other approach involves the investments of a wireless infrastructure, which might be subject to damages during emer-gencies. In such cases, an on-suit system capable of tracking the locations of the users without aids from magnetic fields and wire-less sensor network has fundamental advantages over existing solutions.
+In the fields of computer vision and photogrammetry, a number of 
+studies have explored the use of vision data for robotic and human navigation. Implementation of vision-based navigation systems has been studied in a number of research projects including [12],[13] and [14]. Visual odometry and bundle-adjustment technolo-gies have been developed and applied to overcome wheel slip-page, azimuthal angle drift and other navigation errors by the Mapping and GIS Laboratory at Ohio State University for the purpose of Spirit and Opportunity rover navigation across the Martian surface [15]. Some indoor navigation systems in this respect also use vision sensors to compensate for the IMU drift, almost exclusively for robotic applications [11]. Approach and algorithm in this paper uses vision sensors to compensate for the IMU bias drift in a pedestrian navigation system in indoor envi-ronment which is a novel solution in pedestrian navigation ap-proach. Developing a personal navigation system consisting of low cost sensors using IMU and vision sensor technology and real-time location information delivery represents the major tech-nical challenges in this research. The approach and the methodol-ogy will be described in the following sections.3. OVERVIEW OF THE APPROACH
+The hardware of the on-suit navigation system is composed of a GPS, an IMU, a step sensor, and a stereo camera system. Before entering a building, the GPS system records the last outdoor posi-tion where GPS signals are available (section 3.1 Initial Localiza-tion). The IMU continuously records the accelerations and angu-lar velocity of the user. The step sensor detects the stationary phases of the foot. The stereo camera system captures the local visual information. With the initial position of the user reported by GPS, integrating these three data sources can combine three aspects of spatial information to generate a traverse of the user (section 3.2 Continuous Movement Tracking).
+Figure 1 shows an overview of the data integration strategy and 
+the system prototype. An Extended Kalman Filter (EKF) based algorithm serves as the kernel of the integrated data processing approach for multiple on-suit sensory data sources to overcome the limitations of individual sensors. Generally, raw IMU data contain bias influencing the tracking accuracy, while stationary phases detected by the step sensor can be used to identify and remove the bias in the IMU data through an EKF based approach (detailed in section 4.2). This technique is known as Zero Veloci-ty Update (ZUPT). Another limitation of IMU based system is that for indoor traverses with many turns, the IMU data alone has limited accuracy on tracking the heading direction of the user. After several turns, the direction errors can accumulate to an un-acceptable level (almost opposite direction, for example). In such cases, because the stereo camera system can capture heading di-rection of the user with much higher accuracy than an IMU, and an EKF based approach can incorporate the heading information derived from stereo camera to correct the heading information derived from IMU data. In brief, with the adjustments made based on ZUPT and vision data driven heading correction, the traverse generated based on IMU data will precisely track all three compo-nents of the user’s movements: traverse distance, stationary phas-es of steps, and heading direction.
+Figure 1 (Left) Overview of integration strategy. (Right) Sys-
+tem prototype 
+4. TECHNICAL APPROACH
+4.1 Initial Localization
+Initial localization is necessary to geo-reference the start point of a 
+traverse with indoor walking sections using a GPS receiver can receive signals from at least three satellites prior to the entering the building. In this research, we used a hand-held differential GPS receiver with the capability of reporting the location of the receiver with decimeter accuracy. With the coordinates of that start point, the on-suit sensors will start to track the walking dis-
+11tance, speed, and direction with reference to that point. Such 
+tracking will generate a geo-referenced traverse.
+4.2 Continuous Location Tracking
+Continuous location tracking can be formulated as assimilating observations from multiple sensors for improving the precision estimated parameters of motion. Generally, these parameters in-clude the position (P), attitude (ψ), velocity (v ), angular velocity 
+(ω), and acceleration (a), which form a “state space” depicting the
+status o f a tracked 
+user. The state space changes during the course 
+of walking as the motion parameters change. 
+The vector of observations generated by multiple sensors at a 
+given time is a function of the parameters of the state space. Hence, both the observation vector and the state space are func-tions of time and provides time series depicting the walking process. For example, an on-suit IMU can continuously generate observations of velocities in 3D space (velocities along X, Y and Z directions). Such velocity observations equal to the velocity parameters in the state space (equal functions). These velocities may vary over time since the walking speed of the user might vary during the walking. These discussions reveal two aspects of the problem of tracking a movement: 1) modeling the relationship between a state and its previous state for predicting a future state based on the current state; 2) modeling the relationship between the observations and the state space for observing the change of the state space. A general Kalman Filter (KF) model captures these two aspects: the state equation models the former, and the 
+observation equation models the latter.
+A general 
+KF model requires the relationships between two states 
+(state equation) or between measurements and state (observation equation) to be linear [4]. In this case, however, both the relation-ship between two sequential states and the relationship between the measurements and states can be nonlinear. For instance, the position parameters of a later state (current state) can be derived by adding a 3D vector indicating the relative locations between the current location and previous location (previous state). This 3D vector is derived by integrating the acceleration and velocity parameters in the time domain and is a nonlinear function of the accelerations and velocities of the previous state. The location, as a result, is a nonlinear function of the state space parameters (ac-celerations and velocities). In this case, it is necessary to apply EKF by linearizing a nonlinear process through taking the first order items of the Taylor expansion form of the nonlinear equa-
+tion. Specifically, rather than having position (P), attitude (ψ), 
+velocity (v ), angular velocity (ω), and acceleration (a) in the state 
+space, we had differential items of these values in the state space, which are position error (δP), attitude error (δ ψ), velocity error (δv), gy ro bias (δ ω), and
+ accelerometer bias (δa).
+With the linearization, the EKF algorithm can work in three mod-es for 
+integrating data from IMU, step sensor, and stereo camera 
+system. The algorithm developed in this research can automatical-ly switch among these modes depending on the availability and quality of the data sources. First, when only IMU data is availa-ble, the algorithm will work in a “prediction” mode. In that mode, based on the state equation, the algorithm solely relies on the acceleration and angular velocity data of the current state to pre-dict the location of the next state, as shown in this equation:
+t v P Pk k k  1k represents the current number of IMU data points; P k-1 is the 
+position when the No. (k-1) IMU signal is collected, and P kis the 
+predicted position when signal No. k is collected. v krepresents the 
+speed at the time point of IMU signal k, and Δt represents the time interval between neighboring IMU signals (in this research since IMU data collection frequency is 100 HZ, Δt=1/100s).
+In the case when a stationary phase of the foot is detected by iden-
+tifying 
+the pressure peak in the step sensor’s data, the algorithm 
+enters the “ZUPT” mode. In the ZUPT mode, due to the working frequency of the IMU, only a small number of IMU readings fall into the detected zero velocity phase. At the ZUPT phase the algo-rithm uses 
+k k kHx Z 
+T
+k a V P x ] [1      
+] 0 0 0 0 [3 3  I H
+] , , [D
+kE
+kN
+k k dV dV dV Z  .
+to incorporate the zero velocity information for identifying and removing the velocity errors of IMU data. In this observation equation, Z
+kis the observation vector composed of differential 
+values of the velocities along the North (N), East (E) and Down (D) directions at the time point of No. k IMU signal. H represents the linear transformation between the state vector x
+kand Z k. γk
+represents the observation noise. With this observation equation and the state equation, the EKF algorithm can use the detected velocity errors to adjust the walking distance predicted based on the IMU data and enhance the accuracy of walking distance esti-mation. Figure 2 shows a flowchart of the EKF based implementa-tion of ZUPT.
+When the vision data from the stereo camera system contains sufficient features across a sequence of images, the algorithm will work in a “heading direction correction” mode [1]. Developed approach generates the trajectory of the camera and the heading information of the user as follows: 1) Scale Invariant Feature Transform detector extracts keypoints and their descriptors from the images, 2) detected features are matched for across stereoimage pair, 3) matching points are applied photogrammetric inter-section to estimate 3D locations in the object space, 4) track ex-tracted keypoints across consecutive epochs of the walking process, 5) Finally, apply photogrammetric single image resection Figure 2 EKF based implementation of ZUPT
+12to estimate the location of the camera. To improve the robustness 
+of the image matching/tracking algorithms and reduce the compu-tational complexity of these algorithms, we utilize epipolar line based 1D tracking in contrast to traditional 2D tracking. This approach reduces the tracking search space and eliminates match-ing and tracking errors. We also use orientation histograms com-puted from the gradient magnitude and gradient direction of im-ages for increasing the robustness of keypoint tracking. We are currently exploring global motion constraints and composite fea-ture pattern matching for further improving the robustness of the algorithm and the computational efficiency.
+The EKF algorithm uses the heading information contained in the 
+trajectory generated based on vision-based tracking as another observation in its update equations. The same EKF based location estimation and updating process will incorporate the additional heading direction observation to improve the accuracy of heading direction tracking, where the IMU-based system usually encounter difficulties.
+4.3 Spatial Information Delivery
+In our prototype implementation, we use an OLED display (Or-ganic Light Emitting Diode) produced by Honeywell, Inc. to de-liver the navigation information to the user. The physical size of this display is 4 x 2.5 inches, and it is connected via VGA cable to a processor that stores and processes the data. The information display is used to inform the person about the sensor status and provide real time navigation solution.
+5. EXPERIMENTAL RESULTS
+In our experiments, we conducted two outdoor and one indoor experiments. In the following results, we show the efficiency of the prototype system in a shorter run (107 m square loop run) using an industrial grade IMU (cost < $1k) and a longer run(1793.5 m) in outdoor environment using a tactical grade IMU (cost > $10k). Finally, we make a traverse in the indoor environ-ment using a combination of vision sensor (mounted on the chest of the observer) and a tactical grade IMU. In the tables presenting the statistical analysis of our navigation experiments disclosure is representing the discrepancy between the final point of traverse of ground truth (red line) and the traverses reconstructed using the IMU and step sensors (cyan), vision sensors traverse reconstruc-tion (green) and integrated solution (IMU and vision sensor in blue). For rectangular traverse in Figure 3 both starting and end points are the same (shown as ground truth, displayed in red). Relative disclosure is the ratio of the disclosure and the traversed distance. Average distance error is the average distance between the location of points on the reconstructed trajectories and their ground truth positions equivalents. 
+Figure 3 displays the trajectories obtained in a 107 m square tra-
+verse. Table 1 gives the statistical analysis of the trajectory recon-struction where we can see the improved results from using the integration results where relative disclosure is 5.6%. It can be seen that the integration of the sensors significantly improves the accuracy of navigation solution. Furthermore, the distance pro-vided by industrial IMU (cyan) matches with the distance from ground truth and problem of IMU route occurs at turning points. We can notice that trajectory reconstructed from vision sensor (green) is showing much better performance at turning points.Hence, improving the turning angles by using heading informa-tion from vision sensors improves navigation accuracy in terms of the trajectory disclosure from 11 to 6 m.
+In Figure 4, similar outcomes are observed for the trajectory re-
+construction for a longer run of 1793.50 m. The statistics tabu-lated in Table 2 shows significant improvements when sensors are integrated using the proposed method Analyzing the reconstructed trajectory results we can see that the constant IMU gyro bias drift is causing a large drift after a longer run (traverse took approx-imately 30 min, average walking speed 1 m/s). This drift was cor-rected by using the heading information from vision sensors and the final discrepancy between the final point of the integrated solution and the ground truth is less than 50 m (46.87 m), which is 2.67 % of the overall trajectory and is very close to our desired accuracy level of 2%.  
+Trajectory for 
+107 m Average
+Distance
+Error (m)Disclosure 
+(m)Relative 
+Disclosure
+Industrial IMU 1.17 11 10.2%
+Vision 0.97 9 8.4%
+Integration 0.78 6 5.6%Figure 3 Comparison of trajectories reconstructed using 
+the IMU and step sensor integration (ZUPT) (cyan), stereo 
+cameras (green), integrated solution of IMU and step sen-sors with heading from vision sensors (blue
+) compared to 
+ground truth (red) for a short rectang ular traverse of 107 
+m.
+Table 1 Statistical analysis of trajectory reconstructions. Industrial IMU represents the trajectory formed using a solution from the combined IMU and step pressure sensor data. Vision represents the trajectory reconstructed using the stereo camera data, and Integration represents the integrated result.
+13Trajectory for 
+1793.50 m Average 
+Distance
+Error (m)Disclosure 
+(m)Relative 
+disclosure
+Tactical IMU 177.71 526.44 29.35%
+Vision 64.90 175.32 9.77%
+Integration 32.09 47.87 2.67%
+For our indoor navigation experiment, we selected a shopping 
+mall, which contains both indoor and outdoor environments. The total length of the trajectory is 1.24 km. During the outdoor tra-verse the GPS signal was not always available due to buildings and trees. Therefore a unique localization couldn’t be reached from the GPS sensor. In that regard we could bring here more detailed trajectory analysis since there are no ground truth mea-surements. We show the simplified trajectory overlayed on an insert taken from Google Earth in Figure 5. Figure 6 shows the integrated navigation solution the sensors in our prototype. We can see that the disclosure of the integrated approach is around 95m which is about 7% of the whole trajectory. Our initial analysis of the data suggests that the images obtained from the vision sen-sor are saturated when the subject enters the building and the quality indicators showing the recovered heading information drops significantly, which makes the prototype implementation rely more on the other sensors. We can also notice that the dis-tances recovered by our integrated solution match the distances from Google Earth and most of the error is coming from bias in azimuth (reason why red dot representing the end point is on the right side of the starting point instead on the left side). The prob-lem occurs in the rectangular part of the trajectory at the bottom of Figure 6 where the angle is smaller than the expected (90 degreeturn), causing the whole second part of trajectory to be skewed to the right. We assume that error occurs due to the fast turn and the low vision sensor frequency (vision sensor frequency is 2 fps) ,and data from vision sensors did not improve the angular offset that occurred in the IMU measurements.
+In future experiments, parameters for vision sensors will be ad-
+justed to fit better to indoor environments (image saturation andgeometric feature constraints etc).  Despite, the recovered trajecto-ry is acceptable.
+Figure 4 Comparison of trajectories reconstructed using the 
+IMU and step sensor integration (ZUPT) (cyan), stereo cam-
+eras (green), integrated solution of IMU and step sensors wit h 
+heading from vision sensors (blue )  compared to ground truth 
+(red) for a traverse walk of 1793.50 m
+Table 2. Statistical analysis of trajectory reconstructionsfor a longer run traverse.
+Figure 5 Indoor and outdoor areas taken from Google EarthIndoor 
+areaStart pointEnd point
+Walking direction
+Start point
+End point
+Indoor area
+Figure 6 Trajectory reconstruction based on the integration of 
+the tactical IMU and vision navigation results is shown in 
+increasing color from light cyan to magenta from beginning to 
+end of traverse to get a better sense of how trajectory develops
+over time. Turning where 
+problem occurs 
+146. CONCLUSIONS AND FUTURE WORK
+Integrated sensor approach for navigation provides better results
+compared to those when used individually. In short the problems related to the navigation solution of the IMU drift caused by gyro bias is significantly improved by the heading information esti-mated from the vision sensors. As future work we are looking at ways to miniaturize our hardware design and improve software components. In order to improve our tracking solution we are investigating improved keypoint tracking by utilizing view geo-metry constraints. In addition we are planning to develop algo-rithms for automated boresight calibration and leverarm align-ments depending on the person using the system. Our goal in our future design is to achieve an overall accuracy of 2%.
+7. ACKNOWLEDGMENTS
+This work is supported by the National Space Biomedical Re-search Institute through NASA NCC 9-58.
+8. REFERENCES
+[1] Li, R., He, S., Skopljak, B., et al. Development of a Lunar Astronaut Spatial Orientation and Information System (LASOIS). Proceedings of the ASPRS 2010 Annual Conference, (2010)
+[2] Randeniya, D.I., Sarkar, S., and Gunaratne, M. Vision–IMU 
+Integration Using a Slow-Frame-Rate Monocular Vision System in an Actual Roadway Setting. IEEE Transactions on Intelligent Transportation Systems 11, 2 (2010), 256-266.
+[3] Renaudin, V., Yalak, O., Tomé, P., and B. Indoor navigation 
+of emergency agents. Journal of Navigation 5, 3 (2007).
+[4] Welch, G. and Bishop, G. An Introduction to the Kalman Fil-
+ter. 2004. http://www.citeulike.org/group/220/article/523147.
+[5] Cho, S.Y. and Park (C.G., 2006). “MEMS Based Pedestrian 
+Navigation System.” Journal of Navigation, vol. 59, pp. 135–153.
+[6] D. Cyganski et al, “WPI Precision Personnel Locator system –
+indoor locationdemonstrations and RF-design,” Proceedings of ION AM, April 2007.
+[7] Veth M., and J. Raquet, 2006. Fusion of Low-Cost Imaging 
+and Inertial Sensors for Navigation, Proceedings of ION GNSS-2006, Fort Worth, TX
+[8] Barbour, N.M., 2008. Inertial navigation Sensors, 
+NATO,RTO-EN-SET-116(2008), Report on Low-Cost Naviga-tion Sensors and Integration Technology, February 2009
+[9] Grejner-Brzezinska D. A., Y. Yi, and C. Toth, 2001. Bridging 
+GPS Gaps in Urban Canyons: Benefits of ZUPT, Navigation Journal, 48(4): 217–225.
+[10] Faulkner,T. and S. Chestnut, 2008. Impact of Rapid Temper-
+ature Change on Firefighter Tracking in GPS-denied Environ-ments Using Inexpensive MEMS IMUs. www.geonav.ensco.com/reports/ION_NTM2008.pdf (last date accessed: 10 February 2010)
+[11] Veth M., and J. Raquet, 2006. Fusion of Low-Cost Imaging 
+and Inertial Sensors for Navigation. Proceedings of ION GNSS-2006, Fort Worth, TX
+[12] Bayoud, F., 2006. Development of a robotic mobile mapping 
+system by vision-aided inertial navigation: A geomatics approach, PhD Thesis, Ecole Polytechnique Fédéral de Lausanne
+[13] Jirawimut, R., S. Prakoonwit, 2003. Visual Odometer for 
+Pedestrian Navigation. IEEE Transactions On Instrumentation And Measurement, 52(4):1166-1173.
+[14] Matthies, L., Jirawimut, R., S. Prakoonwit, 2003. Visual 
+Odometer for Pedestrian Navigation. IEEE Transactions On In-strumentation And Measurement, 52(4):1166-1173.\
+[15] Li, R., S. W. Squyres, R. E. Arvidson, J. Bell, L. Crumpler, 
+D. J. Des Marais, K. Di, M. Golombek, J. Grant, J. Guinn, R. Greeley, R. L. Kirk, M. Maimone, L. H. Matthies, M. Malin, T. Parker, M. Sims, L. A. Soderblom, J. Wang, W. A. Watters, P. Whelley, F. Xu, 2005. Initial Results of Rover Localization and Topographic Mapping for the 2003 Mars Exploration Rover Mis-sion, Photogrammetric Engineering & Remote Sensing, 71(10): 1129–1142.
+[16] Pradhan, A., E. Ergen, B. Akinci, 2009. Technological As-
+sessment of Radio Frequency Identification Technology for In-door Localization, Journal of Computing in Civil Engineering, ASCE, 23(4): 230-238.
+[17] Grejner-Brzezinska D. A., C. Toth. and S. Moafipoor, 2008. 
+Performance Assessment of a Multi-sensor personal navigator supported by an adaptive knowledge based system, The Interna-tional Archives of the Photogrammetry, Remote Sensing and Spa-tial Information Sciences. Vol. XXXVII. Part B5. 
+[18] Moafipoor, S., D. Grejner-Brzezinska, and C. Toth, 2008. A 
+Fuzzy Dead Reckoning Algorithm for a Personal Navigator, Na-vigation, ION Journal, 55(4): 241-255.
+15

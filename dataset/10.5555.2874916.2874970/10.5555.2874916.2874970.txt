@@ -1,0 +1,560 @@
+The SILAS model: Sexual Infections as Large-scale
+Agent-based Simulation
+Stefan Scholz
+Dept. of Public Health,
+Bielefeld University
+Universitaetsstr. 25, 33615
+Bielefeld, Germany
+stefan.scholz@uni-bielefeld.deManuel Batram
+Dept. of Business
+Administration & Economics,
+Bielefeld University
+Universitaetsstr. 25, 33615
+Bielefeld, Germany
+mbatram@wiwi.uni-
+bielefeld.deWolfgang Greiner
+Dept. of Public Health,
+Bielefeld University
+Universitaetsstr. 25, 33615
+Bielefeld, Germany
+wolfgang.greiner@uni-
+bielefeld.de
+ABSTRACT
+The SILAS model is an agent-based simulation of hu-
+man sexual behavior incorporating heterogenous behav-
+ior of agents with respect to age, sex, sexual orientation
+and relationship status. Behavior rules are not only ap-
+plied to the realization of sexual contacts, but also on
+ending and forming relationships, death and child birth.
+Thus, the agent population endogenously re-populates
+itself. This allows not only to simulate the transmission
+of sexually transmitted infections between adult agents,
+but also mother-child infection paths. The model can
+simulate the eect on the overall population and can
+therefore be used for the epidemiological, public health
+or health economic evaluation of tailored interventions
+for sub-populations. In this paper we describe the use
+of the SILAS model on syphilis and present preliminary
+results.
+Author Keywords
+agent-based model; epidemiology; demographics;
+sexually transmitted infections
+ACM Classiﬁcation Keywords
+I.6.1 SIMULATION AND MODELING (e.g. Model De-
+velopment). : Miscellaneous; I.2.11 Distributed Arti-
+cial Intelligence: Multiagent systems; I.6.5 Model Devel-
+opment; J.3 LIFE AND MEDICAL SCIENCES: Health
+1. INTRODUCTION
+Agent-based models (ABM) simulate decision-making
+and interacting entities as autonomous software agents.
+Hence, ABM is a method of interest to answer a variety
+of research questions in the eld of health economics,
+ranging from classical modeling for health technology
+assessment to assessment of policy impact on social se-
+curity systems. Independent of the research question at
+SCSC 2015, July 26-29, 2015, Chicago, IL, USA
+©2015 Society for Modeling & Simulation International (SCS)hand, a realistic depiction of all relevant population char-
+acteristics in the agent population is the basis for retriev-
+ing valid answers. In this context, the economic eval-
+uation of interventions (behavioral or technological) of
+infectious disease must rely on a suciently realistic de-
+piction of the disease dynamic. The spread of infectious
+diseases not only depends on the course of the disease,
+but also on the population structure and on behavioural
+aspects relating on the heterogeneity of patients or pa-
+tient groups. Therefore, eects caused by certain indi-
+viduals may not be covered by the models mostly used
+in epidemiology or public health so far, as only expected
+values of a population are incorporated in those models
+(i.e. Markov, dynamic transmission). A famous example
+to demonstrate the inuence of the non-average behavior
+of a single individual is the spread of HIV in the United
+States via a ight attendant in the 1980's. [1] Modeling
+the spread of HIV using only expected values regarding
+mobility and number of sex-partners would have failed
+to include this kind of behavior and therefore the spread
+of the disease would have been underestimated. ABM
+can incorporate the heterogeneity of individuals and the
+variety of their behaviors to provide more valid and re-
+liable results in epidemiology, public health and health
+economic evaluation of infectious diseases.
+This paper presents rst results from the Sexual Infec-
+tions as Large-Scale Agent-based Simulation (SILAS)-
+model, on the spread of syphilis in Germany. As ad-
+ditional feature to existing literature on ABM in sexu-
+ally transmitted infections (STIs), which reports results
+for the subgroup of men who have sex with men [9], the
+agent population in SILAS is representative for the whole
+German population.
+2. METHODS
+2.1. Software environment
+The SILAS-model is implemented in the FLAME-
+framework [20]. The software is using the X-machine
+framework to operationalize agent behavior and interac-
+tion via a messageboard system [4]. Each agent has a set
+of 21 memory variables (e.g. age, sex, sexual orientation
+and relationship status) with its individual value sets
+1stored in a XML-le. Those XML-les are modied by
+C-code containing the behavior rules of agents, i.e. the
+rules on how the value set of one agent is altered. These
+rules may be functions of the value set of an agent itself
+or on the value set of any other agent in the population
+communicated via the messageboard.
+Agents in the starting population (the rst XML-le) are
+intialised with their memory variables being representa-
+tive for the general German population. In addition, age-
+, sex- and sexual orientation-specic relationship rates
+and according age dierences between the partners are
+applied. Within each model iteration (one day) agents
+run through the model according to the model ow de-
+picted in gure 1.
+2.2. Demographic related behavior
+In the rst period of each iteration, agents update their
+memory variables independent of interactions with other
+agents. For example, the day of pregnancy is increased,
+the age is incremented if the iteration matches the
+agent's birthday or methods of contraception are cho-
+sen. The model incorporates two types of contraception:
+STI-protecting contraception (i.e. condoms) and non-
+STI-protecting contraceptional methods (i.e. pill, di-
+aphragma, etc.). Agents can use no contraception, either
+one of both methods or both methods at the same time.
+Also, at this point in time, agents determine whether
+they die on the next day, in which case they get removed
+from the agent population.
+The second period of time serves for intention-building
+of sexually active agents (age 15) and the communi-
+cation of intentions related to relationships and sexual
+contacts. Thereby, the intention for a new relationship
+is communicated to a helping "stat-agent" and break-
+up intentions are directly communicated to the partner.
+The "stat-agent" collects all agents with the intention
+for nding a new partner, matches these agents accord-
+ing to age and sexual orientation and communicates the
+result back to the agents in the next iteration. This ap-
+proach was chosen for computational reasons to avoid
+redundant readings of the messageboard by all agents.
+All relationship-related memory variables are updated
+in the relationship-function.
+Sexual intentions are transformed to sexual contacts in
+relationships without the use of messages assuming sym-
+metric intentions for sexual contact in relationships [3].
+Sexual intentions of singles are communicated to the
+"stat-agent" in the same way as the intention for a new
+relationship. Unfaithful behavior is possible, whereas a
+non-single agent behaves like a single agent.
+In the nal period single or unfaithful agents are no-
+tied, whether a sexual contact was realized. If the
+agents were using no contraception this sexual contact
+may lead to pregnancy or it may lead to an infection
+if no condom was used. As not every unprotected sex-
+ual contact leads to pregnancy several factors of fertility
+are represented in the model. (I) The sexual contactstart
+1
+2
+endstart
+1
+2
+3
+endidleUpdate Memory
+idle
+PregnancyCommunicate intentions
+RelationshipCount agents Remove agent
+Sexual contactPartner matchingDead Alive
+Age15Age <15
+FemaleMaleBreak-up
+New
+partner
+Pre
+gnancySe
+arch for partner
+On
+e-night standPar
+tner died
+Figure 1 .General, daily model-ow of the SILAS model:
+Circles denote the different states of the agents, squares denote func-
+tions, green lines denote messages sent and black lines denote the
+ﬂow of agents through the model. The ﬂow on the left depicts the
+statistical agent, the right side the person agents.
+needs to take place in the fertile period of the women
+and the daily probability of conception in this period
+depends on time until ovulation, which was taken as an
+average from published literature [2, 22, 5]. (II) These
+daily probabilities of conception additionaly depend on
+the maternal age, where a negative, linear trend was es-
+timated from the literature [6]. (III) Finally, natural
+sterility may avoid pregnancy following a sexual contact
+which aects roughly 10 percent of the German popula-
+tion [8]. If all these barriers have been avoided, the mem-
+ory variable for pregnancy is incremented in the female
+agent each day. After between 250 and 285 iterations the
+agent gives birth and another agent (of age 0) is added to
+the agent population. Nevertheless, the risks of sponta-
+2neous and induced abortion needs to be considered after
+conception. Age-specic rates of induced abortions for
+Germany were taken from federal statistics [7] and are
+tted as an age-dependend polynomial function for the
+inclusion in the model. As German, age-specic rates
+of spontaneuous abortions were not available, estimates
+were taken from a Danish registry-based study [14] and
+adjusted by the country-specic, competing risks of in-
+duced abortion. The risk of spontaneous abortion is then
+included as an exponential function in the model. During
+each day of pregnancy a random number is drawn and
+evaluated against the daily, age-dependent probabilities
+of abortion calculated from the respective functions.
+2.3. Disease modeling
+Agents of the starting population have age-, sex- and
+sexual orientation-specic probabilities of a syphilis in-
+fection [18]. The modeling of the infection itself is
+modeled similarly to pregnancy. Agents are informed
+if they realized an sexual contact and if they did not
+use STI-potecting contraception (according to their own
+and their sexual partners memory variable) the STI is
+passed from one agent to another with a certain prob-
+ability. Once an agent is infected its memory variable
+for the disease is incremented to 1 (infectious asymp-
+tomatic). Each day the agent has a certain probabil-
+ity to move to another disease state according to the
+Markov-model depicted in gure 2. At the current state
+of SILAS, the course of the disease is modeled indepen-
+dently from agent characteristics and the current disease
+state is documented in the agents memory variable.
+After the infection with the bacteria, patients remain
+asymptomatic for 3-4 weeks (min 10, max 90 days) un-
+til a rst painless ulcer develops at the site of inocula-
+tion (LUES I). [19] After 2-3 weeks patients move to the
+infected asymptomatic I health state as the ulcer heals
+without treatment. After 1-3 months after the initial
+infection patients can develop a variety of symptoms,
+but mostly skin lesions, in the LUES II health state
+lasting 2-8 weeks. [12] After the spontaneous healing
+of the LUES II-phase,2=3of the patients remain in an
+asymptomatic state for the rest of their lifes, whereas
+the remaining persons may develop any form of the ter-
+tiary LUES health state. This includes gummae (soft,
+non-cancerous growth of tissue), cardiovascular symp-
+toms following blood vessel inammation (10 to 30 years
+after initial infection) and neuro-syphilis resulting in dif-
+ferent forms of dementia (1 to 30 years after initial in-
+fection). [19] Only these LUES III-health state may lead
+to disease-attributable mortality. Because of the early
+possible onset of neuro-syphilis a health state for early
+neuro-syphilis is included in the model.
+From the start of the simulation, the spread of the dis-
+ease is only governed by the behavior rules and interac-
+tions of the agents described in section 2.2.. Depending
+on the health state of the agent, dierent probabilities
+of transmission by unprotected sexual contact between
+agents and age- and sex-specic diagnosis and treatmentrates are applied from reported data. [18] Furthermore,
+congenital transmission at birth is modeled explicitly as
+the child inherits its mothers value of the disease memory
+variable.
+Susceptible
+Infected
+asymptomatic
+LUES I
+Infected
+asymptomatic IEarly
+Neuro-Syphilis
+LUES IINeuro-Syphilis
+Infected
+asymptomatic II
+LUES III
+CardioLUES III
+Gumma
+Death
+Figure 2 .Course of the disease of syphilis within each
+agent: Each node represents a Markov-state, arrows denote the di-
+rection in which agents in a certain health state can move.
+2.4. Behavior estimation
+The agent behavior (interaction and memory updating)
+is modeled stochastically and is estimated using data of
+the German federal statistics oce, the Robert Koch-
+Institute [18], published literature, and the PAIRFAM
+dataset [13, 11]. The latter is a representative Panel
+Analysis of Intimate Relationships and Family Dynamics
+with detailed information about the number and length
+of a persons relationship, their sexual and contraceptive
+behavior.
+As each agent has dierent values stored in his mem-
+ory variables and the behavior should reect its depen-
+dence on those values, dierent distributions are needed
+for each possible value set of the agent memory. Us-
+ing generalized linear regression models, parameters of
+dierent probability distributions can be estimated from
+real-life data (i.e. PAIRFAM) with the explanatory vari-
+ables corresponding to the memory variables of agents in
+3the model. For example, all four parameters of the zero-
+one-inated- b-distribution [15], which is used to model
+all probabilities in the model (e.g. probability of a sex-
+ual contact), have been estimated conditional on age,
+sexual orientation, length of relationship, etc. The re-
+sulting regression coecients of those variables are trans-
+ferred into the model and agents use them to calculate
+their individual probability distributions conditional on
+their memory value set. Afterwards the agent behav-
+ior is realized as a random draw from those distribu-
+tions. As the PAIRFAM dataset has a panel design,
+random eect variables could be included in the models
+to estimate unobservable parameters related to specic
+persons. For example, the random eect in the sexual-
+probabiliy model reects dierent levels of sexual activ-
+ity between humans, which cannot be explained by age
+or sexual orientation. This is an important feature of
+the model as this approach allows for the extreme be-
+havior as mentioned in the introduction with regard to
+the ight attendant.
+Overall, the coecients of 10 generalized linear mod-
+els are used by the agents to determine their behav-
+ior. 6 models for the daily probability of a sexual
+contact of heterosexual, gay and lesbian singles and
+couples have been estimated using a 4-parameter b-
+distribution. Weibull-distributions have been used to
+model the time of a relationship and the time of be-
+ing single. And nally, a multinomial logit-model was
+estimated for the contraception-use of the agents. All
+parameters of the according distributions are estimated
+using the GAMLSS-package [17] or mlogit-package [10]
+for R [16].
+Table 2.4., as an example for the behavior estimatation,
+shows the decision rule for ending a relationship. The
+duration of a relationship can be seen as a survival anal-
+ysis problem using a Weibull distribution. Estimated
+from the PAIRFAM-dataset, sex, sexual-orientation and
+the age at the beginning of a relationship showed to be
+signicantly associated with the survival-time or dura-
+tion of the relationship in 26,046 relationships. The co-
+ecients from table 2.4. are used in the C-code for the
+agent behavior at the rst day of a new relationship. The
+agents take their own age, sex and sexual orientation
+value from their value set and multiply them with the
+corresponding coecient values for m(shape-parameter
+of the Weibull distribution) and s(scale parameter), re-
+spectively. Afterwards, the day at which the relationship
+will end is drawn randomly from a Weibull-distribution
+with these specic scale and shape parameter and stored
+in the agent memory. At the beginning of each day, the
+agent checks whether the day of break-up is equal to the
+current day and if that condition holds, the agent will
+send a break-up message to its partner.
+The possibility of computational parallelization in the
+FLAME-framework as well as in the software tool pro-
+grammed for the creation of the starting population al-
+lows for acceptable run-times for large populations of 1Survival time of
+relationships
+m
+Intercept :010(:028)
+Male  :545(:013)
+Homosexual  :684(:071)
+Interaction (male:homosexual) :263(:124)
+ps(Age at beginn of relationship) :101(:001)
+s
+Intercept :623(:025)
+Male :098(:013)
+Homosexual :289(:078)
+Interaction (male:homosexual)  :240(:123)
+ps(Age at beginn of relationship)  :027(:001)
+Num. obs. 26046
+Nagelkerke R2:988
+Generalized AIC 88444: 695
+p<0:001,p<0:01,p<0:05
+Table 1 . Results of Weibull GLM to model the suvival-time of
+relationships using a log-link function for mands.
+million agents ( 8 minutes on a standard-workstation).
+Nevertheless, these run-times come at the cost of some
+simplications concerning the agent behavior. Firstly,
+childbirth does not follow a planned pregnancy with un-
+derlying sociological theories or economic utility func-
+tions, but is rather modeled as a more fateful result of not
+using contraception. Secondly, there is no sophisticated
+matching algorithm applied (as described in [21]) to form
+agent relationships or match single sexual contacts. If
+the model shows an improved run-time on high perfor-
+mance computers these features can be implemented in
+the code.
+3. PRELIMINARY RESULTS
+The SILAS model is still under development with re-
+gard to its nal goal of simulating the disease spread of
+syphilis in the complete German population. The de-
+velopment process is carried out using a population of
+100,000 agents. Due to the various behavior functions
+estimated from dierent datasets included in the model,
+interim model outputs are used for step-by-step valida-
+tion of the dierent behavior rules.
+To draw conclusions from the SILAS model about the
+transmission of STIs, a valid depiction of a populations
+sexual behavior needs to be implemented. The number
+of births, as a result of the sexual and contraceptual
+behavior, might be an indicator if the number of sexual
+contacts between agents and the usage of contraception
+methods are valid. Therefore the age-specic fertility
+rates (ASFR), dened as births per 100,000 women in
+the same age, produced by the model are compared to
+the ASFR of the German population.
+As can be seen in gure 3 the model ASFR approximates
+the observed ASFR in Germany with slightly higher
+rates in women under 25 years and slightly lower rates
+in the age group over 40 years of age. Deviations may
+be due to the stochastic nature of the model in combina-
+tion of the relatively small agent population of 100,000
+agents. Furthermore, the share of women being single at
+the time of birth is relatively small.
+4050100150
+15 20 25 30 35 40 45 50
+Age in yearsAge−specific fertility rateRelationship status
+Partners
+SinglesFigure 3 .Demographic results: The ﬁgure depicts the age-
+speciﬁc fertility rate within and outside of relationships produced
+by the model in the ﬁrst year of the simulation in contrast to the
+observed German age-speciﬁc fertility rate (green line).
+Using the ASFR as indicator for the realistic sexual be-
+havior of the agents, it can be concluded that the fre-
+quency of sexual contacts and contraception methods
+used by the agents correspond to the German popula-
+tion, thus allowing a realistic simulation of STI spread. It
+should be pointed out again, that the implementation of
+the behavior rules on the agent-level leads to valid results
+on the population-level without any behavior-controlling
+feedback-loop between agent- and population-level. In-
+fertility, age-specic conception probabilities, induced
+and spontaneous abortions show to have a relevant ef-
+fect on the birth rates in this context.
+4. FUTURE WORK AND PLANNED EXTENSIONS
+As the transmission of STIs is modeled similarly to preg-
+nancy, the agent-based nature of the SILAS model allows
+for a very detailed analysis of the transmission paths. At
+this stage of development only a simplied disease model
+of syphilis based on assumed transition and transmission
+probabilities is implemented in the SILAS model. Nev-
+ertheless the model already allows to see the potential in
+analyzing dierent types of outbreaks using the memory
+variables of the agents to stratify the transmissions of
+STIs into hetero-, homo- or bisexual infections as well
+as mother-to-child infection. A graphical representation
+of these transmission types is shown in gure 4. With
+syphilitic agents of the starting population at time-point
+zero (time in month on the x-axis) infections between
+agents are represented by arrows ending at the month in
+which the infection took place. The sex of the agent is
+shown by its color so arrow connecting dierent colored
+dots represent heterosexual transmission of syphilis. Us-
+ing this type of analysis can allow to identify agents with
+similar value sets of their memory correlated to being es-
+pecially vulnerable to syphilis infections or being at risk
+of being a spreader of the disease.
+The SILAS model can be easily extended to other STIs
+than syphilis as only an additional memory variable for
+Syphilis infection dynamics by month
+red=male, black=female, dashed line = mother−child−inf0 1 2 3 4 5 6 7 8 9 10 11 12Figure 4 .Disease spread between agents: Each node rep-
+resents an agent, arrows denote infections between the agents over
+time.
+an agent is needed. This would allow the inclusion
+of interactions between certain diseases and the mod-
+eling of change of agent behavior after the diagnosis of
+a serious disease like HIV. Another planned extension
+is the regional distribution of agents across the 16 fed-
+eral states of Germany to model the regional spread of
+STIs and to incorporate dierent demographic and sex-
+ual orientation-specic structure of the states or regions.
+In addition, sex workers as multipliers in the spread of
+STIs can be incorporated in the model.
+5. CONCLUSION
+The SILAS model seems to provide a valid foundation for
+analyses in the context of epidemiological, public health
+and health technology assessment in the eld of infec-
+tious diseases. The agent-based approach provides a tool
+to identify special patterns of the STI spread thus allow-
+ing the evaluation of tailored interventions or the eect of
+health care utilization (e.g. time to diagnosis). Planned
+extensions to the model include a regional distribution
+of agents and the inclusion of sex workers as important
+parameters to disease spread.
+ACKNOWLEDGMENTS
+Stefan Scholz likes to thank Verena Vogt, Jacob Barhak
+and Tony Hunt for their valuable comments on the
+paper, and Jacob Barhak for the invitation of this paper
+and to the population modeling working groups mailing
+list. This paper uses data from the German Family
+Panel pairfam, coordinated by Josef Bruederl, Karsten
+Hank, Johannes Huinink, Bernhard Nauck, Franz Neyer,
+and Sabine Walper. pairfam is funded as long-term
+project by the German Research Foundation (DFG).The
+comments during the review process of Tony Hunt and
+Jacob Barhak are available via https://groups.google.
+com/forum/#!topic/public-scientific-reviews/iZxMTDFhNYw
+and https://groups.google.com/forum/#!topic/
+public-scientific-reviews/ZJWBZd4Mz1Q.
+5REFERENCES
+1. Auerbach, D. M., Darrow, W. W., Jae, H. W.,
+and Curran, J. W. Cluster of Cases of the Acquired
+Immune Deciency Syndrome. The American
+Journal of Medicine 76 , March 1964 (1984),
+487{492.
+2. Barrett, J. C., and Marshall, J. The Risk of
+Conception on Dierent Days of the Menstrual
+Cycle. Population Studies 23, 3 (1969), 455{461.
+3. Batram, M., and Scholz, S. Intention action, 2014.
+4. Coakley, S., Smallwood, R., and Holcombe, M.
+Using X-Machines as a Formal Basis for Describing
+Agents in Agent-Based Modelling. Proceedings of
+the 2006 Agent-Directed Simulation Conference
+(2006), 33{40.
+5. Colombo, B., and Masarotto, G. Daily
+Fecundability: First Results from a New Data
+Base. Demographic Research 3, 5 (Sept. 2000).
+6. de La Rochebrochard, E., and Thonneau, P.
+Paternal age and maternal age are risk factors for
+miscarriage; results of a multicentre European
+study. Human Reproduction 17 , 6 (June 2002),
+1649{1656.
+7. Federal Statistical Oce. Number of induced
+abortions 2013. Tech. rep., Federal Statistical
+Oce, Wiesbaden, Germany, 2014.
+8. Gnoth, C. Time to pregnancy: results of the
+German prospective study and impact on the
+management of infertility. Human Reproduction 18 ,
+9 (Sept. 2003), 1959{1966.
+9. Gray, R. T., Hoare, A., McCann, P. D., Bradley, J.,
+Down, I., Donovan, B., Prestage, G., and Wilson,
+D. P. Will changes in gay men's sexual behavior
+reduce syphilis rates? Sexually transmitted diseases
+38, 12 (Dec. 2011), 1151{8.
+10. Henningsen, A., and Toomet, O. maxLik: A
+package for maximum likelihood estimation in R.
+Computational Statistics 26, 3 (2011), 443{458.11. Huinink, J., Br uderl, J., Nauck, B., Walper, S.,
+Castiglioni, L., and Feldhaus, M. Panel Analysis of
+Intimate Relationships and Family Dynamics
+(pairfam): Conceptual framework and design.
+Zeitschrift f ur Familienforschung - Journal of
+Family Research 23 (2011), 77{101.
+12. Mattei, P. L., Beachkofsky, T. M., Gilson, R. T.,
+and Wisco, O. J. Syphilis: A Reemerging Infection.
+Americam Family Physician 86 , 5 (2012), 433{440.
+13. Nauck, B., Br uderl, J., Huinink, J., and Walper, S.
+The German Family Panel (pairfam), 2014.
+14. Nybo Andersen, A.-m., Wohlfahrt, J., Christens,
+P., and Melbye, M. Maternal age and fetal loss:
+population based register linkage study. BMJ
+General practice 320 , 24 June (2000), 1708{1712.
+15. Ospina, R., and Ferrari, S. L. P. Inated beta
+distributions. Statistical Papers 51 , 1 (Mar. 2008),
+111{126.
+16. R Core Team. R: A Language and Environment for
+Statistical Computing, 2014.
+17. Rigby, R. A., and Stasinopoulos, D. M. Generalized
+additive models for location, scale and shape,(with
+discussion). Applied Statistics 54, 3 (2005), 507{554.
+18. Robert Koch Institute. SurvStat@RKI 2.0, 2014.
+19. Rompalo, A., and Cates, W. Syphilis. In Bacterial
+Infections of Humans , E. Brachman, Philip S.;
+Abrutyn, Ed., 4th ed. Springer, New York, USA,
+2009, ch. 36, 783{801.
+20. Software Engineering Group. FLAME, 2014.
+21. Stephensen, P. SBAM: An Algorithm for Pair
+Matching. 2012.
+22. Wilcox, A. J., Weinberg, C. R., and Baird, D. D.
+Timing of Sexual Intercourse in Relation to
+Ovulation. The New England Journal of Medicine
+333, 23 (1995), 1517{1521.
+6

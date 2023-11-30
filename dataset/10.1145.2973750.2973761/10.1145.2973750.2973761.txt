@@ -1,0 +1,1612 @@
+Gyro in the Air: Tracking 3D Orientation
+of Batteryless Internet-of-Things
+Teng Wei and Xinyu Zhang
+Department of Electrical and Computer Engineering
+University of Wisconsin - Madison
+twei7@wisc.edu, xyzhang@ece.wisc.edu
+ABSTRACT
+3D orientation tracking is an essential ingredient for many Internet-
+of-Things applications. Yet existing orientation tracking systems
+commonly require motion sensors that are only available on battery-
+powered devices. In this paper, we propose Tagyro, which attaches
+an array of passive RFID tags as orientation sensors on everyday
+objects. Tagyro uses a closed-form model to transform the run-
+time phase offsets between tags into orientation angle. To enable
+orientation tracking in 3D space, we found the key challenge lies
+in the imperfect radiation pattern of practical tags, caused by the
+antenna polarity, non-isotropic emission and electromagnetic cou-
+pling, which substantially distort phase measurement. We address
+these challenges by designing a set of phase sampling and recovery
+algorithms, which together enable reliable orientation sensing with
+3 degrees of freedom. We have implemented a real-time version of
+Tagyro on a commodity RFID system. Our experiments show that
+Tagyro can track the 3D orientation of passive objects with a small
+error of 4, at a processing rate of 37.7 samples per second.
+CCS Concepts
+Human-centered computing !Ubiquitous computing; Ambi-
+ent intelligence;Hardware!Digital signal processing; Beam-
+forming; Sensors and actuators; Sensor devices and platforms;
+Keywords
+Wireless Sensing; Orientation Tracking; Internet-of-Things; RFID;
+Tag Array; Coupling Effect
+1. INTRODUCTION
+3D orientation is an essential input to many pervasive applica-
+tions, such as motion tracking [1], mobile gaming, and activity
+recognition [2]. However, existing orientation tracking systems
+commonly require motion sensors like gyroscope and compass, which
+are only available on battery-powered devices. Tracking the ori-
+entation of passive batteryless objects is an equally important but
+more challenging problem.
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for proﬁt or commercial advantage and that copies bear this notice and the full cita-
+tion on the ﬁrst page. Copyrights for components of this work owned by others than
+ACM must be honored. Abstracting with credit is permitted. To copy otherwise, or re-
+publish, to post on servers or to redistribute to lists, requires prior speciﬁc permission
+and/or a fee. Request permissions from permissions@acm.org.
+MobiCom’16, October 03-07, 2016, New York City, NY, USA
+c2016 ACM. ISBN 978-1-4503-4226-1/16/10. . . $15.00
+DOI: http://dx.doi.org/10.1145/2973750.2973761
+Smart Home Gaming
+ Production Line Supply Chain
+Figure 1: Applications of passive orientation sensing in IoT.
+A passive orientation sensing system can enable many new Internet-
+of-Things (IoT) applications (Figure 1). For example, in smart-
+home environment, it can monitor the rotation and placement of
+daily objects (e.g., detecting door closure and monitoring activ-
+ity of a rolling chair). In a supply chain, it can detect the tilt
+angle of orientation-sensitive cargo and warn the human workers
+when necessary. Orientation information of products on a conveyor
+belt can assist robotic arms to pick up an item using proper pos-
+ture. Likewise, there exist numerous applications in mobile gaming
+(e.g., guiding the positioning of LEGO pieces) and library man-
+agement (e.g., detecting upside down books). Existing passive ori-
+entation tracking solutions are predominantly based on computer
+vision [3–7]. Such systems often require extensive per-object per-
+angle training. They are sensitive to background variation, ambient
+light condition, and occlusion. Therefore, they are unsuitable for
+ad-hoc IoT applications.
+In this paper, we propose Tagyro, which can track the 3D orienta-
+tion of passive objects using RFID tags. The basic idea is to attach
+multiple tags to different spots on the object, which constitute a tag
+array. Some example array patterns are illustrated in Figure 2. An
+RFID reader can measure the tag phase, i.e., the phase of signals re-
+turned from each tag. When the tag array rotates together with the
+object, the tag-to-reader distance among different tags varies, which
+in turn affects the relative phase offset between tags (referred to as
+phase difference of arrival or PDoA). Tagyro builds a closed-form
+model that transforms the measured PDoA into an orientation spec-
+trum, which characterizes the likelihood of each orientation angle.
+It then derives the tag array’s 2D orientation from the peak of orien-
+tation spectrum. By attaching an additional RFID antenna and tag
+array, Tagyro can aggregate the outputs from multiple 2D estima-
+tors and produce a 3D orientation estimation for the target object.
+Realizing such an RFID-based 3D orientation tracking entails
+three key challenges that are unaddressed in previous RFID sens-
+ing systems [8–12]. First, to prevent phase ambiguity, adjacent
+tags in a tag array must be placed within close proximity. How-
+ever, our experiments reveal that the closely-placed tags tend to
+alter each other’s phases due to sophisticated electromagnetic in-
+teractions. Such coupling effect deviates the phase value from the
+traditional phase-distance model [8]. To address this issue, we pro-
+pose an Array Layout Sensing (ALS) algorithm, which approxi-
+552-tag 3-tag 4-tag
+4-tag 6-tag 8-tagLinear
+RectangularFigure 2: Examples of linear and square tag
+arrays from the top view (showing cross sec-
+tions of tags).
+AntennaTag ArrayReader Coordinate
+SystemX
+YZTag1 Tag2Tag3 Tag4
+θXθZ
+θYFigure 3: Coordinate system refers to the
+reader antenna. Tag orientation is deﬁned
+as the rotation offset ( X,Y,Z) along each
+axis.
+Initial offset θ𝑖𝑍X
+YReader Coordinate 
+System
+Reader signal 
+directiond𝑖
+ZTag 1Tag irotates 
+by θ𝑍Figure 4: Relation between the tags’
+PDoA and rotation angle. This exam-
+ple shows rotation along the Z-axis (by
+projecting to the X-Y plane).
+mately models the coupling effect as if the tags repel each other
+in the physical space. ALS also enables Tagyro to automatically
+sense the tag array’s effective layout – a critical input for the ori-
+entation spectrum computation. Consequently, ALS also frees the
+user from knowing the array’s physical layout or placing the array
+with precise geometry.
+Second, the radiation pattern of a practical RFID tag is far from
+the ideal isotropic model, i.e., a point source that scatters signals
+uniformly in 3D space. Instead, it has blind directions with ex-
+tremely weak emissions, rendering phase measurement infeasible.
+Tagyro addresses this challenge using a dual-array setup, where two
+arrays are arranged in orthogonal angles to compensate the blind di-
+rections. Tagyro can single out valid phase readings, and then unify
+the results to estimate the object’s orientation with 3 degrees-of-
+freedom (DoF).
+Third, commercial FCC-compliant RFID readers run in the freq-
+uency-hopping mode and interrogate the tags sequentially, which
+cause phase discontinuity and signiﬁcantly slow down the orien-
+tation sensing. We design a simple per-reader phase calibration
+mechanism, along with phase interpolation, which improves the
+phase-reading precision/granularity.
+Tagyro, to our knowledge, represents the ﬁrst wireless sensing
+system that can track the 3D orientation of passive objects. Its con-
+tributions can be summarized as follows.
+(i)We propose an RFID tag-array setup for phase-based orien-
+tation tracking, and empirically study the impact of tags’ imper-
+fect radiation patterns on phase reading. Our study reveals how
+the tag polarity, blind direction and coupling effect distort phase
+measurement, which has not been reported by previous RFID sens-
+ing/localization systems [8–14].
+(ii)We propose an innovative algorithm to sense the effective
+layout of a tag array, which overcomes the tag coupling effect. We
+further propose mechanisms to combat the tags’ non-isotropic ra-
+diation patterns, enabling orientation sensing in 3D space without
+blind direction. We have also developed phase calibration mecha-
+nisms and enabled fast orientation sensing on standard-compliant
+RFID devices.
+(iii)We implement Tagyro on a COTS RFID system as a real-
+time 3D orientation sensing framework. Our experimental results
+show that Tagyro can track the 3-DoF orientation of an object at an
+average accuracy of 4, with processing rate >37.7 samples/second
+and response latency <0.75 seconds. Tagyro achieves compara-
+ble accuracy and sampling rate as state-of-the-art gyroscope-based
+systems [15], but it needs no battery on the object, and evades the
+notorious drifting issue.
+2. PRELIMINARIES
+2.1 Phase Model for an RFID System
+An RFID reader can transmit continuous-wave signals to inter-
+rogate a tag, and then receive backscattered signals from the tagwhich contains its unique identity information. The phase offset
+between the transmitted and received signals depends on the round-
+trip propagation distance d, as well as hardware-speciﬁc factors.
+Following a standard phase-distance model [8, 16], the phase value
+, also referred to as tag phase, equals:
+=mod(2d
++Reader +Tag;2); (1)
+wheredenotes the signal wavelength, and Reader andTagare the
+additional phase offsets induced by the reader’s transmission/recei-
+ving circuits and tag’s antenna response. Eq. (1) implies that a sin-
+gle tag is insufﬁcient for 3D orientation sensing, because simply
+changing the tag’s orientation may not change the distance dand
+the phase.
+2.2 Phase Difference of Arrival of a Tag Array
+The basic idea of our approach is to form a tag array with mul-
+tiple tags. Due to different distances to the reader, the tags cause
+different phase offsets, which we call the Phase Difference of Ar-
+rival (PDoA). Rotation of the tag array results in different PDoA
+values, from which we can estimate the orientation of the tag array,
+and hence the orientation of the object it is attached to.
+Consider Figure 3 where 4 tags form a square array. We ﬁrst
+specify a 3D coordinate system for the RFID reader, in which the
+X-axis is parallel to the direction from the reader to the center of
+the tag array, and the X-Y plane is parallel to the ground. The tag
+array’s orientation is deﬁned as the rotation offset ( X,Y,Z) along
+each axis, relative to an initial state speciﬁed by the user. This coor-
+dinate system allows us to track the tag array’s orientation from the
+reader antenna’s perspective. Note that Tagyro is different from ac-
+tive motion sensors (gyroscope and magnetometer) [15], since the
+coordinate system will change w.r.t. to the position of the tag array.
+On the other hand, active motion sensors are location-independent
+because gravitational and magnetic ﬁelds on earth are used as the
+reference coordinate.
+Figure 4 illustrates the rotation around the Z-axis by projecting
+3D space on to the X-Y plane. In this example, signals ﬁrst reach
+tag1before tagi, and thus PDoA (tag ito tag 1) is positive. More
+generally, the direction and amount of rotation determine the sign
+and value of PDoA, respectively. Assuming signals come from far
+ﬁeld, the PDoA ifor any tagito the reference tag, say tag 1, can
+be derived from the tag separation distance projected to the reader’s
+signal direction (i.e., the red line in Figure 4):
+i(Y;Z;di) =i 1
+=mod(4disin(Y+i
+Y) sin(Z+i
+Z)
++ i
+Tag;2); (2)
+wherediis the distance between the ithand reference tag. i
+Yand
+i
+Zare initial angular offsets for tag iand reference tag in the initial
+state, which gauge the rotations along YandZaxes respectively
+w.r.t. the directions of zero PDoA. They can be calculated from
+the array geometrical layout (to be addressed in Sec. 4.3). i
+Tagis
+56Array 
+Layout 
+Sensing
+Orientation
+Spectrum
+TrackingPhase 
+Calibration
+DB
+Pattern
+Interrogate 
+and response
+Calibrate 
+phase of 
+frequency 
+hoppingReturn 
+tag layout
+Return 
+orientation①
+②③
+④Infrastructure Tagyro coreFigure 5: Tagyro’s Architecture and operation workﬂow.
+the difference of antenna phase response (cf. Sec. 2.1) between tag
+iand the reference tag, which will be calibrated and removed by
+our array sensing module (Sec. 4.3.3). Note that PDoA cancels the
+unknown phase offset Reader introduced by the reader’s circuits.
+In addition, note that the PDoA is irrelevant to the X-axis rotation
+in this example setup (Figure 3), since any rotation along X-axis
+does not change the distance offset between different tags and the
+reader. Therefore, a single reader antenna can only track the array
+rotation with 2 Degree-of-Freedoms (DoFs), i.e., along Y and Z
+axes. For 3-DoF tracking, Tagyro requires a reader with at least 2
+antennas, which will be discussed in Sec. 4.4.
+3. Tagyro OPERATION
+Tagyro is an orientation sensing system that generalizes the afore-
+mentioned ideal PDoA tracking. To use Tagyro, a user needs to at-
+tach an array of RFID tags on the target object, following certain
+empirical guidelines and without knowing the precise geometrical
+relation between tags.
+Figure 5 illustrates Tagyro’s ﬂow of operations, comprised of the
+following steps: (1)The reader interrogates the tag array following
+standard EPC protocol [17], which reads the tags sequentially and
+resolves collision via retransmission. Commercial readers (e.g., the
+Impinj R420 [18] that we use) can extract many pieces of infor-
+mation such as tag ID, phase and Received Signal Strength Indica-
+tor (RSSI), which are forwarded to a PC host running Tagyro. (2)
+Tagyro’s phase calibration module pre-processes the phase infor-
+mation, and removes the phase discontinuity caused by the reader’s
+channel hopping. (3)Tagyro’s Array Layout Sensing (ALS) mod-
+ule estimates the tag array’s effective layout, which differs from the
+geometrical layout due to mutual coupling between tags. (4)Given
+the tag array layout, Tagyro measures the tag phase and runs an
+orientation-spectrum tracking mechanism to continuously track the
+tag array’s orientation.
+In what follows, we describe Tagyro’s major design components
+and algorithms. We ﬁrst describe how to compute orientation from
+the PDoA, assuming the tag array’s layout is known (§ 4.1). Sec-
+ond, we explore the main challenges in PDoA and tag layout es-
+timation (§ 4.2), particularly caused by the tags’ imperfect radia-
+tion pattern. We introduce the ALS algorithm that estimates the
+tag array’s effective layout, taking into account the coupling ef-
+fect (§ 4.3). Third, we extend the single-array and single-antenna
+reader case to dual-array and dual-antenna reader, in order to real-
+ize 3-DoF orientation tracking (§ 4.4). We will also discuss phase
+calibration and run-time optimization mechanisms that improve the
+accuracy and speed of phase reading (§ 4.5 and § 4.6).
+4. DESIGN
+4.1 Tracking through Orientation Spectrum
+We ﬁrst focus on the 2-DoF orientation, i.e., sensing ( Y,Z),
+the array’s angular rotation along Y and Z axis, relative to its ini-
+tial state. Given the measured PDoA between each tag iand the
+-90-60-300306090
+0 60 120 180 240 300 360θY (deg.)
+θZ (deg.)
+00.250.50.751
+MagnitudeGrating lobes PeakFigure 6: Example orientation spectrum from measurement.
+reference tag, Tagyro estimates the tag array’s orientation by com-
+puting an orientation spectrum – a 2D intensity graph in which each
+pixel indicates the likelihood of an orientation. We use the phaser-
+domain difference between the theoretical PDoA i(computed
+from Eq. (2)) and measured PDoA ^ias pixel intensity, i.e.,
+I(Y;Z) =jKX
+i=1ej(i(Y;Z;di) ^i)j=K (3)
+whereKis the tag number in the array. The phaser domain oper-
+ation inherently handles the phase aliasing. When the theoretical
+PDoA matches the measured value, e.g.,ji ^ij0for all
+i, the pixel will have the maximum intensity equal to 1. Otherwise
+the pixel intensity will be close to 0. The complexity of comput-
+ing the spectrum is O(N2), whereNis the number of values for
+each DoF rotation. In Tagyro, we discretize the rotation value Y
+andZinto3granularity, resulting in an orientation spectrum with
+120120pixels.
+The 2-DoF orientation is estimated by ﬁnding the highest peak
+in the orientation spectrum:
+fY;Zg= arg max
+Y2[0;2 );Z2[0;2 )I(Y;Z): (4)
+Taking the 4-tag square array in Figure 3 again as an example,
+where neighboring tags are separated by the quarter wavelength of
+8.2 cm, Figure 6 plots the orientation spectrum when the array ro-
+tates at (Y= 0;Z= 80). The highest peak position occurs
+exactly at the same orientation. Besides, there are weaker grating
+lobes that are caused by the spatial ambiguity effect.
+Spatial ambiguity is a well known effect when using multi-antenna
+to estimate a signal’s angle of arrival – multiple angles may have
+similar likelihood of estimation. To minimize the spatial ambiguity,
+antennas need to be separated by less than half-wavelength (=2)
+away. For an RFID tag array, the equivalent separation should be
+=4 (i.e., 8.2 cm for 915 MHz UHF tags), because the signals tra-
+verse a round-trip propagation. Though grating lobes are generally
+weaker than the main lobe, they may occasionally obscure the de-
+tection of true peak because of residual phase measurement error
+and noise in RF channel. To ensure the robustness of Tagyro, in-
+stead of picking a single strongest peak, we search for the top three
+peaks in the orientation spectrum, and take the one that is closest to
+the previous estimation as ﬁnal orientation result. This serves as a
+simple moving average outlier ﬁlter.
+The above ideal orientation-spectrum tracking model requires
+three underlying conditions: (i)a tag backscatters wireless signals
+like an isotropic point source, so the signals cover 3D space without
+blind direction; (ii)the phase reading of a tag follows a predictable
+model over distance (Eq. (1)); (iii)tag array’s relative layout and
+the corresponding IDs are known. We next explore the practical
+challenges and solutions in Tagyro to meet these conditions.
+4.2 Impact of Tag Radiation Pattern
+We conduct empirical studies using a COTS RFID platform (Im-
+pinj R420 [18]) to better understand the radiation property of RFID
+57+X
++Y+Z
+Figure 7: Measuring RSS
+and phase of a tag rotat-
+ing along each axis. The
+3D heat map shows radia-
+tion pattern of a typical tag.
+rTag2Tag1Figure 8: Measuring the PDoA
+of a two-tag array. One tag is in
+the rotation center and the other
+rotates along a circle r= 6cm.
+-3-2-1 0 1 2 3
+0 60 120 180 240 300 360Phase (rad.)
+Rotation (deg.)X
+Y
+Z
+-70-60-50-40-30
+060120 180 240 300 360RSS (dBm)
+Rotation (deg.)X
+Y
+Z
+Figure 9: Measured phase (left) and RSS (right) of a single tag
+rotating along each of the three axes respectively.
+tags. Although the ﬁrst two of above basic assumptions (about RSS
+and phase) have been applied in previous works to localize tags in
+a 2D space [8, 19, 20], we are particularly interested in verifying
+whether they still hold under the tag array setup and the implica-
+tions for 3D orientation tracking.
+4.2.1 Rotation of a Single Tag – Polarity and Blind
+Direction Issues
+Observation 1 The phase of a single tag is not only determined
+by the distance, but also affected by its relative orientation to the
+reader antenna.
+We ﬁrst reinvestigate the standard phase-distance model (Eq. 1)
+under varying tag orientations. We place a slim tag 1.5 m in front
+of a ﬂat-panel reader antenna (Figure 7), and rotate the tag center
+along each axis. Figure 9 plots the corresponding phase change.
+Ideally, the phase should remain constant, if it only depends on the
+tag-to-reader distance. Surprisingly, we ﬁnd that the phase shifts
+linearly with the rotation along X-axis, and abrupt phase jumps oc-
+cur with rotation along Y-axis. The phase only remains unchanged
+for the rotation along Z-axis.
+This phenomenon is caused by the polarity of RFID antennas.
+Due to form-factor constraint, a tag’s antenna is commonly de-
+signed as a dipole, which is linear-polarized along the tag body (i.e.,
+Z-axis in Figure 7). On the other hand, to ensure they can read tags
+from a variety of angles, most RFID readers’ antennas are circular-
+polarized [21] – They comprise two perpendicular dipoles, fed with
+signals of 90phase difference. When the tag rotates along the
+X-axis by 90, the phase of signal received by the tag will change
+by
+2.Since the signals traverse a round-trip propagation back to
+the reader, the corresponding phase shift measured by the reader
+doubles. Similarly, the tag phase jump of 2when rotating around
+Y-axis by 180is also due to the abrupt change of polarity direc-
+tion. We repeat the experiment using other types of tags (Sec. 5)
+and observe a similar result.
+Implication: Antenna polarity affects the tag phase, and may
+confuse the orientation spectrum computation which assumes phase
+only depends on the tag-to-reader distance. To isolate the polar-
+ity effect, in Tagyro, we enforce a constraint on the tag placement,
+called polarity alignment – within a tag array, the tags’ bodies
+must be parallel to each other. In this way, polarity introduces the
+-4-3-2-1 0 1 2 3 4
+0 60 120 180 240 300 360PDoA (rad.)
+Rotation (deg.)W/o coupling
+W/ coupling
+PDoA  
+scopeFigure 10: Measured PDoA
+value of a two-tag array.
+-4-3-2-1 0 1 2 3 4
+0 60 120 180 240 300 360PDoA (rad.)
+Rotation (deg.)W/o coupling
+W/ couplingFigure 11: Simulated PDoA
+value of a two-tag array.
+same phase shift among all tags during rotation, and does not affect
+PDoA.
+Observation 2 An RFID tag has non-isotropic radiation: it mainly
+backscatters signals surrounding the tag body (XY-plane in Fig-
+ure 7), and has blind direction along its radial direction (Z-axis).
+Under the same setup as above, Figure 9 plots the RSS with dif-
+ferent tag rotations. We see that the tag reﬂects consistently strong
+RSS when rotating around X or Z axis. Yet, if it rotates around Y-
+axis, the RSS drops signiﬁcantly (by 20 dB) when the tag’s radial
+direction points to the reader. The reader cannot reliably decode
+the tag’s signal at such blind direction, and hence the phase mea-
+surement becomes erroneous.
+Implication: The blind direction of an RFID tag limits the range
+of orientation that Tagyro can track using a single tag array. To re-
+alize 3D orientation sensing, the blind direction of RFID tags must
+be compensated by other means.
+4.2.2 Rotation of a Tag Array – Coupling Between
+Tags
+Observation 3 The phase of each tag in the tag array will be af-
+fected by neighboring tags through the coupling effect, which devi-
+ates actual PDoA from the standard phase-orientation model (Eq. 2).
+The coupling effect of RFID tag occurs in near-ﬁeld where sig-
+nals backscattered from a responding tag generate resonant voltage
+in the antennas of other tags [22]. As a result, besides the signal
+from responding tag, other nearby tags will also emit signals, which
+further alters the phase received by the reader. We now conduct two
+experiments to quantify such effect.
+We now create a two-tag array following the polarity alignment
+requirement, and measure the PDoA between them (Figure 8). One
+tag is in the rotation center and the other rotates along a circle of
+radiusr= 6cm. To evaluate the PDoA without coupling effect,
+we also collect the phase trace by rotating only one tag (removing
+the other), and then compute the PDoA at each of the sampling
+locations along the circle.
+Figure 10 plots the PDoA for cases with (w) and without (w/o)
+coupling effect. We observe that when there is no coupling, the
+measured PDoA matches the standard model (Eq. (2)). However,
+when two tags rotate together, the PDoA scope, i.e., difference be-
+tween maximum and minimum values, has increased signiﬁcantly.
+The result shows that PDoA value is scaled by the coupling effect
+between tags.
+To better understand the root cause of PDoA deviation, we model
+the coupling effect of two tags as illustrated in Figure 8. We ﬁrst
+consider the case without coupling, the carrier signal backscattered
+from Tag1 to the RFID reader is characterized by:
+s1=A1exp(j 22d1
+) (5)
+whereA1denotes the amplitude of received signal and 2d1is the
+round-trip distance between tag and reader. Without loss of gen-
+erosity, we omit other constant phase offsets caused by tag/reader
+58antennas. Eq. (5) is consistent with the standard phase-distance
+model (Eq. (1)) – phase is determined by the tag-to-reader distance.
+When the coupling effect occurs, RFID reader essentially re-
+ceives two copies of signals. One is the original signal coming from
+the responding tag, and the other copy is generated by the resonant
+voltage and coming from the other tag . Compared to the original
+one, the resonant copy experiences certain attenuation and phase
+shift, which are uniquely determined by the coupling coefﬁcients
+between the two tags. We denote the resonant signal emitted from
+Tag2 assc
+2, which is given by:
+sc
+2=Ac
+2exp(j 2d1+d2+r
++'c) (6)
+whereAc
+2and'care the amplitude and phase offset of the resonant
+signal.d2andrare the Tag2-to-reader and Tag1-to-Tag2 distances
+respectively. In a similar way, when Tag2 is responding, we can
+model the signals from Tag1 and Tag2 as sc
+1ands2respectively.
+When both copies of signals overlap and together reach the RFID
+reader, the measured phase value will deviate from the origin one,
+and thus the PDoA distorts. We plug in empirical parameters A1=
+1,Ac
+2= 0:5,'c= 90, and simulate the PDoA of a two-tag array
+based on the analytical model. Figure 11 shows that the simulation
+result is highly consistent with our experimental measurement.
+We further evaluate the extent of coupling effect over tag sepa-
+ration distance. We vary the radius rfrom 3cm to18cm, at 3cm
+step. We use the PDoA deviation as metric, i.e., the difference of
+PDoA scope relative to the case without coupling. Figure 12 shows
+thatthe closer two tags are placed to each other, the stronger the
+PDoA deviation will be. Recall that computing orientation spec-
+trum requires tags to be placed within quarter-wavelength distance
+(8.2cm) to minimize the spatial ambiguity (Sec. 4.1). Yet at this
+separation, coupling effect is strong and unavoidable.
+Implication: The coupling effect, which deviates PDoA value
+from the phase-orientation model, will compromise the peak of ori-
+entation spectrum and consequently affect the performance of rota-
+tion tracking.
+In summary, the above experiments reveal that the radiation pat-
+tern of RFID tags is far from the ideal model, and may compro-
+mise any RSS/phase-based sensing algorithms in 3D space. We
+now present the countermeasures in Tagyro.
+4.3 Combating Tag Coupling Effect
+4.3.1 Effective Distance Between Tags
+Since tag coupling distorts the phase and PDoA, a natural coun-
+termeasure is to model the coupling effect and compensate the dis-
+tortion accordingly. However, such a model must capture the mu-
+tual impedance between tags [23], which depends on elusive factors
+(e.g., antenna shape and material) that are unlikely to be available
+to end-users.
+To address this issue, we make an important observation from
+Figure 10: under the coupling effect, the scope of PDoA is scaled,
+but the relation between rotation angle and PDoA maintains a sim-
+ilar trend as the no-coupling case. In other words, we can approx-
+imate the end-effect as virtually rescaling the tag separation to an
+appropriate value, which we call effective distance. Formally, the
+effective distance between the tag iand the reference tag is modeled
+as^di, which maximizes the alignment between measured PDoA
+and the theoretical value for any given orientation (Y;Z):
+f^di;1iKg= arg max
+di;1iKjKX
+i=1ej(i(Y;Z;di) ^i)j: (7)
+To verify this model, we conduct a benchmark experiment in-
+volving two tags with a physical distance of 6 cm. We measure
+ 0 0.5 1 1.5 2 2.5 3 3.5
+3 6 9 12 15 18PDoA deviation (rad.)
+Tag separation distance (cm)Figure 12: PDoA deviation
+over tag separation distance.
+ 0 0.2 0.4 0.6 0.8 1
+ 0  0.5  1  1.5  2CDF
+Residual PDoA deviation (rad.)No coupling and
+Physical distance model
+Coupling and
+Physical distance model
+Coupling and
+Effective distance modelFigure 13: CDF of residual
+PDoA deviation. Physical dis-
+tance and effective distance
+are 6 cm and 9 cm.
+the PDoA by rotating the array to three known orientations, and
+then ﬁnd the effective distance through Eq. (7). Figure 13 shows
+the CDF of PDoA deviation. We can see that, compared with the
+physical distance model that does not account for coupling, effec-
+tive distance model reduces the maximum PDoA estimation error
+from 2 radians to 0.7 radians, and mean to as small as 0.1 radians.
+Overall, PDoA deviation is reduced to an extent comparable to the
+case without coupling effect (cf. Sec. 4.2.2). Note that, even with-
+out coupling, the PDoA model is imperfect and has minor residual
+errors due to the multipath and RF noise [8–10, 13]. They will be
+incorporated in our system level experiments.
+4.3.2 Sensing the Effective Layout of a Tag Array
+However, in practice, it is difﬁcult to compute the effective dis-
+tance from Eq. (7) for more than two tags due to the huge search
+space. More importantly, Eq. (7) requires the knowledge of multi-
+ple rotation angles as input, which the user may not even be able to
+obtain. In Tagyro, we design an Array Layout Sensing (ALS) algo-
+rithm, which can automatically sense the effective distance between
+tags, and hence the layout of the entire tag array under coupling,
+which we refer to as effective layout.
+First, to avoid requiring the knowledge of rotation angle, our key
+insight is that the scope of PDoA is determined by the effective dis-
+tance of two coupled tags, and it is independent of the array’s ori-
+entation. The PDoA value is bounded within [ 4^d
++Tag;4^d
++
+ Tag](cf. Eq. (2)). Thus, the effective distance can be determined
+by the PDoA scope as:
+^d=
+4PDoA_scope
+2: (8)
+To obtain the PDoA_scope, Tagyro requires the user to rotate the
+tag array by more than one cycle (360) roughly around each axis.
+Meanwhile, it measures the PDoA values and uses the difference
+between maximum and minimum PDoA as the PDoA_scope. This
+is a simple one-time calibration, needed only when the tag array is
+ﬁrst formed.
+Second, when measured phase value exceeds 2, the RFID reader
+wraps it back to the [0;2]range, which may cause ambiguity in
+estimating the max and min PDoA values. We remove the ambi-
+guity through phase unwrapping [24]. Since the reader typically
+queries the tag at a much higher speed compared to the tag array
+rotation, the change between consecutive PDoA values is minor.
+Thus, any PDoA change greater than or smaller than indi-
+cates the occurrence of phase jumping, which can be removed by
+adding/subtracting to the subsequent samples of PDoA values.
+Third, computing the orientation spectrum requires the relative
+layout of tags instead of their separation. We approach this by
+mapping the tags’ pairwise effective distance to the entire tag ar-
+ray’s effective layout. This can be formulated as a Classical Multi-
+Dimensional Scaling (CMDS) problem [25], which takes a matrix
+59Tag iTag j 
+(reference)
+④Map to effective distance and 
+construct the distance matrixTag 1 … Tagi…
+Tag 1
+(ref.)d11… d1i…
+… … … … …
+Tag j 
+(ref.)dj1… dji…
+… … … … …_
+①Randomly rotate 
+tag array②Compute and unwrap PDoA
+for each pair of tags③Track PDoA scopetPDoA
+tPDoA
+⑤Construct effective geometry 
+of RFID tags in 3D space
+XYZwrap
+unwrap
+PDoA scopeFigure 14: Array Layout Sensing (ALS) algorithm to sense the effective geometry of a tag array.
+Algorithm 1 Sensing the effective layout of a tag array
+1:globalp[1K]  1 Vector of historical phase
+2:globala[KK] 0 Matrix of PDoA
+3:global[KK]   inf Matrix of maximum PDoA
+4:global[KK] inf Matrix of minimum PDoA
+5:procedure SenseGeometry( ,) tag ID,phase
+6: ifp[]== 1then Initialize new incoming tag
+7: [p[];a[]] initialize()
+8: end if
+9: foreach tag i do Reference tag
+10:a[][i] = p[i] Compute PDoA
+11:a[i][ ] =p[i] 
+12:unwrap(a) Phase unwrapping
+13: ifa[][i]>[][i]then Update max PDoA
+14: [][i] =a[][i];[i][] =a[i][ ]
+15: end if
+16: ifa[][i]<[][i]then Update min PDoA
+17: [][i] =a[][i];[i][ ] =a[i][ ]
+18: end if
+19: end for
+20: ^d 
+4 
+2Construct effective distance matrix
+21: returnG cmdscale( ^d) CMDS to effective geometry
+22: end procedure
+that describes dissimilarity between points (e.g., effective distance
+in our case) as input, and outputs a coordinate matrix in the geo-
+metrical space that minimizes the residual distance error. An ap-
+proximate algorithm [26] can solve this problem efﬁciently at com-
+plexityO(KlogK)forKtags. We apply the CMDS function
+built-in MATLAB which by default projects the Kpoints into a
+K-dimensional space. Since tags are located in a 3-D space, the
+coordinate values for the higher K 3dimensions are small and
+close to zero. So we can take outcomes in the ﬁrst 3 dimensions
+as tag coordinates and ignore the others without much loss of accu-
+racy. It is worth noting that using other implementations of CMDS
+algorithm will not affect the key design of Tagyro.
+Figure 14 summarizes the operations of Tagyro’s ALS algorithm:
+(i)When the array randomly rotates, ALS computes the PDoA from
+a reference tag to every other tags; (ii)The unwrapping operation
+removes the aliasing phase; (iii)Then ALS determines the scope of
+PDoA by tracking the max and min values of phase, and maps it to
+effective distance; (iv)The above steps are repeated for another ref-
+erence tag until all pairwise effective distances are obtained, which
+together form a matrix; (v)Finally, Tagyro computes the effective
+tag layout from the effective distance matrix using the CMDS algo-
+rithm.
+Algorithm 1 presents our real-time implementation of the ALS
+scheme in Tagyro. It takes the tag ID and phaseas input, and
+updates the instant layout Gto the user as the reader continuously
+queries the tag array. The algorithm can be stopped by user when
+the sensed array layout stabilizes.
+We emphasize that a tag array’s effective layout may differ from
+the geometrical layout. The difference reﬂects the overall impact
+of the coupling effect. Figure 14 illustrates the output from a mi-
+Reader 
+antenna 1
+Reader 
+antenna 2Array 1Array 2
+XYZ
+X
+YZPrimary 
+CoordinateFigure 15: Example of dual-array, dual-antenna reader setup.
+crobenchmark experiment, where we run ALS to sense a 4-tag square
+array. All 4 tags are physically placed on the X-Y plane, but in the
+effective layout, 2 of them are repelled from the plane, which ac-
+count for the PDoA deviation due to coupling.
+It is worth noting that ALS is a one-time procedure as long as
+the geometry layout of the tag array remains unchanged. If the
+effective layout can be measured at factory calibration time, then
+the ALS procedure can be skipped. In case when the tag-attached
+object is not suitable for rotation, the user can hold the RFID reader
+and scan around the object to complete the ALS.
+4.3.3 Removing Tag’s Initial Phase Offset
+The PDoA comprises Tag– the difference of two tags’ initial
+phase offset (Sec. 2.2). To ﬁnd out  Tag, recall that the PDoA of
+two tags is bounded by [;], where= 4^d
++  Tagand=
+4^d
++ Tagare the min and max PDoA values respectively, which
+are estimated by the ALS algorithm. Therefore, we can compute
+ Tagas follows:
+ Tag=+
+2: (9)
+This offset is a constant value for a pair of tags, which will be
+subtracted from the measured PDoA value (modeled by Eq. (2))
+before computing the orientation spectrum.
+4.4 Dealing with the Blind Direction – Toward
+3-DoF Orientation Tracking
+The non-isotropic radiation of RFID tags limits the range of ori-
+entations that Tagyro can track using a single array. To realize 3-
+DoF orientation sensing, we propose a setup using dual-array and
+dual-antenna reader. As illustrated in Figure 15, our basic idea is to
+deploy another tag array along an orthogonal axis to the ﬁrst one,
+so that it can compensate the blind direction, enabling full 2-DoF
+tracking. In addition, by deploying an additional reader antenna or-
+thogonal to the ﬁrst antenna, we can obtain total 4 DoFs (one being
+redundant). Compared to the 2-DoF case, 3-DoF orientation track-
+ing requires an additional RFID antenna and tag array. Note that
+the dual-array can be attached not only to cuboid-shape objects, but
+also other arbitrary shapes (e.g., cylinder), as long as the two arrays
+can be arranged along perpendicular directions. We will present
+example use cases in Sec. 6.3.
+Figure 15 illustrates Tagyro’s algorithmic modules under this
+new setup. During the initial setup, Tagyro needs to run the ALS
+algorithm for each tag array. At run time, it computes the orienta-
+60Array 1
+Array 2Antenna 1
+Antenna 2R1A1
+R1A2
+R2A1
+R2A2Combo
+Validator
+Tagyro
+CoreOrientation
+Spectrum
+SynthesisTag physical infoData busSwitchFigure 16: Processing blocks of the dual-array, dual-antenna
+reader setup for 3-DoF orientation sensing.
+tion spectrum for each combination of tag array and reader-antenna,
+referred to as a combo. Meanwhile, it uses a combo validator to de-
+termine which combo evades the blind direction problem and pro-
+vides a valid (low-noise) PDoA value. Each valid combo can track
+orientation along two axes. So, Tagyro runs an orientation spec-
+trum synthesis scheme that uniﬁes multiple valid combos’ sensing
+results to generate a 3-DoF orientation.
+4.4.1 Combo Validator
+Recall that, when a tag’s blind direction points near the reader
+antenna, the RSS of backscattered signals drops by more than 20
+dB, and the phase values become erroneous (Sec. 4.2.2). In ad-
+dition, to satisfy the polarity alignment constraint (Sec. 4.2.1), all
+tags within an array have the same blind direction. So, as the arrays
+rotate, Tagyro’s combo validator tries to exclude those combos in
+which the array’s blind direction points to the reader antenna. RSS
+may seem a potential indicator – a combo that measures low RSS
+is likely to experience the blind direction problem. However, the
+absolute RSS depends on the tag-to-antenna distance, which is a
+random unknown factor. Therefore, it is impractical to use a ﬁxed
+RSS threshold for combo validation.
+Our solution builds on the observation that, since the two arrays
+are in orthogonal directions, for each antenna, at most one of the
+two arrays is in the blind direction. Let 
+1and
+2denote the
+average RSS for tags in Array 1 and 2 respectively. By comparing
+their average RSS, Tagyro can determine which array is in the blind
+direction:
+Blind_Direction_Array =8
+><
+>:1; 
+ 2 
+1>
+2; 
+ 1 
+2>
+None; otherwise
+i.e., when the RSS of one array is lower than the other by , it is
+considered to be blinded. Note that the threshold only depends
+on the relative RSS between a valid and blinded array, and is in-
+dependent of the tag-to-antenna distance. Based on the empirical
+measurement in Figure 9, we set to a conservative value of 5 dB.
+4.4.2 3D Orientation Spectrum Synthesis
+In the dual-antenna reader setup, we take the ﬁrst antenna’s co-
+ordinate system as primary, and convert the estimation from the
+second antenna based on their geometrical relation. For exam-
+ple, in Figure 15, the orientation spectrum for the second antenna
+I(Y;Z)in its own coordinate system becomes I(X;Z)in the
+primary coordinate.
+Tagyro merges the 2-DoF orientation spectrum (Eq. (3)) from
+different combos and produces a uniﬁed 3-DoF estimation. Let
+IRiAjdenote the 2-DoF spectrum of combo ij, comprised of Reader
+antennaiand Arrayj. Tagyro builds a new orientation spectrum
+in 3D space by summing the corresponding pixels across different
+combos. The synthesized spectrum for the setup in Figure 15 is:
+I(X;Y;Z) =2X
+j=1IR1Aj(Y;Z) +2X
+j=1IR2Aj(X;Z):
+ 0 1 2 3 4 5 6 7 8
+ 0  5  10  15  20  25  30Phase (rad.)
+Time (sec.)
+Periodicity = 10s
+Figure 17: Phase jumping
+caused by frequency hopping.
+ 0 1 2 3 4 5 6 7 8
+ 0  5  10  15  20  25Phase (rad.)
+Distance (cm)Channel 917.25 MHz
+Channel 924.75 MHzFigure 18: Phase over dis-
+tance for a ﬁxed frequency.
+Similar to the 2-DoF case (Sec. 4.1), Tagyro ﬁnds the 3-DoF rota-
+tion angles by searching the maximum value in the 3D orientation
+spectrum.
+4.5 Calibrating Frequency-Hopping Readers
+To limit co-channel interference, commercial UHF RFID read-
+ers must randomly hop to one of 50 center frequencies within the
+902-928 MHz band every 200 ms, following FCC regulation [27].
+Frequency hopping will cause phase discontinuity due to the phase
+difference of oscillator and non-uniform frequency response of the
+tags’ antennas. To our knowledge, this issue has not been examined
+experimentally in prior phase-based RFID sensing systems. So we
+ﬁrst conduct an empirical study using the Impinj R420 reader [18].
+We ﬁrst measure the phase of a stationary tag, which shows huge
+phase discontinuity over 30 seconds (Figure 17). When zooming
+into a short period, we can see that phase values are piecewise con-
+stant with each piece lasting around 200 ms, corresponding the so-
+journ time on each frequency. On the other hand, Figure 18 shows
+that if we select the phase values from a single frequency and ﬁl-
+ter out others, the phase-distance relation still follows the linear
+model. These experiments imply that different frequencies induce
+different initial phase-offsets at the reader. To overcome the issue,
+one may selectively read the phase from one frequency, but this will
+signiﬁcantly reduce the phase reading rate, because reader needs 10
+seconds to ﬁnish one round of frequency hopping.
+In Tagyro, we instead calibrate the phase difference between fre-
+quencies, so that the phase output looks like coming from a ﬁxed
+frequency. The calibration is done by collecting an initial phase
+measurement that takes about 10s for an array before usage. Sup-
+pose during calibration, the tag is at distance d0to the reader, now
+the phase-distance relation in Eq. (1) also depends on frequency fi,
+i.e.,
+(fi;d0) =mod(2fid0
+c+i;2) (10)
+wherecis light speed and idenotes the phase offset introduced at
+frequencyfi.
+Given the initial phase measurement (fi;d0);8i2[1;50], we
+map the phase (fi;d)for arbitrary distance dand frequency fi
+to a common frequency fr(default to 915.25 MHz). Substituting
+(fi;d0),(fr;d0),(fi;d), and(fr;d)into Eq. (10) and can-
+celing the terms iandr, we have:
+(fr;d) =mod([(fi;d) (fi;d0)]fr
+fi+(fr;d0);2): (11)
+Note thatdandd0are not required to be known, because the
+phase value(f;d )is always read directly.
+4.6 Dealing with Asynchronous Phase Read-
+ing
+To compute the orientation of a tag array, the reader needs a syn-
+chronous phase snapshot of all tags. However, the EPC Gen2 RFID
+standard [17] adopts a Framed Slotted Aloha protocol which reads
+the tags asynchronously. To address this issue, Tagyro assumes the
+61Impinj RFID 
+ReaderRFID 
+Antenna
+Tag Array
+RFID Tag sRotator and 
+ControllerTagyro GUIObjectFigure 19: Tagyro implementation and software interface.
+array’s rotation speed remains similar over consecutive phase read-
+ings (typically a few tens of ms), and uses an interpolation method,
+which creates an instant phase snapshot for all tags at an interval
+of everyTphase readings. In Tagyro, we set Tto the number of
+tags in array. Let (ti)denote the phase of a tag at time ti. Tagyro
+computes the snapshot phase at time stamp t, given historical phase
+readings at time tiandti 1:
+(t) =(ti 1) + ((ti) (ti 1))t ti 1
+ti ti 1: (12)
+Note out that since the interpolated phase value will be eventually
+updated by new phase measurement, the error of the interpolation
+result will not accumulate or propagate over time.
+5. IMPLEMENTATION
+Hardware: We implement a prototype of Tagyro using the COTS
+RFID reader Impinj R420 [18], which is FCC-compliant and per-
+forms frequency hopping within 902:75927:25 MHz. Figure
+19 illustrates our hardware components. Two circular polarized an-
+tennas are connected to the reader via its two RF ports. Their an-
+tenna gain and 3 dB-beamwidth are 5.5 dBi, 7 dBi and 100and
+80[28, 29], respectively. We assemble the tag array using three
+different types of RFID tags: ALN-9740 [30], SMARTRAC Dog-
+Bone [31], and SMARTRAC ShortDipole [32]. They are common
+label tag in ﬂat, thin shape and commercially available [33]. Their
+maximum reading distance ranges from 15 ft to 20 ft. The reader
+interrogates RFID tags and sends query reports, containing infor-
+mation of ID, RSS, phase, time stamp and channel, via Ethernet to
+a host PC that runs Tagyro.
+Software: Tagyro’s software implementation contains three ma-
+jor modules: 3D GUI, RFID library and processing algorithms. The
+GUI module is developed in C#. It displays the tag array’s effec-
+tive layout during initial setup, and instantaneous orientation dur-
+ing run-time tracking. The RFID library controls the reader using a
+Low-Level Reader Protocol (LLRP) ratiﬁed by EPCglobal. We im-
+plement Tagyro’s key processing algorithms (Sec. 4) in MATLAB,
+and then recompile them into standalone C libraries (DLL) using
+the Code Generation toolbox. The C libraries are imported into C#
+program and being invoked in real-time. To start, we ﬁrst run the
+frequency calibration module for each array. Then we randomly
+rotate the tag array when Tagyro performs ALS to sense the tag ar-
+ray’s effective layout. Afterwards, Tagyro can begin its orientation
+tracking.
+6. EV ALUATION
+Methodology: We conduct experiments in an ofﬁce environment
+to evaluate the effectiveness of Tagyro’s design components, accu-
+racy of orientation sensing, as well as run-time latency. Figure 15
+illustrates our experiments’ default setup, where 4 DogBone tags
+are attached to a plastic cube forming a square tag array, separatedroughly by quarter-wavelength (i.e., 8.2 cm). Note that since our
+ALS algorithm can automatically sense the tag layout, it is not re-
+quired to deploy the RFID tags with precise separation. Two reader
+antennas are placed 1 m away from the tag array at mutually per-
+pendicular directions, both 70 cm above the ground. By default, the
+reader uses its maximum transmit power at 32 dBm.
+Since we are unaware of any RFID-based system that tracks 3D
+orientation of an object, we evaluate accuracy of Tagyro against
+ground truth measurement. To obtain the ground-truth orientation,
+we mount the tag array (attached to an object) on a mechanical rota-
+tor [34] (Figure 19), which is controlled by the PC host to rotate at
+full 360-degree at maximum speed 1.71 rad/s with minimum granu-
+larity of 1. We ﬁrst rotate the tag array to a known orientation, and
+use it as the initial state. Then, the offset between the motor’s rota-
+tion angles and initial state is used as the ground-truth orientation.
+Since the motor can only rotate in one DoF, we manually change
+the pose of the tag array, so that different DoFs can be aligned to
+the motor’s rotation axis.
+Metrics: To characterize Tagyro’s accuracy, we mainly focus on
+angular error, i.e., the deviation of estimated orientation angle from
+the ground truth. Since Tagyro mainly relies on the PDoA informa-
+tion to pinpoint the tag orientation, in the micro-benchmark exper-
+iments we also use the phase error to quantify the effectiveness of
+our design.
+6.1 Micro Benchmarks
+Effectiveness of sensing effective layout. Recall a tag array’s
+effective layout sensed by ALS may differ from the physical ge-
+ometry, due to tag coupling. Figure 20 illustrates the layout of a
+4-tag square array for cases with and without the coupling effect.
+Note that in the effective layout, two tags deviate from the Z axis
+in order to virtually compensate the coupling effect. Yet, obtaining
+the ground truth of coupling effect requires the knowledge of tag’s
+physical parameters, e.g.coupling coefﬁcient, which are not easily
+accessible in practice. On the other hand, the ALS accuracy will di-
+rectly affect the ultimate performance of orientation tracking. Thus,
+we leave the evaluation of its effectiveness in the system level tests
+(Sec. 6.2).
+To validate whether ALS can indeed counteract the coupling ef-
+fect, we compute the orientation spectrum with effective layout.
+For contrast, we also simulate the oracle case using physical layout
+in a non-coupling scenario, which produces the ideal orientation
+spectrum. Generally, higher peak intensity means better spectrum
+(with higher contrast), because tracking will be more resilient to
+noise and spatial ambiguity. Figure 21 plots a snapshot spectrum
+in one dimension for zby ﬁxingxandyto zero. When the ar-
+ray is orientated at (0;0;195), the orientation spectrum from ALS
+has similar peak intensity as oracle. Compared with the case when
+the physical layout is used directly, ALS signiﬁcantly improves the
+contrast of spectrum. Figure 22 statistically plots the difference of
+highest intensity peak in spectrum relative to the oracle. The ALS
+algorithm reduces the intensity difference by 5.5 compared with
+using physical layout.
+Accuracy of selecting the valid combo. In 3D orientation track-
+ing, Tagyro’s combo validator is critical in dealing with the blind
+direction issue. We verify this mechanism by rotating two arrays
+together in 3D space, and inspect if Tagyro can select the correct
+tag array. We determine the ground truth by checking if an array’s
+blind direction is within 40pointing to the reader antenna.
+The experiment results in Figure 23 show that the array indices
+selected by Tagyro all match the ground truth. Since occasional
+blockage can also cause RSS offset between the two arrays to ex-
+ceed the conservative threshold = 5dB (Sec. 4.4), some array
+62-10010X-10010
+Y-10010
+ZPrimitive
+ALS
+-10 0 10
+X-10010Y-10010
+Z
+-10 0 10
+X-10010
+Y
+-10010ZFigure 20: Effective and physical layout of
+the 4-tag array.
+ 0 0.2 0.4 0.6 0.8 1 1.2
+060120 180 240 300 360Spectrum intensity
+Orientation angle (deg.)Physical layout
+ALS
+OracleFigure 21: Normalized Spectrum for 4-tag
+array.
+ 0 0.2 0.4 0.6 0.8 1
+ 0 0.05  0.1  0.15  0.2  0.25CDF
+Spectrum intensity reductionPhysical layout
+ALSFigure 22: The CDF of spectrum intensity
+difference compared to the oracle.
+12
+ 0  5  10  15  20  25Selected array index
+Rotation indexTagyro
+Ground truth
+Figure 23: Accuracy of selecting the array
+in the valid reading zone.
+ 0 1 2 3 4 5 6 7 8
+0 1 2 3 4 5 6Counts (103)
+Phase (rad.)W/ calibration
+W/o calibrationFigure 24: Histogram of phase distribution
+for frequency hopping calibration.
+ 0 0.1 0.2 0.3 0.4 0.5 0.6
+0 20 40 60 80 100Phase deviation (rad.)
+SampleW/o snapshot
+W/ snapshotFigure 25: Residual phase error of asyn-
+chronous phase reading.
+Table 1: Query frequency of
+each tag in the array (SPS).
+Tag # 4 6 8
+Avg. spd. 43.1 40.0 37.7
+10% spd. 32.1 26.8 25.1
+90% spd. 50.0 47.9 46.6Table 2: Efﬁciency of the
+tracking algorithm (FPS).
+Tag # 4 6 8
+1-DoF 4618 3653 3423
+2-DoF 205 145 121
+3-DoF 111 77 63
+indices in the ground truth may not be identiﬁed by Tagyro. How-
+ever, this will not cause error because Tagyro can still use the other
+array to compute the orientation.
+Channel hopping calibration. We next evaluate the impact of
+reader’s channel hopping on the phase value by measuring the phase
+of astatic tag for 2 minutes. Figure 24 plots the histogram of phase
+values. Without calibration, phases are almost evenly distributed
+over all possible values with a std. of 1.78-radian. However, the
+std. is reduced by 46, down to 0.039-radian after applying the
+calibration, which is very close to the noise ﬂoor 0.025-radian.
+Effectiveness of the phase snapshot algorithm. Tags in an
+array are queried asynchronously by the reader, which makes the
+timestamps of phase reading misaligned. To evaluate this impact,
+we ﬁrst rotate the tag array over 100 preset orientations and mea-
+sure the phase values. Since the tag array is stationary during each
+measurement, the phase readings are consistent and used as ground-
+truth. Then we measure the phase while continuously rotating the
+array through these preset orientations. We observe that the phase
+error is substantially reduced after applying the phase snapshot al-
+gorithm (Figure 25). Mean error drops from 0.084 radian to 0.026
+radian. We believe the reduction can be larger for a higher rota-
+tion speed. Note that the error can occasionally be magniﬁed by the
+phase snapshot due to unexpected phase deviation, e.g.noise. But
+they will have marginal impact on orientation tracking since the oc-
+casionally magniﬁed error does not accumulate or propagate over
+time.
+Interrogating speed of tag array. For real-time orientation track-
+ing, one key question is: how fast can the RFID reader query thetag array? The query speed determines how frequent Tagyro can
+update the orientation estimation. We evaluate the query speed by
+interrogating different sizes of tag arrays. The reader uses its de-
+fault AutoSet Dense mode, which automatically adjusts its MAC-
+layer parameters to maximize the tag query speed. Table 1 summa-
+rizes the CDF of update frequency for a two-minute measurement
+when the array rotates at the maximum speed. Although the update
+frequency slightly decreases as we increase the array size, on aver-
+age Tagyro can achieve 37.7 samples per second (SPS) even for the
+8-tag array.
+Efﬁciency of tracking algorithm. We further examine the real-
+time processing speed of our Tagyro implementation. We ﬁrst col-
+lect a 2-minute trace data of the tag array’s phase and then replay
+the trace in our Tagyro program. In this way, we can evaluate the ef-
+ﬁciency of our orientation tracking algorithm independently of the
+reader’s query speed. We run Tagyro on a i7-4770 PC utilizing one
+CPU core. Table 2 plots the frame rate (number of orientation sam-
+ple outputs per second). Tagyro can maintain an average processing
+rate of 3500 FPS, 144.8 FPS and 76.7 FPS, for 1-DoF, 2-DoF and
+3-DoF orientation tracking, respectively. The main bottleneck of
+Tagyro’s tracking efﬁciency lies in the RFID reader’s query speed
+(Table 1) which is much lower than the processing speed of Tagyro.
+6.2 System Level Tests
+We proceed to evaluate Tagyro’s overall performance in tracking
+3D orientation under various practical settings.
+Accuracy of 3D orientation tracking. We ﬁrst evaluate the
+accuracy of orientation tracking under different DoFs: (i) 1-DoF:
+tracking Z-axis rotation using a single tag array and single-antenna
+reader; (ii) 2-DoF: tracking Y and Z axis rotations using dual-array
+and single-antenna reader; (iii) 3-DoF: using the dual-array, dual-
+antenna reader setup as in Figure 15. Our experimental results
+(Figure 26) show that for both 1-DoF and 2-DoF, the average (90-
+percentile) tracking error is about 4(8). 2-DoF case has a similar
+accuracy with the 1-DoF since each of the two arrays independently
+630 2 4 6 8 10
+1-DoF 2-DoF 3-DoFAngular error (deg.)X
+ Y
+ ZFigure 26: Accuracy vs. DoF. Error bar
+shows the 90therror.
+060120180240300360
+0 1 2 3 4 5Orientation (rad.)
+Time (sec.)Estimated
+Ground truthFigure 27: Estimation and ground-true
+for 1-DoF rotation.
+ 0 0.2 0.4 0.6 0.8 1
+ 0  5  10  15  20CDF
+Angular error (deg.)2-tag linear
+3-tag linear
+4-tag linear
+4-tag rect.
+6-tag rect.
+8-tag rect.Figure 28: The CDF of orientation error
+vs. size of tag array.
+ 0 1 2 3 4 5 6 7
+2-Tag 4-Tag 6-Tag 8-TagAngular error (deg.)Stationary
+Dynamic
+Figure 29: Orientation error under sur-
+rounding human activity. Error bar
+shows the 90therror.
+ 0 2 4 6 8 10 12 14 16 18
+11.25 1.51.75 22.25 2.5 2.75Angular error (deg.)
+Distance (m)Figure 30: Orientation error over tag-to-
+antenna distance.
+ 0 0.2 0.4 0.6 0.8 1
+ 0 2 4 6 8 10 12 14CDF
+Angular error (deg.)Baseline.
+Card box
+Plastic Board
+Wooden WallFigure 31: The CDF of orientation error
+under blockage.
+tracks one DoF. Notably, the average orientation error of Z-axis is
+much smaller (2:2) in 3-DoF case, because both of the reader’s
+antennas are outside the blind direction. Tagyro’s orientation spec-
+trum synthesis can effectively unify the extra spatial diversity to
+produce a better estimate. Figure 27 plots 5 overlapped example
+tracking results for 360rotation in 1-DoF. The ﬁgure depicts the
+orientation estimation of a tag array rotating at a constant speed and
+the ground truth value over the time, which shows that the estimated
+angle is highly consistent with the ground truth at every time stamp.
+Impact of array size. We next vary the number of tags in array
+from 2 to 8 and evaluate how it affects the accuracy of orientation
+tracking. Figure 2 shows the tag arrays’ physical layouts. Figure 28
+plots the CDF of angular error in 1-DoF tracking, which shows that
+a larger tag array can effectively improve accuracy. The average
+error is reduced from 4.80for 2-tag array to 1.98for 8-tag ar-
+ray. Moreover, the 90-percentile error is also reduced from 9.71to
+3.60. The improvement gently diminishes as the size of tag array
+increases. In practice, an array of 46 tags may make a good bal-
+ance between accuracy vs. form factor. Using high-frequency tags
+(e.g., millimeter-wave) may signiﬁcantly reduce the form factor due
+to shorter wave length and smaller antenna size. But this is beyond
+the scope of our work.
+Impact of environmental dynamics. Like all other phase-based
+RFID sensing systems [8–10, 13], estimated phase value in Tagyro
+is subject to the channel noise and inﬂuenced by multipath envi-
+ronment. To evaluate their impacts, we measure the jitter of esti-
+mated orientation, while ﬁxing the tags so that any jitter can be only
+caused by RF channel ﬂuctuation. Figure 29 compares the angular
+jitter in a stationary environment with that where a human randomly
+walks around the reader and tags. The average jitter caused by the
+channel noise itself is small and typically less than 1. On the other
+hand, the estimated orientation can deviate by 6:5when there is
+signiﬁcant human movement. This is mainly attributed to the in-
+tentionally created variation of multipath reﬂections. Fortunately,
+a larger tag array can make Tagyro more resilient to environmen-
+tal dynamics — with an 8-tag array, the angular jitter is reduced to
+about 1.Impact of tag-to-antenna distance. Typical RFID systems have
+a maximum reading range of 46 m [35]. Longer distance results
+in weaker signals, hence more noisy phase reading. To understand
+its impact on the orientation accuracy, we vary the tag-to-antenna
+distance from 1 m to 2.75 m. Figure 30 shows that the average an-
+gular error gently increases from 2.09to 9.32, with a maximum
+working distance about 3m in our setup. A closer examination re-
+veals that the RSS drops signiﬁcantly over distance. The lowest
+RSS across rotation angles decreases by more than 21 dBm, from
+-49 dBm at 1m to -70 dBm at 2 m. Since the sensitivity of the Im-
+pinj R420 reader is -82 dBm [18], its measured phase value starts
+to deviate from the phase-distance model (Sec. 2.1) when distance
+goes beyond 2 m. On the other hand, backscattered data bits can be
+decoded at a further distance because RFID adopts Amplitude-Shift
+Keying (ASK) modulation that is insensitive to the phase deviation.
+By deploying more RFID antennas, Tagyro can potentially cover a
+wider working area, which we will leave for our future work.
+Under blockage. Tagyro’s usage scenarios may involve NLOS
+environment, e.g., in a supply chain, where the object (and tag ar-
+ray) may be placed inside a card box (Figure 1). We mimic such
+NLOS cases by blocking the LOS between the tag array and reader
+using different materials: card box, plastic board and wooden wall,
+with thickness of 5 mm, 10 mm and 30 mm, respectively. Fig-
+ure 31 shows that blockage has marginal impact on Tagyro’s ori-
+entation tracking. The wooden wall slightly reduces the accuracy
+because its thickness attenuates the backscattered signal strength,
+similarly to increasing tag-to-reader distance. The experiment ver-
+iﬁes that Tagyro can track orientation in NLOS scenarios where
+camera-based approaches [36] will fail.
+Latency of rotation response. In the implementation, we buffer
+multiple latest phase values for algorithm processing and adopt a
+Kalman ﬁlter to reduce noise in orientation estimation. They will
+incur response latency in the tracking output. To evaluate the la-
+tency, we rotate the tag array by 90and simultaneously measure
+the time it takes for the estimated orientation to be less than 5close
+to the ground truth. Figure 32 plots the CDF of response latency
+from 50 measurements. The average values of response latency are
+640 0.2 0.4 0.6 0.8 1
+400 500 600 700 800CDF
+Response latency (ms)4 tags
+6 tags
+8 tagsFigure 32: Latency of rotation
+response.
+024681012
+ 5 10 15 20 25 30 35Face-up number 
+Toss indexGround truth EstimatedFigure 33: Detecting which
+side of the dice faces up.
+0.61s and 0.71s for 4-tag and 6-tag arrays respectively, which are
+sufﬁcient for most application scenarios that do not have stringent
+timing constraint. Besides, the latency can be further reduced by
+using high-speed RFID readers.
+6.3 Case Study
+In this section, we apply Tagyro in two case studies: a gaming
+scenario where Tagyro detects the orientation of a 12-side dice, and
+a smart home scenario where Tagyro monitors the rotation of the
+door and consumption of roll tissue.
+Tracking a 12-side dice. To detect which side of a ball-like dice
+faces up, we need at least two DoFs – the horizontal rotation does
+not matter because it will not change the face-up number. Thus, we
+setup one reader in the ceiling, which projects signals toward the
+ground and attach two tag arrays to the dice in mutually perpendicu-
+lar directions (Figure 34). We randomly toss the dice and record the
+estimated and ground-truth number that faces up. Figure 33 shows
+that Tagyro correctly identiﬁes 33 out of 36 numbers, achieving
+91.7% accuracy. The tracking accuracy of the 12-side dice is lower
+than the 3D case (Figure 26) due to two factors. First, the shape
+of dodecahedron does not allow us to attach tags completely fol-
+lowing the constraint of polarity alignment (Section 4.2.1), which
+reduces the accuracy of combo validation (Section 4.4.1). Second,
+the two closely-placed tag arrays will create an inter-array coupling
+effect. Tagyro performs ALS independently for each array, which
+handles the intra-array coupling effect. Yet, it is unable to sense the
+inter-array coupling effect. On the other hand, Tagyro cannot per-
+form a joint ALS for both arrays because their polarity directions
+are orthogonal. One approach to mitigate the inter-array coupling
+effect is to separate the two arrays by a distance of greater than half-
+wavelength (Figure 12), such as attaching tags to different edges of
+the box (Figure 15).
+Monitoring smart home. In the smart home scenario, Tagyro
+can monitor the status of daily objects, e.g., whether the door is
+open or close, which direction a rolling chair (and a seated human)
+is facing, and how much roll tissue has been consumed. Many such
+problems can be addressed by sensing the rotation/orientation of
+the passive objects. Here we showcase the door and roll tissue sce-
+narios. Since both of them have ﬁxed rotation axes, (i.e., rotation is
+restricted to 1-DoF), we attach a 4-tag array on each (Figure 1), and
+use a single-antenna reader as monitor. Figure 35(a) plots the ac-
+cumulated rounds of rotations for a roll tissue, which unveils ﬁne-
+grained information of the consumption over time. Figure 35(b)
+shows tracking result for a door, which measures not only its open-
+ing angle, but also the time duration when it stays open/close. These
+case studies also demonstrate Tagyro can be applied to a wide range
+of objects with different shapes.
+Though these detection tasks may be also addressed by simple
+mechanical or IR sensor, Tagyro has several unique advantages over
+them. (i)Fine-grained rotation trajectory. Tagyro not only tells if
+the door opens or closes, but also the degree of opening, which is
+useful for applications, such as to determine if a robot or cargo can
+Figure 34: Eight tags are at-
+tached to the surface of a 12-
+side dice.
+02468
+ 0 10 20 30 40 50 60 70 80RoundsTime
+(sec.) (a)
+0306090120
+ 0 1 2 3 4 5 6 7 8 9Angle (deg.)Time
+(min.)Open
+Close
+(b)Figure 35: Detecting (a) usage of
+roll tissue and (b) open/close sta-
+tus of the door.
+go through the door. (ii)Ad-hoc installation. Tagyro can instantly
+enable orientation tracking by attaching multiple tags to the target
+object, which does not involve heavy mechanical installation or al-
+tering the physical structure. (iii)Maintenance free. The batteryless
+RFID tags are continuously power by the RFID reader without the
+need for battery replacement.
+7. DISCUSSION
+Multipath Effects: Besides RFID tags, signals from the RFID
+reader may be reﬂected by other objects in the environment. Re-
+ﬂections from stationary objects do not disturb the RFID phase
+measurement [13], and hence will not affect Tagyro’s performance.
+RFID reader estimates phase based on the modulated signals back-
+scattered from the tag. Any signals reﬂected from static objects
+are unmodulated and are already removed by the reader’s built-in
+high-pass ﬁlter.
+Yet, multipath reﬂections from moving objects, e.g., human walk-
+ing, may cause some adversary effects. In such cases, the reﬂected
+signals are dynamic, and thus may not be effectively removed by
+the high-pass ﬁlter. Fortunately, this adversary impact can be effec-
+tively alleviated by increasing the tag number in the array (Figure
+29).
+Coupling Effect Caused by Surrounding Metallic Objects:
+The coupling effect occurs not only among RFID tags, but also
+between the tag and surrounding metallic materials in the environ-
+ment, which we call static anddynamic coupling, respectively. The
+ALS algorithm is designed primarily to address the static coupling
+issue. The dynamic coupling cannot be effectively captured, be-
+cause the metallic object does not rotate along with the tag array –
+when the tag array rotates, their coupling coefﬁcients would change
+arbitrarily. Addressing the impact of dynamic coupling effect from
+surrounding metallic objects on the RFID phase measurement is
+still an open challenge. Fortunately, our observation (Figure 12)
+demonstrates that as long as the metallic object is not very close
+to the tag, e.g., >the half wavelength (
+216cm ), the coupling
+effect between them will almost vanish and will not affect the ac-
+curacy of phase measurement.
+Size of Tag Array: Given the relatively large size of commodity
+UHF RFID tags, it may not always be feasible to attach multiple
+tags to an object of small size. The size of tag array is primarily
+limited by the physical constraint, where the antenna size and sep-
+aration have to match the wavelength of wireless frequency. As the
+RFID technology matures at higher frequency, e.g., 60 GHz, the
+size of tag array can be signiﬁcantly reduced [37, 38], much like a
+ﬁnger nail. A smaller tag size will extends Tagyro towards more
+ubiquitous Internet-of-Things applications.
+Tracking Orientation of Multiple Objects: When multiple ob-
+jects exist in the same vicinity, Tagyro can track them indepen-
+dently given the tag IDs associated with each object. This is a
+huge advantage over vision-based approaches [3–7] which are eas-
+65ily confused by background and occlusion effects. Yet, the per-
+formance of Tagyro may be compromised due to the limited total
+query speed of the RFID reader, where the speed for each tag is
+reduced.
+8. RELATED WORK
+Our work is most closely related with prior art in the following
+domains:
+Sensor-equipped device. The most straightforward approach to
+sense orientation is to use active sensors, e.g., magnetometer, gy-
+roscope or accelerometer. Acube [15] combines these active sen-
+sors to estimate the orientation of a smartphone that is used for
+indoor localization and tracking. In industry setting [39], orienta-
+tion sensors are deployed to guide robot arms to pick up objects.
+Active sensors are accurate but power hungry, and need frequent
+maintenance (e.g., battery replacement or charging). RFID tags are
+batteryless and ideal for objects that cannot afford frequent main-
+tenance. RFID-Die [40] and WISP [41] use customized RFID tags
+with embedded motion sensors that harvest energy from RF signals.
+The power draw of sensors signiﬁcantly reduces the tags’ working
+range (down to 8 cm [40]) and reduces the duty cycle (e.g., one
+sensing for every two-second charging [42]). In contrast, Tagyro
+uses COTS passive RFID tags, with a typical working range of
+around 3 m and sampling rate of 37.7 samples/second. Owing to
+low-cost of RFID tags (10 cents each [43]), Tagyro is readily usable
+in massive Internet-of-Things applications. In addition, mid-end
+smartphones with RFID readers are already available, which can
+bring Tagyro to home and in-situ usage. The Cricket Compass [44]
+tracks the orientation of a mobile device based on the distance dif-
+ference of arrival between multiple pairs of ultrasonic transceivers.
+Although the high-level principle share similarities, Tagyro’s RFID
+tag array tracking entails a unique set of challenges while bringing
+salient properties in terms of precision, cost, and energy efﬁciency.
+Image-based orientation detection. Detecting the orientation
+of object is a general problem in computer vision [3–7]. Hinter-
+stoisser et al. [3] proposed a template matching method to detect the
+tilt angle of objects in the image. Image-based approach is also used
+to detect human face, head and gaze orientation [45, 46]. Saxena et
+al.[4,36] and Shimizu et al. [7] applied a pattern matching method
+to estimate the 3D orientation of objects in the image, which can
+guide robotic arms’ grasping action. However, such image-based
+approaches only work in line-of-sight (LOS). They are very sensi-
+tive to lighting condition and fail even under partial occlusion by a
+paper box. On the other hand, Tagyro can accurately track object
+orientation even if the tags are occluded from the reader’s LOS.
+RFID tilt sensing. There has been preliminary work in RFID-
+based tilt sensing, which puts either the reader or tags on the object.
+Han et al. [47,48] used a site-survey approach to determine the po-
+sition and orientation of a target (e.g. robot and chair) in a 2D space.
+However, they need to install the reader on the target, and require a
+dense deployment of RFID tags to cover the ﬂoor of interest. RF-
+Compass [12] uses a 2D-plane partitioning method to navigate a
+robot to gradually converge towards an object’s direction, but can-
+not estimate the object’s instantaneous 3D orientation. Krigslund
+et al. [14, 49, 50] estimate the 1D orientation of an RFID tag by
+tracking the RSS ﬂuctuation based on the principle of antenna po-
+larity. Due to polarity mismatch, RSS decreases proportionally to
+the angular misalignment between the reader and the tag. However,
+the RSS is easily affected by distance and environment dynamics,
+and the polarity-based approach has 90ambiguity in orientation
+estimation. Tagyro represents the ﬁrst phase-based method to sense
+tag orientation without ambiguities, and in 3D space.
+RF-based localization. RFID tag localization has been exten-sively studied recently [8, 10, 47, 48, 51, 52]. The state-of-the-art
+techniques, e.g., Tagoram [8] and PinIt [52], can already locate the
+tag’s position at a cm-level or mm-level accuracy. On the other
+hand, estimating the orientation of RFID tag is a relatively new area
+that has not been well explored yet. The basic idea behind Tagyro’s
+tag array approach shares similar spirit with antenna-array based
+radio localization [53], which can track the relative angle between
+a multi-antenna receiver and an access point on the same 2D space.
+However, the unique properties of RFID, e.g., tag coupling and non-
+isotropic radiation, bring unprecedented challenges to Tagyro.
+One may think of applying them to estimate the object orienta-
+tion: by attaching two tags to different parts of the object, its ori-
+entation can be derived from the estimated locations of tags. How-
+ever, this approach has several limitations. First, existing schemes
+only address the 2D localization problem [47, 48, 51]. The 2D po-
+sition (on a plane) limits the orientation estimation to only 1 DoF.
+Second, most state-of-the-art localization schemes have 1020 cm
+errors [10]. They are unable to differentiate the position of two
+closely-placed tags, and thus cannot give precise orientation esti-
+mation. Although Tagoram [8] can estimate tag position at cm-level
+accuracy, it requires multiple readers that are precisely deployed at
+dedicated positions, which is not suitable for ad-hoc scenarios like
+smart home or mobile gaming. STPP [11] can estimate the rela-
+tive position for closely-separated tags, but it can only discriminate
+the left/right/up/down ordering. Furthermore, the non-ideal radia-
+tion of RFID signal (Sec. 4.2) invalidates the basic assumption that
+the phase changes linearly over distance, which requires us to re-
+think the effectiveness of existing phase-based RFID localization
+techniques [8, 11] when working in the 3D space.
+RFID radiation pattern. Existing electromagnetic research has
+studied the imperfection of RFID tag radiation pattern. Zhang et
+al.[54] used two dipole antennas in orthogonal directions to achieve
+full RSS coverage over 3D space. Tagyro adopts a similar idea
+to address the blind direction issue, which deploys two tag arrays
+in perpendicular directions (Sec. 4.2). Yet, Tagyro addresses the
+more critical problem of polarity-induced phase-shifting, through
+adaptive array selection and polarity alignment. Bolotnyy et al.
+[55] studied the tag readability issue caused by coupling effect in
+a multi-tag RFID system. To our knowledge, Tagyro is the ﬁrst to
+evaluate the impact of coupling effect on the phase of RFID tag
+array, and to counteract the effect by using the layout sensing tech-
+nique.
+9. CONCLUSION
+In this paper, we propose an RFID-based system to track the ori-
+entation of a batteryless object. By forming an array using multiple
+tags, Tagyro exploits their phase difference of arrival to ﬁnd out
+the object orientation. Novel processing algorithms are proposed
+to address challenging issues such as coupling effect, which are
+raised in the tag-array RFID system. Tagyro is built upon COTS
+RFID reader and tags. We conduct system-level experiments and
+two case studies, which show that Tagyro can achieve high accu-
+racy in orientation tracking. Tagyro represents the ﬁrst study of an
+RFID-based 3D orientation tracking system, which can be applied
+to many practical scenarios including but not limit to smart home
+and mobile gaming.
+Acknowledgements
+We appreciate the insightful feedback from the anonymous review-
+ers who helped improving this work. This project is supported in
+part by the NSF under Grant CNS-1506657, CNS-1518728, CNS-
+1343363, and CNS-1350039.
+6610. REFERENCES
+[1] H. Wang, M. Farid, S. Sen, M. Youssef, A. Elgohary, and
+R. R. Choudhury, “No Need to War-drive: Unsupervised
+Indoor Localization,” in Proceedings of ACM MobiSys, 2012.
+[2] S. Agrawal, I. Constandache, S. Gaonkar, R. Roy Choudhury,
+K. Caves, and F. DeRuyter, “Using Mobile Phones to Write
+in Air,” in Proc. of ACM MobiSys, 2011.
+[3] S. Hinterstoisser, V . Lepetit, S. Ilic, P. Fua, and N. Navab,
+“Dominant Orientation Templates for Real-Time Detection
+of Texture-less Objects,” 2010.
+[4] A. Saxena, J. Driemeyer, and A. Y . Ng, “Learning 3-D Object
+Orientation From Images,” in Robotics and Automation,
+2009. ICRA’09. IEEE International Conference on, 2009.
+[5] A. Collet, D. Berenson, S. S. Srinivasa, and D. Ferguson,
+“Object Recognition and Full Pose Registration from a Single
+Image for Robotic Manipulation,” in IEEE International
+Conference on Robotics and Automation (ICRA), 2009.
+[6] W. Wan, F. Lu, Z. Wu, and K. Harada, “Teaching Robots to
+Do Object Assembly Using Multi-Modal 3D Vision,” arXiv
+preprint arXiv:1601.06473, 2016.
+[7] S. Shimizu, T. Nagahashi, and H. Fujiyoshi, “Robust and
+Accurate Detection of Object Orientation and ID Without
+Color Segmentation,” in RoboCup 2005: Robot Soccer World
+Cup IX, 2005.
+[8] L. Yang, Y . Chen, X.-Y . Li, C. Xiao, M. Li, and Y . Liu,
+“Tagoram: Real-Time Tracking of Mobile RFID Tags to
+High Precision Using COTS Devices,” in ACM MobiCom,
+2014.
+[9] T. Liu, L. Yang, Q. Lin, Y . Guo, and Y . Liu, “Anchor-Free
+Backscatter Positioning for RFID Tags With High
+Accuracy,” in Proc. of IEEE INFOCOM, 2014.
+[10] J. Wang, D. Vasisht, and D. Katabi, “Rf-iDraw: Virtual
+Touch Screen in the Air Using RF Signals,” in ACM
+SIGCOMM Computer Communication Review, 2014.
+[11] L. Shangguan, Z. Yang, A. X. Liu, Z. Zhou, and Y . Liu,
+“Relative Localization of RFID Tags Using Spatial-Temporal
+Phase Proﬁling,” in Proc. of USENIX NSDI, 2015.
+[12] J. Wang, F. Adib, R. Knepper, D. Katabi, and D. Rus,
+“RF-Compass: Robot Object Manipulation Using RFIDs,” in
+Proc. of ACM MobiCom, 2013.
+[13] P. V . Nikitin, R. Martinez, S. Ramamurthy, H. Leland,
+G. Spiess, and K. Rao, “Phase Based Spatial Identiﬁcation of
+UHF RFID Tags,” in RFID, 2010 IEEE International
+Conference on, 2010.
+[14] R. Krigslund, P. Popovski, G. F. Pedersen, and K. Bank,
+“Potential of RFID Systems to Detect Object Orientation,” in
+IEEE International Conference on Communications (ICC),
+2011.
+[15] P. Zhou, M. Li, and G. Shen, “Use It Free: Instantly Knowing
+Your Phone Attitude,” in Proc. of ACM MobiCom, 2014.
+[16] “Low Level User Data Support,” Speedway Revolution
+Reader Application Note, 2013.
+[17] M. Roberti, “EPCglobal Ratiﬁes Gen 2 Standard,” RFID
+Journal, 2004.
+[18] “Impinj RFID Reader.” [Online]. Available:
+http://www.impinj.com/products/readers/
+[19] L. Shangguan, Z. Yang, L. Alex, and Y . Liu, “Relative
+Localization of RFID Tags Using Spatial-Temporal Phase
+Proﬁling,” in USENIX NSDI, 2015.
+[20] T. Liu, L. Yang, Q. Lin, Y . Guo, and Y . Liu, “Anchor-Free
+Backscatter Positioning for RFID Tags With HighAccuracy,” in Proc. of IEEE INFOCOM, 2014.
+[21] H. Lehpamer, RFID Design Principles. Artech House,
+2012.
+[22] H. S. Lui, “Mutual Coupling in Antenna Arrays,” 2010.
+[23] H. Hui and S. Lu, “Receiving Mutual Impedance between
+Two Parallel Dipole Antennas,” in Proceedings of the IEEE
+TENCON, 2006.
+[24] K. Abbas, “A New Recurrent Approach for Phase
+Unwrapping,” International Journal of Applied Science and
+Engineering, 2005.
+[25] I. Borg and P. J. Groenen, Modern Multidimensional Scaling:
+Theory and Applications. Springer Science & Business
+Media, 2005.
+[26] T. Yang, J. Liu, L. McMillan, and W. Wang, “A Fast
+Approximation to Multidimensional Scaling,” in IEEE
+workshop on Computation Intensive Methods for Computer
+Vision, 2006.
+[27] M. Buettner and D. Wetherall, “A Gen 2 RFID Monitor
+Based on the USRP,” ACM SIGCOMM Computer
+Communication Review, 2010.
+[28] “Patch Antenna (Circular) A0003-02,”
+http://www.atlasrﬁdstore.com/invengo-xc-1003-uhf-rﬁd-
+mobile-phone,
+2015.
+[29] “Mini RFID Panel Antenna S9025P,”
+http://www.es.co.th/Schemetic/PDF/S9025PR-
+S9025PL.PDF,
+2009.
+[30] “ALN-9740 Squiggle Inlay,”
+http://www.alientechnology.com/wp-content/uploads/Alien-
+Technology-Higgs-4-ALN-9740-Squiggle.pdf.
+[31] “Dogbone - Smartrac,” https://www.smartrac-
+group.com/ﬁles/content/Products_Services/PDF/
+DogBone_M4.pdf.
+[32] “ShortDipole - Smartrac,” https://www.smartrac-
+group.com/ﬁles/content/Products_Services/PDF/
+ShortDipole_M5.pdf.
+[33] “RFID Tag Type Options,”
+http://www.idtechex.com/research/articles/rﬁd_tag_type
+_options_00000041.asp.
+[34] “Axis360 Motion Control System,”
+http://cinetics.com/two-axis360/.
+[35] R. Want, “An Introduction to RFID Technology,” Pervasive
+Computing, IEEE, 2006.
+[36] A. Saxena, J. Driemeyer, and A. Y . Ng, “Robotic Grasping of
+Novel Objects Using Vision,” The International Journal of
+Robotics Research, 2008.
+[37] S. Pellerano, J. Alvarado, and Y . Palaskas, “A mm-wave
+power-harvesting rﬁd tag in 90 nm cmos,” IEEE Journal of
+Solid-State Circuits, 2010.
+[38] P. Pursula, T. Karttaavi, M. Kantanen, A. Lamminen,
+J. Holmberg, M. Lahdes, I. Marttila, M. Lahti, A. Luukanen,
+and T. Vaha-Heikkila, “60-ghz millimeter-wave identiﬁcation
+reader on 90-nm cmos and ltcc,” IEEE Transactions on
+Microwave Theory and Techniques, 2011.
+[39] G. Fortino and P. Trunﬁo, “Internet of Things Based on
+Smart Objects,” Fortino & P . Trunﬁo, eds., Cham: Springer
+International Publishing, 2014.
+[40] L. Büthe, M. Hardegger, P. Brülisauer, and G. Tröster,
+“RFID-Die: Battery-Free Orientation Sensing Using an
+Array of Passive Tilt Switches,” in Proceedings of ACM
+67International Joint Conference on Pervasive and Ubiquitous
+Computing: Adjunct Publication, 2014.
+[41] D. J. Yeager, A. P. Sample, J. R. Smith, and J. R. Smith,
+“Wisp: A Passively Powered UHF RFID Tag With Sensing
+and Computation,” RFID Handbook: Applications,
+Technology, Security, and Privacy, 2008.
+[42] J. R. Smith, A. P. Sample, P. S. Powledge, S. Roy, and
+A. Mamishev, “A Wirelessly-Powered Platform for Sensing
+and Computation,” in ACM UbiComp, 2006.
+[43] X. Zhu, S. K. Mukhopadhyay, and H. Kurata, “A Review of
+RFID Technology and Its Managerial Applications in
+Different Industries,” Journal of Engineering and Technology
+Management, 2012.
+[44] N. B. Priyantha, A. K. Miu, H. Balakrishnan, and S. Teller,
+“The Cricket Compass for Context-Aware Mobile
+Applications,” in Proc. of ACM MobiCom, 2001.
+[45] C.-C. Chang and H. Aghajan, “Collaborative Face
+Orientation Detection in Wireless Image Sensor Networks,”
+inProceedings of ACM SenSys Workshop on Distributed
+Smart Cameras, 2006.
+[46] J. Y . Kaminski, J. Teicher, and A. Shavit, “Head Orientation
+and Gaze Detection from a Single Image,” in International
+conference of computer vision theory and applications, 2006.
+[47] S. Han, H. Lim, and J. Lee, “An Efﬁcient Localization
+Scheme for a Differential-Driving Mobile Robot Based on
+RFID System,” Industrial Electronics, IEEE Transactions on,
+2007.
+[48] A. A. N. Shirehjini, A. Yassine, and S. Shirmohammadi, “An
+RFID-Based Position and Orientation Measurement Systemfor Mobile Objects in Intelligent Environments,”
+Instrumentation and Measurement, IEEE Transactions on,
+2012.
+[49] R. Krigslund, S. Dosen, P. Popovski, J. L. Dideriksen, G. F.
+Pedersen, and D. Farina, “A novel technology for motion
+capture using passive uhf rﬁd tags,” IEEE Transactions on
+Biomedical Engineering, 2013.
+[50] G. Gupta, B. P. Singh, A. Bal, D. Kedia, and A. Harish,
+“Orientation detection using passive uhf rﬁd technology
+[education column],” IEEE Antennas and Propagation
+Magazine, 2014.
+[51] S. Hinske, “Determining the Position and Orientation of
+Multi-Tagged Objects Using RFID Technology,” in IEEE
+Pervasive Computing and Communications Workshops, 2007.
+[52] J. Wang and D. Katabi, “Dude, where’s my card?: RFID
+Positioning That Works With Multipath and Non-Line of
+Sight,” ACM SIGCOMM Computer Communication Review,
+2013.
+[53] J. Xiong and K. Jamieson, “ArrayTrack: A Fine-Grained
+Indoor Location System,” in Presented as part of the 10th
+USENIX Symposium on Networked Systems Design and
+Implementation (NSDI 13), 2013.
+[54] Y . Zhang, B. Wang, H. Zhang, and W. Kong, “True 3D
+Antenna for UHF RFID Application,” in 6th Asia Symposium
+on Quality Electronic Design (ASQED), 2015.
+[55] L. Bolotnyy, S. Krize, and G. Robins, “The Practicality of
+Multi-Tag RFID Systems,” in IWRT, 2007.
+68
