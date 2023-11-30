@@ -1,0 +1,1813 @@
+‘Unmochon’: A Tool to Combat Online Sexual Harassment over 
+Facebook Messenger 
+Sharifa Sultana 
+Cornell University, USA 
+ss3634@cornell .edu 
+Shaid Hasan 
+BUET, Bangladesh 
+hasan .s.eeebuet@gmail .com 
+Prianka Roy 
+University of Toronto, Canada 
+prianka .roy@mail .utoronto .ca 
+M Ashraful Amin 
+Independent University, Bangladesh 
+aminmdashraful@iub .edu .bd Mitrasree Deb 
+BUET, Bangladesh 
+mitrasree091@gmail .com 
+S.M. Raihanul Alam 
+BUET, Bangladesh 
+raihanul .hridoy100@gmail .com 
+Samira Fairuz Ahmed 
+Independent University, Bangladesh 
+1721380@iub .edu .bd 
+A.K.M. Najmul Islam 
+LUT University, Finland 
+najmul .islam@utu .f Ananya Bhattacharjee 
+University of Toronto, Canada 
+ananya@cs .toronto .edu 
+Trishna Chakraborty 
+BUET, Bangladesh 
+trishnachakraborty13@gmail .com 
+Aparna Moitra 
+University of Toronto, Canada 
+aparna .moitra@utoronto .ca 
+Syed Ishtiaque Ahmed 
+University of Toronto, Canada 
+ishtiaque@cs .toronto .edu 
+ABSTRACT 
+Women in the global south often seek justice to their online ha-
+rassment through unveiling the harassers and the screenshots of 
+their sent harassment texts and visual contents before the relevant 
+authorities. Nevertheless, such evidence is often challenged for 
+their authenticity. Our survey (n=91) and interview (n=43) with 
+Bangladeshi online gender harassment victims revealed the depth 
+of the problem, and we set design goals to collect evidence from 
+Facebook Messenger with ensured authenticity. Building on the 
+‘shame-based model’ of gender justice [12], we designed ‘Unmo-
+chon’, a tool that captures authentic evidence and shares with 
+victims’ intended group. Our user-study (n=48) revealed that dimin-
+ishing authenticity problem may still leave the victim and online 
+gender justice entangled with mob-sentiment, hegemonic legal con-
+sciousness, and several privacy aspects. Our fndings open up a 
+new discussion on how HCI-design should address online gender 
+justice in such a complex social setting. 
+CCS CONCEPTS 
+• Human-centered computing → Web-based interaction ; So-
+cial networking sites. 
+KEYWORDS 
+Online Sexual Harassment, Social Media, Facebook, Messenger, Sol-
+idarity, Feminism, Bangladesh, Unmochon, Transformative Justice, 
+Shame, Image Authenticity 
+Permission to make digital or hard copies of all or part of this work for personal or 
+classroom use is granted without fee provided that copies are not made or distributed 
+for proft or commercial advantage and that copies bear this notice and the full citation 
+on the frst page. Copyrights for components of this work owned by others than the 
+author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or 
+republish, to post on servers or to redistribute to lists, requires prior specifc permission 
+and/or a fee. Request permissions from permissions@acm.org. 
+CHI ’21, May 8–13, 2021, Yokohama, Japan 
+© 2021 Copyright held by the owner/author(s). Publication rights licensed to ACM. 
+ACM ISBN 978-1-4503-8096-6/21/05...$15.00 
+https://doi .org/10 .1145/3411764 .3445154 ACM Reference Format: 
+Sharifa Sultana, Mitrasree Deb, Ananya Bhattacharjee, Shaid Hasan, S.M. 
+Raihanul Alam, Trishna Chakraborty, Prianka Roy, Samira Fairuz Ahmed, 
+Aparna Moitra, M Ashraful Amin, A.K.M. Najmul Islam, and Syed Ishtiaque 
+Ahmed. 2021. ‘Unmochon’ : A Tool to Combat Online Sexual Harassment 
+over Facebook Messenger. In CHI Conference on Human Factors in Computing 
+Systems (CHI ’21), May 8–13, 2021, Yokohama, Japan. ACM, New York, NY, 
+USA, 18 pages. https://doi .org/10 .1145/3411764 .3445154 
+1 INTRODUCTION 
+Women’s harassment is one of the age-old problems in the history of 
+humankind. Many international reports explain how prevalent this 
+problem is from the enlightened western world to the low-resourced 
+Global South. For example, the United Nation Women reported that 
+Up to 70% of women across the world face physical and/or sexual 
+violence in their lifetime [8] and National Intimate Partner and 
+Sexual Violence Survey (NIPSV) reported in 2018 that about 1 out 
+of every 5 women (21.3%) in the United States experienced at least 
+one attempted or completed rape [94]. The picture in the Global 
+South is also equally disturbing, if not worse, as 66% of women 
+reported experiencing sexual harassment between two and fve 
+times in Delhi, India [8]. 
+Today, with the widespread advancement of information technol-
+ogy, this problem has taken over the cyber-spaces. Thus, online gen-
+der harassment is a widely discussed agenda across the world. Prior 
+studies have shown that female social accounts experience a signif-
+icantly larger number of harassment incidents than male accounts 
+[9, 20, 28, 73] and thus, these studies have concluded that women 
+are more vulnerable to online gender harassment. The situation is 
+more difcult in patriarchal societies like Bangladesh, as reports 
+show that more than 70% percent of the complaints fled at the gov-
+ernment’s Information and Communication Technology Division’s 
+Cyber Help Desk in 2017 was about women’s online harassment 
+[54]. Such harassment incidents often stress the victims and their 
+families out and lead to other efects like exclusion, humiliation, 
+and public resentment, especially when they live in conservativeCHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+and patriarchal societies [58]. However, harassers often remain be-
+yond the scope of law-enforcement as Mishuk Chakma, Additional 
+Deputy Commissioner of the Cyber Security and Crime Division 
+of Dhaka Metropolitan Police (DMP), commented, "However, most 
+(female) victims of online harassment do not go to the police station" 
+[25]. 
+The very tiny portion of the female victims of online gender 
+harassment who breaks the silence and seeks help often prefers to 
+expose the harassers on social media with screenshots of their chats 
+as supporting evidence and seek justice [51, 56]. Nevertheless, in 
+most cases, the reports and the press releases by concerned author-
+ities show that the many of the victims’ attempts to seek help and 
+justice go in vain with the argument that the advancement of tech-
+nology now allows manipulation of screenshots. Thus, ofenders 
+often receive the beneft of doubts and go away [51, 56]. However, 
+the insights on the level of extremeness of online harassment which 
+push the female victims to take such steps and what still blocks 
+them from seeking out help are still rare in HCI literature. 
+We address this gap in the literature through a two-phase study. 
+In the frst phase, we conducted a survey with 91 female Face-
+book users to understand online gender harassment, and further 
+interviewed another 43 Facebook users for a deeper understand-
+ing of their usual strategies to combat such harassment. Previous 
+research on sexual harassment in Bangladesh, India, and Pakistan 
+[2–5, 59, 76, 80, 100, 114]; the researchers’ lived experience; and 
+similar studies in other places in the world motivated us to seek 
+answers to the following research questions in this phase: 
+RQ1: When and why do Bangladeshi women prefer 
+exposing their online harassers, and what factors are 
+signifcant while choosing possible online spaces for 
+such actions? 
+RQ2: How do the existing tools, platform policies, and 
+online environment often fail to assist them in this 
+regard? 
+RQ3: How do they address the problems when their 
+supporting evidence is challenged for authenticity? 
+How can we design better tools and technologies to 
+support online gender justice in this regard? 
+Our fndings from this frst phase show that their complaints 
+about harassment and supporting evidence are often challenged for 
+authenticity. Building on these, the second phase of the study aimed 
+at designing a tool that supports the women who seek help and 
+justice to their online harassment. We build on the shame-based 
+model of justice in this adversarial design [12, 27]. In this regard, 
+we prototyped an application for women to help them seek justice 
+to their online harassment. This paper introduces ‘Unmochon’, an 
+application that helps with authentication issues associated with 
+the screenshots of the chat history with the harasser that women 
+often share while seeking help and justice. In the second phase of 
+the study, we evaluated this application with 48 participants using 
+either interviews and focus group discussions, depending on their 
+availability and ease in the mode of participation. We introduced 
+this application to the participants, discussed the possible bene-
+fts this application would bring for them while fghting gender 
+harassment on Facebook Messenger, and asked them what kind 
+of challenges and troubles this application might generate for the users and other stakeholders. We found that women often prefer 
+hiding their identity as a victim, fearing that this might bring them 
+further victim-blaming and slut-shaming and might even engender 
+real-life security threats. Findings from the users’ feedback pointed 
+out that an end to the authenticity problem might still leave the 
+victim and online gender justice challenged by mob-sentiment, 
+hegemonic legal consciousness, and many other privacy concerns. 
+The participants also shared their worries that any misuse of such 
+technologies could lead to a counter-harassment for the accused 
+party and urged to include such concerns in the set of agendas 
+while designing feminist technologies. 
+Our work makes a four-fold contribution to feminist-human 
+computer interaction (feminist-HCI), social media studies, and infor-
+mation and communication technologies and development (ICTD). 
+First, our fndings show that many of the Bangladeshi female Face-
+book users seek mob justice and expose their harassers by posting 
+photos of their conversation online as evidence, while this evidence 
+is often challenged for authenticity. Second, drawing on our fnd-
+ings, we build a set of design assumptions that are practical and 
+appropriate for assisting such victims in seeking justice. Here, we 
+bring the model of shame-based justice to design [12]. Third, in 
+this regard, we prototype and evaluate Unmochon and report the 
+perception of victims and other stakeholders of such tools that sup-
+port online gender justice. Finally, we report the fndings from our 
+discussions with the participants and other stakeholders that un-
+fold diferent complicated issues entangled with cyber-harassment 
+and social justice and suggest feminist-HCI and ICTD possible de-
+sign directions for safer online experience for women in the Global 
+South. 
+2 RELATED WORK 
+In building our research question and making arguments based on 
+our fndings, we draw on the literature of three broader themes: 
+technologies supporting women’s safety, online movements for 
+gender justice, and literature of justice and gender harassment in 
+Bangladesh. In this section, we briefy discuss some of the existing 
+works built on these themes and situate our research question in 
+this regard. 
+2.1 Online Harassment, Gender, and Related 
+Technologies 
+Online harassment is a widely discussed agenda in HCI, social 
+media research, and gender studies. Researchers in these domains 
+have studied diferent forms of online harassment including cyber-
+bullying [7], cyber-stalking [66, 67], email-harassment [68], ha-
+rassment on messenger [31], and in online gaming [63]. A body 
+of work has showed that online harassment not only stresses the 
+users out but also may cause economic damage to the platform 
+when users choose to leave it or limit their activities [33, 66, 103]. 
+Even though most fo the online platforms and social media ofer 
+the users help to handle such cases, users often fnd those processes 
+slow, inconsistent, and dismissive [42, 105, 106]. 
+Researchers working in the intersection of social media, web 
+security, and HCI design have been engaging in developing machine 
+learning models to detect harassment for years [12, 19, 37, 61, 83, 
+111]. Some of these models have also integrated human to interveneUnmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+for further efectiveness of the tools [12, 19, 37, 83, 111]. However, 
+many of these models were often reported to be trained with a 
+biased mechanism and resulted in higher odds of deception and 
+misclassifcation [11, 48]. Along with all of the above-mentioned 
+concerns and limitations, the existing state-of-the-art tools and 
+mechanisms for fghting online harassment often fail to address 
+culturally contextual gendered needs in such cases of harassment, 
+including users’ vulnerability due to their gender identity and a 
+balance between their needs and expectation and their power and 
+agency on social media [12, 33, 91, 96, 103]. 
+A group of researchers has recently shown that users’ percep-
+tion of online safety is subjective and dependent on their digital 
+privacy and security and the values upheld by their community 
+[85, 88]. Some researchers also engaged in understanding the forms 
+of harassment, its gendered angles, sealioning, and other relevant 
+abuse on social media and called for designing more options in the 
+platforms than blocking harassers and deactivating own IDs in this 
+regard [12, 13, 88, 103]. Jhaver et al. studied Twitter users’ blocklists 
+and reported that users might not feel entirely protected by block-
+ing the harassers, while the blocked users often felt that they were 
+unfairly treated [55]. However, the design, features, and afordances 
+of social media, including Facebook, vary across regions (see Face-
+book lite and messenger lite for the Global South [89]). Thus, users’ 
+social media behavior is also diverse and culture-specifc [ 71, 113], 
+which may infuence their ways of handling online harassment. 
+However, addressing gender harassment using technology is 
+more challenging in low-resourced countries in the Global South 
+because many of the users live in strictly patriarchal societies and 
+raising voice against men is often challenging and usually dis-
+couraged through victim-blaming and slut-shaming [3, 60, 98, 99]. 
+Still, a body of work addressed gender harassment in the physical 
+space through design, including Protibadi, ProtibadiNext, Safestreet, 
+and HearMe in Bangladesh [ 2–5], Harassmap in Egypt [ 115], Safe 
+Mathare in Kenya [ 41], CrimeID in Indonesia [ 110], and Safetipin, 
+Samrisa, and Panic-button in India [60, 95, 102]. However, only a 
+few HCI4D works have addressed gender harassment on social 
+media, messenger services, and cyberspaces in the context of the 
+Global South [59, 76, 100, 112, 114]. Wyche reported how Kenyan 
+women on cyber-spaces are more vulnerable to online harassment 
+than men [112]. Kumar et al. reported how stalkers and strangers 
+on Facebook demotivated Indian women’s social media use [59]. 
+Mustafa et al. reported how Pakistani women formed women-only 
+Facebook groups as a safer and judgement-free space to discuss stig-
+matized topics [114]. Recently, Nova et al.’s work on understanding 
+the pattern of sexual harassment on social media in Bangladesh [80] 
+revealed how people close to women harass them anonymously 
+using social media. However, none of these works involves any 
+preventive design interventions to stop such online harassment or 
+support the victims seeking gender justice. 
+2.2 Online Gender Movements and Protests 
+Throughout history, online gender movements often sought sol-
+idarity while protesting an idea of injustice and invited others 
+who shared similar sentiments to join. For example, two of the 
+signifcant Muslim feminist online movements, #PinkHijabday, and #MuslimahPride took place in the US and Germany basing on ideo-
+logical conficts [87, 107]. Black feminist agendas hold a signifcant 
+part of online movements when it comes to protesting against gen-
+dered and racial injustice. For example, #SayHerName started in 
+2015 to tell the story of violence against black women while cir-
+cumventing traditional media barriers [109]. It started with the 
+idea of making the sexual assaults and deaths of black transgender 
+women noticeable and urging justice for them. Similarly, #JadaPose 
+and #JusticeforLiz are widely known for seeking justice for black 
+rape-victims [47, 108]. These movements spoke for black women’s 
+historic racist oppression and pioneered many other online gender 
+justice movements by marginalized communities. 
+Arguably the most prominent online movement broke the inter-
+net in October 2017, in which women across the world used the 
+hashtag #MeToo (or some variants of it) and publicly shared their 
+untold stories of being sexually harassed [92]. Founded in 2006 by 
+Tarana Burke, a black woman activist from New York [16, 17, 92], 
+these events followed Hollywood actress Alyssa Milano’s call on 
+Twitter: “If all the women who have been sexually harassed or as-
+saulted wrote ‘Me too’ as a status, we might give people a sense of 
+the magnitude of the problem" on October 15, 2017 [39]. This call 
+for sharing harassment experiences with #MeToo hashtag followed 
+Milano’s own story of being sexually abused [74], and millions 
+of women joined this movement. Some researchers see #MeToo 
+as a descendent of #MyHarveyWeinstein, #YouOkSis, and #Sur-
+vivorPrivilege movements [44, 76] and argue that it only gained 
+prominence when several Hollywood female celebrities came out 
+with their stories of sexual harassment [90]. 
+When #MeToo reached the Indian subcontinent, many women 
+fooded Twitter and other social media platforms with the stories 
+of their sexual harassment [45, 65, 76]. Cohering to the movement, 
+Sarkar, a Dalit Queer, prepared a list of harassers in Indian Academia 
+[35]. In this regard, Sarkar found that the victims did not provide 
+any context while reporting their harassment incidents, and only 
+a few academicians on the list were "proved" guilty [23, 90]. Also, 
+showbiz celebrities exposed their harassment stories declaring their 
+solidarity [24, 70]. While this movement successfully triggered the 
+academia, industry, and showbiz, the harassment of many women 
+from other professions and social status remained beyond its scope, 
+as it happened in 2012 #SlutWalk movement in India [75]. Reports 
+showed that #MeToo in Bangladesh was also less successful than 
+expected because of cultural diferences, lack of hope, and a lack-
+ing reliance on alternatives [45, 76]. However, not all the online 
+movements stay unsuccessful in the Indian subcontinent. For ex-
+ample, protest against increased tax on female hygiene products 
+[#LahukaLagaan, see [29]] is known to be one of the biggest women-
+led Twitter campaigns to demand policy change in India. This body 
+of works provokes us to investigate which factors infuence such 
+protests to be successful and how to integrate these factors while 
+designing to support women’s online gender justice. 
+2.3 Model of Justice and Gender Harassment in 
+Bangladesh 
+Finally, we turn to the literature of justice relevant to our context 
+and research questions. Prior works on gender justice showed that 
+many female victims of street harassment are reluctant to report toCHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+police and law enforcement authorities since those may not have 
+been much helpful previously, and the investigations may lead to 
+the next level of inconvenience and invite another harassment to 
+themselves [52]. Also, reports show that women often feel that 
+their reports to law-enforcement authorities may also bring them 
+shame and blame for supposedly provocative behavior [52]. An-
+other study revealed that such incidents often leave great stress on 
+women, make them feel helpless, and further limit their mobility 
+[3]. Reportedly, women are generally uncomfortable engaging in 
+discussions regarding such harassment incidents because there are 
+some social backlashes of bringing attention to street harassment, 
+and disclosure of such incidents may also bring further shame and 
+embarrassment for the female victims [3]. It has been reported that 
+women often vent their frustration regarding such incidents on 
+social media and disclose their experience to friends, peers, or fol-
+lowers [6, 26]. Some tools and interventions were also developed to 
+support such agenda of gender justice sought online by disclosing 
+identifers, an image of the face of the harasser, for example, [26]. 
+The reports on seeking justice online in the context of 
+Bangladeshi gender harassment also cohere with this pattern, as 
+we see from the reports [25, 54]. In most cases, women were report-
+edly fed up with the response from the existing infrastructure of 
+legal and social support, and thus, they found alternatives by expos-
+ing and shaming the harassers in front of internet-citizens, often 
+termed as ‘Netizens’. This model of seeking justice aligns with the 
+idea of ‘Mob Justice’ . Mob Justice is defned as, “Ruling by a group 
+of mass" [43, 57]. Here the Netizens constitute the mob who decide 
+the conviction. Although a part of such justice models seems to be 
+unpredictable public opinion, mob justice has often been diferenti-
+ated as a model of justice when proper democratic participation is 
+missing in a justice system, and people feel in-secured and lose their 
+faith in legal systems [82]. This practice of Bangladeshi women 
+seeking mob justice also excites one of our research questions. 
+2.4 Authenticity of Image Contents 
+Now, we turn to some of the trendy reports on the authenticity of 
+image contents on social media, which is associated with our third 
+research question. With the advancement of technologies, users 
+today can aford their image processing tools in their mobile phones, 
+and thus, it is straightforward to edit and forge images and other 
+multiple media contents [36, 40]. A body of work has investigated 
+such cases where people faked images and caused trouble, including 
+communal riot [40, 81, 93, 104]. For example, in 2013, thousands 
+of miscreants gathered near the Buddhist colony in Coxsbazar in 
+Bangladesh and launched a riot after the spread of a rumor that 
+stated that one of the residents of the colony demeaned the Quran. 
+The miscreants claimed that they saw a screenshot of the Facebook 
+post taken from the suspected resident’s Facebook profle, and later 
+it was found that the image was forged [93]. Thus, image forgery 
+has become a crucial topic of research with the widespread progress 
+of social media. 
+Being concerned with the harmful efects of fake images, image 
+processing research has progressed with a rich body of literature 
+on this topic [49, 50, 62, 79]. This body of work has been developing 
+techniques to check authenticity and detect fake images on social 
+media for a long time [72, 101, 116]. However, most of them are developed and tested for efciency in lab environments, and many 
+of them require machines with a higher capacity to compute [72, 
+116]. However, many of the end-users of Bangladesh may not be 
+able to aford such machines’ cost, and thus they might not beneft 
+from them. Nevertheless, our goal of designing tools to ensure the 
+authenticity of screenshots leveraged the insights from this body 
+of work. 
+3 UNDERSTANDING ONLINE GENDER 
+HARASSMENT IN BANGLADESH 
+We conducted an anonymous survey and investigated the nature of 
+women’s experiences of online gender harassment, their existing 
+strategies for seeking help and justice for it, and how their networks 
+often react to that. Then, through interviews with 43 participants, 
+we grew a deeper understanding of various angles of online gender 
+harassment to fnd possible design avenues. This phase of work was 
+conducted between June to October 2019. This study was approved 
+by the ethics review committee of the authors’ institutions. 
+3.1 Methods 
+To get a broader understanding of Bangladeshi women’s harassment 
+experiences online and to develop ideas of their resistance and 
+associated challenges, we conducted both an online survey and 
+an interview study. The anonymous online survey allowed many 
+women to talk about this tabooed issue more comfortably. On the 
+other hand, the interviews allowed us to go deeper into some of 
+the stories coming from some women who felt comfortable to talk 
+about this issue with us. We describe both of our methods below 
+with further details. 
+3.1.1 Online Survey. We hosted our anonymous online survey on 
+Google Survey and circulated it online, including emails of the au-
+thors’ friends and Facebook groups, which the authors’ frequently 
+used. Participants took part in the online survey by clicking on 
+a link attached to the emails or the Facebook post. We requested 
+a response from Bangladeshi female users only. The request for 
+participants’ consent came along with the post and the email. In the 
+call for a response to the survey, we explained the purpose of the 
+survey and ensured the anonymity of the respondents. The partici-
+pants were allowed to proceed upon confrming at the beginning 
+that this was their frst time participating in the survey. 
+The language of the survey was Bengali. It asked the participants 
+about the type of harassment they faced on Facebook and other 
+social media platforms, their relationship with the harassers, if they 
+sought help from friends and law-enforcement authorities, and 
+other relevant information. Although most of the questions were 
+structured as check-boxes or multiple-choice questions, the survey 
+also included several optional open-ended text-boxes where partici-
+pants could freely express their opinions and concerns around their 
+harassment on Facebook messenger and other social platforms. 
+No personally identifable information (e.g., Name, Location. etc.) 
+was collected from the survey participants in this study. We did 
+not ofer any compensation for participation. It generally took the 
+participants around 10-15 minutes to complete the survey. The par-
+ticipants were allowed to leave the survey at any time without any 
+further consequences just by closing the survey window in theirUnmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+Details of Pre-Design Survey and Interview 
+Survey Total Number of Survey Responses: 91 
+Age Range (in Years) Occupation 
+18-25: 52 (57%) 
+26-35: 36 (40%) 
+36-45: 2 (2%) 
+46+: 1 (1%) Student: 53 (58%) 
+Public/private job-holder: 27 (29%) 
+Teacher: 5 (6%) 
+Others: 6 (7%) 
+Interview Total Number of Interview Participants: 43 (Female:37, Male:6) 
+Age Range (in Years) Occupation 
+18-25: 18 (42%) 
+26-35: 23 (53%) 
+36-45: 2 (5%) 
+46+: 0 (0%) Public/private job-holder: 27 (63%) 
+Student: 7 (16%) 
+Housewife: 3 (7%) 
+Others: 6 (14%) 
+Table 1: Demographic Characteristics of the Survey and Interview Participants 
+computer browser. A total of 91 participants completed the survey. 
+See table-1 for the age range and occupation of the participants. 
+3.1.2 Interviews. To grow a deeper understanding of diferent an-
+gles of online gender harassment, we conducted semi-structured 
+interviews with 37 female and six male Facebook users. Among 
+them, there were three male police ofcers who have been working 
+for several years on gender harassment on cyber-spaces and one 
+professional female lawyer who has been working on gender issues 
+for the past three years. We recruited the participants from our pro-
+fessional networks on Facebook through convenient sampling [53]. 
+We explained the purpose of the work to them while scheduling the 
+one-on-one interviews. Since gender harassment is a stigmatized 
+topic in Bengali culture, we let them choose between online and 
+in-person meetings. 
+We conducted the interviews in Bengali. We asked them about 
+their and their friends’ experiences of online harassment, especially 
+those which took place in comments and chats on social media, 
+what kind of actions they took, what kind of help they sought, and 
+other relevant information. We led to the deeper discussions only 
+when they confrmed us of their comfort in talking about those 
+incidents. The Police ofcers and the lawyer helped us with diferent 
+socio-cultural, ethical, and legal angles of online gender harassment 
+and existing support systems in the country for the victims. All the 
+interviews started with oral consent from the participants and were 
+audio-recorded in researchers’ mobile phones with the participants’ 
+permission. We also took notes during the interviews. Generally, 
+the interview sessions lasted around 30-40mins. 
+3.1.3 Data Collection and Analysis. All the survey responses were 
+initially recorded in the storage of the Google survey. The data 
+came anonymized and we retrieved them in comma-separated val-
+ues (CSV) format. Later we stored it in our secured storage space. 
+First, we translated the CSV from Bengali to English and cleaned 
+the data. We used the open-source statistical tools on python for 
+further analysis. We also evaluated the responses qualitatively to 
+understand the nuance of the online gender harassment faced by 
+Bangladeshi female social media users. The interviews generated a total of 11 hrs of audio recordings. We 
+transferred them to a secured computer owned by the researchers. 
+Then we translated and transcribed them. The transcriptions and 
+the interview notes generated 80 pages of documented data. We re-
+moved the identifers before conducting open coding and thematic 
+analysis on them [ 14, 97]. Four of the authors independently read 
+through the transcripts carefully and allowed the codes to develop. 
+Later they shared their codes with each other. Initially, a total of 
+thirty-fve codes spontaneously developed, for example, stigma, 
+victim-blaming, skepticism and mistrust, denial, slut-shaming, be-
+trayal, blackmail, threat, etc. After a few iterations, we clustered 
+the related codes into themes and drew our design assumptions on 
+them. 
+3.2 Unpacking Aspects of Gender Harassment 
+in Bangladesh 
+The fndings from the survey and the interviews inform us about 
+the harassers and the type of harassment often the victims face, 
+existing social and legal supports, how those are helpful to the 
+victims, and how the victims often resist their harassment. This 
+subsection highlights some of the key fndings. 
+3.2.1 The Harassers. We found that more than 70 of our survey 
+respondents (58%) were harassed by unknown people online [see fg-
+1(right)]. Eleven of the interview participants mentioned that they 
+tried visiting the Facebook profles of their unfamiliar harassers, 
+but their information was hidden or their Facebook profle used 
+"locked" feature. However, unknown online IDs may not always 
+be strangers as fve of the interview participants mentioned that 
+they had clues and evidence that their unknown harassers were 
+someone they knew. 
+Forty-fve of the survey respondents (36%) said that their ha-
+rassers were their classmates, friends, and relatives who did not 
+even bother hiding and harassed them upfront [see fg-1(right)]. A 
+survey participant expressed her frustration and intimidation as 
+her harasser was a law student at her university and hoped that this 
+survey might help her fnd ways. Another interview participant 
+mentioned that her husband lived overseas, and her sister-in-law 
+and sister-in-law’s husband are the temporary guardians of herCHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+Figure 1: (Left) Break down of the forms of harassment that female Facebook users face over the messenger inbox, (right) 
+Relationship between the harassers and female victims in context of harassment over Facebook Messenger 
+toddler and her. She explained how her sister-in-law’s husband 
+tried to take advantage of her and used Facebook messenger for 
+that, 
+“The man keeps texting me on Facebook asking to see 
+him outside alone, sends me vulgar images, and deletes 
+those from his end in a few minutes. I can not even block 
+him because then what will I tell my sister-in-law? They 
+live next door, and I often need to leave my baby to them 
+if I go outside. I can not ofend her, right?", (P28) 
+Another 13 of the interview participants shared similar stories of 
+their online harassment incidents and explained how challenging 
+it was since those came from family members or close relatives. 
+Five of them even refused to discuss the details of the incidents as 
+they tagged those as “private problem within the family" and felt 
+the burden not to disclose the matter for the sake of their families’ 
+privacy. 
+3.2.2 Types of Harassment. Our survey reports that online ha-
+rassers often send women vulgar text messages and inappropriate 
+multimedia contents, request nude photos of them, threaten them 
+of defaming using their photo-shopped pornographic images, and 
+sometimes threaten them to rape and murder [see fg-1(left) for 
+the breakdown]. We divide the patterns of harassment into three 
+major categories: forcing a romantic relationship, seeking revenge, 
+spreading hatred and threatening, and venting random frustration. 
+(a) Forcing for a Romantic Relationship. Thirty-
+nine of the survey respondents reported that they 
+were forced to go in a romantic relationship, date 
+them, or marry them [see fg-1(left)]. Fifteen women 
+informed us that they were repetitively asked them 
+out and marry them through texts and calls, and even 
+in comment sections of their and their friends’ posts 
+by the harassers. Eleven women also received a threat 
+of kidnap, force marriage, or rape. 
+(b) Imposing Conservative and Religious Senti-
+ments. Nineteen women mentioned that their ha-
+rassers, both online and in real life, used conserva-
+tive and religious sentiments to harass them. In many cases, the female victims are often cursed for numer-
+ous reasons, including their working or studying out-
+side and their attire as a justifcation for their harass-
+ment. Four of our interview participants were Hindu 
+females, and all of them mentioned that their online 
+harassers frequently used anti-Hindu mockery. 
+(c) Venting Out Random Frustration. Our survey 
+informs that seventeen participants’ harassers called 
+them over the phone or messenger call services and 
+initiated threatening and inappropriate conversations. 
+Twenty-one participants received threatening and 
+erotic texts, or vulgar messages, inappropriate au-
+dio clips, and multimedia contents from unknown 
+accounts. Eleven of our female interview participants 
+also mentioned that they had no idea why a random 
+person harassed them online and assumed that their 
+harassers were possibly frustrated and harassers prob-
+ably think women’s inboxes are the safest places for 
+venting out their random frustrations. 
+3.2.3 Existing Social and Legal Support . Our survey asked if 
+the participants ever considered seeking legal help. Nineteen of 
+them responded that they did not know the appropriate process. 
+Another ten mentioned in their survey responses that their par-
+ents are reluctant to get into legal issues. Some of the respondents 
+mentioned that their previous experiences with local law and law 
+enforcement agencies were not convincing, and thus they did not 
+trust them. One of the survey participants also suspected that in 
+her response that involving the law-enforcement agencies might 
+even bring her further trouble in day-to-day life security. When 
+we discussed this with three of our professionals, they explained 
+to us that many times it is difcult to fnd the harassers and bring 
+them under the law because they either use a fake Facebook ID, 
+or use cloned ID. Also, they mentioned the challenge with digital 
+evidence, 
+“Often we receive complaints about online gender ha-
+rassment, and they mention comments and private 
+chats. They also send us a copy of those in images, but 
+those images may not work as solid evidence. See, today,Unmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+many pieces of software would manipulate the images 
+of chats and comment on Facebook. One way to solve 
+this challenge is to come by our ofce, log in to their 
+Facebook from our computer, and show us the evidence 
+from there. They can also log in using a desktop and 
+the browser to enter Facebook and video record the chat 
+history along with the address bar on the top so that we 
+can see who exactly was the person they chat with. This 
+might minimize the scope of manipulation. ", (P41) 
+However, in many cases, these are troubles for many victims 
+because of their limited resources. Also, fling police cases takes a 
+long time to solve. Thus, many of our participants mentioned that 
+they would just pass complaining even if they know the process. 
+3.2.4 Resistance . During the sessions, we investigated how do 
+the participants address their online harassment and documented 
+their response. We cluster the ways in three themes: ignoring and 
+blocking, reporting to the authority and the platform, and expose 
+and shame. We briefy discuss them below: 
+(a) Ignore and Block. Twenty-seven of our interview partici-
+pants informed us that they think it is better to ignore the harasser 
+silently. Seventy-fve of our survey respondents and 23 of the inter-
+view participants mentioned that they had blocked their harassers 
+on social media. However, blocking does not end the story in many 
+cases, especially when the harassers are desperate and fearless. As 
+one of the interview participants explained, 
+“My friend was harassed by a man from her village. 
+He used to text her asking out and my friends never 
+agreed. He sent awful (sexually explicit content) things 
+and scared her to marry him. No matter how many 
+times she blocked his phone number on her phone and 
+his Facebook IDs, it did not help. He would start over 
+with new numbers and IDs. ", (P9) 
+Another participant gave an example of her friend, who was 
+harassed by her school teacher in class and over Imo a few years 
+back. The participant explained how blocking and ignoring was 
+not feasible for her. During this COVID-19 situation, we found a 
+similar story of four other participants whose online-class teach-
+ers harassed them, and they could not even block them as they 
+wanted to continue their education. Thus, our study found that 
+when women were harassed by their known people, they tried 
+blocking and ignoring, but those did not solve their problems for 
+many reasons. 
+(b) Report to Platforms and Rightful Authorities. Twenty-
+three of our interview respondents reported their unknown ha-
+rassers on the social media platform they used. Nevertheless, the 
+process of reporting to the social media platform often also sug-
+gested them to block that person, which was impractical in many 
+cases. Furthermore, online harassment within professional groups 
+was more challenging for women to handle. Our study collected 
+thirteen cases where women’s online harassment happened in their 
+work-spaces. Two of the victims complained to their higher ofcials, 
+and their cases were resolved with minimum punishment, as one 
+of the respondents shared her friend’s experience, 
+“Her teammate wanted to date her, and she ignored. He 
+cursed her in texts and emails. When she reported to her team-lead with copies of those emails, he ‘helped’ resolve 
+the case and said, ‘This is a minor problem, which may 
+happen when we work together. Let it go. ’ Their ofce 
+asked her to delete the copies of the emails from her end 
+since they wanted to keep the environment toxicity-free 
+and reputation fawless. ", (P12) 
+Thus, this participant explained her friend’s frustration as she 
+could not block or ignore him, neither her reporting to the rightful 
+authority worked, and she was requested to destroy the evidence. 
+However, reporting to rightful authority was difcult for the other 
+eleven participants since those harassers were either their seniors 
+at work or their favored ones. 
+3.2.5 Motivation to Expose and Shame . Our participants men-
+tioned several reasons that infuence online gender harassment 
+victims to expose their harassers online. These reasons include: i) 
+many of the victims fnd justice in shaming the harassers in public, 
+ii) women want to warn others to be aware of the harassers, iii) ex-
+posing the harassers online help them prove the case of harassment, 
+and iv) in many cases, exposing helps to push the formal reporting 
+to the rightful authorities. We discuss these reasons below. 
+(a) Justice in Shaming. Sometimes women facing harassment 
+feel that exposing their harassers should be a possible response 
+while seeking gender justice. Twenty-one of the interview partici-
+pants mentioned that they think shaming is the way to prevail when 
+it is challenging to bring the harassers under justice through social, 
+professional, and legal systems. One of the participants who lived 
+in a small town shared a story of a school teacher who harassed 
+her and many other girls over messengers. 
+“He picked the under-performing girls, sent them porn 
+images, and forced the conversation. If someone refused, 
+then he would complain to her parents that she is in-
+consistent with studies. Some girls fnally exposed his 
+actions. Now he is known as a predator in the town; he 
+has lost most of his private tuition. Now, he should be 
+shamed in public. ", (P37) 
+Thus, 15 interview participants mentioned that they have con-
+sidered exposing or have exposed their harasser by publishing the 
+harassment stories and a copy of their conversations, if available, 
+in public. The victims believed that this would impact harassers’ 
+social and professional life, which is the punishment they deserve. 
+(b) Blowing the Whistle to Warn Others. 9 of the interview 
+participants who went to the same university mentioned a similar 
+story of a harasser at the university who harassed many female 
+students in their Facebook inbox and later got exposed to a Facebook 
+group related to that university. One of the participants explained 
+the story to us, 
+“My roommate’s harassers harassed a few more girls we 
+knew. However, she never reported his as she was afraid 
+that he might get vindictive. Meanwhile, his harassment 
+stories started coming out in (name of the group). My 
+friend and I convinced a male friend to share screenshots 
+from our side to show more victims of this harasser. And 
+we wanted to tell the other female students that they 
+should be aware of this person. ", (P29)CHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+Thus, these female participants mentioned that they did not 
+see prevailing justice only through punishment or shaming, but 
+through fnding a way that no person becomes a victim of the same 
+thing again. They also explained that since society is patriarchal 
+and men are considered superior here, it is an injustice to a girl not 
+to inform her about the predators around them. 
+(c) Releasing the Burden of Proof. Thirteen of our participants 
+pointed out that often they were asked to submit proofs whenever 
+they raised their voice against their harassers. In many cases, their 
+cases are dismissed because they do not save those or post those. 
+One of the participants was involved in organizing an event with 
+many senior alumni at her school, and one of them harassed her 
+online. He kept asking her to spend some ‘quality time’ as he termed 
+that way. When she raised her voice against it, she was shut because 
+of a lack of proof, as she explained, 
+“He repetitively sent strange texts using secret message 
+mode (on Facebook Messenger). Once the celebration 
+was over, I posted the story on the school alumni group 
+with a copy of our chat a few seconds ago. However, his 
+friends asked me where is the proof that he ridiculed 
+me consistently and why am I saying it now... I wish I 
+saved the previous texts as well. ", (P23) 
+The participant further explained that how the friends of that 
+harasser started dogpiling. Another 5 participants also shared a 
+similar pattern of such experiences when people asked for proofs 
+even for repetitive harassment incidents. 
+(d) Exposing is Reporting. As we showed that sometimes for-
+mally reporting to the concerned authorities failed and dismissed, 
+organizing mini-movements on social media against the harassers 
+might help establish gender justice. For example, here is a story 
+that one of the interview participants shared. A renowned profes-
+sor in their department was accused of online gender harassment. 
+Initially, some of his students and colleagues denied accepting that 
+because of his skyrocketing reputation. We quote one of the inter-
+view participants, 
+“When the frst girl raised her voice on Facebook, they 
+challenged her by asking, “Did he really harass you in 
+the chat?". Then she gave screenshots, and they said 
+she made it up. Then gradually, more women came out, 
+some from other universities and even school kids who 
+got connected to him through a competition. Some girls 
+claimed that they formally reported at the university, 
+but their cases were dismissed as he is a star profes-
+sor. Finally, when he lost his reputation, the university 
+stepped in and fred him. ", (P20) 
+Our participants mentioned that sometimes it is difcult to start 
+a conversation on harassment due to fear of further victim-blaming 
+and slut-shamming. Thus, 17 women mentioned that while report-
+ing these to anyone outside their friends, women should either use 
+a fake ID - -possibly as male one – to hide behind it and avoid 
+victim-blaming and slut-shaming, or request a male friend to speak 
+for them for more credibility. But even then, they are frequently 
+challenged for proving the authenticity of the evidence that they 
+present. All of our interview participants and 29 online survey 
+participants mentioned that either they faced this challenge of au-
+thentication or they did not complain to avoid such challenges. They all highlighted this as an important obstacle toward getting 
+gender justice for online harassment. 
+3.3 Summary and What is Missing 
+The frst phase of the study reported three major aspects of on-
+line harassment in Bangladesh. First, we found that women are 
+often victim-blamed and slut-shamed for the harassment they suf-
+fer from. Therefore, they generally prefer to keep the harassment 
+incidents secret. Sometimes, they share these stories with their 
+friends and solicit possible solutions. Sometimes, they also try to lo-
+cally solve this issue while hiding their identity. Second, those who 
+choose to break the silence, respond to the harassment by exposing 
+the harasser before the public with evidence of the history of the 
+conversation, as getting gender justice to their immediate social 
+connections often seems improbable. Thus, they show solidarity 
+to other victims if harassed by the similar type of harassers. Third, 
+the victims of such harassment cases often face backlash from the 
+people they seek support from as those people often deny to believe 
+the harassment stories. In such cases, even if the victims present the 
+screenshots, often those people are skeptical about the authenticity 
+of the screenshots, and they tend to reject the complaint without 
+taking a deeper look into it. 
+Among all the challenges regarding online gender harassment 
+in Bangladesh, we pick evidence-authentication problem for design. 
+We did not prioritize this objective over the other design needs, 
+but to complement them. The professionals working for police in-
+formed us that confrming the authenticity of digital evidence of 
+harassment is challenging and the forensic procedure is also com-
+plicated. Still, they try to work it out by either in-person evidence 
+collection or videos of chat where they get to see the harassers’ ID. 
+However, this complicated process further discourages the victims 
+from seeking legal help. Today, this part of the design of social 
+media is poor. Widely used social media platforms in Bangladesh, 
+including Facebook, miss a feature that would help online gender 
+harassment victims prove the authenticity of their harassment evi-
+dence and help them engage in conversation with law enforcement 
+organizations to establish online gender justice with minimum 
+hassle. 
+4 DESIGNING ‘UNMOCHON’: A TOOL 
+SUPPORTING GENDER JUSTICE 
+We draw on the fndings from the survey responses and the in-
+terviews and translated those into the design. We named our tool 
+Unmochon. It is a Bengali word which means ‘disclosing’ or ‘un-
+availing’ something. One of our pre-design interview participants 
+discussed an idea of a hypothetical anti-harassment tool and named 
+that ‘Unmochon’. Later, we borrowed it from them. This section de-
+scribes our design goals and components of the application followed 
+by the details of implementation. 
+4.1 Design Goals 
+Our fndings from the pre-design survey and interviews inform 
+us of the denial that the victim receives while seeking online gen-
+der justice. Therefore, we set our objective to help women collect 
+evidence of their harassment in a way that could be accepted as 
+authentic by the concerned ones. We borrow the idea of shamingUnmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+from shame-based design for gender justice [12]. We select Face-
+book as the platform for the deployment since Facebook is one of 
+the most widely used social media platforms in Bangladesh. We 
+draw on our fndings to determine four design goals necessary for 
+a successful online anti-gender harassment tool: 
+G1: Capture Screenshot with Authenticity. The 
+participants described scenarios where they saw gen-
+eral people on Facebook being suspicious of the 
+screenshots being true. In some cases, the screenshots 
+were manipulated and some words were replaced. 
+This kind of scenario urge us to set the goal to design 
+a tool that captures the screenshot with minimum or 
+no option of moderation. 
+G2: Confrm that the Facebook Account in the 
+Chat and Facebook Account Being Accused is the 
+Same. In some cases, someone opened a cloned Face-
+book ID of a particular person, pretended to be him, 
+and harassed women over the chat to defame him. 
+This scenario urges to set the goal to design a tool 
+that confrms that Facebook account in the chat and 
+Facebook account being accused is the same. This 
+will also make sure that no innocent individual gets 
+reported and shamed in this process. G3: Hide the Identity of the Victims. 
+Some of the 
+participants reported that they would prefer opening 
+another Facebook account or requesting friends to 
+make the case on behalf of them so that they would 
+stay behind the curtain and avoid victim-blaming and 
+slut-shaming. Thus, our third goal of the design is to 
+create such an afordance and lessen women’s depen-
+dency on others. G4: Share Screenshot in Public. 
+In most cases, vic-
+tims share the evidence of harassment in public to 
+shame the harasser, fnd more victims of the same ha-
+rasser and share moral support, and seek mob justice. 
+Our fnal goal is built on this existing practice and 
+we aim to create a convenient platform for them to 
+share their evidence and proof of its authenticity with 
+minimum hassle. 
+4.2 Components and Workfow of Unmochon 
+From the user needs and design goals arising from the interviews, 
+we prototyped Unmochon. It is a windows-based application. It 
+has three main components: the browser plugin at the user-end, a 
+server for storage, and a dedicated Facebook group run by human 
+admins. 
+4.2.1 The Browser Plugin. The application comes with an unmo-
+chon.exe plugin. The purpose of the plugin is to take the screenshots 
+from the chat window of the victim and prepare it for sharing. The 
+initial version of the plugin that we used for the study only works 
+on the Chrome browser. It is developed on Java Platform. 
+Taking Screenshot. Once the plugin is installed, the welcome win-
+dow pops up with a button on it saying ‘Take Screenshot’. After 
+pressing the button, the application will allow the users with 10 sec-
+onds to set up their Facebook messenger chat thread on the Chrome 
+browser of which they want to capture the screenshot. Once the 10 seconds is over, it will automatically capture a screenshot and copy 
+the URL from the address bar that shows the unique Facebook ID 
+number of the account with which the user had a chat and took a 
+screenshot of. 
+Hiding Identifers. Upon capturing the screenshot, the application 
+opens the editing window that allows the users to use the drawing 
+pen only so that they can hide their own name, display picture in 
+the thumb and any related sensitive information, which they prefer 
+not to the public (see the components and the fow in fg-3 (left)). 
+Once they are done hiding such identifers, the application allows 
+them to save the image of the chat and set it ready for sending 
+it to the server for further process. However, the step of hiding 
+identifers is optional and users can skip it by pressing ‘cancel’ 
+button and proceed to the next step of reporting by sending it and 
+the harasser’s Facebook account number to the server. 
+4.2.2 Storage in Server. Once the screenshots reach the server, it 
+stores them there. Then it puts a stamp on the image that says 
+‘Verifed by Unmochon’ which means the screenshot of harassment 
+chat history was taken and reported using the application and thus 
+it is possibly not fabricated. The mechanism of putting the stamp 
+is preset and functions only when the Facebook account number 
+reported by the user and the one retrieved by the plugin while 
+taking the screenshot is the same (see the components and the fow 
+in fg-3(top-right)). The mechanism also detects the mode of the 
+reports by analyzing if the user has kept their identifers (mode-
+1) or hidden those (mode-2) in the sent image, before sending it 
+to the Facebook group. Thus a package of four items is sent to 
+the Facebook group, the image, the victim’s requested mode and 
+Facebook account number, accused harasser’s Facebook account 
+number, and how many times the same Facebook account number 
+has previously been reported as a harasser. We have used google 
+cloud platform for the server. All the communication between the 
+server and the Facebook users are end-to-end encrypted. 
+4.2.3 Facebook Group. This is a Facebook group with all the posts 
+preset to the privacy setting of ‘public’. Only the application devel-
+oped by us can post here upon being approved by human admins 
+(see the components and the fow in fg-3 (bottom-right)). This 
+admin panel consists of responsible individuals of the society in-
+cluding members of law enforcement, psychologists, and gender 
+activists. Once the package from the server arrives at the group 
+and requests posting, the admins check if the report is a spam. In 
+cases of garbage-posting, the admins would disapprove the posts 
+and remove them from the list of pending requests on the Face-
+book group. There could be two types of mode of reporting. If it is 
+‘mode-1’, then the post comes with the victim’s name and Facebook 
+account number, the screenshot of the harassment chat-history, the 
+accused harasser’s Facebook account number, and how many times 
+this person has been reported previously. For a ‘mode-2’ report-
+ing, the post discards the victim’s name and Facebook account. We 
+have used Facebook Graph API for the communication between 
+the server and the Facebook group. 
+5 USERS’ FEEDBACK ON UNMOCHON 
+Our fndings from the survey and pre-design interviews suggest 
+that online harassment of women is a sensitive issue and oftenCHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+Figure 2: Work-fow diagram of Unmochon application with three major components: plugin at the user-end, the server with 
+end-to-end encryption, and the customized Facebook group. 
+Figure 3: Unmochon application takes a screenshot of Chrome tab that is currently open. It also copies the harasser’s unique 
+Facebook id from the address-bar. Before sending it to the database and posting to the dedicated Facebook page for Unmochon, 
+the application window only allows the users to mark the photo with red ink. (All the purple geometric shapes in the fgure 
+were post-edited for anonymization.)Unmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+victims are in a vulnerable position due to lack of socio-cultural 
+support. So, we were wary of conducting an intervention with the 
+participants, rather we decided to share our plugin with the users 
+with no active contact with the server and the Facebook group, 
+explain the whole idea, and seek their feedback. We frst prepared 
+a user-study package, which included a prototype version of the 
+plugin and the user-guide to the application. To avoid unintended 
+posting during the user-study, we shared the version of the proto-
+type with no connection to the server and the Facebook group (see 
+fg-4, attempt to posting on Facebook failed as we did not deploy 
+in this version of the prototype that we evaluated). For their better 
+understanding, we also created a video demonstrating all the design 
+goals and explaining how they will be functional in the application, 
+and we added that video to the package that we shared with the 
+participants. This phase of study design followed Mahar et al. [68]. 
+This part of work was conducted during January-August 2020. 
+All the interviews and focus group discussion before March 24 
+was conducted in-person and later we continued the study online 
+following the special instructions by our universities regarding 
+COVID-19 crisis. This section details the methods used and the 
+data collection and analysis process. 
+5.1 Methods Used to Collect User-Feedback 
+In this phase of the study, we conducted focus group discussions 
+and interview with participants who were Bangladeshi Facebook 
+users. We discuss the details of our methods for this phase below: 
+5.1.1 Focus Group Discussion (FGD). We conducted a total of 6 
+FGD sessions with 19 female (4 groups) and 10 male (2 groups) 
+participants. 13 of the female participants were from the set of 
+participants of pre-design interviews. We recruited the rest of the 
+participants from our professional networks on social media, from 
+Facebook groups and friends. Upon reaching out to them, we ex-
+plained the purpose of the work. We grouped relatively known 
+participants of the same gender together and set up FGDs with 
+them. We also sent them the user-study package a few hours be-
+fore the interview so that they experience those and get some time 
+to think about those. In the FGDs, we explained the purpose of 
+the application and helped them to go through it step-by-step if 
+needed. Then we discussed what kind of benefts this application 
+might bring for the females to fght their harassment on Facebook 
+Messenger in diferent kinds of cases. We also asked them what 
+kind of challenges and troubles this application might generate for 
+the users and other stakeholders. 
+The sessions were conducted in the Bengali language. The av-
+erage length of the sessions was 35 mins. We requested for par-
+ticipants’ permission to audio record the sessions and received 
+permission to record 5 of them. We also ofered them to discard 
+the discussion at any moment due to their discomfort. However, no 
+such incident happened. The participation in FGD was voluntary 
+and the participants were not paid. 
+5.1.2 Interviews. Along with the FGDs, we conducted 19 inter-
+views (13 females and 6 males) with Facebook users as they re-
+quested a one-on-one conversation instead of a group discussion. 
+8 of them were from the set of participants of pre-design inter-
+views. As before, we recruited the rest of the participants from our professional networks on social media, from Facebook groups and 
+friends. Upon reaching out to them, we explained the purpose of 
+the work. We also sent them the user-study package a few hours 
+before the interview so that they experience those and get some 
+time to think about those. During the interviews, we explained to 
+them the purpose of the application and helped them to go through 
+it step-by-step if needed. Then we asked them what kind of benefts 
+did they see and how this application might be efective for diferent 
+kinds of gender harassment scenarios on Facebook messenger. We 
+also asked them what kind of challenges and troubles they could 
+imagine that might generate from this application for the users and 
+other stakeholders. 
+All of the interview sessions used Bengali as the primary lan-
+guage. It generally took around 25 and 40 minutes to complete 
+the interview. 13 of the interviews were audio-recorded with the 
+permission of the participants. We left every opportunity for the 
+participants to leave the interview if they felt uncomfortable, even 
+during any ongoing sessions. We also informed them that we would 
+discard the record of their participation if they wanted. However, 
+no such event took place over the course of the study. The partici-
+pation in interview was voluntary and the participants were not 
+paid. 
+5.2 Data Collection and Analysis 
+The audio fles of interviews were recorded in the researchers’ 
+phone and later saved in a hard drive for further data process-
+ing steps. We collected a total of approximately 8 hours of audio 
+recordings and around 100 pages of interview-notes. In the anal-
+ysis process, we frst transcribed the audio recordings and later 
+translated them into English. We then performed thematic analysis 
+on the transcriptions and our detailed notes [14, 97]. Four of the 
+authors independently read through the transcripts carefully and 
+allowed codes to develop. Later they shared their codes with each 
+other. A total of 24 codes spontaneously developed during the frst 
+round of the coding. Then we clustered related codes into themes 
+after a few iterations. Some of the themes seemed recurring, for 
+example, vindictive, privacy, posting, recognition, justice, etc. Such 
+themes infuence the organization of our fnding section presented 
+next. 
+6 FINDINGS FROM USERS’ FEEDBACK 
+Our design met all the design agendas and the prototype served the 
+purpose of collecting the evidence preserving the authenticity (G1), 
+along with the design goal G2 and G3 (no evidence was posted and 
+G4 for this prototype was not evaluated by the participants). How-
+ever, our users’ feedback brought some concerns and suggestions 
+that we divide in three categories: design concerns and suggestions, 
+justice concerns, feedback on user interface and process. We discuss 
+them below. 
+6.1 Design Concerns and Suggestions 
+One of the suggestions that came out during an FGD session with 
+6 participants was whether it is possible to check the metadata and 
+include a verifcation status with the screenshots before sending 
+that to the server and adding that in the reports’ status while post-
+ing them on Facebook. They explained that this approach couldCHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+Details of Post-Design User-Evaluation 
+FGD Total Number of FGD Participant: 29 (Female:19, Male:10) 
+Age Range (in Years) Occupation 
+18-25: 25 (86%) 
+26-35: 4 (14%) 
+36+: 0 (0%) Public/private job-holder: 17 (59%) 
+Student: 12 (41%) 
+Others: 0 (0%) 
+Interview Total Number of Interview Participants: 19 (Female:13, Male:6) 
+Age Range (in Years) Occupation 
+18-25: 6 (32%) 
+26-35: 11 (58%) 
+36+: 2 (11%) Student: 6 (32%) 
+Public/private job-holder: 13 (68%) 
+Others: 0 (0%) 
+Table 2: Demographic Characteristics of Participants of Post-design User-Feedback 
+advantage the authenticity of the evidence presented by the victim. 
+In another group of 5 participants, they discussed what could be 
+the disadvantages of letting the harassment reporters hide their 
+identifers by drawing lines on them. They discussed a hypothetical 
+scenario where someone manipulated the browser with its meta-
+elements, then captured the screenshot and hid the identifers. In 
+the same conversation, one of the participants suggested a possible 
+solution to such scenario could be to let the application report the 
+screenshot along with metadata of the page. Also, they suggested 
+that the tool should reload the page by itself automatically before it 
+captures the screenshot, to avoid possible manipulation in the chat 
+through some advanced engineering with the HTML elements of 
+the page. Concerning this point, one of them suggested developing 
+this as a mobile app. 
+10 of our FGD participants anticipated that once such a tool is 
+available, the server will be fooded with reports and many of those 
+might be just random people sending random reports which might 
+have nothing to do with harassment. They also proposed that this 
+tool needs an intelligent flter to select and let in harassment-related 
+posts only. Also, in these conversations, the participants discussed 
+the need for a guideline to defne harassment. Another group of 
+4 participants raised a concern that if the harasser is wise, then 
+they would immediately know which one of the victims of them 
+have reported just by seeing the screenshot in the report. They also 
+suggested to report the name of the harasser upon verifying the 
+authenticity of the evidence and not to expose the image of the 
+chat; to hide all the possible identifers of the victim. 
+6.2 Justice Concerns 
+While providing us with feedback to our prototype, our partici-
+pants raised some concerns regarding gender justice. We categorize 
+them into hegemonic legal consciousness of the stakeholders in 
+the conversation of gender justice; many aspects of mob justice on 
+social media and how those infuence gender justice; and ofenders’ 
+privacy, and discuss them below. 
+6.2.1 Hegemonic Legal Consciousness. One of our interview par-
+ticipants, P61, is a lawyer and she informed us that institutional 
+justice in Bangladesh is not transparent and female-friendly. The 
+system is inclined more towards power-politics. Thus, often the 
+victims fnd it easier to seek justice in social shaming. She told us some of the stories from the cases of gender harassment which she 
+recently handled and shared her experience with us as a relevant 
+example. A female debater developed an intimacy with another 
+fellow male and that afnity turned toxic at some point. Later, the 
+female debater turned in a written complaint to their association 
+and accused the male colleague of gender harassment on messenger 
+inbox in a particular social media. As P61 explained, 
+“The female submitted some screenshots of their chat 
+history to their association to make the case of harass-
+ment. Then the accused ofender submitted some evi-
+dence from earlier chat histories to prove that they were 
+in a romantic relationship at some point and claimed 
+that the female colleague is accusing him of harassment 
+to break his upcoming marriage. On the basis of the 
+submitted evidence, the association came to the conclu-
+sion that the female colleague was NOT harassed, but 
+the male colleague should also have behaved himself. " 
+(P61) 
+P61, thus, explained how gender, social position, and other 
+hegemony infuence the transparency in the model of justice in 
+Bangladeshi society, including professional spaces. She further 
+stretched this conversation and explained how such a social and 
+professional setting often disregards women’s sensitivity to their on-
+line harassment. She pointed out that it would be generally difcult 
+for women to seek out online gender justice, even with technology 
+like Unmochon. 
+6.2.2 Mob Justice on Social Media. Our participants brought up 
+several challenges while seeking gender justice on social media. 
+During our discussion with one of the male participants, he in-
+formed us that communication skill matters the most in seeking 
+online mob justice. He explained, 
+“When a female victim exposes the online harasser to 
+the online community shared by both of them, often 
+her communication skill plays a role here. Sometimes 
+people visit the victim’s Facebook profle and thoroughly 
+investigate if she looks suspicious. If she wears modern 
+clothes, then people often redirect the case and say she 
+was asking for it. Often women lose control over their 
+temper at that point and start fghting. However, ifUnmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+the victim stays calm, ignores the slut-shamming, and 
+responds to the audiences with relevant evidence then 
+the victim wins their support. " (P73) 
+In the same discussion, he added that storytelling is also equally 
+important. When a woman keeps telling a consistent story on 
+social media and if the clues that she leaves connect to reality and 
+to the version spoken by the other stakeholders, then that story 
+is widely accepted and the victim is likely to be trusted by the 
+people. Therefore, how the evidence is compiling into a coherent 
+narrative rather than a scattered truth often makes the diference, 
+as he explained, 
+“There could be multiple versions of the same story. But 
+it is the woman’s burden to speak out the version in a 
+way that aligns with plausibility. If she sounds strange 
+and illogical in view of the public, then her claims are 
+denied. For example, a group of words, “I really need to 
+meet you this evening, if you do not meet me then that 
+is going to be a problem" could mean a lot of things. 
+People will be curious about why the accused person 
+wanted to meet her. People on Facebook would say it is 
+her job to provide more context and coherent evidence so 
+that it can be categorized as harassment and not some 
+business or real needs. " (P73) 
+8 of the interview participants also were concerned by the stan-
+dard of judgment by the people on Facebook as there are diverse 
+groups of people with diferent ideologies and philosophies. They 
+were concerned about who would decide the metrics in a complex 
+social setting of multiple moralities, as they expressed it this way, 
+“There are diferent types of people on Facebook. Some 
+are extremely patriarchal, some are extremely conser-
+vative. There are also people who are against women 
+using Facebook since they think women meeting un-
+known people on Facebook, losing their purdah and this 
+is against the women’s purity concept in their practicing 
+Muslim ideology. So when a woman comes and seeks 
+justice here, if she has any such people in the community 
+in front of which she is trying to establish her requited 
+gender justice, they might face a backlash as the mob 
+would say she should have not talked to men or create 
+a scope to let the men talk to her. They might say she 
+invited it. So in such cases, even if she proves that the 
+harassment was true, she might still fail to establish 
+justice because of this blame. " (P64) 
+13 of our participants pointed to the fact that the idea of exposing 
+the ofender in front of the online community shared by both of the 
+parties using the screenshot of chat history repetitively might lessen 
+the gravity of their complaints and could be problematic for them. 
+Thus, the community is involved in the process of investigation and 
+may become curious about further details which might be irrelevant 
+to the complaint made, but later those can be subject to some other 
+harassment. For example, P67 explained the story of one of her 
+female friends, 
+“A few months back, my friend frst complained against 
+a male classmate in our class’s Facebook group with 
+no solid proof. Many of the group-members found that baseless and dismissed her accusation. Recently, when 
+she complained against the same person again, the ha-
+rasser and his fellows said that she was deliberately 
+doing this again and pointed to the previously dismissed 
+complaint. Many people in the group then dissed her 
+recalling her previous complaint, my friend felt sick and 
+left the group. " (P67) 
+Thus, our participants informed us through many discussions 
+that securing online gender justice with mob would need not only 
+authentic evidence but how the victim communicates and how 
+they align with mob sentiment are equally important factors in 
+this regard. They further stretched the discussion and urged that 
+our design goals should include such needs of the victims for the 
+upcoming versions of this prototype. 
+6.2.3 Deliberate Defamation and Ofender’s Privacy. In an FGD 
+of four, two participants mentioned that some targeted defama-
+tion might happen through this system. To explain their point 
+further, they mentioned hypothetical scenarios where someone 
+might submit images of out-of-context messages and make fake 
+claims. However, through the demo, this group of participants fg-
+ured that out-of-context messages and garbage-posting would be 
+disapproved by the admins before posting on the Facebook groups. 
+They also fgured that our system already also allowed the commu-
+nity to facilitate a conversation with the accused in order to avoid 
+such tricky cases, including the misuse of consensual conversations. 
+The participants emphasized that such cases should be handled 
+with more carefully and compassionately, since those could directly 
+afect the reputation of both of the parties, and might also impact 
+the efectiveness of our design. 
+Five of our interview participants also pointed that the harasser 
+might make a case of their privacy breaching if a victim share their 
+personal conversation in front of a wider audience. One of the 
+female participants shared her experience of accusing a male friend 
+of harassment and further consequences, 
+“First when I shared the photos of our chat history with 
+some of the other friends, he claimed that the photos 
+are made up. Like I fabricated them. Then one day I 
+logged into my Facebook profle in front of people at 
+the university and proved that I did not manipulate it, 
+he started countering me by saying whatever happened, 
+he did it privately and yelled at me asking why did I 
+invade his privacy in front of people. Do I really have 
+to care about his privacy after he had done so much 
+damage to my mental health?" (P59) 
+While making this point, the participant also added that the 
+tool we have developed, may not be able to secure the privacy of 
+the harasser and might be much less helpful than expected by the 
+victim while seeking gender justice for their online harassment. 
+6.3 Feedback on User Interface and Process 
+During the user-evaluation, the participants gave us some feedback 
+on the User Interface. For example, 5 FGD participants showed their 
+frustration on the lengthy processing time of the image after being 
+captured by the tool. Also, another 6 participants suggested having 
+a progress bar so that the users may know the approximate waitingCHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+time for particular processes. 9 of the FDG participants suggested 
+to convert it into a mobile application and put it as a foating button 
+on top of the screen. They added that a lot of users in Bangladesh 
+do not have access to a desktop. Therefore, developing it as a mobile 
+application would beneft them. 11 of the participants insisted on 
+making the application more informative, interactive, and guided. 
+During the interview session with P71, she explained her problem, 
+“While running the application, I did not understand 
+if it had already taken the screenshot and where did 
+it go. I think it will be more helpful if the application 
+windows are a bit more verbose and tell the users what 
+exactly is happening in the ongoing step. " (P71) 
+The required browser version to run tool did not match 5 of 
+our participants’ browser versions and thus, they had a hard time 
+using the tool. After testing for some more time, participant P60 
+noticed that while capturing a screenshot, it’s difcult to move the 
+application window from the intended surface for the screenshot. 
+Both participants P61 and P59 tried but the application window 
+could not be moved or minimized once the button was clicked. 
+7 DISCUSSION 
+This paper has described the details of Bangladeshi female internet 
+users’ gender harassment and the measures they take while ad-
+dressing those. In this regard, we conducted an online survey and 
+interviewed participants. Drawing on our fndings, we built a set 
+of design goals that are more practical and appropriate for helping 
+the victims fght their online gender harassment. We prototyped 
+a version of Unmochon, conducted user-evaluation, and reported 
+the perception of victims and other stakeholders of such feminist 
+designs. The fndings of this work lead us to discuss some broader 
+agendas of feminist technology design, social support and law, and 
+gender justice. 
+7.1 Feminist Technology Design for the Global 
+South 
+Our study joins the feminist-HCI discussion by bringing in the con-
+cerns of authenticity challenges faced by women in the global south 
+while seeking gender justice to their online harassment. Previous 
+literature on women empowerment in the context of the Global 
+South showed that women here were socially and culturally trained 
+to accept or ignore their harassment and not seek out external help 
+[3, 99]. In this work, we showed that many women in Bangladesh 
+still sought justice to their online harassment that took place on 
+chat messenger by raising their voice against the harasser on social 
+media. In this process, the women were often asked to prove that 
+they were harassed. Upon showing images of the conversation, 
+people often challenged that evidence for authenticity and further 
+harassed her. In this paper, we report this design challenge and 
+prototyped ‘Unmochon’ to support women. Researchers working 
+on gender harassment on social media often call for engaging more 
+women, especially gender harassment victims, in designing gen-
+der justice tools and techniques [12]. We have responded to these 
+calls through this work since most of the authors and designers in 
+this work are females and have experienced gender harassment on 
+social media. Here, we cohere with ‘designing within patriarchy’ 
+orientations by leveraging women’s existing way of seeking justice online [99]. Our fndings on users’ feedback showed that proving 
+the authenticity of the evidence presented by the harassed women 
+might still not ensure justice to her harassment as mob-sentiment, 
+hegemonic legal consciousness, and many other privacy challenges 
+were associated with seeking justice online. Building on the fnd-
+ings from our study, we argue that along with focusing on the users 
+and their immediate needs, feminist-HCI and ICTD should also 
+aim at supporting gender movements on social media and handle 
+the above-mentioned political complexities so that we can ensure 
+a better online experience for the female social media users from 
+such complex patriarchal societies. 
+7.2 Social Support and Law 
+Our study of online gender harassment also joins the design for 
+social good movement within computer science, Ubicomp, and HCI 
+[1, 10, 18, 30, 34, 84]. Building on the concept of community-based 
+social support, the existing body of work adapts the assumptions of 
+afrmative design and persuasive design [32, 46, 86] and contributes 
+to the goals of social good for all. With our study, we have extended 
+this line of literature to the context of the Global South, where the 
+users and multiple stakeholders often hold diverse and tangential 
+agendas in a given social setting [3]. Our study found that the 
+intersection of social support and law in Bangladesh is a complex 
+space for designing gender justice for women. Our work found 
+that many of our participants were harassed by their friends and 
+family members. Thus, their online harassment cases were not 
+solvable by just blocking the harasser. Furthermore, we show that 
+although often women seeking gender justice online are dissed and 
+humiliated by online populations, they still seek support from the 
+community via friends or using a fake Facebook ID. We have also 
+shown that victims often believe that their sporadically and locally 
+organized small-scale protests might help them more than legal 
+systems, and we have listed many reasons for their belief. All of 
+these angles rising from the fndings of our study lead us to argue 
+that technology should be designed to balance and bridge between 
+social support and legal perspective to support the victims better. 
+7.3 Women’s Agency, Shaming Platform, and 
+Transformative Justice 
+Our design strategy aligns with the spirit of Feminist methods (com-
+plaining, exposure, and refusal) that help women strengthen their 
+voice within a patriarchy [69]. In many patriarchal societies, includ-
+ing Bangladesh, many men consider the women they are related 
+to as their properties, and any disrespect and injustice to "their 
+women" hurt these men. Thus, women’s harassment is also consid-
+ered a misdeed conducted against the men and is often regarded as 
+a matter worth seeking justice. Our fndings join the existing body 
+of South Asian Feminist-HCI work by Sultana et al. [99], Ahmed 
+et al. [3], Kumar et al. [60, 64], Mustafa et al. [78], among others 
+and show that many women give up on remaining shy, raise their 
+voices against such online harassment, and grow solidarity being 
+within their community. Thus, they adapt complaining, exposure, 
+and refusal as feminist methods of empowerment within the pa-
+triarchal society. We integrate these design strategies to create a 
+platform of empowerment and solidarity that works "within" theUnmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+patriarchal system, to help women make their complaints stronger, 
+and to help them further gain more agency. 
+In this work, we highlight the transformative aspect of the de-
+sign that we implemented through ‘Unmochon.’ Transformative 
+design is based on a broad idea of fairness. Instead of punishing an 
+individual for a crime, transformative justice investigates why that 
+person committed that crime. This aspect allows us to fnd deeper 
+problems in our society, including poverty, discrimination, lack 
+of education, lack of social support, lack of good childhood, etc., 
+which contribute to making a person criminal [22, 38, 77]. Trans-
+formative justice, hence, focuses on fxing those bigger issues [21]. 
+This happens in three channels: (a) restoring the social imbalance 
+caused by the individuals through social support, (b) changing the 
+mindset of individuals who committed a crime through education 
+and social support, and (c) addressing the bigger social problem 
+that contributed to making a person commit crimes. Thus, trans-
+formative justice provides a way to reduce crime in a society in a 
+more sustainable way. 
+One of the design principles of Unmochon is ‘shaming’ which 
+may be interpreted as an adversarial action toward punishing some-
+one for their misconduct. However, shaming also provides a person 
+with a way to refect on what they have done from their social peers 
+and repent for that. Therefore, shaming may reduce crime in a soci-
+ety [15]. The social process of shaming often also involves seeking 
+forgiveness and committing not to repeat the crime. At the same 
+time, social pressure is imposed on the person that keeps them away 
+from a repetition of the same crime. The perpetrator then gets an 
+opportunity to learn and change their behavior and mindset. At the 
+same time, the discourse that is created around a shaming incident 
+allows the society to refect on the broader picture of the society -
+where the perpetrators are coming from? why is this happening? 
+how can we put a stop to this? how can families, communities, and 
+societies come together to fx the problem?. Such conversations of-
+ten lead to social welfare activities. From this perspective, we hope 
+that Unmochon also creates a platform for transformative justice. 
+Having said that, we do also acknowledge that the actual happening 
+of the transformative design largely depends on how people will 
+use this platform, and there are chances that many people may only 
+focus on the immediate punishment part of shaming. However, we 
+believe that, given enough time, more and more people will start 
+focusing on the long-term sustainable solutions to the problem, and 
+the transformative aspects of Unmochon will prevail. 
+8 LIMITATIONS OF THE WORK 
+Our work has several limitations. First, both online and real-life 
+gender harassment is a stigma-topic in Bangladesh and for that 
+reason, recruiting participants was challenging for us. Most of the 
+interview and focus group discussion participants are recruited 
+through snowball sampling and thus, they are mostly the people 
+from the researchers’ primary and secondary networks. Since we 
+recruited the participants through convenient sampling, our work 
+is not free from participation bias and selection bias. Thus, the opin-
+ions of our participants and arguments driven from the interviews 
+and FGDs may not represent the collective view of the women of 
+the whole nation. Second, we failed to engage with any participant 
+of the third gender due to our limited reach. Thus, we did not gain any insight into their experiences of harassment and their opin-
+ion about our tool. Despite these limitations, the fndings of our 
+study will be useful for feminist technology design in the context 
+of low-resource and patriarchal settings. Also, the arguments and 
+lessons from this study will contribute to women-empowerment 
+policy-making in Bangladesh and other countries with a similar 
+resource, environment, and social setting. 
+9 IMPLICATIONS FOR DESIGN AND FUTURE 
+WORK 
+In future iterations of the design, we plan to overcome or minimize 
+some of the limitations of the existing version. Our user-evaluation 
+also pointed to some of the necessary future design iterations. First, 
+we prototyped our tool for Facebook messenger only. Our partic-
+ipants mentioned that they use Imo, Viber, Whatsapp, and other 
+text messaging services frequently and face gender harassment on 
+those platforms as well. Following their suggestions, one of the 
+future work could be developing similar tools for Imo, Viber, What-
+sapp, and other text messaging services that they use. Second, Our 
+participants pointed out that sometimes it is difcult to explain 
+the whole story of harassment just using one image and thus, the 
+ofenders often go away taking the beneft of the doubt. In the ex-
+isting version of the prototype, there is no way to collage multiple 
+screenshots in the same report to explain the fow of the conver-
+sation. Our participants requested such functionality in the future 
+iteration of the design. Third, this version of the prototype does 
+not support submitting the evidence to police directly, although it 
+fulflls some of the qualities and matches the protocol of the stan-
+dard legal evidence collection followed by the Bangladeshi police 
+in cases of cyber-crimes. This fact opens up a new opportunity for 
+us to design technologies supporting gender justice within legal 
+spheres. Fourth, in our future work, we will investigate how this 
+system will be recognized by diferent Bangladeshi institutions and 
+how that would impact their policies. The existing version of our 
+system allows the users to develop informal community-based le-
+gitimate women-support groups (often consisted of senior women, 
+in Bangladesh) that are not necessarily tied to a formal institution. 
+In future, we aim to develop platforms for better communication 
+between the victim, the informal support network, and the formal 
+authorities. 
+10 CONCLUSIONS 
+In this paper, we present a deeper understanding of online gender 
+harassment faced by Bangladeshi female social media users. Our 
+work makes a four-fold contribution to feminist-human computer 
+interaction (feminist-HCI), social media studies, and information 
+and communication technologies and development (ICTD). First, 
+our fndings show that many of the Bangladeshi female Facebook 
+users seek mob justice and expose their harasser by posting photos 
+of their conversation online as evidence, while this evidence is often 
+challenged for authenticity. Second, drawing on our fndings, we 
+build a set of design assumptions that are practical and appropriate 
+for assisting such victims in seeking justice. Here, we bring the 
+model of shame-based justice to design [12]. Third, in this regard, 
+we prototype and evaluate Unmochon and report the perception of 
+victims and other stakeholders of such tools that support onlineCHI ’21, May 8–13, 2021, Yokohama, Japan Sultana et al. 
+gender justice. Findings from the users’ feedback pointed out that 
+an end to authenticity problem may still leave the victim and on-
+line gender justice challenged by mob-sentiment, hegemonic legal 
+consciousness, and many other privacy concerns. Finally, we re-
+port fndings from our discussions with the participants and other 
+stakeholders that unfold diferent complicated issues entangled 
+with cyber-harassment and social justice and suggest feminist-HCI 
+and ICTD possible design directions for safer online experience for 
+women in the global south. 
+ACKNOWLEDGMENTS 
+This research was made possible by the generous grants from Nat-
+ural Sciences and Engineering Research Council (#RGPIN-2018-0), 
+Social Sciences and Humanities Research Council (#892191082), 
+Canada Foundation for Innovation (#37608), Ontario Ministry of 
+Research and Innovation (#37608), International Fulbright Centen-
+nial Fellowship of Syed Ishtiaque Ahmed, and Facebook Fellowship 
+of Sharifa Sultana. We further thank Bangladesh ICT Division for 
+the Innovation Grant to support this work. 
+REFERENCES 
+[1] Rediet Abebe and Kira Goldner. 2018. Mechanism design for social good. AI 
+Matters 4, 3 (2018), 27–34. 
+[2] Nova Ahmed, Sadd Azmeen Ur Rahman, Rahat Jahangir Rony, Tanvir Mush-
+fque, and Vikram Mehta. 2016. Protibadinext: Sensor support to handle sexual 
+harassment. In Proceedings of the 2016 ACM International Joint Conference on 
+Pervasive and Ubiquitous Computing: Adjunct. 918–921. 
+[3] Syed Ishtiaque Ahmed, Steven J Jackson, Nova Ahmed, Hasan Shahid Ferdous, 
+Md Rashidujjaman Rifat, ASM Rizvi, Shamir Ahmed, and Rifat Sabbir Mansur. 
+2014. Protibadi: A platform for fghting sexual harassment in urban Bangladesh. 
+In Proceedings of the 32nd annual ACM conference on Human factors in computing 
+systems. ACM, 2695–2704. 
+[4] Saad Ahmed Akash, Md Al-Zihad, Tamal Adhikary, Md Abdur Razzaque, and 
+Arifa Sharmin. 2016. Hearme: A smart mobile application for mitigating women 
+harassment. In 2016 IEEE International WIE Conference on Electrical and Computer 
+Engineering (WIECON-ECE). IEEE, 87–90. 
+[5] Mohammed Eunus Ali, Shabnam Basera Rishta, Lazima Ansari, Tanzima 
+Hashem, and Ahamad Imtiaz Khan. 2015. SafeStreet: empowering women 
+against street harassment using a privacy-aware location based application. In 
+Proceedings of the Seventh International Conference on Information and Commu -
+nication Technologies and Development. ACM, 24. 
+[6] Nazanin Andalibi, Oliver L Haimson, Munmun De Choudhury, and Andrea 
+Forte. 2016. Understanding social media disclosures of sexual abuse through 
+the lenses of support seeking and anonymity. In Proceedings of the 2016 CHI 
+conference on human factors in computing systems. 3906–3918. 
+[7] Zahra Ashktorab and Jessica Vitak. 2016. Designing cyberbullying mitigation 
+and prevention solutions through participatory design with teenagers. In Pro-
+ceedings of the 2016 CHI Conference on Human Factors in Computing Systems. 
+3895–3905. 
+[8] UN Women – Asia-Pacifc. 2020. Facts and Figures. https: 
+//asiapacifc .unwomen .org/en/focus-areas/end-violence-against-
+women/evaw-facts-and-fgures. 
+[9] Jamie Bartlett, Richard Norrie, Sofa Patel, Rebekka Rumpel, and Simon Wibber-
+ley. 2014. Misogyny on twitter. Demos (2014), 1–18. 
+[10] Russell Beale, Nicola Bidwell, Eli Blevis, Stephen Brewster, Anxo Cereijo 
+Roibas, Keith Cheverst, Andrew Deardon, Jussi Impio, Amit A Navavati, Abi-
+gal Sellen, Yvonne Rogers, and Lucia Terrenghi. 2009. UBICOMP 2009 Work-
+shop CFP: Globicomp - Taking Ubicomp Beyond Developed Worlds from 
+Julie Kientz on 2009-02-04 (www-multimodal@w3.org from February 2009). 
+https://lists .w3 .org/Archives/Public/www-multimodal/2009Feb/0000 .html. 
+[11] Reuben Binns, Michael Veale, Max Van Kleek, and Nigel Shadbolt. 2017. Like 
+trainer, like bot? Inheritance of bias in algorithmic content moderation. In 
+International conference on social informatics. Springer, 405–415. 
+[12] Lindsay Blackwell, Jill Dimond, Sarita Schoenebeck, and Clif Lampe. 2017. 
+Classifcation and its consequences for online harassment: Design insights from 
+heartmob. Proceedings of the ACM on Human-Computer Interaction 1, CSCW 
+(2017), 1–19. 
+[13] Lindsay Blackwell, Mark Handel, Sarah T Roberts, Amy Bruckman, and Kimberly 
+Voll. 2018. Understanding" Bad Actors" Online. In Extended Abstracts of the 2018 
+CHI Conference on Human Factors in Computing Systems. 1–7. [14] Richard E Boyatzis. 1998. Transforming qualitative information: Thematic analy-
+sis and code development. sage. 
+[15] John Braithwaite. 2000. Shame and criminal justice. Canadian Journal of 
+Criminology 42, 3 (2000), 281–298. 
+[16] Tarana Burke. 2006. me too. Movement. https://metoomvmt .org/. 
+[17] Tarana Burke. 2018. Why We Need to Acknowledge the True Founder of the 
+#MeToo Movement. https://www .blackburncenter .org/post/2018/02/06/why-
+we-need-to-acknowledge-the-true-founder-of-the-metoo-movement-
+tarana-burke. 
+[18] Daniela Busse, Eli Blevis, Richard Beckwith, Shaowen Bardzell, Phoebe Sengers, 
+Bill Tomlinson, Lisa Nathan, and Samuel Mann. 2012. Social sustainability: 
+an HCI agenda. In CHI’12 Extended Abstracts on Human Factors in Computing 
+Systems. 1151–1154. 
+[19] Eshwar Chandrasekharan, Mattia Samory, Anirudh Srinivasan, and Eric Gilbert. 
+2017. The bag of communities: Identifying abusive behavior online with preex-
+isting internet data. In Proceedings of the 2017 CHI Conference on Human Factors 
+in Computing Systems. 3175–3187. 
+[20] Rhitu Chatterjee. 2018. A New Survey Finds 81 Percent Of Women Have 
+Experienced Sexual Harassment. https://www .npr .org/sections/thetwo-
+way/2018/02/21/587671849/a-new-survey-fnds-eighty-percent-of-women-
+have-experienced-sexual-harassment. 
+[21] Donna Coker. 2002. Transformative justice: Anti-subordination processes in 
+cases of domestic violence. (2002). 
+[22] Erin Daly. 2001. Transformative justice: Charting a path to reconciliation. Int’l 
+Legal Persp. 12 (2001), 73. 
+[23] Priyashree Dasgupta. 2018. #MeToo In India: 75 Professors, 30 
+Institutes, What Happened To Raya Sarkar’s List Of Sexual Ha-
+rassers? https://www .hufngtonpost .in/2018/10/25/metoo-in-india-75-
+professors-30-institutes-what-happened-to-raya-sarkar-s-list-of-sexual-
+harassers_a_23571422/. 
+[24] Damayanti Datta, Shweta Punj, and Chinki Sinha. 2018. #MeToo hits home -
+Cover Story News. https://www .indiatoday .in/magazine/cover-story/story/ 
+20181022-metoo-hits-home-1360419-2018-10-12. 
+[25] DhakaTribuneDeskReport. 2019. 70% of women facing cyber harassment are 
+15-25 years in age. https://www .dhakatribune .com/bangladesh/dhaka/2019/ 
+09/24/70-of-women-facing-cyber-harassment-are-15-25-years-in-age. 
+[26] Jill P Dimond, Michaelanne Dye, Daphne LaRose, and Amy S Bruckman. 2013. 
+Hollaback!: the role of storytelling online in a social movement organization. 
+In Proceedings of the 2013 conference on Computer supported cooperative work. 
+ACM, 477–490. 
+[27] Carl DiSalvo. 2012. Adversarial design. The MIT Press. 
+[28] Hande Eslen-Ziya. 2013. Social media and Turkish feminism: New resources for 
+social activism. Feminist Media Studies 13, 5 (2013), 860–870. 
+[29] Deepa Fadnis. 2017. Feminist activists protest tax on sanitary pads: attempts to 
+normalize conversations about menstruation in India using hashtag activism. 
+Feminist Media Studies 17, 6 (2017), 1111–1114. 
+[30] Maria Angela Ferrario, Will Simm, Peter Newman, Stephen Forshaw, and Jon 
+Whittle. 2014. Software engineering for’social good’: integrating action research, 
+participatory design, and agile development. In Companion Proceedings of the 
+36th International Conference on Software Engineering. 520–523. 
+[31] Jerry Finn. 2004. A survey of online harassment at a university campus. Journal 
+of Interpersonal violence 19, 4 (2004), 468–483. 
+[32] Brian J Fogg. 2009. A behavior model for persuasive design. In Proceedings of 
+the 4th international Conference on Persuasive Technology. 1–7. 
+[33] Jesse Fox and Wai Yen Tang. 2017. Women’s experiences with general and sexual 
+harassment in online video games: Rumination, organizational responsiveness, 
+withdrawal, and coping strategies. New Media & Society 19, 8 (2017), 1290–1307. 
+[34] Sarah Fox, Mariam Asad, Katherine Lo, Jill P Dimond, Lynn S Dombrowski, and 
+Shaowen Bardzell. 2016. Exploring social justice, design, and HCI. In Proceedings 
+of the 2016 CHI Conference Extended Abstracts on Human Factors in Computing 
+Systems. 3293–3300. 
+[35] Radhika Gajjala. 2018. When an Indian whisper network went digital. Commu-
+nication Culture & Critique 11, 3 (2018), 489–493. 
+[36] Javier Galbally, Sébastien Marcel, and Julian Fierrez. 2013. Image quality as-
+sessment for fake biometric detection: Application to iris, fngerprint, and face 
+recognition. IEEE transactions on image processing 23, 2 (2013), 710–724. 
+[37] Björn Gambäck and Utpal Kumar Sikdar. 2017. Using convolutional neural 
+networks to classify hate-speech. In Proceedings of the frst workshop on abusive 
+language online. 85–90. 
+[38] Paul Gready and Simon Robins. 2014. From transitional to transformative justice: 
+A new agenda for practice. International Journal of Transitional Justice 8, 3 
+(2014), 339–361. 
+[39] Cristela Guerra. 2017. Where did ’Me Too’ come from? Activist Tarana 
+Burke, long before hashtags. https://www .bostonglobe .com/lifestyle/2017/ 
+10/17/alyssa-milano-credits-activist-tarana-burke-with-founding-metoo-
+movement-years-ago/o2Jv29v6ljObkKPTPB9KGP/story .html 
+[40] Aditi Gupta, Hemank Lamba, Ponnurangam Kumaraguru, and Anupam Joshi. 
+2013. Faking sandy: characterizing and identifying fake images on twitter duringUnmochon CHI ’21, May 8–13, 2021, Yokohama, Japan 
+hurricane sandy. In Proceedings of the 22nd international conference on World 
+Wide Web. 729–736. 
+[41] Margaret Hagan, Nan Zhang, and Joseph’Jofsh’ Kaye. 2012. Safe mathare: a 
+mobile system for women’s safe commutes in the slums. In Proceedings of the 
+14th international conference on Human-computer interaction with mobile devices 
+and services companion. 47–52. 
+[42] Randi Lee Harper. 2016. Putting out the Twitter trashfre. Art+ Marketing.(13 
+February 2016). Retrieved September 8 (2016), 2017. 
+[43] Jasmin Hasanović. 2015. Ochlocracy in the practices of civil society: a threat 
+for democracy? Studia Juridica et Politica Jaurinenisis 2, 2 (2015), 56–66. 
+[44] N. Hassan, M.K. Mandal, M. Bhuiyan, A. Moitra, and S.I. Ahmed. 2019. Nonpar-
+ticipation of bangladeshi women in #MeToo movement. In ACM International 
+Conference Proceeding Series. https://doi .org/10 .1145/3287098 .3287125 
+[45] Naeemul Hassan, Manash Kumar Mandal, Mansurul Bhuiyan, Aparna Moitra, 
+and Syed Ishtiaque Ahmed. 2019. Nonparticipation of Bangladeshi Women 
+in# MeToo Movement. In Proceedings of the Tenth International Conference on 
+Information and Communication Technologies and Development. 1–5. 
+[46] Eric B Hekler, Jennifer C Taylor, Steven P Dow, Michèle Morris, Faren J Grant, 
+Sayali S Phatak, Don Norman, mc schraefel, and Dana M Lewis. 2019. Explor-
+ing, Defning, & Advancing Community-Driven Design for Social Impact. In 
+Companion Publication of the 2019 on Designing Interactive Systems Conference 
+2019 Companion. 373–376. 
+[47] Eleanor Tiplady Higgs. 2015. # JusticeforLiz: Power and Privilege in Digital 
+Transnational Women’s Rights Activism. Feminist Media Studies 15, 2 (2015), 
+344–347. 
+[48] Hossein Hosseini, Sreeram Kannan, Baosen Zhang, and Radha Poovendran. 
+2017. Deceiving google’s perspective api built for detecting toxic comments. 
+arXiv preprint arXiv:1702.08138 (2017). 
+[49] Chih-Chung Hsu, Yi-Xiu Zhuang, and Chia-Yen Lee. 2020. Deep fake image 
+detection based on pairwise learning. Applied Sciences 10, 1 (2020), 370. 
+[50] Minyoung Huh, Andrew Liu, Andrew Owens, and Alexei A Efros. 2018. Fighting 
+fake news: Image splice detection via learned self-consistency. In Proceedings of 
+the European Conference on Computer Vision (ECCV). 101–117. 
+[51] Shampa Iftakhar. 2020. # MeToo in Bangladesh: Can You Change? Journal of 
+International Women’s Studies 21, 2 (2020), 126–142. 
+[52] Nadia Ilahi. 2009. Gendered contestations: An analysis of street harassment in 
+Cairo and its implications for women’s access to public spaces. Surfacing: An 
+Interdisciplinary Journal for Gender in the Global South 2 (2009), 56–69. 
+[53] Justin Jager, Diane L Putnick, and Marc H Bornstein. 2017. II. More than 
+just convenient: The scientifc merits of homogeneous convenience samples. 
+Monographs of the Society for Research in Child Development 82, 2 (2017), 13–30. 
+[54] Syeda Gulshan Ferdous Jana. [n.d.]. 7. Bangladesh: Social media, extremism and 
+freedom of expression. TRANSNATIONAL OTHERING GLOBAL DIVERSITIES 
+([n. d.]), 103. 
+[55] Shagun Jhaver, Sucheta Ghoshal, Amy Bruckman, and Eric Gilbert. 2018. Online 
+harassment and content moderation: The case of blocklists. ACM Transactions 
+on Computer-Human Interaction (TOCHI) 25, 2 (2018), 1–33. 
+[56] Natasha Kabir. 2018. Cyber Crime a New Form of Violence Against Women: 
+From the Case Study of Bangladesh. Available at SSRN 3153467 (2018). 
+[57] Yoshiro Kamitake. 2007. From democracy to ochlocracy. Hitotsubashi journal of 
+economics (2007), 83–93. 
+[58] Semanur Karaman. 2017. Women support each other in the face of harass-
+ment online, but policy reform is needed | LSE Women, Peace and Security 
+blog. https://blogs .lse .ac.uk/wps/2017/11/29/women-support-each-other-in-
+the-face-of-harassment-online-but-policy-reform-is-needed/. 
+[59] Naveena Karusala, Apoorva Bhalla, and Neha Kumar. 2019. Privacy, Patriarchy, 
+and Participation on Social Media. In Proceedings of the 2019 on Designing 
+Interactive Systems Conference. 511–526. 
+[60] Naveena Karusala and Neha Kumar. 2017. Women’s Safety in Public Spaces: 
+Examining the Efcacy of Panic Buttons in New Delhi. In Proceedings of the 
+2017 CHI Conference on Human Factors in Computing Systems. ACM, 3340–3351. 
+[61] George Kennedy, Andrew McCollough, Edward Dixon, Alexei Bastidas, John 
+Ryan, Chris Loo, and Saurav Sahay. 2017. Technology solutions to combat 
+online harassment. In Proceedings of the frst workshop on abusive language 
+online. 73–77. 
+[62] Hasam Khalid and Simon S Woo. 2020. OC-FakeDect: Classifying Deepfakes 
+Using One-Class Variational Autoencoder. In Proceedings of the IEEE/CVF Con-
+ference on Computer Vision and Pattern Recognition Workshops. 656–657. 
+[63] Vivian Krauchek and Gillian Ranson. 1999. Playing by the rules of the game: 
+women’s experiences and perceptions of sexual harassment in sport. Canadian 
+Review of Sociology/Revue canadienne de sociologie 36, 4 (1999), 585–600. 
+[64] Neha Kumar and Richard J Anderson. 2015. Mobile phones for maternal health 
+in rural India. In Proceedings of the 33rd Annual ACM Conference on Human 
+Factors in Computing Systems. ACM, 427–436. 
+[65] N. Kumar, N. Karusala, A. Ismail, M. Wong-Villacres, and A. Vishwanath. 2019. 
+Engaging Feminist Solidarity for Comparative Research, Design, and Practice. 
+In Proceedings of the ACM on Human-Computer Interaction CSCW. ACM, 167. [66] Amanda Lenhart, Michele Ybarra, Kathryn Zickuhr, and Myeshia Price-Feeney. 
+2016. Online harassment, digital abuse, and cyberstalking in America. Data and 
+Society Research Institute. 
+[67] Amy Lyndon, Jennifer Bonds-Raacke, and Alyssa D Cratty. 2011. College 
+students’ Facebook stalking of ex-partners. Cyberpsychology, Behavior, and 
+Social Networking 14, 12 (2011), 711–716. 
+[68] Kaitlin Mahar, Amy X Zhang, and David Karger. 2018. Squadbox: A tool to 
+combat email harassment using friendsourced moderation. In Proceedings of the 
+2018 CHI Conference on Human Factors in Computing Systems. 1–13. 
+[69] Saba Mahmood. 2001. Feminist theory, embodiment, and the docile agent: Some 
+refections on the Egyptian Islamic revival. Cultural anthropology 16, 2 (2001), 
+202–236. 
+[70] C Mallapur and A Alphonso. 2018. #MeTooIndia: 54% rise in sex-
+ual harassment reported at workplaces between 2014-17. https: 
+//www .indiaspend .com/metooindia-54-rise-in-sexual-harassment-reported-
+at-workplaces-between-2014-17/ 
+[71] Claudia Manzi, Sharon Coen, Camillo Regalia, Ana Maria Yévenes, Cristina 
+Giuliani, and Vivian L Vignoles. 2018. Being in the Social: A cross-cultural 
+and cross-generational study on identity processes related to Facebook use. 
+Computers in Human Behavior 80 (2018), 81–87. 
+[72] Francesco Marra, Diego Gragnaniello, Davide Cozzolino, and Luisa Verdoliva. 
+2018. Detection of gan-generated fake images over social networks. In 2018 IEEE 
+Conference on Multimedia Information Processing and Retrieval (MIPR). IEEE, 
+384–389. 
+[73] Robert Meyer and Michel Cukier. 2006. Assessing the attack threat due to 
+IRC channels. In International Conference on Dependable Systems and Networks 
+(DSN’06). IEEE, 467–472. 
+[74] Alyssa Milano. 2017. How We Can Help Women Come Forward. Time (oct 
+2017). 
+[75] Durba Mitra. 2012. Critical perspectives on SlutWalks in India. Feminist studies 
+38, 1 (2012), 254–261. 
+[76] Aparna Moitra, Naeemul Hassan, Manash Kumar Mandal, Mansurul Bhuiyan, 
+and Syed Ishtiaque Ahmed. 2020. Understanding the Challenges for Bangladeshi 
+Women to Participate in# MeToo Movement. Proceedings of the ACM on Human-
+Computer Interaction 4, GROUP (2020), 1–25. 
+[77] Ruth Morris. 2000. Stories of transformative justice. Canadian Scholars’ Press. 
+[78] Maryam Mustafa, Amna Batool, Beenish Fatima, Fareeda Nawaz, Kentaro 
+Toyama, and Agha Ali Raza. 2020. Patriarchy, Maternal Health and Spiritual 
+Healing: Designing Maternal Health Interventions in Pakistan. In Proceedings 
+of the 2020 CHI Conference on Human Factors in Computing Systems. 1–13. 
+[79] Thanh Thi Nguyen, Cuong M Nguyen, Dung Tien Nguyen, Duc Thanh Nguyen, 
+and Saeid Nahavandi. 2019. Deep learning for deepfakes creation and detection. 
+arXiv preprint arXiv:1909.11573 (2019). 
+[80] Fayika Farhat Nova, MD Rashidujjaman Rifat, Pratyasha Saha, Syed Ishtiaque 
+Ahmed, and Shion Guha. 2019. Online sexual harassment over anonymous 
+social media in Bangladesh. In Proceedings of the Tenth International Conference 
+on Information and Communication Technologies and Development. 1–12. 
+[81] observers. 2017. Fake images spark fare-up of violence in West Ben-
+gal. https://observers .france24 .com/en/20170713-fake-images-causes-fare-
+violence-west-bengal. 
+[82] Rogers TE Orock. 2014. Crime, in/security and mob justice: The micropolitics 
+of sovereignty in Cameroon. Social Dynamics 40, 2 (2014), 408–428. 
+[83] Ji Ho Park and Pascale Fung. 2017. One-step and two-step classifcation for 
+abusive language detection on twitter. arXiv preprint arXiv:1706.01206 (2017). 
+[84] Nimmi Rangaswamy and Nithya Sambasivan. 2011. Cutting Chai, Jugaad, and 
+Here Pheri: towards UbiComp for a global community. Personal and Ubiquitous 
+Computing 15, 6 (2011), 553–564. 
+[85] Elissa M Redmiles, Jessica Bodford, and Lindsay Blackwell. 2019. “I just want to 
+feel safe”: A Diary Study of Safety Perceptions on Social Media. In Proceedings 
+of the International AAAI Conference on Web and Social Media, Vol. 13. 405–416. 
+[86] Johan Redström. 2006. Persuasive design: Fringes and foundations. In Interna-
+tional Conference on Persuasive Technology. Springer, 112–122. 
+[87] Rebecca S Robinson. 2016. Pink Hijab Day: Mediation of the Hijab as a Symbol 
+of Protest. International Journal of Communication 10 (2016), 20. 
+[88] Jennifer D Rubin, Lindsay Blackwell, and Terri D Conley. 2020. Fragile Mas-
+culinity: Men, Gender, and Online Harassment. In Proceedings of the 2020 CHI 
+Conference on Human Factors in Computing Systems. 1–14. 
+[89] Vijay Shankar. 2015. Announcing Facebook lite. Facebook Newsroom (2015). 
+[90] Ditilekha Sharma. 2018. What Is Missing In the #MeToo Movement? Economic 
+and Political Weekly 53, 49 (2018). https://www .epw .in/engage/article/what-
+is-missing-metoo-movement-limitation-law-justice 
+[91] Tamara Shepherd, Alison Harvey, Tim Jordan, Sam Srauy, and Kate Miltner. 
+2015. Histories of hating. Social Media+ Society 1, 2 (2015), 2056305115603997. 
+[92] Emily Shugerman. 2017. Me Too: Why are women sharing stories of sexual 
+assault and how did it start? 
+[93] Abu Siddique. 2013. Implication of ‘innocent’ people irks Ramu arson vic-
+tims. https://www .dhakatribune .com/uncategorized/2013/05/21/implication-
+of-innocent-people-irks-ramu-arson-victims.CHI ’21, May 8–13, 2021, Yokohama, Japan 
+[94] Sharon G Smith, Xinjian Zhang, Kathleen C Basile, Melissa T Merrick, Jing 
+Wang, Marcie-jo Kresnow, and Jieru Chen. 2018. The national intimate partner 
+and sexual violence survey: 2015 data brief–updated release. (2018). 
+[95] Navya R Sogi, Priya Chatterjee, U Nethra, and V Suma. 2018. SMARISA: a 
+raspberry pi based smart ring for women safety using IoT. In 2018 International 
+Conference on Inventive Research in Computing Applications (ICIRCA). IEEE, 
+451–454. 
+[96] WHOA Comparison Statistics. 2013. Working to Halt Online Abuse. http: 
+//www .haltabuse .org/resources/stats/index .shtml. 
+[97] Anselm Strauss and Juliet Corbin. 1990. Open coding. Basics of qualitative 
+research: Grounded theory procedures and techniques 2, 1990 (1990), 101–121. 
+[98] Sharifa Sultana and Syed Ishtiaque Ahmed. 2019. Witchcraft and HCI: Morality, 
+Modernity, and Postcolonial Computing in Rural Bangladesh. In Proceedings of 
+the 2019 CHI Conference on Human Factors in Computing Systems. ACM, 356. 
+[99] Sharifa Sultana, François Guimbretière, Phoebe Sengers, and Nicola Dell. 2018. 
+Design within a Patriarchal Society: Opportunities and Challenges in Designing 
+for Rural Women in Bangladesh. In Proceedings of the 2018 CHI Conference on 
+Human Factors in Computing Systems. ACM, 536. 
+[100] Aditya Vashistha, Abhinav Garg, Richard Anderson, and Agha Ali Raza. 2019. 
+Threats, abuses, firting, and blackmail: Gender inequity in social media voice 
+forums. In Proceedings of the 2019 CHI Conference on Human Factors in Computing 
+Systems. 1–13. 
+[101] Luisa Verdoliva. 2020. Media forensics and deepfakes: an overview. arXiv 
+preprint arXiv:2001.06564 (2020). 
+[102] Kalpana Viswanath and Ashish Basu. 2015. SafetiPin: an innovative mobile app 
+to collect data on women’s safety in Indian cities. Gender & Development 23, 1 
+(2015), 45–60. 
+[103] Jessica Vitak, Kalyani Chadha, Linda Steiner, and Zahra Ashktorab. 2017. Iden-
+tifying women’s experiences with and strategies for mitigating negative efects 
+of online harassment. In Proceedings of the 2017 ACM Conference on Computer 
+Supported Cooperative Work and Social Computing. 1231–1245. 
+[104] Rakesh Vuppu. 2020. Images from Bangladesh falsely shared as 
+‘Rohingyas attacking Hindus and Hindu temples in West Bengal’. Sultana et al. 
+https://factly .in/images-from-bangladesh-falsely-shared-as-rohingyas-
+attacking-hindus-and-hindu-temples-in-west-bengal/. 
+[105] Charlie Warzel. 2016. A Honeypot for Assholes: Inside Twitters 10-Year Failure 
+to Stop Harassment. BuzzFeed News (2016). 
+[106] Charlie Warzel. 2017. Twitter is still dismissing harassment reports and frus-
+trating victims. Buzzfeed.(17 July 2017). Retrieved September 8 (2017), 2017. 
+[107] Beverly M Weber. 2016. Kübra Gümüşay, Muslim digital feminism and the 
+politics of visuality in Germany. Feminist Media Studies 16, 1 (2016), 101–116. 
+[108] Sherri Williams. 2015. Digital defense: Black feminists resist violence with 
+hashtag activism. Feminist media studies 15, 2 (2015), 341–344. 
+[109] Sherri Williams. 2016. # SayHerName: using digital activism to document 
+violence against black women. Feminist media studies 16, 5 (2016), 922–925. 
+[110] Yohanes Sigit Purnomo WP, Theresia Devi Indriasari, Kusworo Anindito, Yoshua 
+Andrean, and Jaka Galih Prasetyo. 2019. CrimeID: Towards Crime Prevention 
+and Community Safety in Indonesia using Mobile and Web Technology. Inter-
+national Journal of Interactive Mobile Technologies (iJIM) 13, 09 (2019), 52–65. 
+[111] Ellery Wulczyn, Nithum Thain, and Lucas Dixon. 2017. Ex machina: Personal 
+attacks seen at scale. In Proceedings of the 26th International Conference on World 
+Wide Web. 1391–1399. 
+[112] Susan Wyche. 2017. Exploring women’s everyday mobile phone experiences in 
+Nairobi, Kenya. Interacting with Computers 29, 3 (2017), 391–402. 
+[113] Susan P Wyche, Sarita Yardi Schoenebeck, and Andrea Forte. 2013. “Facebook is 
+a luxury" an exploratory study of social media use in rural Kenya. In Proceedings 
+of the 2013 conference on Computer supported cooperative work. 33–44. 
+[114] Fouzia Younas, Mustafa Naseem, and Maryam Mustafa. 2020. Patriarchy and 
+Social Media: Women Only Facebook Groups as Safe Spaces for Support Seeking 
+in Pakistan. In Proceedings of the 2020 International Conference on Information 
+and Communication Technologies and Development. 1–11. 
+[115] Chelsea Young. 2014. HarassMap: using crowdsourced data to map sexual 
+harassment in Egypt. Technology Innovation Management Review 4, 3 (2014), 7. 
+[116] Lilei Zheng, Ying Zhang, and Vrizlynn LL Thing. 2019. A survey on image tam-
+pering and its detection in real-world photos. Journal of Visual Communication 
+and Image Representation 58 (2019), 380–399.

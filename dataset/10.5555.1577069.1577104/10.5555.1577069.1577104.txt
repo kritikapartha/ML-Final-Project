@@ -1,0 +1,2107 @@
+Journalof Machine LearningResearch 10(2009)935-975 Submi tted 8/08;Revised1/09; Published4/09
+NonextensiveInformation TheoreticKernels onMeasures∗
+Andr´eF.T.Martins†AFM@CS.CMU.EDU
+Noah A.Smith NASMITH @CS.CMU.EDU
+Eric P.Xing EPXING@CS.CMU.EDU
+School of Computer Science
+Carnegie MellonUniversity
+Pittsburgh, PA, USA
+PedroM.Q.Aguiar AGUIAR@ISR.IST.UTL.PT
+Institutode Sistemas eRob ´otica
+InstitutoSuperior T ´ecnico
+Lisboa, Portugal
+M´ario A.T.Figueiredo MARIO.FIGUEIREDO @LX.IT.PT
+Institutode Telecomunicac ¸ ˜oes
+InstitutoSuperior T ´ecnico
+Lisboa, Portugal
+Editor:Francis Bach
+Abstract
+Positive deﬁnite kernels on probability measures have been recently applied to classiﬁcation prob-
+lems involving text, images, and other types of structured d ata. Some of these kernels are related
+toclassicinformationtheoreticquantities,suchas(Shan non’s)mutualinformationandtheJensen-
+Shannon (JS) divergence. Meanwhile, there have been recent advances in nonextensive gener-
+alizations of Shannon’s information theory. This paper bri dges these two trends by introducing
+nonextensive information theoretic kernels on probabilit y measures, based on new JS-type diver-
+gences. These new divergences result from extending the the two building blocks of the classical
+JS divergence: convexity and Shannon’s entropy. The notion of convexity is extended to the wider
+concept of q-convexity, for which we prove a Jensen q-inequality. Based on this inequality, we in-
+troduce Jensen-Tsallis (JT) q-differences, a nonextensive generalization of the JS dive rgence, and
+deﬁne ak-th order JT q-difference between stochastic processes. We then deﬁne a n ew family of
+nonextensive mutual information kernels, which allow weig hts to be assigned to their arguments,
+and which includes the Boolean, JS, and linear kernels as par ticular cases. Nonextensive string
+kernels are also deﬁned that generalize the p-spectrum kernel. We illustrate the performance of
+these kernels on text categorization tasks, in which docume nts are modeled both as bags of words
+and as sequences of characters.
+Keywords: positive deﬁnite kernels, nonextensive information theor y, Tsallis entropy, Jensen-
+Shannon divergence, stringkernels
+∗. Earlier versions of this workappeared in Martinsetal. (2008a) and Ma rtinset al.(2008b).
+†. Alsoat Institutode Telecomunicac ¸ ˜oes,InstitutoSuperior T ´ecnico, Lisboa,Portugal.
+c/circleco√yrt2009Andr ´e F. T. Martins, NoahA. Smith, Eric P.Xing, Pedro M. Q. Aguiar a ndM´arioA. T. Figueiredo.MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+1. Introduction
+Inkernel-basedmachinelearning(Sch ¨olkopfandSmola,2002;Shawe-TaylorandCristianini,2004),
+there has been recent interest in deﬁning kernels on probability distribution s to tackle several prob-
+lems involving structured data (Desobry et al., 2007; Moreno et al., 2004; Jebara et al., 2004; Hein
+and Bousquet, 2005; Lafferty and Lebanon, 2005; Cuturi et al., 200 5). By deﬁning a parametric
+familyScontaining the distributions from which the data points (in the input space X) are assumed
+to have been generated, and deﬁning a map from XfromS(e.g., via maximum likelihood estima-
+tion), a distribution in Smay be ﬁtted to each datum. Therefore, a kernel that is deﬁned on S×S
+automatically induces a kernel on X×X, through map composition. In text categorization, this
+framework appears as an alternative to the Euclidean geometry inherent to the usual bag-of-words
+representations. In fact, approaches that map data to statistical manifolds, equipped with well-
+motivated non-Euclidean metrics (Lafferty and Lebanon, 2005), often o utperform support vector
+machine (SVM) classiﬁers with linear kernels (Joachims, 2002). Some of the se kernels have a
+natural information theoretic interpretation, establishing a bridge between ke rnel methods and in-
+formationtheory(Cuturiet al.,2005;Heinand Bousquet,2005).
+Themaingoalofthispaperistowidenthatbridge;wedothatbyintroducinga newclassofker-
+nels rooted in nonextensive information theory, which contains previous information theoretic ker-
+nels as particular elements. The Shannon and R ´enyi entropies (Shannon, 1948; R ´enyi, 1961) share
+theextensivity property: thejointentropyofapairofindependentrandomvariablese qualsthesum
+of the individual entropies. Abandoning this property yields the so-called nonextensive entropies
+(Havrda and Charv ´at, 1967; Lindhard, 1974; Lindhard and Nielsen, 1971; Tsallis, 1988) , which
+haveraisedgreatinterestamongphysicistsinmodelingphenomenasuchas long-rangeinteractions
+and multifractals, and in constructing nonextensive generalizations of Boltz mann-Gibbs statisti-
+cal mechanics (Abe, 2006). Nonextensive entropies have also been r ecently used in signal/image
+processing (Li et al., 2006) and other areas (Gell-Mann and Tsallis, 20 04). The so-called Tsal-
+lis entropies (Havrda and Charv ´at, 1967; Tsallis, 1988) form a parametric family of nonextensive
+entropies that includes the Shannon-Boltzmann-Gibbs entropy as a particu lar case. Nonextensive
+generalizations of informationtheoryhavebeen proposed(Furuichi,20 06).
+Convexity and Jensen’s inequality are key concepts underlying severa l central results of infor-
+mation theory, for example, the non-negativity of the Kullback-Leibler (KL) divergence (orrela-
+tive entropy ) (Kullback and Leibler, 1951). Jensen’s inequality (Jensen, 1906) a lso underlies the
+Jensen-Shannon (JS) divergence , a symmetrized and smoothed version of the KL divergence (Lin
+and Wong, 1990; Lin, 1991), often used in statistics, machine learning, sig nal/image processing,
+andphysics.
+In this paper, we introduce new extensions of JS-type divergences by generalizing its two pil-
+lars:convexity andShannon’s entropy . These divergences are then used to deﬁne new information-
+theoretickernels betweenprobabilitydistributions. Morespeciﬁcally,our ma in contributionsare:
+•The concept of q-convexity , generalizing that of convexity, for which we prove a Jensen q-
+inequality . The related concept of Jensen q-differences , which generalize Jensen differences,
+is also proposed. Based on these concepts, we introduce the Jensen-Tsallis (JT) q-difference ,
+a nonextensive generalization of the JS divergence, which is also a “mutu al information” in
+the senseof Furuichi(2006).
+•Characterization of the JT q-difference, with respect to convexity and extrema, extending
+workbyBurbea andRao (1982)and byLin(1991)forthe JSdiverge nce.
+936NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+•Deﬁnition of k-th order joint and conditional JT q-differences for families of stochastic pro-
+cesses,and derivationof achain rule.
+•Abroadfamilyof(nonextensiveinformationtheoretic)positivedeﬁniteker nels,interpretable
+as nonextensive mutual information kernels, ranging from the Boolean to th e linear kernels,
+and includingtheJS kernelproposedbyHein andBousquet(2005).
+•A family of (nonextensive information theoretic) positive deﬁnite kernels be tween stochastic
+processes, subsuming well-known string kernels (e.g., the p-spectrum kernel) (Leslie et al.,
+2002).
+•Extensions of results of Hein and Bousquet (2005) proving positive de ﬁniteness of kernels
+based on the unbalanced JS divergence. A connection between these n ew kernels and those
+studied by Fuglede (2005) and Hein and Bousquet (2005) is also establis hed. In passing, we
+show that the parametrix approximation of the multinomial diffusion kernel introd uced by
+LaffertyandLebanon(2005) is notpositivedeﬁniteingeneral.
+The paper is organized as follows. Section 2 reviews nonextensive entr opies, with empha-
+sis on the Tsallis case. Section 3 discusses Jensen differences and div ergences. The concepts
+ofq-differences and q-convexity are introduced in Section 4, where they are used to deﬁne and
+characterize some new divergence-type quantities. In Section 5, we deﬁ ne the Jensen-Tsallis q-
+differenceandderivesomeofitsproperties;inthatsection,wealsodeﬁ nek-thorderJensen-Tsallis
+q-differences for families of stochastic processes. The new family of entr opic kernels is introduced
+and characterized in Section 6, which also introduces nonextensive ker nels between stochastic pro-
+cesses. Experiments on text categorization are reported in Section 7. Sec tion 8 concludes the paper
+anddiscussesfutureresearch.
+2. NonextensiveEntropiesand Tsallis Statistics
+In this section, we start with a brief overview of nonextensive entropies. We then introduce the
+familyofTsallisentropies,andextendtheir domain tounnormalizedmeasures.
+2.1 Nonextensivity
+Inwhatfollows, R+denotes thenonnegativereals, R++denotes thestrictlypositivereals,and
+Δn−1/defines/braceleftBigg
+(x1,...,xn)∈Rn|n
+∑
+i=1xi=1,∀ixi≥0/bracerightBigg
+denotes the (n−1)-dimensionalsimplex.
+Inspired by the axiomatic formulation of Shannon’s entropy (Khinchin, 195 7; Shannon and
+Weaver, 1949), Suyari (2004) proposed an axiomatic framework for nonextensive entropies and
+a uniqueness theorem. Let q≥0 be a ﬁxed scalar, called the entropic index . Suyari’s axioms
+(AppendixA) determineafunction Sq,φ:Δn−1→Rof theform
+Sq,φ(p1,...,pn) =/braceleftBigg
+k
+φ(q)/parenleftbig
+1−∑n
+i=1pq
+i/parenrightbig
+ifq/\e}atio\slash=1
+−k∑n
+i=1pilnpiifq=1,(1)
+937MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+wherekis a positive constant, and φ:R+→Ris a continuous function that satisﬁes the following
+three conditions: (i)φ(q)has the same sign as q−1;(ii)φ(q)vanishes if and only if q=1;(iii)φis
+differentiableina neighborhoodof 1and φ′(1) =1.
+Note that S1,φ=limq→1Sq,φ, thusSq,φ(p1,...,pn), seen as a function of q, is continuous at
+q=1. For any φsatisfying these conditions, Sq,φhas thepseudoadditivity property: for any two
+independentrandomvariables AandB,withprobabilitymassfunctions pA∈ΔnA−1andpB∈ΔnB−1,
+respectively, consider the new random variable A⊗Bdeﬁned by the joint distribution pA⊗pB∈
+ΔnAnB−1;then,
+Sq,φ(A⊗B) =Sq,φ(A)+Sq,φ(B)−φ(q)
+kSq,φ(A)Sq,φ(B),
+wherewe denote(asusual) Sq,φ(A)/definesSq,φ(pA).
+Forq=1,Suyari’saxioms recover theShannon-Boltzmann-Gibbs (SBG) entrop y,
+S1,φ(p1,...,pn) =H(p1,...,pn) =−kn
+∑
+i=1pilnpi,
+andpseudoadditivityturnsinto additivity , thatis,H(A⊗B) =H(A)+H(B)holds.
+Several proposals for φhave appeared in the literature (Havrda and Charv ´at, 1967; Dar ´oczy,
+1970; Tsallis, 1988). In this article, unless stated otherwise, we set φ(q) =q−1, which yields the
+Tsallisentropy :
+Sq(p1,...,pn) =k
+q−1/parenleftBigg
+1−n
+∑
+i=1pq
+i/parenrightBigg
+. (2)
+Tosimplify,we let k=1andwritetheTsallisentropyas
+Sq(X)/definesSq(p1,...,pn) =−∑
+x∈Xp(x)qlnqp(x), (3)
+where ln q(x)/defines(x1−q−1)/(1−q)is theq-logarithm function , which satisﬁes ln q(xy) =lnq(x)+
+x1−qlnq(y)and lnq(1/x) =−xq−1lnq(x). This notationwas introducedbyTsallis(1988).
+2.2 Tsallis Entropies
+Furuichi(2006)derivedsomeinformationtheoreticpropertiesofTsallise ntropies. Tsallis jointand
+conditionalentropies aredeﬁned, respectively,as
+Sq(X,Y)/defines−∑
+x,yp(x,y)qlnqp(x,y)
+and
+Sq(X|Y)/defines−∑
+x,yp(x,y)qlnqp(x|y) =∑
+yp(y)qSq(X|y), (4)
+andthe chainrule Sq(X,Y) =Sq(X)+Sq(Y|X)holds.
+For two probability mass functions pX,pY∈Δn, theTsallis relative entropy , generalizing the
+KL divergence,is deﬁnedas
+Dq(pX/bardblpY)/defines−∑
+xpX(x)lnqpY(x)
+pX(x). (5)
+938NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+Finally,the Tsallismutual entropy is deﬁnedas
+Iq(X;Y)/definesSq(X)−Sq(X|Y) =Sq(Y)−Sq(Y|X), (6)
+generalizing (for q>1) Shannon’s mutual information (Furuichi, 2006). In Section 5, we estab lish
+a relationship between Tsallis mutual entropy and a quantity called Jensen-Tsallis q-difference ,
+generalizing the one between mutual information and the JS divergence (sh own, e.g., by Grosse
+etal.2002, andrecalledbelow, inSection3.2).
+Furuichi (2006) also mentions an alternative generalization of Shannon’s mutual information,
+deﬁnedas
+˜Iq(X;Y)/definesDq(pX,Y/bardblpX⊗pY), (7)
+wherepX,Yis the true joint probability mass function of (X,Y)andpX⊗pYdenotes their joint
+probability if they were independent. This alternative deﬁnition of a “Tsallis mu tual entropy” has
+also been used by Lamberti and Majtey (2003); notice that Iq(X;Y)/\e}atio\slash=˜Iq(X;Y)in general, the case
+q=1 being a notable exception. In Section 5, we show that this alternative deﬁn ition also leads to
+anonextensiveanalogue ofthe JSdivergence.
+2.3 Entropies of Measures and Denormalization Formulae
+Throughout this paper, we consider functionals that extend the domain of the Shannon-Boltzmann-
+Gibbs and Tsallis entropies to include unnormalized measures. Although, as s hown below, these
+functionals are completely characterized by their restriction to the normalized p robability distri-
+butions, the denormalization expressions will play an important role in Section 6 to derive novel
+positivedeﬁnite kernelsinspiredbymutualinformations.
+In order to keep generality, whenever possible we do not restrict to ﬁnite or countable sample
+spaces. Instead, we consider a measure space (X,M,ν)whereXis Hausdorff and νis aσ-ﬁnite
+Radon measure. We denote by M+(X)the set of ﬁniteRadonν-absolutely continuous measures
+onX, and byM1
++(X)the subset of those which are probability measures. For simplicity, we often
+identify each measure in M+(X)orM1
++(X)with its corresponding nonnegative density; this is
+legitimated by the Radon-Nikodym theorem, which guarantees the existence an d uniqueness (up
+to equivalence within measure zero) of a density function f:X→R+. In the sequel, Lebesgue-
+Stieltjes integrals of the formR
+Af(x)dν(x)are often written asR
+Af, or simplyRf,ifA=X.
+Unlessotherwisestated, νistheLebesgue-Borelmeasure,if X⊆RnandintX/\e}atio\slash=∅,orthecounting
+measure,if Xiscountable. Inthelatter caseintegralscan beseenasﬁnite sumsorinﬁnitese ries.
+Deﬁne R/definesR∪{−∞,+∞}. For some functional G:M+(X)→R, let the set MG
++(X)/defines{f∈
+M+(X):|G(f)|<∞}be its effective domain, and M1,G
++(X)/definesMG
++(X)∩M1
++(X)be its subdomain
+of probabilitymeasures.
+The following functional (Cuturi and Vert, 2005), extends the Shannon- Boltzmann-Gibbs en-
+tropyfrom M1,H
++(X)totheunnormalized measuresin MH
++(X):
+H(f) =−kZ
+flnf=Z
+ϕH◦f, (8)
+wherek>0 isaconstant,thefunction ϕH:R+→Risdeﬁned as
+ϕH(y) =−kylny,
+939MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+and,as usual,0ln0 /defines0.
+The generalized form of the KL divergence, often called generalized I-divergence (Csiszar,
+1975),isadirecteddivergencebetweentwomeasures µf,µg∈MH
++(X),suchthat µfisµg-absolutely
+continuous (denoted µf≪µg). Letfandgbe the densities associated with µfandµg, respectively.
+Intermsof densities,this generalizedKL divergenceis
+D(f,g) =kZ/parenleftbigg
+g−f+flnf
+g/parenrightbigg
+. (9)
+Let us now proceed similarly with the nonextensive entropies. For q≥0, letMSq
++(X) ={f∈
+M+(X):fq∈M+(X)}forq/\e}atio\slash=1, andMSq
++(X) =MH
++(X)forq=1. The nonextensive counterpart
+of (8),deﬁned on MSq
++(X),is
+Sq(f) =Z
+ϕq◦f, (10)
+whereϕq:R+→Ris givenby
+ϕq(y) =/braceleftBigg
+ϕH(y)ifq=1,
+k
+φ(q)(y−yq)ifq/\e}atio\slash=1,(11)
+andφ:R+→Rsatisﬁes conditions (i)-(iii)stated following Equation (1). The Tsallis entropy is
+obtained for φ(q) =q−1,
+Sq(f) =−kZ
+fqlnqf. (12)
+Similarly,anonextensivegeneralizationof thegeneralized KL divergenc e(9)is
+Dq(f,g) =−k
+φ(q)Z/parenleftbig
+qf+(1−q)g−fqg1−q/parenrightbig
+,
+forq/\e}atio\slash=1,andD1(f,g)/defineslimq→1Dq(f,g) =D(f,g).
+Deﬁne |f|/definesRf=µf(X). For|f|=|g|=1, several particular cases are recovered: if φ(q) =
+1−21−q,thenDq(f,g)istheHavrda-Charv ´atrelativeentropy(HavrdaandCharv ´at,1967;Dar ´oczy,
+1970); if φ(q) =q−1, thenDq(f,g)is the Tsallis relative entropy (5); ﬁnally, if φ(q) =q(q−1),
+thenDq(f,g)is the canonical α-divergence deﬁned by Amari and Nagaoka (2001) in the realm of
+information geometry (with the reparameterization α=2q−1 and assuming q>0 so thatφ(q) =
+q(q−1)conformswith theaxioms).
+Remark 1 Both functionals S qand Dqare completely determined by their restriction to the nor-
+malized measures. Indeed, the following equalities hold for any c ∈R++and f,g∈MSq
++(X), with
+µf≪µg:
+Sq(cf) =cqSq(f)+|f|ϕq(c),
+Dq(cf,cg) =cDq(f,g),
+Dq(cf,g) =cqDq(f,g)−qϕq(c)|f|+k
+φ(q)(q−1)(1−cq)|g|. (13)
+940NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+Forany f ∈MSq
++(X)andg ∈MSq
++(Y),
+Sq(f⊗g) =|g|Sq(f)+|f|Sq(g)−φ(q)
+kSq(f)Sq(g).
+If|f|=|g|=1, werecover thepseudo-additivitypropertyofnonextensiveentropies:
+Sq(f⊗g) =Sq(f)+Sq(g)−φ(q)
+kSq(f)Sq(g).
+Forφ(q) =q−1,DqistheTsallisrelativeentropy and (13)reduces to
+Dq(cf,g) =cqDq(f,g)−qϕq(c)|f|+k(1−cq)|g|.
+Bytakingthelimitq →1,we obtainthefollowing formulaeforH and D:
+H(cf) =cH(f)+|f|ϕH(c),
+D(cf,cg) =cD(f,g),
+D(cf,g) =cD(f,g)−|f|ϕH(c)+k(1−c)|g|.
+Consider f ∈MH
++(X)andg∈MH
++(Y),anddeﬁne f ⊗g∈MH
++(X×Y)as(f⊗g)(x,y)/definesf(x)g(y).
+Then,
+H(f⊗g) =|g|H(f)+|f|H(g).
+If|f|=|g|=1,werecovertheadditivitypropertyoftheShannon-Boltzmann-Gibbsentr opy,H (f⊗
+g) =H(f)+H(g).
+3. JensenDifferencesand Divergences
+In this section, we review the concept of Jensen difference. We then dis cuss three particular cases:
+theJensen-Shannon,Jensen-R ´enyi,and Jensen-Tsallisdivergences.
+3.1 The JensenDifference
+Jensen’s inequality (Jensen, 1906) is at the heart of many important res ults in information theory.
+LetE[.]denote the expectation operator. Jensen’s inequality states that if Zis an integrable random
+variable taking values in a set Z, andfis a measurable convex function deﬁned on the convex hull
+ofZ,then
+f(E[Z])≤E[f(Z)].
+Burbea and Rao (1982) considered the scenario where Zis ﬁnite, and took f/defines−Hϕ, where
+Hϕ:[a,b]n→Ris aconcavefunction,called a ϕ-entropy,deﬁned as
+Hϕ(z)/defines−n
+∑
+i=1ϕ(zi), (14)
+whereϕ:[a,b]→Ris convex. TheystudiedtheJensendifference
+Jπ
+ϕ(y1,...,ym)/definesHϕ/parenleftBigg
+m
+∑
+t=1πtyt/parenrightBigg
+−m
+∑
+t=1πtHϕ(yt),
+941MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+whereπ/defines(π1,...,πm)∈Δm−1,andeach y1,...,ym∈[a,b]n.
+Weconsiderhereamoregeneralscenario,involvingtwomeasuresets (X,M,ν)and(T,T,τ),
+wherethesecondis usedtoindextheﬁrst.
+Deﬁnition 2 Let µ/defines(µt)t∈T∈[M+(X)]Tbe a family of ﬁnite Radon measures on X, indexed by
+T,and letω∈M+(T)be aﬁniteRadonmeasureon T. Deﬁne:
+Jω
+Ψ(µ)/definesΨ/parenleftbiggZ
+Tω(t)µtdτ(t)/parenrightbigg
+−Z
+Tω(t)Ψ(µt)dτ(t) (15)
+where:
+(i)Ψisa concavefunctional suchthat domΨ⊆M+(X);
+(ii)ω(t)µt(x)isτ-integrable,for allx ∈X;
+(iii)R
+Tω(t)µtdτ(t)∈domΨ;
+(iv)µt∈domΨ,for allt ∈T;
+(v)ω(t)Ψ(µt)isτ-integrable.
+Ifω∈M1
++(T),we stillcall (15)aJensendifference.
+In the following subsections, we consider several instances of Deﬁnition 2, leading to several
+Jensen-typedivergences.
+3.2 The Jensen-ShannonDivergence
+Letpbe a random probability distribution taking values in {pt}t∈Taccording to a distribution
+π∈M1
++(T). (In classiﬁcation/estimation theory parlance, πis called the prior distribution and
+pt/definesp(.|t)thelikelihood function.) Then,(15)becomes
+Jπ
+Ψ(p) =Ψ(E[p])−E[Ψ(p)], (16)
+wheretheexpectations arewithrespectto π.
+Let nowΨ=H, the Shannon-Boltzmann-Gibbs entropy. Consider the random variables Tand
+X, taking values respectively in TandX, with densities π(t)andp(x)/definesR
+Tp(x|t)π(t). Using
+standardnotationof informationtheory(Cover andThomas,1991),
+Jπ(p)/definesJπ
+H(p) =H/parenleftbiggZ
+Tπ(t)pt/parenrightbigg
+−Z
+Tπ(t)H(pt)
+=H(X)−Z
+Tπ(t)H(X|T=t)
+=H(X)−H(X|T)
+=I(X;T), (17)
+whereI(X;T)isthemutualinformationbetween XandT. (ThisrelationshipbetweenJSdivergence
+and mutual information was pointed out by Grosse et al. 2002.) Since I(X;T)is also equal to the
+942NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+KL divergence between the joint distribution and the product of the margina ls (Cover and Thomas,
+1991),wehave
+Jπ(p) =H(E[p])−E[H(p)] =E[D(p/bardblE[p])]. (18)
+WhenXandTare ﬁnite with |T|=m,Jπ
+H(p1,...,pm)is called the Jensen-Shannon (JS) di-
+vergence ofp1,...,pm, with weights π1,...,πm(Burbea and Rao, 1982; Lin, 1991). Equality (18)
+allows twointerpretationsof theJSdivergence:
+•the Jensendifferenceof theShannon entropyof p;
+•the expectedKL divergencefrom ptotheexpectation of p.
+Aremarkablefactisthat Jπ(p) =minrE[D(p/bardblr)],thatis,r∗=E[p]isaminimizerof E[D(p/bardblr)]
+with respect to r. It has been shown that this property together with Equality (18) characte rize the
+so-called Bregman divergences : they hold not only for Ψ=H, but for any concave Ψand the
+corresponding Bregman divergence, in which case Jπ
+Ψis theBregman information (Banerjee et al.,
+2005).
+When |T|=2 andπ= (1/2,1/2),pmay be seen as a random distribution whose value on
+{p1,p2}ischosenbytossingafaircoin. Inthiscase, J(1/2,1/2)(p) =JS(p1,p2),where
+JS(p1,p2)/definesH/parenleftbiggp1+p2
+2/parenrightbigg
+−H(p1)+H(p2)
+2
+=1
+2D/parenleftbigg
+p1/vextenddouble/vextenddouble/vextenddoublep1+p2
+2/parenrightbigg
++1
+2D/parenleftbigg
+p2/vextenddouble/vextenddouble/vextenddoublep1+p2
+2/parenrightbigg
+,
+as introduced by Lin (1991). It has been shown that√
+JSsatisﬁes the triangle inequality (hence
+beingametric)andthat,moreover,itisaHilbertianmetric1(EndresandSchindelin,2003;Topsøe,
+2000), which has motivated its use in kernel-based machine learning (Cutur i et al., 2005; Hein and
+Bousquet,2005) (seeSection6).
+3.3 The Jensen-R ´enyiDivergence
+Consider againthe scenarioabove (Section3.2),withthe R ´enyiq-entropy
+Rq(p) =1
+1−qlnZ
+pq
+replacing the Shannon-Boltzmann-Gibbs entropy. It is worth noting that the R´enyi and Tsallis
+q-entropies are monotonically related through Rq(p) =ln/parenleftBig
+[1+(1−q)Sq(p)]1
+1−q/parenrightBig
+, or, using the q-
+logarithmfunction,
+Sq(p) =lnqexpRq(p).
+TheR´enyiq-entropyisconcavefor q∈[0,1)andhastheShannon-Boltzmann-Gibbsentropyas
+thelimitwhen q→1. Letting Ψ=Rq,(16)becomes
+Jπ
+Rq(p) =Rq(E[p])−E[Rq(p)]. (19)
+1. A metric d:X×X→Ris Hilbertian if there is some Hilbert space Hand an isometry f:X→Hsuch that
+d2(x,y) =/a\}bracketle{tf(x)−f(y),f(x)−f(y)/a\}bracketri}htHholds for any x,y∈X(Hein andBousquet,2005).
+943MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+Unlike in the JS divergence case, there is no counterpart of equality (18 ) based on the R ´enyiq-
+divergence
+DRq(p1/bardblp2) =1
+q−1lnZ
+pq
+1p1−q
+2.
+WhenXandTare ﬁnite, we call Jπ
+Rqin (19) the Jensen-R´enyi (JR) divergence . Furthermore,
+when|T|=2andπ= (1/2,1/2),wewrite Jπ
+Rq(p) =JRq(p1,p2),where
+JRq(p1,p2) =Rq/parenleftbiggp1+p2
+2/parenrightbigg
+−Rq(p1)+Rq(p2)
+2.
+The JR divergence has been used in several signal/image processing a pplications, such as regis-
+tration, segmentation, denoising, and classiﬁcation (Ben-Hamza and Krim, 20 03; He et al., 2003;
+Karakos et al., 2007). In Section 6, we show that the JR divergence is ( like the JS divergence) a
+Hilbertianmetric,whichis relevantforitsuseinkernel-basedmachinelearnin g.
+3.4 The Jensen-TsallisDivergence
+Burbea and Rao (1982) have deﬁned Jensen-type divergences of the form (16) based on the Tsallis
+q-entropySq, deﬁned in (12). Like the Shannon-Boltzmann-Gibbs entropy, but unlike the R´enyi
+entropies,theTsallis q-entropy,forﬁnite T,isaninstanceofa ϕ-entropy(seeEquation14). Letting
+Ψ=Sq,(16) becomes
+Jπ
+Sq(p) =Sq(E[p])−E[Sq(p)]. (20)
+Again,as inSection3.3, ifwe considerthe Tsallis q-divergence,
+Dq(p1/bardblp2) =1
+1−q/parenleftbigg
+1−Z
+p1qp21−q/parenrightbigg
+,
+thereis nocounterpartofthe Equality(18).
+WhenXandTare ﬁnite, Jπ
+Sqin (20) is called the Jensen-Tsallis (JT) divergence and it has also
+been applied in image processing(Ben-Hamza, 2006). Unlike the JS diver gence, the JT divergence
+lacksaninterpretationasamutualinformation. Despitethis,for q∈[1,2],itexhibitsjointconvexity
+(Burbea and Rao, 1982). In the next section, we propose an alternati ve to the JT divergence which,
+amongotherfeatures,isinterpretableasanonextensivemutualinformation (inthesenseofFuruichi
+2006) andis jointlyconvex,for q∈[0,1].
+4.q-Convexity and q-Differences
+This section introduces a novel class of functions, termed Jensen q-differences , which generalize
+Jensen differences. Later (in Section 5), we will use these functions to d eﬁne theJensen-Tsallis q-
+difference ,whichwewillproposeasanalternativenonextensivegeneralizationof theJSdivergence,
+instead of the JT divergence discussed in Section 3.4. We begin by recallin g the concept of q-
+expectation (Tsallis,1988).
+Deﬁnition 3 The unnormalized q -expectation of a random variable X, with probability density p,
+is
+Eq[X]/definesZ
+xp(x)q.
+944NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+Ofcourse, q=1correspondstothestandardnotionofexpectation. For q/\e}atio\slash=1,theq-expectation
+does not match the intuitive meaning of average/expectation (e.g., Eq[1]/\e}atio\slash=1, in general). The q-
+expectationisaconvenientconceptinnonextensiveinformationtheory; forexample,ityieldsavery
+compact formforthe Tsallisentropy: Sq(X) =−Eq[lnqp(X)].
+4.1q-Convexity
+We now introduce the novel concept of q-convexity and use it to derive a set of results, namely the
+Jensenq-inequality .
+Deﬁnition 4 Letq∈RandXbeaconvexset. Afunction f :X→Risq-convexifforanyx ,y∈X
+andλ∈[0,1],
+f(λx+(1−λ)y)≤λqf(x)+(1−λ)qf(y). (21)
+If−f is q-convex, f is saidtobe q -concave.
+Of course, 1-convexity is the usual notion of convexity. Many propertie s of 1-convex functions
+donothave q-analogues. Forexample,for q/\e}atio\slash=1,anyq-convexfunctionmustbeeithernonnegative
+(ifq<1) or nonpositive (if q>1); this simple fact can be shown through reductio ad absurdum
+by setting x=yin (21). However, other properties remain: the next proposition states the Jensen
+q-inequality.
+Proposition5 If f:X→Ris q-convex, then for any n ∈N, x1,...,xn∈Xandπ= (π1,...,πn)∈
+Δn−1,
+f/parenleftBigg
+n
+∑
+i=1πixi/parenrightBigg
+≤n
+∑
+i=1πq
+if(xi).
+Moreover,if f iscontinuous,theabove stillholds forcountably manypoints (xi)i∈N.
+ProofIn the ﬁnite case, the proof can be carried out by induction, as in the proo f of the standard
+Jensen inequality (Cover and Thomas, 1991). Assuming that the inequality h olds forn∈N, then,
+fromthe deﬁnitionof q-convexity,itwillalsoholdfor n+1:
+f/parenleftBigg
+n+1
+∑
+i=1πixi/parenrightBigg
+=f/parenleftBigg
+n
+∑
+i=1πixi+πn+1xn+1/parenrightBigg
+=f/parenleftBigg
+(1−πn+1)n
+∑
+i=1π′
+ixi+πn+1xn+1/parenrightBigg
+≤(1−πn+1)qf/parenleftBigg
+n
+∑
+i=1π′
+ixi/parenrightBigg
++πq
+n+1f(xn+1)
+≤n
+∑
+i=1πq
+if(xi)+πq
+n+1f(xn+1) =n+1
+∑
+i=1πq
+if(xi),
+where we used the fact that πn+1=1−∑n
+i=1πi, and we deﬁned π′
+i/definesπi/(1−πn+1)(note that
+∑n
+i=1π′
+i=1.) Furthermore,if fis continuous,itcommutes with takinglimits,thus
+945MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+f/parenleftBigg
+∞
+∑
+i=1πixi/parenrightBigg
+=f/parenleftBigg
+lim
+n→∞n
+∑
+i=1πixi/parenrightBigg
+=lim
+n→∞f/parenleftBigg
+n
+∑
+i=1πixi/parenrightBigg
+≤lim
+n→∞n
+∑
+i=1πq
+if(xi) =∞
+∑
+i=1πq
+if(xi).
+Proposition6 Let f≥0andq ≥r≥0; then,
+f isq-convex ⇒f isr-convex (22)
+f isr-concave ⇒f isq-concave . (23)
+ProofImplication(22)resultsfrom
+f(λx+(1−λ)y)≤λqf(x)+(1−λ)qf(y)≤λrf(x)+(1−λ)rf(y),
+wheretheﬁrstinequalitystatesthe q-convexityof fandthesecondoneisvalidbecause f(x),f(y)≥
+0andtr≥tq≥0,forany t∈[0,1]andq≥r. Theproofof (23)is similar.
+4.2 Jensen q-Differences
+We now generalize Jensen differences, formalized in Deﬁnition 2, by intro ducing the concept of
+Jensenq-differences.
+Deﬁnition 7 Let µ/defines(µt)t∈T∈[M+(X)]Tbe a family of ﬁnite Radon measures on X, indexed by
+T,and letω∈M+(T)be aﬁniteRadonmeasureon T. Forq ≥0,deﬁne
+Tω
+q,Ψ(µ)/definesΨ/parenleftbiggZ
+Tω(t)µtdτ(t)/parenrightbigg
+−Z
+Tω(t)qΨ(µt)dτ(t), (24)
+where:
+(i)Ψisa concavefunctional suchthat domΨ⊆M+(X);
+(ii)ω(t)µt(x)isτ-integrableforallx ∈X;
+(iii)R
+Tω(t)µtdτ(t)∈domΨ;
+(iv)µt∈domΨ,for allt ∈T;
+(v)ω(t)qΨ(µt)isτ-integrable.
+Ifω∈M1
++(T),we callthefunction deﬁnedin (24)aJensenq-difference .
+Burbea and Rao (1982) established necessary and sufﬁcient conditio ns onϕfor the Jensen
+difference of a ϕ-entropy (see Equation 14) to be convex. The following proposition gene ralizes
+thatresult,extendingittoJensen q-differences.
+Proposition8 LetTandXbe ﬁnite sets, with |T|=m and |X|=n, and let π∈M1
++(T). Let
+ϕ:[0,1]→RbeafunctionofclassC2andconsiderthe( ϕ-entropy,BurbeaandRao,1982)function
+Ψ:[0,1]n→Rdeﬁned as Ψ(z)/defines−∑n
+i=1ϕ(zi). Then, the q-difference Tπ
+q,Ψ:[0,1]nm→Ris convex
+ifandonlyif ϕis convexand −1/ϕ′′is(2−q)-convex.
+Theproofis ratherlong, thusitis relegatedtoAppendixB.
+946NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+5. The Jensen-Tsallis q-Difference
+ThissectionintroducestheJensen-Tsallis q-difference,anonextensivegeneralizationoftheJensen-
+Shannondivergence. Afterderivingsomepropertiesconcerningthe convexityandextremaofthese
+functionals, we introduce the notion of joint and conditional Jensen-Tsallis q-difference, a contrast
+measure between stochastic processes. We end the section with a brief asy mptotic analysis for the
+extensivecase.
+5.1 Deﬁnition
+AsinSection3.2,let pbearandomprobabilitydistributiontakingvaluesin {pt}t∈Taccordingtoa
+distribution π∈M1
++(T). Then,we maywrite
+Tπ
+q,Ψ(p) =Ψ(E[p])−Eq[Ψ(p)],
+where the expectations are with respect to π. Hence Jensen q-differences may be seen as defor-
+mations of the standard Jensen differences (16), in which the second ex pectation is replaced by a
+q-expectation.
+LetΨ=Sq,thenonextensiveTsallis q-entropy. Introducingtherandomvariables TandX,with
+valuesrespectivelyin TandX,withdensities π(t)andp(x)/definesR
+Tp(x|t)π(t),wehave(writing Tπ
+q,Sq
+simplyas Tπ
+q)
+Tπ
+q(p) =Sq(E[p])−Eq[Sq(p)]
+=Sq(X)−Z
+Tπ(t)qSq(X|T=t)
+=Sq(X)−Sq(X|T)
+=Iq(X;T), (25)
+whereSq(X|T)is the Tsallis conditional entropy (4), and Iq(X;T)is the Tsallis mutual information
+(6), as deﬁned by Furuichi (2006). Observe that (25) is a nonexten sive analogue of (17). Since, in
+general,Iq/\e}atio\slash=˜Iq(see Equation 7), unless q=1 (in that case, I1=˜I1=I), there is no counterpart
+of (18) in terms of q-differences. Nevertheless, Lamberti and Majtey (2003) have propo sed a non-
+logarithmic version of the JS divergence, which corresponds to using ˜Iqfor the Tsallis mutual q-
+entropy(althoughthisinterpretationis notexplicitlymentioned).
+WhenXandTare ﬁnite with |T|=m, we call the quantity Tπ
+q(p1,...,pm)theJensen-Tsallis
+(JT) q-difference ofp1,...,pmwith weights π1,...,πm. Although the JT q-difference is a gener-
+alization of the JS divergence, for q/\e}atio\slash=1, the term “divergence” would be misleading in this case,
+sinceTπ
+qmay takenegativevalues(if q<1) anddoes notvanishingeneralif pisdeterministic.
+When |T|=2andπ= (1/2,1/2),deﬁneTq/definesT1/2,1/2
+q,
+Tq(p1,p2) =Sq/parenleftbiggp1+p2
+2/parenrightbigg
+−Sq(p1)+Sq(p2)
+2q.
+Notable casesariseforparticular valuesof q:
+•Forq=0,S0(p) =−1+ν(supp(p)), whereν(supp(p))denotes the measure of the support
+ofp(recallthat pisdeﬁnedonthemeasurespace (X,M,ν)). Forexample,if Xisﬁniteand
+947MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+νis the counting measure, ν(supp(p)) =/bardblp/bardbl0is the so-called 0-norm(although it is not a
+norm)ofvector p,thatis,itsnumberofnonzerocomponents. TheJensen-Tsallis0-differ ence
+is thus
+T0(p1,p2) = −1+ν/parenleftbigg
+supp/parenleftbiggp1+p2
+2/parenrightbigg/parenrightbigg
++1−ν(supp(p1))+1−ν(supp(p2))
+=1+ν(supp(p1)∪supp(p2))−ν(supp(p1))−ν(supp(p2))
+=1−ν(supp(p1)∩supp(p2)); (26)
+ifXis ﬁniteand νisthe countingmeasure,thisbecomes
+T0(p1,p2) =1−/bardblp1⊙p2/bardbl0,
+where ⊙denotes the Hadamard-Schur (i.e., elementwise) product. We call T0theBoolean
+difference .
+•Forq=1,sinceS1(p) =H(p),T1is theJS divergence,
+T1(p1,p2) =JS(p1,p2).
+•Forq=2,S2(p) =1−/a\}bracketle{tp,p/a\}bracketri}ht, where /a\}bracketle{ta,b/a\}bracketri}ht=R
+Xa(x)b(x)dν(x)is the inner product between
+aandb(which reduces to /a\}bracketle{ta,b/a\}bracketri}ht=∑iaibiifXis ﬁnite and νis the counting measure). Con-
+sequently, theTsallis2-differenceis
+T2(p1,p2) =1
+2−1
+2/a\}bracketle{tp1,p2/a\}bracketri}ht,
+which wecallthe lineardifference .
+5.2 Properties of theJT q-Difference
+This subsection presents results regarding convexity and extrema of the J Tq-difference, for certain
+values of q, extending known properties of the JS divergence ( q=1). Some properties of the JS
+divergencearelostinthetransitiontononextensivity;forexample,whileth eformerisnonnegative
+and vanishes if and only if all the distributions are identical, this is not true in ge neral with the JT
+q-difference. Nonnegativity of the JT q-difference is only guaranteed if q≥1, which explains why
+some authors (e.g., Furuichi 2006) only consider values of q≥1, when looking for nonextensive
+analogues of Shannon’s information theory. Moreover, unless q=1, it is not generally true that
+Tπ
+q(p,...,p) =0 or even that Tπ
+q(p,...,p,p′)≥Tπ
+q(p,...,p,p). For example, the solution of the
+optimizationproblem
+min
+p1∈ΔnTq(p1,p2), (27)
+is, in general, different from p2, unlessq=1. Instead, this minimizer is closer to the uniform
+distributionif q∈[0,1),andclosertoadegeneratedistributionfor q∈(1,2](seeFig.1). Thisisnot
+so surprising: recall that T2(p1,p2) =1
+2−1
+2/a\}bracketle{tp1,p2/a\}bracketri}ht; in this case, (27) becomes a linear program,
+andthe solutionis not p∗
+1=p2, butp∗
+1=δj,wherej=argmax ip2i.
+At this point, we should also remark that, when Xis a ﬁnite set, the uniform distribution max-
+imizes the Tsallis entropy for any q≥0, which is in fact one of the Suyari axioms underlying the
+Tsallisentropy(seeAxiomA2 inAppendixA).
+948NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1−0.8 −0.6 −0.4 −0.2 00.2 0.4 0.6 
+pJTqD Jensen−Tsallis q−Difference to a fixed Bernoulli (p 0=0.3) 
+q=0.25 
+q=0.5 
+q=1 
+q=1.5 
+q=2 
+Figure1: Jensen-Tsallis q-difference between two Bernoulli distributions, p1= (0.3,0.7)and
+p2= (p,1−p), for several values of the entropic index q. Observe that, for q∈[0,1),
+the minimizer of the JT q-difference approaches the uniform distribution (0.5,0.5)asq
+approaches 0; for q∈(1,2], this minimizer approaches the degenerate distribution, as
+q→2.
+We start with the following corollary of Proposition 8, which establishes the join t convexity of
+the JTq-difference, for q∈[0,1]. (Interestingly, this “complements” the joint convexity of the JT
+divergence(20),for q∈[1,2],provedbyBurbea andRao 1982.)
+Corollary 9 LetTandXbe ﬁnite sets with cardinalities m and n, respectively. For q ∈[0,1], the
+JTq-differenceisajointlyconvexfunctiononM1,Sq
++(X). Formally,let {p(i)
+t}t∈T,andi =1,...,l,be
+acollection ofl sets ofprobabilitydistributionson X;then,for any (λ1,...,λl)∈Δl−1,
+Tπ
+q/parenleftBigg
+l
+∑
+i=1λip(i)
+1,...,l
+∑
+i=1λip(i)
+m/parenrightBigg
+≤l
+∑
+i=1λiTπ
+q(p(i)
+1,...,p(i)
+m).
+ProofObserve that the Tsallis entropy (3) of a probability distribution pt={pt1,...,ptn}can be
+writtenas
+Sq(pt) =−n
+∑
+i=1ϕ(pti),whereϕq(x) =x−xq
+1−q;
+thus, from Proposition 8, Tπ
+qis convex if and only if ϕqis convex and −1/ϕ′′
+qis(2−q)-convex.
+Sinceϕ′′
+q(x)=qxq−2,ϕqisconvexfor x≥0andq≥0. Toshowthe (2−q)-convexityof −1/ϕ′′
+q(x)=
+−(1/q)x2−q,forxt≥0,andq∈[0,1],weuseaversionofthepowermeaninequality(Steele,2006),
+−/parenleftBigg
+l
+∑
+i=1λixi/parenrightBigg2−q
+≤ −l
+∑
+i=1(λixi)2−q=−l
+∑
+i=1λ2−q
+ix2−q
+i,
+949MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+thus concludingthat −1/ϕ′′
+qisinfact (2−q)-convex.
+A consequence of Corollary 9 is that, for ﬁnite Xand anyq∈[0,1], the JTq-difference is
+upper bounded, namely Tπ
+q(p1,...,pm)≤Sq(π). Indeed, since Tπ
+qis convex and its domain is the
+Cartesian product of msimplices (a convexpolytope), its maximum mustoccur on a vertex, that is,
+when each argument ptis a degenerate distribution at xt, denoted δxt. In particular, if |X| ≥ |T|,
+thismaximumoccursatavertexcorrespondingtodisjointdegeneratedistrib utions,thatis,suchthat
+xi/\e}atio\slash=xjifi/\e}atio\slash=j. Atthis maximum,
+Tπ
+q(δx1,...,δxm) =Sq/parenleftBigg
+m
+∑
+t=1πtδxt/parenrightBigg
+−m
+∑
+t=1πtSq(δxt)
+=Sq/parenleftBigg
+m
+∑
+t=1πtδxt/parenrightBigg
+(28)
+=Sq(π)
+wheretheequalityin(28)resultsfrom Sq(δxt) =0. (Noticethatthismaximummaynotbeachieved
+if|X|<|T|.) Thenextpropositionprovidesastrongerresult: itestablishesuppera ndlowerbounds
+forthe JT q-differencetoanynon-negative qandtocountable XandT.
+Proposition10 LetTandXbe countablesets. Forq ≥0,
+Tπ
+q((pt)t∈T)≤Sq(π), (29)
+and, if |X| ≥ |T|, the maximum of Tπ
+qis reached for a set of disjoint degenerate distributions. This
+maximum maynotbeattained if |X|<|T|.
+Forq≥1,
+Tπ
+q((pt)t∈T)≥0,
+and the minimum of Tπ
+qis attained in the purely deterministic case, that is, when all distributions
+areequaltothe samedegeneratedistribution.
+Forq∈[0,1]andXaﬁnitesetwith |X|=n,
+Tπ
+q((pt)t∈T)≥Sq(π)[1−n1−q]. (30)
+Thislower bound(whichis zeroor negative) isattained whenalldistributions areuniform.
+ProofTheproofis givenin AppendixC.
+Finally, the next proposition characterizes the convexity/concavity of the J Tq-difference on
+each argument.
+Proposition11 LetTandXbe countable sets. The JT q-difference is convex in each argument,
+for q∈[0,2],andconcave ineachargument,for q ≥2.
+950NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+ProofNoticethatthe JT q-differencecanbe writtenas Tπ
+q(p1,...,pm) =
+∑jψ(p1j,...,pmj),with
+ψ(y1,...,ym) =1
+q−1/bracketleftBigg
+∑
+i(πi−πq
+i)yi+∑
+iπq
+iyq
+i−/parenleftBigg
+∑
+iπiyi/parenrightBiggq/bracketrightBigg
+.
+Itsufﬁcestoconsider thesecondderivativeof ψwithrespectto y1. Introducing z=∑m
+i=2πiyi,
+∂2ψ
+∂y2
+1=q/bracketleftBig
+πq
+1yq−2
+1−π2
+1(π1y1+z)q−2/bracketrightBig
+=qπ2
+1/bracketleftbig
+(π1y1)q−2−(π1y1+z)q−2/bracketrightbig
+. (31)
+Sinceπ1y1≤(π1y1+z)≤1, the quantity in (31) is nonnegative for q∈[0,2]and non-positive for
+q≥2.
+5.3 Joint and ConditionalJT q-Differencesand aChain Rule
+This subsection introduces joint and conditional JT q-differences, which will later be used as a
+contrast measure between stochastic processes. A chain rule is derive d that relates conditional and
+jointJTq-differences.
+Deﬁnition 12 LetX,YandTbe measure spaces. Let (pt)t∈T∈[M1
++(X×Y)]Tbe a family of
+measuresinM1
++(X×Y)indexedby T,andlet pbearandomprobabilitydistributiontakingvalues
+in{pt}t∈Taccording toadistribution π∈M1
++(T). Consider also:
+•for eacht ∈T,themarginals p t(Y)∈M1
++(Y),
+•for eacht ∈Tandy∈Y,the conditionals p t(X|Y=y)∈M1
++(X),
+•the mixturer (X,Y)/definesR
+Tπ(t)pt(X,Y)∈M1
++(X×Y),
+•the marginalr (Y)∈M1
++(Y),
+•for eachy ∈Y,theconditionals r (X|Y=y)∈M1
++(X).
+Fornotationalconvenience,wealsoappendasubscriptto ptoemphasiz eitsjointorconditionalde-
+pendencyoftherandomvariablesX andY,thatis, p XY/definesp,and p X|Ydenotesarandomconditional
+probabilitydistributiontakingvalues in {pt(.|Y)}t∈Taccordingto thedistribution π.
+Forq≥0,we refer tothe jointJTq-difference of pXYby
+Tπ
+q(pXY)/definesTπ
+q(p) =Sq(r)−Eq,T∼π(T)[Sq(pt)]
+andtothe conditional JT q-difference of pX|Yby
+Tπ
+q(pX|Y)/definesEq,Y∼r(Y)[Sq(r(.|Y=y))]−Eq,T∼π(T)/bracketleftbig
+Eq,Y∼pt(Y)[Sq(pt(.|Y=y))]/bracketrightbig
+,(32)
+where weappended therandomvariablesbeing usedineachq-expecta tion,for thesakeofclarity.
+951MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+Note that the joint JT q-difference is just the usual JT q-difference of the joint random variable
+X×Y,which equals (cf. 25)
+Tπ
+q(pXY) =Sq(X,Y)−Sq(X,Y|T) =Iq(X×Y;T), (33)
+and the conditional JT q-difference is simply the usual JT q-difference with all entropies replaced
+byconditional entropies(conditionedon Y). Indeed, expression(32)canbe rewrittenas:
+Tπ
+q(pX|Y) =Sq(X|Y)−Sq(X|T,Y) =Iq(X;T|Y), (34)
+that is, the conditional JT q-difference may also interpreted as a Tsallis mutual information, as in
+(25),butnow conditioned ontherandomvariable Y.
+Notealsothat,fortheextensivecase q=1,(32)mayalsoberewrittenintermsoftheconditional
+KL divergences,
+Jπ(pX|Y)/definesTπ
+1(pX|Y) =EY∼r(Y)[H(r(.|Y=y))]−ET∼π(T)/bracketleftbig
+EY∼pt(Y)[H(pt(.|Y=y))]/bracketrightbig
+=ET∼π(T)/bracketleftbig
+EY∼r(Y)[D(pt(.|Y=y)/bardblr(.|Y=y))]/bracketrightbig
+.
+Proposition13 Thefollowing chainruleholds:
+Tπ
+q(pXY) =Tπ
+q(pX|Y)+Tπ
+q(pY)
+ProofWriting the joint/conditional JT q-differences as joint/conditional mutual informations (33–
+34) andinvokingthechainruleprovidedby(4),wehavethat
+Iq(X;T|Y)+Iq(Y;T) =Sq(X|T,Y)−Sq(X|Y)+Sq(Y|T)−Sq(Y)
+=Sq(X,Y|T)−Sq(X,Y),
+whichis thejointJT q-differenceassociatedwiththerandom variable X×Y.
+Let us now turn our attention to the case where Y=Xkfor some k∈N. In the following, the
+notation (An)n∈Ndenotes astationaryergodicprocesswith valuesonsomeﬁnitealphabet A.
+Deﬁnition 14 LetXandTbemeasurespaces,with Xﬁnite,andlet F= [(Xn)n∈N]Tbeafamilyof
+stochasticprocesses(takingvaluesonthealphabet X)indexedby T. Thek-thorderJT q-difference
+ofFisdeﬁned, fork =1,...,n,as
+Tjoint,π
+q,k(F)/definesTπ
+q(pXk)
+andthek-thorderconditional JT q-difference ofFisdeﬁned, for k =1,...,n,as
+Tcond,π
+q,k(F)/definesTπ
+q(pX|Xk),
+and,for k =0,as Tcond,π
+q,0(F)/definesTjoint,π
+q,1(F) =Tπ
+q(pX).
+Proposition15 Thejointand conditionalk-thorderJT q-differences arerelatedthroug h:
+Tjoint,π
+q,k(F) =k−1
+∑
+i=0Tcond,π
+q,i(F) (35)
+ProofUseProposition13andinduction.
+952NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+5.4 AsymptoticAnalysisin theExtensiveCase
+Wenowfocusontheextensivecase( q=1)forabriefasymptoticanalysisofthe k-thorderjointand
+conditional JT1-differences(or conditionalJensen-Shannondivergences ) whenkgoes toinﬁnity.
+TheconditionalJensen-ShannondivergencewasintroducedbyEl-Y anivetal.(1998)toaddress
+thetwo-sample problem for strings emitted by Markovian sources. Given two strings sandt, the
+goal is to decide whether they were emitted by the same source or by differen t sources. Under
+some fair assumptions, the most likely k-th order Markovian joint source of sandtis governed by
+adistribution ˆ rgivenby
+ˆr=argmin
+rλD(ˆps/bardblr)+(1−λ)D(ˆpt/bardblr). (36)
+whereD(./bardbl.)are conditional KL divergences, ˆ psand ˆptare the empirical (k−1)-th order condi-
+tionals associated with sandt, respectively, and λ=|s|/(|s|+|t|)is the length ratio. The solution
+of theoptimizationproblemis
+ˆr(a|c) =λˆps(c)
+λˆps(c)+(1−λ)ˆpt(c)ˆps(a|c)+(1−λ)ˆpt(c)
+λˆps(c)+(1−λ)ˆpt(c)ˆpt(a|c),
+wherea∈Ais a symbol and c∈Ak−1is a context; this can be rewritten as ˆ r(a,c) =λˆps(a,c)+
+(1−λ)ˆpt(a,c);thatis,theoptimumin(36)isamixtureof ˆ psand ˆptweightedbythestringlengths.
+Noticethat, attheminimum,we have
+λD(ˆps/bardblˆr)+(1−λ)D(ˆpt/bardblˆr) =JScond,(λ,1−λ)
+k(ˆps,ˆpt).
+It is tempting to investigate the asymptotic behavior of the conditional and joint JS d ivergences
+whenk→∞; however, unlike other asymptotic information theoretic quantities, like the entro py
+or cross entropy rates, this behavior fails to characterize the sources sandt. Intuitively, this is
+justiﬁed by the fact that observing more and more symbols drawn from the mixtu re of the two
+sources rapidly decreases the uncertainty about which source gener ated the sample. Indeed, from
+the asymptotic equipartition property of stationary ergodic sources (Cover and Thomas, 1991), we
+havethatlim k→∞1
+kH(pXk) =limk→∞H(pX|Xk),whichimplies
+lim
+k→∞JScond,π
+k=lim
+k→∞1
+kJSjoint,π
+k≤lim
+k→∞1
+kH(π) =0,
+where we used the fact that the JS divergence is upper-bounded by th e entropy of the mixture
+H(π)(see Proposition 10). Since the conditional JS divergence must be non- negative, we therefore
+conclude thatlim k→∞JScond,π
+k=0,pointwise.
+6. NonextensiveMutualInformationKernels
+Inthissectionweconsidertheapplicationofextensiveandnonextensive entropiestodeﬁnekernels
+on measures; since kernels involve pairs of measures, throughout this s ection |T|=2. Based on
+the denormalization formulae presented in Section 2.3, we devise novel kern els related to the JS
+divergenceandtheJT q-difference;thesekernelsallowsettingaweightforeachargument,thus will
+be called weighted Jensen-Tsallis kernels . We also introduce kernels related to the JR divergence
+(Section 3.3) and the JT divergence (Section 3.4), and establish a conne ction between the Tsallis
+kernels and a family of kernels investigated by Hein et al. (2004) and Fugle de (2005), placing
+953MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+thosekernelsunderanewinformation-theoreticlight. Afterthat,wegiveab riefoverviewofstring
+kernels, and using the results of Section 5.3, we devise k-th order Jensen-Tsallis kernels between
+stochasticprocessesthat subsumethewell-known p-spectrumkernelof Leslieet al.(2002).
+6.1 Positiveand NegativeDeﬁniteKernels
+We start by recalling basic concepts from kernel theory (Sch ¨olkopf and Smola, 2002); in the fol-
+lowing,Xdenotes anonemptyset.
+Deﬁnition 16 Letϕ:X×X→Rbe a symmetric function, that is, a function satisfying ϕ(y,x) =
+ϕ(x,y),forallx ,y∈X.ϕis calleda positivedeﬁnite (pd)kernelifandonlyif
+n
+∑
+i=1n
+∑
+j=1cicjϕ(xi,xj)≥0
+for alln ∈N,x1,...,xn∈Xandc1,...,cn∈R.
+Deﬁnition 17 Letψ:X×X→Rbe symmetric. ψis called a negative deﬁnite (nd) kernel if and
+onlyif
+n
+∑
+i=1n
+∑
+j=1cicjψ(xi,xj)≤0
+foralln ∈N,x1,...,xn∈Xandc1,...,cn∈R,satisfyingtheadditionalconstraintc 1+...+cn=0.
+In this case, −ψis called conditionally pd; obviously, positive deﬁniteness implies conditional
+positivedeﬁniteness.
+The sets of pd and nd kernels are both closed under pointwise sums/integra tions, the former
+being also closed under pointwise products; moreover, both sets are clos ed under pointwise con-
+vergence. While pd kernels “correspond” to inner products via embedd ing in a Hilbert space, nd
+kernelsthatvanishonthediagonalandarepositiveanywhereelse,“c orrespond”tosquaredHilber-
+tian distances. These facts, and the following propositions and lemmas, are s hown in Berg et al.
+(1984).
+Proposition18 Letψ:X×X→Rbe a symmetric function, and x 0∈X. Letϕ:X×X→Rbe
+givenby
+ϕ(x,y) =ψ(x,x0)+ψ(y,x0)−ψ(x,y)−ψ(x0,x0).
+Then,ϕis pdifandonlyif ψisnd.
+Proposition19 The function ψ:X×X→Ris a nd kernel if and only if exp(−tψ)is pd for all
+t>0.
+Proposition20 The function ψ:X×X→R+is a nd kernel if and only if (t+ψ)−1is pd for all
+t>0.
+Lemma21 Ifψis nd and nonnegative on the diagonal, that is, ψ(x,x)≥0for all x ∈X, thenψα,
+forα∈[0,1],andln(1+ψ),arealsond.
+954NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+Lemma22 If f:X→Rsatisﬁes f ≥0,then,for α∈[1,2],thefunction ψα(x,y) =−(f(x)+f(y))α
+isa ndkernel.
+The following deﬁnition (Berg et al., 1984) has been used in a machine learn ing context by
+CuturiandVert (2005).
+Deﬁnition 23 Let(X,⊕)be a semigroup.2A function ϕ:X→Ris called pd (in the semigroup
+sense)ifk :X×X→R,deﬁnedask (x,y) =ϕ(x⊕y),isapdkernel. Likewise, ϕiscalledndifk is
+andkernel. Accordingly,thesearecalled semigroupkernels .
+6.2 Jensen-Shannonand Tsallis Kernels
+The basic result that allows deriving pd kernels based on the JS diverg ence and, more generally, on
+the JTq-difference, is the fact that the denormalized Tsallis q-entropies (10) are nd functions on
+(MSq
++(X),+), forq∈[0,2]. Of course, this includes the denormalized Shannon-Boltzmann-Gibbs
+entropy (8) as a particular case, corresponding to q=1. Although part of the proof was given by
+Bergetal.(1984)(andbyTopsøe2000andCuturiandVert2005fo rtheShannonentropycase),we
+presentacompleteproof here.
+Proposition24 Forq∈[0,2],thedenormalizedTsallisq-entropyS qisandfunctionon (MSq
++(X),+).
+ProofSince nd kernels are closed under pointwise integration, it sufﬁces to pro ve thatϕq(see
+Equation 11) is nd on (R+,+). Forq/\e}atio\slash=1,ϕq(y) = (q−1)−1(y−yq). Let us consider two cases
+separately: if q∈[0,1),ϕq(y)equalsapositiveconstanttimes −ι+ιq,whereι(y) =yistheidentity
+map deﬁned on R+. Since the set of nd functions is closed under sums, we only need to show th at
+both−ιandιqare nd. Both ιand−ιare nd, as can easily be seen from the deﬁnition; besides,
+sinceιis nd and nonnegative, Lemma 21 guarantees that ιqis also nd. For the second case, where
+q∈(1,2],ϕq(y)equals a positive constant times ι−ιq. It only remains to show that −ιqis nd for
+q∈(1,2]: Lemma 22 guarantees that the kernel k(x,y) =−(x+y)qis nd; therefore −ιqis a nd
+function.
+Forq=1,weusethefactthat,
+ϕ1(x) =ϕH(x) =−xlnx=lim
+q→1x−xq
+q−1=lim
+q→1ϕq(x),
+where the limit is obtained by L’H ˆopital’s rule; since the set of nd functions is closed under limits,
+ϕ1(x)is nd.
+Thefollowinglemma, provedinBerg etal.(1984),willalsobeneeded below .
+Lemma25 Thefunction ζq:R++→R, deﬁnedas ζq(y) =y−qis pd,for q ∈[0,1].
+We are now in a position to present the main contribution of this section, which is a family of
+weightedJensen-Tsalliskernels ,generalizingtheJS-based(andother)kernelsintwoways: (i)they
+allowusingunnormalizedmeasures;equivalently,theyallowusingdifferen tweightsforeachofthe
+two arguments; (ii) they extend the mutual information feature of the JS kernel to the nonextensive
+scenario.
+2. Recall that (X,⊕)is asemigroup if⊕isa binaryoperation in Xthat isassociative and has anidentity element.
+955MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+Deﬁnition 26(weighted Jensen-Tsalliskernels) Thekernel/tildewidekq:MSq
++(X)×MSq
++(X)→Risdeﬁned
+as
+/tildewidekq(µ1,µ2)/defines/tildewidekq(ω1p1,ω2p2)
+=/parenleftbig
+Sq(π)−Tπ
+q(p1,p2)/parenrightbig
+(ω1+ω2)q,
+where p 1=µ1/ω1and p2=µ2/ω2arethenormalizedcounterpartsofµ 1andµ2,withcorresponding
+massesω1,ω2∈R+,andπ= (ω1/(ω1+ω2),ω2/(ω1+ω2)).
+Thekernelk q:/parenleftBig
+MSq
++(X)\{0}/parenrightBig2
+→Ris deﬁnedas
+kq(µ1,µ2)/defineskq(ω1p1,ω2p2) =Sq(π)−Tπ
+q(p1,p2).
+Recalling(25),noticethat Sq(π)−Tπ
+q(p1,p2) =Sq(T)−Iq(X;T) =Sq(T|X)canbeinterpreted
+astheTsallisposteriorconditionalentropy . Hence,kqcanbeseen(inBayesianclassiﬁcationterms)
+asanonextensiveexpectedmeasureofuncertaintyincorrectlyidentifyin gtheclass,giventheprior
+π= (π1,π2), and a sample from the mixture π1p1+π2p2. The more similar the two distributions
+are,thegreater this uncertainty.
+Proposition27 Thekernel/tildewidekqispd,for q ∈[0,2]. Thekernelk qis pd,forq ∈[0,1].
+ProofWithµ1=ω1p1andµ2=ω2p2andusingthedenormalizationformulaofRemark1,weob-
+tain/tildewidekq(µ1,µ2) =−Sq(µ1+µ2)+Sq(µ1)+Sq(µ2). NowinvokeProposition18with ψ=Sq(whichis
+ndbyProposition24), x=µ1,y=µ2,andx0=0(thenullmeasure). Observenowthat kq(µ1,µ2) =
+/tildewidekq(µ1,µ2)(ω1+ω2)−q. Since the product of two pd kernels is a pd kernel and (Proposition 25)
+(ω1+ω2)−qisapdkernel,for q∈[0,1],weconclude that kqispd.
+As we can see, the weighted Jensen-Tsallis kernels have two inherent pr operties: they are pa-
+rameterizedbytheentropicindex qandtheyallowtheirargumentstobeunbalanced,thatis,tohave
+different weights ωi. We now mention some instances of kernels where each of these degrees o f
+freedomissuppressed. Westartwiththefollowingsubfamilyofkernels,o btainedbysetting q=1.
+Deﬁnition 28(weighted Jensen-Shannonkernels) The kernel/tildewidekWJS:(MH
++(X))2→Ris deﬁned
+as/tildewidekWJS/defines/tildewidek1,thatis,
+/tildewidekWJS(µ1,µ2) =/tildewidekWJS(ω1p1,ω2p2)
+= (H(π)−Jπ(p1,p2))(ω1+ω2),
+where p 1=µ1/ω1and p2=µ2/ω2are the normalized counterpart of µ 1and µ2, andπ=
+(ω1/(ω1+ω2),ω2/(ω1+ω2)).
+Analogously,thekernelk WJS:/parenleftbig
+MH
++(X)\{0}/parenrightbig2→Rissimplyk WJS/definesk1,thatis,
+kWJS(µ1,µ2) =kWJS(ω1p1,ω2p2) =H(π)−Jπ(p1,p2).
+Corollary 29 Theweighted Jensen-Shannonkernels /tildewidekWJSand kWJSarepd.
+956NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+ProofInvokeProposition27with q=1.
+The following family of weighted exponentiated JS kernels , generalize the so-called exponenti-
+atedJSkernel,thathasbeen used,andshowntobepd,byCuturiand Vert(2 005).
+Deﬁnition 30(ExponentiatedJS kernel) The kernel k EJS:M1
++(X)×M1
++(X)→Ris deﬁned, for
+t>0,as
+kEJS(p1,p2) =exp[−tJS(p1,p2)].
+Deﬁnition 31(Weighted exponentiatedJS kernels) Thekernelk WEJS:MH
++(X)×MH
++(X)→Ris
+deﬁned, fort >0,as
+kWEJS(µ1,µ2) =exp[tkWJS(µ1,µ2)]
+=exp(tH(π))exp[−tJπ(p1,p2)]. (37)
+Corollary 32 Thekernels k WEJSarepd. Inparticular,k EJSis pd.
+ProofResults from Proposition 19 and Corollary 29. Notice that although kWEJSis pd, none of its
+twoexponential factorsin(37)is pd.
+We now keep q∈[0,2]but consider the weighted JT kernel family restricted to normalized
+measures, kq|(M1+(X))2. This corresponds to setting uniform weights ( ω1=ω2=1/2); note that in
+this case/tildewidekqandkqcollapseintothesamekernel,
+/tildewidekq(p1,p2) =kq(p1,p2) =lnq(2)−Tq(p1,p2).
+Proposition 27 guarantees that these kernels are pd for q∈[0,2]. Remarkably, we recover three
+well-known particular cases for q∈ {0,1,2}. We start with the Jensen-Shannon kernel, introduced
+andshowntobepdbyHeinetal.(2004);itisaparticularcaseofaweighte dJensen-Shannonkernel
+inDeﬁnition28.
+Deﬁnition 33(Jensen-Shannonkernel) Thekernelk JS:M1
++(X)×M1
++(X)→Ris deﬁnedas
+kJS(p1,p2) =ln2−JS(p1,p2).
+Corollary 34 Thekernelk JSis pd.
+ProofkJSistherestrictionof kWJStoM1
++(X)×M1
++(X).
+Finally, we study two other particular cases of the family of Tsallis kernels: the Boolean and
+linear kernels.
+Deﬁnition 35(Boolean kernel) Letthekernelk Bool:MS0,1
++(X)×MS0,1
++(X)→Rbedeﬁnedask Bool=
+k0,thatis,
+kBool(p1,p2) =ν(supp(p1)∩supp(p2)),
+that is, k Bool(p1,p2)equals the measure of the intersection of the supports (cf. Equation 26). In
+particular,if Xis ﬁniteand νisthecounting measure,theabovemay bewrittenas
+kBool(p1,p2) =/bardblp1⊙p2/bardbl0.
+957MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+Deﬁnition 36(Linearkernel) Letthekernelk lin:MS2,1
++(X)×MS2,1
++(X)→Rbedeﬁned as
+klin(p1,p2) =1
+2/a\}bracketle{tp1,p2/a\}bracketri}ht.
+Corollary 37 Thekernels k Boolandklinarepd.
+ProofInvoke Proposition 27 with q=0 andq=2. Notice that, for q=2, we just recover the
+well-known property of the inner product kernel (Sch ¨olkopf and Smola, 2002), which is equal to
+klinuptoascalar.
+In conclusion, the Boolean kernel, the Jensen-Shannon kernel, and th e linear kernel are simply
+particularelementsofthemuchwiderfamilyofJensen-Tsalliskernels,continu ouslyparameterized
+byq∈[0,2]. Furthermore, the Jensen-Tsallis kernels are a particular subfamily of the even wider
+setofweighted Jensen-Tsalliskernels.
+One of the key features of our generalization is that the kernels are deﬁn ed on unnormalized
+measures,witharbitrarymass. Thisisrelevant,forexample,inapplicationso fkernelsonempirical
+measures (e.g., word counts, pixel intensity histograms); instead of the usu al step of normalization
+Heinetal.2004,wemayleavetheseempiricalmeasuresunnormalized,thusa llowingobjectsofdif-
+ferentsize(e.g.,totalnumberofwordsinadocument,totalnumberofimagep ixels)tobeweighted
+differently. Another possibility opened by our generalization is the explicit in clusion of weights:
+giventwonormalizedmeasures,theycanbemultipliedbyarbitrary(positive) weightsbeforebeing
+fedtothekernelfunction.
+6.3 OtherKernels Based on JensenDifferences and q-Differences
+ItisworthwhiletonotethattheJensen-R ´enyiandtheJensen-Tsallisdivergencesalsoyieldpositive
+deﬁnitekernels,albeittherearenotanyobvious“weightedgeneralizatio ns”liketheonespresented
+abovefor theTsalliskernels.
+Proposition38(Jensen-R ´enyiand Jensen-Tsalliskernels) Foranyq ∈[0,2],thekernel
+(p1,p2)/ma√sto→Sq/parenleftbiggp1+p2
+2/parenrightbigg
+andthe(unweighted) Jensen-Tsallisdivergence J Sq(20)arend kernelsonM1
++(X)×M1
++(X).
+Also,for anyq ∈[0,1],thekernel
+(p1,p2)/ma√sto→Rq/parenleftbiggp1+p2
+2/parenrightbigg
+andthe(unweighted) Jensen-R ´enyidivergence J Rq(19)arendkernelson M1
++(X)×M1
++(X).
+ProofThe fact that (p1,p2)/ma√sto→Sq(p1+p2
+2)is nd results from the embedding x/ma√sto→x/2 and Propo-
+sition 24. Since (p1,p2)/ma√sto→Sq(p1)+Sq(p2)
+2is trivially nd, we have that JSqis a sum of nd func-
+tions, which turns it nd. To prove the negative deﬁniteness of the kernel (p1,p2)/ma√sto→Rq/parenleftbigp1+p2
+2/parenrightbig
+,
+notice ﬁrst that the kernel (x,y)/ma√sto→(x+y)/2 is clearly nd. From Lemma 21 and integrating,
+958NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+we have that (p1,p2)/ma√sto→R/parenleftbigp1+p2
+2/parenrightbigqis nd for q∈[0,1]. From the same lemma we have that
+(p1,p2)/ma√sto→ln/parenleftBig
+t+R/parenleftbigp1+p2
+2/parenrightbigq/parenrightBig
+is nd for any t>0. SinceR/parenleftbigp1+p2
+2/parenrightbigq>0, the nonnegativity of
+(p1,p2)/ma√sto→Rq/parenleftbigp1+p2
+2/parenrightbig
+follows by taking the limit t→0. By the same argument as above, we con-
+cludethat JRqis nd.
+As a consequence, we have from Lemma 19 that the following kernels are p d for any q∈[0,1]
+andt>0:
+˜kEJR(p1,p2) =exp/parenleftbigg
+−tRq/parenleftbiggp1+p2
+2/parenrightbigg/parenrightbigg
+=/parenleftbiggZ/parenleftbiggp1+p2
+2/parenrightbiggq/parenrightbigg−t
+1−q
+,
+andits “normalized”counterpart,
+kEJR(p1,p2) =exp(−tJRq(p1,p2)) =
+R/parenleftbigp1+p2
+2/parenrightbigq
+/radicalBigRpq
+1Rpq
+2
+−t
+1−q
+.
+Althoughwecouldhavederiveditspositivedeﬁnitenesswithouteverref erringtotheR ´enyientropy,
+the latter has in fact a suggestive interpretation: it corresponds to an exp onentiation of the Jensen-
+R´enyi divergence; it generalizes the case q=1 which corresponds to the exponentiated Jensen-
+Shannonkernel.
+Finally, we point out a relationship between the Jensen-Tsallis divergenc es (Section 3.4) and a
+familyofdifferencekernelsintroduced byFuglede(2005),
+ψα,β(x,y) =/parenleftbiggxα+yα
+2/parenrightbigg1/α
+−/parenleftBigg
+xβ+yβ
+2/parenrightBigg1/β
+.
+Fuglede(2005)derivedthenegativedeﬁnitenessoftheabovefamilyof kernelsprovided1 ≤α≤∞
+and 1/2≤β≤α;he went furtherby providingrepresentationsfor thesekernels. Hein et al.(2004)
+used the fact that the integralRψα,β(x(t),y(t))dτ(t)is also nd to derive a family of pd kernels for
+probabilitymeasuresthatincluded theJensen-Shannonkernel(seeDe f.33).
+We startby noting the followingproperty of the extended Tsallisentropy, wh ich is very easy to
+establish:
+Sq(µ) =q−1S1/q(µq)
+As aconsequence, bymakingthesubstitutions r/definesq−1,x1/definesyq
+1andx2/definesyq
+2,wehavethat
+JSq(y1,y2) =Sq/parenleftbiggy1+y2
+2/parenrightbigg
+−/parenleftbiggSq(y1)+Sq(y2)
+2/parenrightbigg
+=r/bracketleftBigg
+Sr/parenleftBigg/parenleftbiggxr
+1+xr
+2
+2/parenrightbigg1/r/parenrightBigg
+−Sr(x1)+Sr(x2)
+2/bracketrightBigg
+/definesr˜JSr(x1,x2)
+959MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+wherewe introduced
+˜JSr(x1,x2) =Sr/parenleftBigg/parenleftbiggxr
+1+xr
+2
+2/parenrightbigg1/r/parenrightBigg
+−Sr(x1)+Sr(x2)
+2
+= (r−1)−1Z/bracketleftBigg/parenleftbiggxr
+1+xr
+2
+2/parenrightbigg1/r
+−x1+x2
+2/bracketrightBigg
+. (38)
+SinceJSqisndforq∈[0,2],wehavethat ˜JSrisndforr∈[1/2,∞].
+Notice that while JSqmay be interpreted as “the difference between the Tsallis q-entropy of the
+mean and the mean of the Tsallis q-entropies,” ˜JSqmay be interpreted as “the difference between
+theTsallis q-entropyofthe q-power meanand themeanof theTsallis q-entropies.”
+From(38) wehavethat
+Z
+ψα,β(x,y) = (α−1)˜JSα(x,y)−(β−1)˜JSβ(x,y),
+sothefamilyofprobabilistickernelsstudiedinHeinetal.(2004)canbewritten intermsofJensen-
+Tsallisdivergences.
+6.4k-thOrder Jensen-TsallisStringKernels
+This subsection introduces a new class of string kernels inspired by the k-th order JT q-difference
+introduced in Section 5.3. Although we refer to them as “string kernels,” the y are more generally
+kernelsbetween stochasticprocesses.
+Several string kernels (i.e., kernels operating on the space of strings) h ave been proposed in the
+literature (Haussler, 1999; Lodhi et al., 2002; Leslie et al., 2002; Vishw anathan and Smola, 2003;
+Shawe-Taylor and Cristianini, 2004; Cortes et al., 2004). These are ke rnels deﬁned on A∗×A∗,
+whereA∗is the Kleene closure of a ﬁnite alphabet A(i.e., the set of all ﬁnite strings formed by
+characters in Atogether with the empty string ε). Thep-spectrum kernel (Leslie et al., 2002) is as-
+sociatedwithafeaturespaceindexedby Ap(thesetoflength- pstrings). Thefeaturerepresentation
+ofastring s,Φp(s)/defines(φp
+u(s))u∈Ap,countsthenumberoftimeseach u∈Apoccursasasubstringof
+s,
+φp
+u(s) =|{(v1,v2):s=v1uv2}|.
+Thep-spectrumkernelis thendeﬁnedas thestandardinner productin R|A|p
+kp
+SK(s,t) =/a\}bracketle{tΦp(s),Φp(t)/a\}bracketri}ht. (39)
+Amoregeneralkernelisthe weightedall-substringskernel (VishwanathanandSmola,2003),which
+takesintoaccountthecontributionofallthesubstringsweightedbytheirleng th. Thiskernelcanbe
+viewedas aconic combinationof p-spectrumkernels andcanbe writtenas
+kWASK(s,t) =∞
+∑
+p=1αpkp
+SK(s,t), (40)
+whereαpis often chosen to decay exponentially with pand truncated; for example, αp=λp, if
+pmin≤p≤pmax, andαp=0,otherwise,where0 <λ<1is thedecaying factor.
+960NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+Bothkp
+SKandkWASKare trivially positive deﬁnite, the former by construction and the latter
+becauseitisaconiccombinationofpositivedeﬁnitekernels. Aremarkablefa ctisthatbothkernels
+may be computed in O(|s|+|t|)time (i.e., with cost that is linear in the length of the strings), as
+shown by Vishwanathan and Smola (2003), by using data structures such as sufﬁx trees or sufﬁx
+arrays (Gusﬁeld, 1997). Moreover, with sﬁxed, any kernel k(s,t)may be computed in time O(|t|),
+whichis particularlyusefulforclassiﬁcationapplications.
+We will now see how Jensen-Tsallis kernels may be used as string kernels. In Section 5.3, we
+have introduced the concept of jointandconditional JTq-differences. We have seen that joint JT
+q-differences are just JT q-differences in a product space of the form X=X1×X2; fork-th order
+joint JTq-differences this product space is of the form Ak=A×Ak−1. Therefore, they still yield
+positive deﬁnite kernels as those introduced in Deﬁnition 26, where X=Ak. The next deﬁnition
+andpropositionsummarizethesestatements.
+Deﬁnition 39( k-thorderweighted JT kernels) LetS(A)be the set of stationary and ergodic
+stochastic processes that take values on the alphabet A. For k ∈Nand q ∈[0,2], let the kernel
+/tildewidekq,k:(R+×S(A))2→Rbedeﬁnedas
+/tildewidekq,k((ω1,s1),(ω2,s2))/defines/tildewidekq(ω1ps1,k,ω2ps2,k) (41)
+=/parenleftBig
+Sq(π)−Tjoint,π
+q,k(s1,s2)/parenrightBig
+(ω1+ω2)q,
+where p s1,kand ps2,kare the k-th order joint probability functions associated with the stochastic
+sourcess 1ands2,andπ= (ω1/(ω1+ω2),ω2/(ω1+ω2)).
+Letthekernelk q,k:(R++×S(A))2→Rbedeﬁned as
+kq,k((ω1,s1),(ω2,s2))/defineskq(ω1ps1,k,ω2ps2,k) (42)
+=/parenleftBig
+Sq(π)−Tjoint,π
+q,k(s1,s2)/parenrightBig
+,
+Proposition40 Thekernel/tildewidekq,kis pd,forq ∈[0,2]. The kernelk q,kis pd,for q ∈[0,1].
+ProofDeﬁne the map g:R+×S(A)→R+×M1,Sq
++(Ak)as(ω,s)/ma√sto→g(ω,s) = (ω,ps,k). From
+Proposition 27, the kernel /tildewidekq(g(ω1,s1),g(ω2,s2))is pd and therefore so is /tildewidekq,k((ω1,s1),(ω2,s2));
+proceedanalogously for kq,k.
+Atthispoint,onemightwonderwhetherthe“ k-thorderconditionalJTkernel” /tildewidekcond
+q,kthatwould
+be obtained by replacing Tjoint,π
+q,kwithTcond,π
+q,kin (41–42) is also pd. Formula (35) shows that such
+“conditional JT kernel” is a difference between two joint JT kernels, whic h is inconclusive. The
+following proposition shows that /tildewidekcond
+q,kandkcond
+q,kare not pd in general. The proof, which is in
+Appendix D,proceeds bybuildingacounterexample.
+Proposition41 Let/tildewidekcond
+q,kbe deﬁned as/tildewidekcond
+q,k(s1,s2)/defines/parenleftBig
+Sq(π)−Tcond,π
+q,k(s1,s2)/parenrightBig
+(ω1+ω2)q; and
+kcond
+q,kbe deﬁned as kcond
+q,k(s1,s2)/defines/parenleftBig
+Sq(π)−Tcond,π
+q,k(s1,s2)/parenrightBig
+. It holds that/tildewidekcond
+q,kand kcond
+q,kare not pd
+ingeneral.
+961MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+Despite the negative result in Proposition 41, the chain rule in Proposition 15 still allows us to
+deﬁnepd kernelsbycombining conditionalJT q-differences.
+Proposition42 Let(βk)k∈Nbeanon-increasinginﬁnitesimalsequence,thatis,satisfying
+β0≥β1≥...≥βn→0
+Anykerneloftheform
+∞
+∑
+k=0βk/tildewidekcond
+q,k (43)
+ispd forq ∈[0,2];andanykernelofthe form
+∞
+∑
+k=0βkkcond
+q,k
+ispd forq ∈[0,1],provided bothseriesaboveconvergepointwise.
+ProofFromthe chainrule,wehavethat (deﬁningthe0-thorderjointJT q-differenceas/tildewidekq,0/defines0)
+∞
+∑
+k=0βk/tildewidekcond
+q,k=∞
+∑
+k=0βk(/tildewidekq,k+1−/tildewidekq,k) =lim
+n→∞n
+∑
+k=1αk/tildewidekq,k+βn/tildewidekq,n+1=∞
+∑
+k=1αk/tildewidekq,k(44)
+withαk=βk−1−βk(the term lim βn/tildewidekq,n+1was dropped because βn→0 and/tildewidekq,n+1is bounded).
+Since (βk)k∈Nis non-increasing, we have that (αk)k∈N\{0}is non-negative, which makes (44) the
+pointwise limit of a conic combination of pd kernels, and therefore a pd kerne l. The proof for
+∑∞
+k=0βkkcond
+q,kis analogous.
+Notice that if we set β0=...=βk−1=1 andβj=0,∀j≥k, in the above proposition, we
+recover the k-thorder jointJT q-difference.
+Finally, notice that, in the same way that the linear kernel is a special case of a JT kernel when
+q=2 (see Cor. 37), the p-spectrum kernel (39) is a particular case of a p-th order joint JT kernel,
+and the weighted all substrings kernel (40) is a particular case of a combin ation of joint JT kernels
+in the form (43), both obtained when we set q=2 and the weights ω1andω2equal to the length
+of the strings. Therefore, we conclude that the JT string kernels introdu ced in this section subsume
+thesetwowell-knownstringkernels.
+7. Experiments
+We illustrate the performance of the proposed nonextensive information the oretic kernels, in com-
+parison with common kernels, for SVM-based text classiﬁcation. We perfo rmed experiments with
+two standard data sets: Reuters-215783andWebKB.4Since our objective was to evaluate the ker-
+nels, we considered a simple binary classiﬁcation task that tries to discriminate a mong the two
+largest categories of each data set; this led us to the earn-vs-acq classiﬁcation task for the ﬁrst data
+set, andstud-vs-fac (students’ vs.faculty webpages) in the second data set. Two different frame-
+works were considered: modeling documents as bags of words, and modelin g them as strings of
+characters. Therefore,bothbags ofwords kernelsandstringkern elswereemployed foreach task.
+3. Available at www.daviddlewis.com/resources/testcollections .
+4. Available at www.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/d ata.
+962NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+7.1 Documentsas Bags of Words
+Forthebagsofwordsframework,aftertheusualpreprocessingstep sofstemmingandstop-wordre-
+moval,wemappedtextdocumentsintoprobabilitydistributionsoverwordsusing thebag-of-words
+model and maximum likelihood estimation; this corresponds to normalizing the term frequencies
+(tf) using the ℓ1-norm, and is referred to as tf(Joachims, 2002; Baeza-Yates and Ribeiro-Neto,
+1999). We also used the tf-idf(term frequency-inverse document frequency) representation, whic h
+penalizes terms that occur in many documents (Joachims, 2002; Baeza-Yate s and Ribeiro-Neto,
+1999). ToweightthedocumentsfortheTsalliskernels,wetriedfourstrate gies: uniformweighting,
+word counts, square root of the word counts, and one plus the logarithm of the word counts; how-
+ever,forbothtasks,uniformweightingrevealedthebeststrategy,whic hmaybeduetothefactthat
+documents inbothcollections areusuallyshortand donotdiffermuchinsize .
+As baselines, we used the linear kernel with ℓ2normalization, commonly used for this task
+(Joachims,2002),andthe heatkernelapproximationintroducedby Laf fertyandLebanon (2005):
+kheat(p1,p2) = (4πt)−n
+2exp/parenleftbigg
+−1
+4td2
+g(p1,p2)/parenrightbigg
+,
+wheret>0anddg(p1,p2) =2arccos/parenleftbig
+∑i√p1ip2i/parenrightbig
+. AlthoughLaffertyandLebanon(2005)provide
+empirical evidence that the heat kernel outperforms the linear kernel, it is not guaranteed to be pd
+for an arbitrary choice of t, as we show in Appendix E. This parameter and the SVM Cparameter
+were tuned by cross-validation over the training set. The SVM-Light pack age (available at http:
+//svmlight.joachims.org/ ) was usedtosolvetheSVM quadraticoptimization problem.
+Figures 2–3 summarize the results. We report the performance of the Tsallis kernels as a func-
+tionoftheentropicindex q. Forcomparison,wealsoplottheperformanceofaninstanceofaTsallis
+kernel with qtuned by cross-validation. For the ﬁrst task, this kernel and the two base lines exhibit
+similar performance for both the tfand thetf-idfrepresentations; differences are not statistically
+signiﬁcant. In the second task, the Tsallis kernel outperformed the ℓ2-normalized linear kernel for
+bothrepresentations,andtheheatkernelfor tf-idf;thedifferencesarestatisticallysigniﬁcant(using
+the unpaired ttest at the 0 .05 level). Regarding the inﬂuence of the entropic index, we observe that
+inbothtasks,the optimalvalueof qisusuallyhigher for tf-idfthanfortf.
+The results on these two problems are representative of the typical relativ e performance of the
+kernels considered: in almost all tested cases, both the heat kernel and the Tsallis kernels (for a
+suitable value of q) outperform the ℓ2-normalized linear kernel; the Tsallis kernels are competitive
+withtheheat kernel.
+7.2 Documentsas Strings
+In the second set of experiments, each document is mapped into a probability distribution over
+character p-grams, using maximum likelihood estimation; we did experiments for p=3,4,5. To
+weightthedocumentsforthe p-thorderjointJensen-Tsalliskernels,fourstrategieswereattempted:
+uniform weighting, document lengths (in characters), square root of th e document lengths, and
+one plus the logarithm of the document lengths. For the earn-vs-acq task, all strategies performed
+similarly, with a slight advantage for the square root and logarithm of the doc ument lengths; for
+thestud-vs-fac task, uniform weighting revealed the best strategy. For simplicity, all exper iments
+reportedhereuseuniformweighting.
+963MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+00.25 0.5 0.75 11.25 1.5 1.75 211.5 22.5 
+Entropic index q Average error rate (%) tf 
+WJTK−q 
+LinL2 
+Heat ( σCV )
+WJTK (q CV )
+00.25 0.5 0.75 11.25 1.5 1.75 211.5 22.5 
+Entropic index q Average error rate (%) tf−idf 
+WJTK−q 
+LinL2 
+Heat ( σCV )
+WJTK (q CV )
+Figure2: Results for earn-vs-acq usingtfandtf-idfrepresentations. The error bars represent ±1
+standard deviation on 30 runs. Training (resp. testing) with 200 (resp. 2 50) samples per
+class.
+00.25 0.5 0.75 11.25 1.5 1.75 2678910 
+Entropic index q Average error rate (%) tf 
+WJTK−q 
+LinL2 
+Heat ( σCV )
+WJTK (q CV )
+00.25 0.5 0.75 11.25 1.5 1.75 25678910 11 
+Entropic index q Average error rate (%) tf−idf 
+WJTK−q 
+LinL2 
+Heat ( σCV )
+WJTK (q CV )
+Figure3: Results for stud-vs-fac usingtfandtf-idfrepresentations. The error bars represent ±1
+standard deviation on 30 runs. Training (resp. testing) with 200 (resp. 2 50) samples per
+class.
+As baselines, we used the p-spectrum kernel (PSK, see 39) for the values of preferred above,
+and the weighted all substrings kernel (WASK, see 40) with decaying fac tor tuned to λ=0.75
+(which yielded the best results), with pmin=pset to the values above, and pmax=∞. The SVM C
+parameter was tunedbycross-validationoverthe trainingset.
+Figures4–5summarizetheresults.
+For the ﬁrst task, the JT string kernel and the WASK outperformed the PSK (with statistical
+signiﬁcance for p=3), all kernels performed similarly for p=4, and the JT string kernel outper-
+formed the WASK for p=5; all other differences are not statiscally signiﬁcant. In the second task ,
+the JT string kernel outperformed both the WASK and the PSK (and the WASK outperformed the
+PSK), with statistical signiﬁcance for p=3,4,5. Furthermore, by comparing Figures 3 and 5, we
+964NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+0 0.25 0.5 0.75 1 1.25 1.5 1.75 211.5 22.5 33.5 
+Entropic index q Average error rate (%) p=3 
+WJTK−Str−q 
+PSK 
+WASK 
+WJTK−Str (q CV )
+0 0.25 0.5 0.75 1 1.25 1.5 1.75 20.8 11.2 1.4 1.6 1.8 22.2 2.4 2.6 
+Entropic index q Average error rate (%) p=4 
+WJTK−Str−q 
+PSK 
+WASK 
+WJTK−Str (q CV )
+0 0.25 0.5 0.75 1 1.25 1.5 1.75 20.8 11.2 1.4 1.6 1.8 22.2 
+Entropic index q Average error rate (%) p=5 
+WJTK−Str−q 
+PSK 
+WASK 
+WJTK−Str (q CV )
+Figure4: Results for earn-vs-acq using string kernels and p=3,4,5. The error bars represent ±1
+standard deviation on 15 runs. Training (resp. testing) with 200 (resp. 2 50) samples per
+class.
+also observe that the 5-th order JT string kernel remarkably outperfor ms all bags of words kernels
+forthestud-vs-fac task,eventhoughitdoesnotuseorbuildanysortoflanguagemodelat theword
+level.
+8. Conclusions
+Inthispaperwehaveintroducedanewfamilyofpositivedeﬁnitekernelsbe tweenmeasures,which
+includespreviousinformation-theoretickernelsonprobabilitymeasuresas particularcases. Oneof
+thekeyfeaturesofthenewkernelsisthattheyaredeﬁnedonunnormalize dmeasures(notnecessar-
+ilynormalizedprobabilities). Thisisrelevant,forexample,forkernelsonemp iricalmeasures(such
+as word counts, pixel intensity histograms); instead of the usual step of no rmalization (Hein et al.,
+2004), we may leave these empirical measures unnormalized, thus allowing ob jects of different
+sizes (e.g., documents of different lengths, images with different sizes) to be weighted differently.
+Another possibility is the explicit inclusion of weights: given two normalized meas ures, they can
+965MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+0 0.25 0.5 0.75 1 1.25 1.5 1.75 2678910 11 12 13 
+Entropic index q Average error rate (%) p=3 
+WJTK−Str−q 
+PSK 
+WASK 
+WJTK−Str (q CV )
+0 0.25 0.5 0.75 1 1.25 1.5 1.75 25678910 11 
+Entropic index q Average error rate (%) p=4 
+WJTK−Str−q 
+PSK 
+WASK 
+WJTK−Str (q CV )
+0 0.25 0.5 0.75 1 1.25 1.5 1.75 255.5 66.5 77.5 88.5 99.5 10 
+Entropic index q Average error rate (%) p=5 
+WJTK−Str−q 
+PSK 
+WASK 
+WJTK−Str (q CV )
+Figure5: Results for stud-vs-fac using string kernels and p=3,4,5. The error bars represent ±1
+standard deviation on 15 runs. Training (resp. testing) with 200 (resp. 2 50) samples per
+class.
+be multiplied by arbitrary (positive) weights before being fed to the kernel f unction. In addition,
+we deﬁne positive deﬁnite kernels between stochastic processes that su bsume well-known string
+kernels.
+The new kernels and the proofs of positive deﬁniteness rely on other main contributions of this
+paper: the new concept of q-convexity, for which we proved a Jensen q-inequality ; the concept
+ofJensen-Tsallis q-difference , a nonextensive generalization of the Jensen-Shannon divergence ;
+denormalizationformulaefor severalentropiesand divergences.
+Wehavereportedexperimentsinwhichthesenewkernelswereusedinsup portvectormachines
+for text classiﬁcation tasks. Although the reported experiments do not lead to strong conclusions,
+they show that the new kernels are competitive with the state-of-the-art, in so me cases yielding a
+signiﬁcantperformanceimprovement.
+Future research will concern applying Jensen-Tsallis q-differences to other learning problems,
+likeclustering,possiblyexploitingthefactthattheyaccept morethantwoarg uments.
+966NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+Acknowledgments
+The authors would like to thank the reviewers for their valuable comments, and G uy Lebanon for
+the fruitfuldiscussions regardingthe heat kernel approximation. This w ork was partially supported
+byFundac ¸˜aoparaaCi ˆenciaeTecnologia (FCT),Portugal,grantPTDC/EEA-TEL/72572/2006and
+by the European Commission under project SIMBAD. A.M. was supported b y a grant from FCT
+through the CMU-Portugal Program and the Information and Communications Technologies Insti-
+tute (ICTI) at CMU, and also by Priberam Inform ´atica. N.S. was supported by NSF IIS-0713265,
+DARPA HR00110110013, and an IBM Faculty Award. E.X. was supporte d by NSF DBI-0546594,
+DBI-0640543,IIS-0713379,andanAlfredSloanFoundationFellows hipinComputer Science.
+AppendixA. Suyari’s Axioms for NonextensiveEntropies
+Suyari (2004) proposed the following set of axioms (above referred as Suyari’s axioms) that deter-
+mine nonextensive entropies of the form stated in (1). Below, q≥0 is any ﬁxed scalar and fqis a
+functiondeﬁnedon ∪∞
+n=1Δn−1.
+(A1)Continuity :fq|Δn−1iscontinuous,forany n∈N;
+(A2)Maximality : For any n∈Nand(p1,...,pn)∈Δn−1,
+fq(p1,...,pn)≤Sq(1/n,...,1/n);
+(A3)Generalizedadditivity : Fori=1,...,n,j=1,...,mi,pij≥0,andpi=∑mi
+j=1pij,
+fq(p11,...,pnmn) =fq(p1,...,pn)+
+n
+∑
+i=1pq
+ifq/parenleftbiggpi1
+pi,...,pimi
+pi/parenrightbigg
+;
+(A4)Expandability :fq(p1,...,pn,0) =fq(p1,...,pn).
+AppendixB. Proof ofProposition 8
+ProofThe case q=1 corresponds to the Jensen difference and was proved by Burbea a nd Rao
+(1982)(Theorem1). Ourproofextendsthatto q/\e}atio\slash=1. Lety= (y1,...,ym),whereyt= (yt1,...,ytn).
+Thus
+Tπ
+q,Ψ(y) =Ψ/parenleftBigg
+m
+∑
+t=1πtyt/parenrightBigg
+−m
+∑
+t=1πq
+tΨ(yt)
+=n
+∑
+i=1/bracketleftBigg
+m
+∑
+t=1πq
+tϕ(yti)−ϕ/parenleftBigg
+m
+∑
+t=1πtyti/parenrightBigg/bracketrightBigg
+,
+showingthatitsufﬁcestoconsider n=1,whereeach yt∈[0,1],that is,
+Tπ
+q,Ψ(y1,...,ym) =m
+∑
+t=1πq
+tϕ(yt)−ϕ/parenleftBigg
+m
+∑
+t=1πtyt/parenrightBigg
+;
+967MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+thisfunctionisconvexon [0,1]mifandonlyif,foreveryﬁxed a1,...,am∈[0,1],andb1,...,bm∈R,
+thefunction
+f(x) =Tπ
+q,Ψ(a1+b1x,...,am+bmx)
+isconvexin {x∈R:at+btx∈[0,1],t=1,...,m}. SincefisC2,itisconvexifandonlyif f′′(t)≥0.
+We ﬁrst show that convexity of f(equivalently of Tπ
+q,Ψ) implies convexity of ϕ. Letting ct=
+at+btx,
+f′′(x) =m
+∑
+t=1πq
+tb2
+tϕ′′(ct)−/parenleftBigg
+m
+∑
+t=1πtbt/parenrightBigg2
+ϕ′′/parenleftBigg
+m
+∑
+t=1πtct/parenrightBigg
+. (45)
+By choosing x=0,at=a∈[0,1], fort=1,...,m, andb1,...,bmsatisfying ∑tπtbt=0 in (45), we
+get
+f′′(0) =ϕ′′(a)m
+∑
+t=1πq
+tb2
+t,
+hence, if fis convex, ϕ′′(a)≥0thusϕis convex.
+Next,weshowthatconvexityof falsoimplies (2−q)-convexityof −1/ϕ′′. Bychoosing x=0
+(thusct=at) andbt=π1−q
+t(ϕ′′(at))−1,we get
+f′′(0) =m
+∑
+t=1π2−q
+t
+ϕ′′(at)−/parenleftBigg
+m
+∑
+t=1π2−q
+t
+ϕ′′(at)/parenrightBigg2
+ϕ′′/parenleftBigg
+m
+∑
+t=1πtat/parenrightBigg
+=/bracketleftBigg
+1
+ϕ′′(∑m
+t=1πtat)−m
+∑
+t=1π2−q
+t
+ϕ′′(at)/bracketrightBigg/parenleftBigg
+m
+∑
+t=1π2−q
+t
+ϕ′′(at)/parenrightBigg
+ϕ′′/parenleftBigg
+m
+∑
+t=1πtat/parenrightBigg
+,
+where the expression inside the square brackets is the Jensen (2−q)-difference of 1 /ϕ′′(see Def-
+inition 7). Since ϕ′′(x)≥0, the factor outside the square brackets is non-negative, thus the Jens en
+(2−q)-differenceof 1 /ϕ′′is alsononnegativeand −1/ϕ′′is(2−q)-convex.
+Finally, we show that if ϕis convex and −1/ϕ′′is(2−q)-convex, then f′′≥0, thusTπ
+q,Ψis
+convex. Let rt= (qπ2−q
+t/ϕ′′(ct))1/2andst=bt(πq
+tϕ′′(ct)/q)1/2; then, non-negativity of f′′results
+fromthe followingchain ofinequalities/equalities:
+0≤/parenleftBigg
+m
+∑
+t=1r2
+t/parenrightBigg/parenleftBigg
+m
+∑
+t=1s2
+t/parenrightBigg
+−/parenleftBigg
+m
+∑
+t=1rtst/parenrightBigg2
+(46)
+=m
+∑
+t=1π2−q
+t
+ϕ′′(ct)m
+∑
+t=1b2
+tπq
+iϕ′′(ct)−/parenleftBigg
+m
+∑
+t=1btπt/parenrightBigg2
+(47)
+≤1
+ϕ′′(∑m
+t=1πtct)m
+∑
+t=1b2
+tπq
+tϕ′′(ct)−/parenleftBigg
+m
+∑
+t=1btπt/parenrightBigg2
+(48)
+=1
+ϕ′′(∑m
+t=1πtct)·f′′(t), (49)
+where: (46) is the Cauchy-Schwarz inequality; Equality (47) results fro m the deﬁnitions of rtand
+stand from the fact that rtst=btπt; Inequality (48) states the (2−q)-convexityof −1/ϕ′′; equality
+(49)resultsfrom(45).
+968NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+AppendixC. Proof ofProposition 10
+ProofTheproofof (29),for q≥0,resultsfrom
+Tπ
+q(p1,...,pm) =1
+q−1/bracketleftBigg
+1−n
+∑
+j=1/parenleftBigg
+m
+∑
+t=1πtptj/parenrightBiggq
+−m
+∑
+t=1πq
+t/parenleftBigg
+1−n
+∑
+j=1pq
+tj/parenrightBigg/bracketrightBigg
+=Sq(π)+1
+q−1n
+∑
+j=1/bracketleftBigg
+m
+∑
+t=1(πtptj)q−/parenleftBigg
+m
+∑
+t=1πtptj/parenrightBiggq/bracketrightBigg
+≤Sq(π),
+wheretheinequalityholdssince,for yi≥0: ifq≥1,then∑iyq
+i≤(∑iyi)q;ifq∈[0,1],then∑iyq
+i≥
+(∑iyi)q.
+Theproofthat Tπ
+q≥0forq≥1,usesthenotionof q-convexity. Since Xiscountable,theTsallis
+entropy is as in (2), thus Sq≥0. Since −Sqis 1-convex, then, by Proposition 6, it is also q-convex
+forq≥1. Consequently, fromthe q-Jenseninequality (Proposition5),forﬁnite T,with |T|=m,
+Tπ
+q(p1,...,pm) =Sq/parenleftBigg
+m
+∑
+t=1πtpt/parenrightBigg
+−m
+∑
+t=1πq
+tSq(pt)≥0.
+SinceSqiscontinuous,sois Tπ
+q,thustheinequalityisvalidinthelimitas m→∞,whichprovesthe
+assertionfor Tcountable. Finally, Tπ
+q(δ1,...,δ1,...) =0,whereδ1issomedegeneratedistribution.
+Finally,toprove(30),for q∈[0,1]andXﬁnite,
+Tπ
+q(p1,...,pm) =Sq/parenleftBigg
+m
+∑
+t=1πtpt/parenrightBigg
+−m
+∑
+t=1πq
+tSq(pt)
+≥m
+∑
+t=1πtSq(pt)−m
+∑
+t=1πq
+tSq(pt) (50)
+=m
+∑
+t=1(πt−πq
+t)Sq(pt)
+≥Sq(U)m
+∑
+t=1(πt−πq
+t) (51)
+=Sq(π)[1−n1−q].
+where the Inequality (50) results from Sqbeing concave, and the Inequality (51) holds since πt−
+πq
+t≤0,forq∈[0,1],andtheuniformdistribution Umaximizes Sq,withSq(U) = (1−n1−q)/(q−1).
+AppendixD. Proofof Proposition 41
+ProofWe show a counterexample with q=1 (the extensive case), π= (1/2,1/2)andk=1,
+that discards both cases. It sufﬁces to show that/radicalBig
+JScond
+1/defines/radicalBig
+Tcond,(1/2,1/2)
+1,1 violates the triangle
+inequalityforsomechoiceofstochasticprocesses s1,s2,s3andthereforeisanotasquareddistance;
+969MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+this in turn implies that/radicalBig
+JScond
+1is not nd and, from Proposition 18, that the above two kernels
+are not pd. We deﬁne s1,s2,s3to be stationary ﬁrst order Markov processes in a binary alphabet
+A={0,1}deﬁned bythefollowingtransitionmatrices,respectively:
+S1=lim
+ε→0/bracketleftbigg1−ε ε
+1/4 3/4/bracketrightbigg
+=/bracketleftbigg1 0
+1/4 3/4/bracketrightbigg
+,
+S2=lim
+ε→0/bracketleftbigg3/4 1/4
+ε1−ε/bracketrightbigg
+=/bracketleftbigg3/4 1/4
+0 1/bracketrightbigg
+,
+and
+S3=lim
+ε→0/bracketleftbiggε1−ε
+1/4 3/4/bracketrightbigg
+=/bracketleftbigg0 1
+1/4 3/4/bracketrightbigg
+,
+whosestationarydistributionsare
+σ1=lim
+ε→01
+1+4ε/bracketleftbigg1
+4ε/bracketrightbigg
+=/bracketleftbigg1
+0/bracketrightbigg
+,
+σ2=lim
+ε→01
+1+4ε/bracketleftbigg4ε
+1/bracketrightbigg
+=/bracketleftbigg0
+1/bracketrightbigg
+,
+and
+σ3=lim
+ε→01
+5−4ε/bracketleftbigg1
+4−4ε/bracketrightbigg
+=/bracketleftbigg1/5
+4/5/bracketrightbigg
+.
+The matrix of ﬁrst order conditional JT 1-differences (or ﬁrst order conditional Jensen-Shannon
+divergences)is
+0 03
+5H(5
+6)
+∗09
+10H(8
+9)−2
+5H(1
+4)
+∗ ∗ 0
+≈
+0 0 0 .390
+∗0 0.128
+∗ ∗0
+, (52)
+whichfails tobenegativedeﬁnite,since
+/radicalBig
+JScond
+1(s1,s2)+/radicalBig
+JScond
+1(s2,s3)</radicalBig
+JScond
+1(s1,s3),
+whichviolates the triangleinequalityrequiredfor/radicalBig
+JScond
+1tobea metric.
+Interestingly, the 0-th order conditional Jensen-Shannon divergenc e matrix (this one ensured to
+benegativedeﬁnite becauseitequals astandardJensen-Shannondi vergencematrix) is
+
+0 1H(2
+5)−1
+2H(1
+5)
+∗0H(1
+10)−1
+2H(1
+5)
+∗ ∗ 0
+≈
+0 1 0 .610
+∗0 0.108
+∗ ∗0
+. (53)
+From the chain rule (35), we have that the sum of the matrices (52) and (53 ) is the second order
+jointJensen-Shannondivergence,andthereforeisalsoguarantee dtobe negativedeﬁnite.
+970NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+AppendixE. The Heat KernelApproximation
+Thediffusionkernelforstatisticalmanifolds,recentlyproposedbyLaf fertyandLebanon(2005),is
+groundedininformationgeometry(AmariandNagaoka,2001). Itmodelsth ediffusionof“informa-
+tion”overastatisticalmanifoldaccordingtotheheatequation. Sinceinthecas eofthemultinomial
+manifold (the relative interior of Δn), the diffusion kernel has no closed form, the authors adopt
+theso-called“ﬁrst-orderparametrixexpansion,”whichresemblestheGa ussiankernelreplacingthe
+Euclidean distance by the geodesic distance that is induced when the manifold is endowed with a
+Riemannian structure given by the Fisher information (we refer to Lafferty and Lebanon 2005 for
+furtherdetails). Theresultingheatkernelapproximationis
+kheat(p1,p2) = (4πt)−n
+2exp/parenleftbigg
+−1
+4td2
+g(p1,p2)/parenrightbigg
+,
+wheret>0 anddg(p1,p2) =2arccos/parenleftbig
+∑i√p1ip2i/parenrightbig
+. Whether kheatis pd has been an open problem
+(Hein et al., 2004; Zhang et al., 2005). Let Sn
++be the positive orthant of the n-dimensional sphere,
+thatis,
+Sn
++=/braceleftBigg
+(x1,...,xn+1)∈Rn+1|n+1
+∑
+i=1x2
+i=1,∀ixi≥0/bracerightBigg
+.
+The problem can be restated as follows: is there an isometric embedding from Sn
++to some Hilbert
+space? Inthissectionweanswer thatquestioninthe negative.
+Proposition43 Letn≥2. Forsufﬁcientlylarget,thekernelk heatisnotpd.
+ProofFrom Proposition 19, kheatis pd, for all t>0, if and only if d2
+gis nd. We provide a coun-
+terexample, using the following four points in Δ2:p1= (1,0,0),p2= (0,1,0),p3= (0,0,1)and
+p4= (1/2,1/2,0). Thesquareddistancematrix [Dij] = [d2
+g(pi,pj)]is
+D=π2
+4·
+0 4 4 1
+4 0 4 1
+4 4 0 4
+1 1 4 0
+.
+Takingc= (−4,−4,1,7)wehavecTDc=2π2>0,showingthat Disnotnd. Although p1,p2,p3,p4
+lieontheboundaryof Δ2,continuityof d2
+gimpliesthatitisnotndontherelativeinteriorof Δ2. The
+casen>2followseasily,byappending zerostothe fourvectorsabove.
+References
+S. Abe. Foundations of nonextensive statistical mechanics. In Chaos, Nonlinearity, Complexity .
+Springer,2006.
+S.AmariandH.Nagaoka. MethodsofInformationGeometry . OxfordUniversityPress,2001.
+R. Baeza-Yates,andB. Ribeiro-Neto. Moderninformationretrieval . ACM PressNew York,1999.
+971MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+A. Banerjee, S. Merugu, I. Dhillon, and J. Ghosh. Clustering with Bregma n divergences. J. of
+Mach.Learn.Res. ,6:1705–1749, 2005.
+A. Ben-Hamza. A nonextensive information-theoretic measure for image ed ge detection. J. of
+ElectronicImaging ,15-1:13011.1–13011.8, 2006.
+A. Ben-Hamza and H. Krim. Image registration and segmentation by maximizing the je nsen-r´enyi
+divergence. In Proc. of Int. Workshop on Energy Minimization Methods in Computer Vision and
+PatternRecognition ,pages 147–163.Springer,2003.
+C. Berg,J.Christensen,and P.Ressel. HarmonicAnalysisonSemigroups . Springer,Berlin,1984.
+J. Burbea and C. Rao. On the convexity of some divergence measures b ased on entropy functions.
+IEEETrans.onInformationTheory ,28(3):489–495,1982.
+C. Cortes, P. Haffner and M. Mohri. Rational Kernels: Theory and Alg orithms.J. of Mach. Learn.
+Res.,5:1035–1062, 2004.
+T.Cover andJ.Thomas. ElementsofInformationTheory . Wiley,1991.
+I. Csiszar. I-divergence geometry of probability distributions and minimizatio n problems. The
+AnnalsofProbability ,3(1):146–158,1975.
+M. Cuturi and J.-P. Vert. Semigroup kernels on ﬁnite sets. In L. Saul, Y. W eiss, and L. Bottou,
+editors,Advances in Neural Information Processing Systems 17 , pages 329–336. MIT Press,
+Cambridge, MA,2005.
+M. Cuturi, K. Fukumizu, and J.-P. Vert. Semigroup kernels on measures. J. of Mach. Learn. Res. ,
+6:1169–1198, 2005.
+Z.Dar´oczy. Generalizedinformationfunctions. Informationand Control ,16(1):36–51,1970.
+F. Desobry, M. Davy, and W. Fitzgerald. Density kernels on unordere d sets for kernel-based signal
+processing. In Proc.ofthe IEEEInt.Conf.onAcoustics,Speech, andSignalProc. ,2007.
+R.El-Yaniv,S.Fine,andN.Tishby. Agnosticclassiﬁcationofmarkovian sequences. InM.Jordan,
+M. Kearns, and S. Solla, editors, Advances in Neural Information Processing Systems 10 , pages
+465–471. MITPress,Cambridge, MA,1998.
+D.EndresandJ.Schindelin. Anewmetricforprobabilitydistributions. IEEETrans.onInformation
+Theory,49(7):1858–1860,2003.
+B.Fuglede. SpiralsinHilbertspace,withanapplicationininformationtheory. ExpositionesMath-
+ematicae, 25(1):23–46,2005.
+S. Furuichi. Information theoretical properties of Tsallis entropies. J. of Mathematical Physics , 47
+(2),2006.
+M. Gell-Mann and C. Tsallis. Nonextensive Entropy: Interdisciplinary Applications . Oxford Uni-
+versityPress,2004.
+972NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+I. Grosse,P. Bernaola-Galvan, P. Carpena, R. Roman-Roldan J. Oli ver,and H. E. Stanley. Analysis
+of symbolicsequences usingtheJensen-Shannondivergence. Phys.ReviewE ,65,2002.
+D.Gusﬁeld. AlgorithmsonStrings,Trees,and Sequences . Cambridge UniversityPress,1997.
+D. Haussler. Convolution kernels on discrete structures. In Technical Report UCS-CRL-99-10,
+1999.
+M. Havrda and F. Charv ´at. Quantiﬁcation method of classiﬁcation processes: concept of structur al
+α-entropy. Kybernetika ,3:30–35, 1967.
+Y. He, A. Ben-Hamza, and H. Krim. A generalized divergence measure f or robust image registra-
+tion.IEEETrans.onSignal Proc. ,51(5):1211–1220,2003.
+M.HeinandO.Bousquet. Hilbertianmetricsandpositivedeﬁnitekernelsonp robabilitymeasures.
+InZ.GhahramaniandR.Cowell,editors, Proc.ofthe10thInt.WorkshoponArtiﬁcialIntell.and
+Stat.,2005.
+M. Hein, T. Lal, and O. Bousquet. Hilbertian metrics on probability measures a nd their application
+inSVMs. In Proc.ofthe 26thDAGMSymposium , pages 270–277.Springer,2004.
+T. Jebara, R. Kondor, and A. Howard. Probability product kernels. J. of Mach. Learn. Res. , 5:
+819–844, 2004.
+J.Jensen.Surlesfonctionsconvexesetlesin ´egalit´esentrelesvaleursmoyennes. ActaMathematica ,
+30:175–193, 1906.
+T. Joachims. Learning to Classify Text Using Support Vector Machines: Methods, The ory and
+Algorithms . Kluwer Academic Publishers,2002.
+D. Karakos, S. Khudanpur, J. Eisner, and C. Priebe. Iterative den oising using Jensen-R ´enyi di-
+vergences with an application to unsupervised document categorization. I nProc. of IEEE
+Int.Conf.onAcoustics,Speech andSignalProc. ,Baltimore, MD,2007.
+A.Khinchin. MathematicalFoundations ofInformationTheory . Dover,NewYork,1957.
+S. Kullback and R.A. Leibler. On information and sufﬁciency. The Annals of Mathematical Statis-
+tics,79–86,1951.
+J. Lafferty and G. Lebanon. Diffusion kernels on statistical manifolds. J. of Mach. Lear. Res. , 6:
+129–163, 2005.
+P. Lamberti and A. Majtey. Non-logarithmic Jensen-Shannon divergenc e.Physica A: Statistical
+Mechanics anditsApplications ,329:81–90,2003.
+C. Leslie, E. Eskin, and W. Noble. The spectrum kernel: A string kernel for svm protein classiﬁca-
+tion. InProc.ofthePaciﬁcSymposium onBiocomputing ,pages 564–575, 2002.
+Y.Li,X.Fan,andG.Li. ImagesegmentationbasedonTsallis-entropyandR enyi-entropyandtheir
+comparison. In IEEEInt.Conf. onIndustrialInformatics ,pages 943–948,2006.
+973MARTINS, SMITH, XING, AGUIAR AND FIGUEIREDO
+J. Lin. Divergence measures based on the Shannon entropy. IEEE Trans. on Information Theory ,
+37(1):145–151,1991.
+J. Lin and S. Wong. A new directed divergence measure and its characte rization.Int. J. of General
+Systems,17:73–81,1990.
+J.Lindhard. OntheTheoryofMeasurementandItsConsequencesinStatisticalDyna mics. Munks-
+gaard,Copenhagen, 1974.
+J.Lindhardand V.Nielsen. Studies inStatisticalDynamics . Munksgaard,Copenhagen, 1971.
+H. Lodhi, C. Saunders, J. Shawe-Taylor, N. Cristianini, and C. Watkins . Text classiﬁcation using
+stringkernels. J.ofMach.Learn.Res. ,2:419–444, 2002.
+A.F.T.Martins,P.M.Q.Aguiar,andM.A.T.Figueiredo. Tsalliskerne lsonmeasures. In Proc.of
+theIEEEInformationTheoryWorkshop ,Porto,Portugal,2008a.
+A. F. T. Martins, M. A. T. Figueiredo, P. M. Q. Aguiar, N. A. Smith, and E. P. Xing. Nonextensive
+entropic kernels. In Proc. of the Int. Conf. on Machine Learning – ICML’08 , Helsinki, Finland,
+2008b.
+P. Moreno, P. Ho, and N. Vasconcelos. A Kullback-Leibler divergen ce based kernel for SVM clas-
+siﬁcation in multimedia applications. In S. Thrun, L. Saul, and B. Sch ¨olkopf, editors, Advances
+inNeuralInformationProcessingSystems16 . MITPress,2004.
+A. R´enyi. On measures of entropy and information. In Proc. of the 4th Berkeley Symposium on
+Mathematics, Statistics, and Probability , volume 1, pages 547–561, Berkeley, 1961. University
+of CaliforniaPress.
+B. Sch¨olkopfand A.J.Smola. LearningwithKernels . TheMITPress,Cambridge,MA,2002.
+C. Shannon and W. Weaver. The Mathematical Theory of Communication . University of Illinois
+Press,Urbana,Ill.,1949.
+C. E. Shannon. A mathematical theory of communication. The Bell System Technical Journal , 27
+(3):379–423,1948.
+J. Shawe-Taylor and N. Cristianini. Kernel Methods for Pattern Analysis . Cambridge University
+Press,2004.
+J.Steele. The Cauchy-Schwarz MasterClass . Cambridge UniversityPress,Cambridge, 2006.
+H.Suyari. GeneralizationofShannon-Khinchinaxiomstononextensives ystemsandtheuniqueness
+theorem for the nonextensive entropy. IEEE Trans. on Information Theory , 50(8):1783–1787,
+2004.
+F. Topsøe. Some inequalities for information divergence and related measu res of discrimination.
+IEEETrans.onInformationTheory ,46(4):1602–1609,2000.
+C. Tsallis. Possible generalization of Boltzmann-Gibbs statistics. J. of Statistical Physics , 52:
+479–487, 1988.
+974NONEXTENSIVE INFORMATION THEORETIC KERNELS ON MEASURES
+S.VishwanathanandA.Smola.Fastkernelsforstringandtreematching.I nK.Tsuda,B.Sch ¨olkopf,
+andJ.P.Vert, editors, Kernels andBioinformatics ,Cambridge, MA,2003. MITPress.
+D. Zhang, X. Chen, and W. Lee. Text classiﬁcation with kernels on the multin omial manifold. In
+Proc. of the 28th Annual Int. ACM SIGIR Conf. on Research and Deve lopment in Information
+Retrieval,pages 266–273,NewYork,NY,2005.
+975

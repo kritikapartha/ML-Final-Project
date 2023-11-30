@@ -1,0 +1,1397 @@
+StrongBox: Conidentiality, Integrity, and
+Performance
+using Stream Ciphers for Full Drive
+Encryption
+Bernard Dickens III
+University of Chicago
+bd3@cs.uchicago.eduHaryadi S. Gunawi
+University of Chicago
+haryadi@cs.uchicago.edu
+Ariel J. Feldman
+University of Chicago
+arielfeldman@cs.uchicago.eduHenry Hofmann
+University of Chicago
+hankhofmann@cs.uchicago.edu
+Abstract
+Full-driveencryption(FDE)isespeciallyimportantformo-
+biledevicesbecausetheycontainlargequantitiesofsensitive
+datayetareeasilylostorstolen.Unfortunately,thestandard
+approach to FDEÐthe AES block cipher in XTS modeÐis
+3ś5x slower than unencrypted storage. Authenticated en-
+cryption based on stream ciphers is already used as a faster
+alternativetoAESinothercontexts,suchasHTTPS,butthe
+conventionalwisdomisthatstreamciphersareunsuitable
+for FDE. Used naively in drive encryption, stream ciphers
+arevulnerable toattacks, andmitigating theseattacks with
+on-drivemetadatais generallybelievedtoruin performance.
+Inthispaper,wearguethatrecentdevelopmentsinmobile
+hardwareinvalidatethisassumption,makingitpossibleto
+use fast stream ciphers for FDE. Modern mobile devices
+employ solid-state storage with Flash Translation Layers
+(FTL),whichoperatesimilarlytoLog-structuredFileSystems
+(LFS). They alsoinclude trusted hardware such asTrusted
+Execution Environments (TEEs) and secure storage areas.
+Leveragingthesetwotrends,weproposeStrongBox,astream
+cipher-based FDE layer that is a drop-in replacement for
+dm-crypt, the standard Linux FDE module based on AES-
+XTS. StrongBox introduces a system design and on-drive
+data structures that exploit LFS’s lack of overwrites to avoid
+costly rekeying and a counter stored in trusted hardware to
+protectagainstattacks.WeimplementStrongBoxonanARM
+big.LITTLEmobileprocessorandtestitsperformanceunder
+multiple popular production LFSes. We ind that StrongBox
+Permission to make digital or hard copies of all or part of this work for
+personalorclassroomuseisgrantedwithoutfeeprovidedthatcopiesarenot
+madeordistributedforproitorcommercialadvantageandthatcopiesbear
+thisnoticeandthefullcitationontheirstpage.Copyrightsforcomponents
+ofthisworkownedbyothersthanACMmustbehonored.Abstractingwith
+creditispermitted.Tocopyotherwise,orrepublish,topostonserversorto
+redistribute to lists, requires prior speciic permission and/or a fee. Request
+permissions from permissions@acm.org.
+ASPLOS’18, March 24ś28, 2018, Williamsburg, VA, USA
+© 2018 Association for Computing Machinery.
+ACM ISBN 978-1-4503-4911-6/18/03...$15.00
+htps://doi.org/10.1145/3173162.3173183improvesread performancebyasmuchas2 .36×(1.72×on
+average) while ofering stronger integrity guarantees.
+CCSConcepts ·Informationsystems →Dataencryp-
+tion;Flashmemory ;·Securityandprivacy →Blockand
+streamciphers ;Hashfunctionsandmessageauthenti-
+cation codes ;Key management ; Tamper-proof and tamper-
+resistant designs; ·Software and its engineering →File
+systems management;
+Keywords AES-XTS;fulldiskencryption;replayprotected
+memoryblock;log-structured;highreadperformance;dm-
+crypt
+ACM Reference Format:
+BernardDickensIII,HaryadiS.Gunawi,ArielJ.Feldman,andHenry
+Hofmann. 2018. StrongBox: Conidentiality, Integrity, and Perfor-
+mance using Stream Ciphers for Full Drive Encryption. In ASPLOS
+’18:2018ArchitecturalSupportforProgrammingLanguagesandOper-
+atingSystems,March24ś28,2018,Williamsburg,VA,USA. ACM,New
+York, NY, USA, 14 pages. htps://doi.org/10.1145/3173162.3173183
+1 Introduction
+Full-drive encryption (FDE)1is an essential technique for
+protecting the privacy of data at rest. For mobile devices,
+maintaining data privacy is especially important as these
+devices contain sensitive personal and inancial data yet are
+easily lost or stolen. The current standard for securing data
+at rest is to use the AES cipher in XTS mode [ 4,5]. Unfortu-
+nately, employing AES-XTS increases read/write latency by
+3ś5×compared to unencrypted storage.
+Itiswellknownthatauthenticatedencryptionusing stream
+ciphersÐsuch as ChaCha20 [ 12]Ðis faster than using AES
+(see Fig. 1). Indeed, Google made the case for stream ciphers
+over AES, switching HTTPS connections on Chrome for
+Android to use a stream cipher for better performance [ 9].
+StreamciphersarenotusedforFDE,however,fortworea-
+sons: (1) conidentiality and (2) performance. First, when
+applied naively to stored data, stream ciphers are trivially
+1Thecommontermisfull-disk encryption,butthisworktargetsSSDs,so
+we usedrive.
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+708vulnerabletoattacksÐincluding many-timepadandrollback
+attacksÐthat reveal the plaintext by overwriting a secure
+storagelocationwiththesamekey.Second,ithasbeenas-
+sumed that adding the meta-data required to resist these
+attackswouldruinthestreamcipher’sperformanceadvan-
+tage. Thus, the conventional wisdom is that FDE necessarily
+incurs the overhead of AES-XTS or a similar primitive.
+Wearguethattwotechnologicalshiftsinmobiledevice
+hardwareoverturnthisconventionalwisdom,enablingconi-
+dential,high-performancestoragewithstreamciphers.First,
+these devices commonly employ solid-state storage with
+FlashTranslationLayers(FTL),whichoperatesimilarlyto
+Log-structuredFileSystems(LFS)[ 21,22,27].Second,mo-
+bile devices now support trusted hardware, such as Trusted
+ExecutionEnvironments(TEE)[ 24,29]andsecurestorage
+areas [10]. FTLs and LFSes are used to limit sector/cell over-
+writes, hence extending the life of the drive. Most writes
+simplyappendedtoalog,reducingtheoccurrenceofover-
+writes and the chance for attacks. The presence of secure
+hardware means that drive encryption modules have access
+to persistent, monotonically increasing counters that can be
+used to prevent rollback attacks when overwrites do occur.
+Giventhesetrends,weproposeStrongBox,anewmethod
+forsecuringdataatrest.StrongBoxisadrop-inreplacement
+for AES-XTS-backed FDE such as dm-crypt [ 8];i.e.,it re-
+quiresnointerfacechanges.Theprimarychallengeisthat
+even with a FTL or LFS running above an SSD, ilesystem
+blocks will occasionally be overwritten; e.g.,by segment
+cleaning or garbage collection. StrongBox overcomes this
+challenge by using a fast stream cipher for conidentiality
+andperformancewithintegritypreservingMessageAuthen-
+tication Codes [ 6] or łMAC tagsž and a secure, persistent
+hardware counter to ensure integrity and prevent attacks.
+StrongBox’s main contribution is a system design enabling the
+irstconidential,high-performancedriveencryptionbasedon
+a stream cipher.
+We demonstrate StrongBox’s efectiveness on a mobile
+ARMbig.LITTLEsystemÐaSamsungExynosOcta5Ðrunning
+UbuntuTrusty14.04LTS,kernel3.10.58.WeuseChaCha20[ 12]
+asourstreamcipher,Poly1305[ 11]asourMACalgorithm,
+and the eMMC Replay Protected Memory Block partition
+to store a secure counter [ 10]. As StrongBox requires no
+changetoanyexistinginterfaces,webenchmarkitontwo
+of the most popular LFSes: NILFS [ 21] and F2FS [ 22]. We
+compare the performance of these LFSes on top of AES-XTS
+(via dm-crypt) and StrongBox. Additionally, we compare the
+performanceofAES-XTSencryptedExt4ilesystemswith
+StrongBox and F2FS. Our results show:
+•Improved read performance: StrongBox provides de-
+creasedreadlatenciesacrossalltestedilesystemsin
+the majority of benchmarks when compared to dm-
+crypt;e.g.,under F2FS, StrongBox provides as much
+as a 2.36×(1.72×average) speedup over AES-XTS.
+Time (s)
+EncryptDecrypt02550
+AES−XTS
+ ChaCha+Poly1305
+Figure 1. AES-XTS and ChaCha20+Poly1305 Comparison.
+•Equivalent write performance: despite having to main-
+tain more metadata than FDE schemes based on AES-
+XTS,StrongBoxachievesnearparityorprovidesanim-
+provement in observed write latencies in the majority
+ofbenchmarks; e.g.,underF2FS,StrongBoxprovides
+an average 1.27×speedup over AES-XTS.
+StrongBoxachievestheseperformancegainswhileprovid-
+ing a stronger integrity guarantee than AES-XTS. Whereas
+XTSmodeonlyhopestorandomizeplaintextwhentheci-
+phertext is altered [ 4], StrongBox provides the security of
+standard authenticated encryption. In addition, StrongBox’s
+implementation is available open-source.2
+2 Motivation
+We detail the main motivations for StrongBox: stream ci-
+phers’ speed compared to AES-XTS and Log-structured File
+Systems’append-mostlynature.Wethendescribethechal-
+lenges of replacing AES with a stream cipher.
+2.1 Performance Potential
+Wedemonstratethepotentialperformancewinfromswitch-
+ingtoastreamcipherbycomparingAES-XTStoChaCha20+
+Poly1305.WeuseanExynosOctaprocessorwithanARM
+big.LITTLE architectureÐthe same processor used in the
+Samsung Galaxy line of phones. We encrypt and then de-
+crypt250MBofrandomlygeneratedbits3timesandtakethe
+median time for each of encryption and decryption. Fig. 1
+showsthedistinctadvantageofthestreamcipheroverAESÐ
+a consistent 2.7×reduction in run time.
+2.2 Append-mostly Filesystems
+Ofcourse,streamciphersarenotdesignedtoencryptdataat
+rest.Ifwenaivelyimplementblockdeviceencryptionwitha
+stream cipher, overwritingthe same memory location with
+thesamekeywouldtriviallyallowanattackertorecoverthe
+secret key. Thus we believe stream ciphers are best suited
+for encrypting block devices backing Log-structured File
+Systems(LFSes),astheseilesystemsaredesignedtoappend
+datatotheendofalogratherthanoverwritedata.Inpractice,
+some overwrites occur; e.g.,in metadata, but they are small
+in number during normal execution.
+2https://git.xunn.io/research/buselfs-public
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+709To demonstrate this fact, we write 800MB of random data
+directlytothebackingstoreusingfourdiferentilesystems:
+Ext4, LogFS, NILFS, and F2FS. We count the number of total
+writes to the underlying block device and the number of
+times data is overwritten for each ile system.
+Table 1.File System Overwrite Behavior
+File System Total Write Ops Overwrites
+ext4 16,756 10,787
+LogFS
+4,244 32
+NILFS 4,199 24
+F2FS 2.107 2
+Table1showsthedataforthisexperiment.Ext4hasthe
+highestnumberofwrites,butmanyofthosearesmallwrites
+forbook-keepingpurposes.Ext4alsohasthelargestnumber
+ofoverwrites.Almost65%ofthewritesaretoapreviously
+written location in the backing store. In contrast, all three
+Log-structured ile systems have very few overwrites.
+2.3 Threat Model
+A stream cipher can be more than twice as fast as AES-
+XTSwhileprovidingthesameconidentialityguarantee.The
+problem is that a stream cipher is not secure if the same key
+is used to overwrite the same storage location. Fortunately,
+FTLs and LFSes rarely overwrite the same location.
+Wecannot,however,ignorethefactthatoverwritesdooc-
+cur. While Table 1 shows overwrites are rare during normal
+operation,weknowtheywilloccurwhengarbagecollecting
+theLFS.Thus,wewillneedsomemetadatatotrackwrites
+and ensure that data is handled securely if overwrites occur.
+Therefore, we recognize three key challenges to replacing
+AES with a stream cipher for FDE:
+•Tracking writes to the block device to ensure that the
+same location is never overwritten with the same key.
+•Ensuringthatthemetadatathattrackswritesissecure
+and is not subject to leaks or rollback attacks.
+•Accomplishingtheaboveeicientlysothatwemain-
+tain the performance advantage of the stream cipher.
+ThekeytoStrongBoxisusingasecure,persistentcounter
+supportedinmodernmobilehardware; e.g.,forlimitingpass-
+word attempts. This counter can track writes, and thus ver-
+sionsoftheencrypteddata.Ifanattackertriedto rollback
+theilesystemtooverwritethesamelocationwiththesame
+key, our StrongBox detects that the local version number is
+out of sync with the global version number stored in the se-
+curecounter.Inthatcase,StrongBoxrefusestoinitializeand
+theattackfails.Theuseofthehardware-supportedsecure
+countersigniicantlyraisesthebarwhenitcomestorollback
+attacks,requiringacostlyandnon-discretephysicalattack
+onthehardwareitselftobeefective.Theactualstructureof
+themetadatarequiredtotrackwritesandmaintainintegrity
+Figure 2. O verview of the StrongBox construction.
+is signiicantly more complicated than simply implementing
+a counter and is the subject of the next section.
+An additional challenge is that of crash recovery. Strong-
+Box relies on the overlying ilesystem to manage data re-
+covery in the event of a crash that leaves user data in an
+inconsistent state. StrongBox handles metadata recovery af-
+teracrashbygivingtherootusertheoptiontoacceptthe
+currentmetadatastateasthenewconsistentstate, i.e.,łforce
+mountingž.Thisallowstherootusertomounttheilesystem
+and access data after an unexpected shutdown. An attacker
+might try to take advantage of this feature by modifying
+thebackingstore,forcinganinconsistentstate,andhoping
+the root user will ignore it and force mount the system any-
+way. StrongBox defends against this attack by preventing
+force mounts when metadata state is wildly inconsistent
+with the global version counter. Otherwise, the root user
+is warned if they attempt a force mount. Thus, attacking
+StrongBox by forcing a crash can only be successful if the
+attackeralsohasrootpermission,inwhichcasesecurityis
+already compromised. Crash recovery is also detailed in the
+next section.
+3 StrongBox System Design
+StrongBox acts as a translation layer sitting between the
+driveandtheoperatingsystem.Itprovidesconidentiality
+andintegrityguaranteeswhileminimizingperformanceloss
+duetometadatamanagementoverhead.StrongBoxaccom-
+plishesthisbyleveragingthespeedofstreamciphersover
+theAESblockcipherandtakingadvantageoftheappend-
+mostly nature of Log-structured Filesystems (LFS) and mod-
+ern Flash Translation Layers (FTL) [14].
+Hence, there are several locations where StrongBox could
+beimplementedinthesystemstack.StrongBoxcouldbeinte-
+gratedintoanLFSkernelmoduleitselfÐe.g., F2FSÐspeciically
+leveraging the lexibility of the Virtual Filesystem Switch
+(VFS).StrongBoxcouldbeimplementedasanactualblock
+device, or virtual block device layered atop a physical block
+device; the latter is where we chose to implement our proto-
+type. StrongBox could even be implemented within the SSD
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+710Figure 3. Lay out of StrongBox’s backing storage.
+drivecontroller’sFTL,whichhandlesscattergather,garbage
+collection, wear-leveling, etc.
+Fig.2illustratesStrongBox’sdesign.StrongBox’smetadata
+isencapsulatedinfourcomponents:anin-memory Merkle
+Treeandtwodrive-backedbytearraysÐthe KeycountStore
+and theTransaction Journal Ðand a persistent monotonic
+counter we implement with the Replay Protected Memory
+BlockorRPMB.Allfourareintegratedintothe Cryptographic
+Driver, which handles data encryption, veriication, and de-
+cryption during interactions with the underlying backing
+store.Theseinteractionstakeplacewhilefulillinghigh-level
+I/O requests received from the LFS. The Device Controller
+handleslow-levelI/ObetweenStrongBoxandthebacking
+store.
+The rest of this section describes the components refer-
+enced in Fig. 2. Speciically: we irst describe the backing
+storeand StrongBox’slayoutfor dataandmetadata. Thisis
+followedbyanexplorationofthecryptographicdriverand
+how it interacts with that metadata, the role of the device
+controller,anoverviewofrekeyinginthebackingstore,and
+furtherconsiderationstoensureconidentialityinthecase
+of rollbacks and related attacks.
+3.1 Backing Store Function and Layout
+The backing store is the storage media on which StrongBox
+operates. Fig. 3 illustrates StrongBox’s layout on this store.
+Inthebodysectionofthebackingstorelayout,end-user
+data is partitioned into a series of same-size logical blocks.
+Thesearedistinctfromtheconceptof physicaldriveblocks,
+which are collections of one or more drive sectors. To make
+thisdistinctionclear,werefertothesewiderlogicalblocks
+asnuggets,marked NUGintheBodysectionofFig.3.Hence,
+anuggetconsistsofoneormorephysicaldriveblocks,de-
+pending on its conigured size. Each nugget is subdivided
+into a constant number of sub-blocks we refer to as lakes.
+The reason for these nugget/lake divisions are two-fold:
+1. To track, detect, and handle overwrites and
+2.Tolimitthemaximumlengthofanyplaintextsoper-
+ated on by the cryptographic driver, decreasing the
+overheadincurredperI/Ooperationandperoverwrite.
+Consideringtheirstitem,wearerequiredtokeeptrack
+ofwritessothatwemaydetectwhenanoverwriteoccurs.Flakes are key to this tracking. When a request comes in to
+write to one or more lakes in a nugget, StrongBox marks
+theafectedlakes asłlaggedž.Here,łlaggedžimpliesthat
+another write to some portion of that lake would constitute
+an overwrite. If a new request comes in to write to one or
+more of those same lakes another time, StrongBox triggers
+ałrekeyingžprocedureovertheentirenuggettosafelyover-
+writetheolddatainthoselakes.Thisrekeyingprocedure
+isnecessarilytimeconsuming,ballooningtheoverheadof
+overwrites translated by StrongBox.
+Considering the second item, nugget size here governs
+the granularity of rekeying while lake size governs gran-
+ularity when identifying overwrites. A larger nugget size
+will increase the penalty incurred with rekeying (you’re
+re-encrypting a larger number of bytes) while a smaller
+nugget size will increase the quantity of nuggets needing to
+berekeyedwhenanoverwriteisdetectedaswellasincrease
+the amount of metadata stored on drive and in memory. On
+theother hand,a largerlakesize willincreasethe number
+of times an incoming write is seen as an overwrite, with
+a non-optimal nugget-sized lake requiring a rekeying on
+every write. A smaller lake size will increase the amount of
+metadata stored on drive and in memory.
+The size and structure of that metadata is described in
+greater detail throughout the rest of this section.
+Theheadsection of the backing store layout contains the
+metadata written to drive duringStrongBox’s initialization.
+These headers govern StrongBox’s operation and are, in
+order:
+1.VERSION, 4 bytes; speciies the StrongBox version
+originally used to initialize the backing store
+2.SALT,16bytes;thesaltusedinparttoderivetheglobal
+master secret
+3. MTRH, 32 bytes; the hash of the Merkle Tree root
+4.TPMGLOBALVER, 8 bytes; the monotonic global ver-
+sion count,parity in hardware-supportedsecure stor-
+age
+5.VERIFICATION,32bytes;usedtodetermineifthekey
+derived from a password is correct
+6.NUMNUGGETS, 4 bytes; the number of nuggets con-
+tained by the backing store
+7.FLAKESPERNUGGET,4bytes;thenumberoflakes/nugget
+8. FLAKESIZE, 4 bytes; the size of each lake, in bytes
+9.INITIALIZED,1byte;usedtodetermineifthebacking
+store has been properly initialized
+10.REKEYING, 4 bytes; the index of the nugget in need
+of rekeying if there is a pending rekeying procedure
+After the headers, two byte arrays are stored in the Head
+section: one of N8-byte integer keycounts and one of N
+⌈P/8⌉-bytetransactionjournalentries,where Nisthenumber
+of nuggets and Pis the number of lakes per nugget.
+Finally, the Rekeying Journal is stored at the end of the
+Head section. The rekeying journal is where nuggets and
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+711theirassociatedmetadataaretransientlywritten,enabling
+StrongBox to resume rekeying in the event that it is inter-
+rupted during the rekeying procedure.
+3.2 Metadata-aware Cryptographic Driver
+The cryptographic driver coordinates StrongBox’s disparate
+components. Its primary function is to map incoming reads
+and writes to their proper destinations in the backing store,
+applying our chosen stream cipher and message authentica-
+tioncodetoencrypt,verify,anddecryptdataonthelywith
+consideration for metadata management.
+When a read request is received, it is irst partitioned
+intoafectednuggets; e.g.,areadthatspanstwonuggetsis
+partitioned in half. For each nugget afected, we calculate
+which lakes are touched by the request. We then verify the
+contents of those lakes. If all the lakes are valid, whatever
+subsetofdatathatwasrequestedbytheuserisdecryptedand
+returned. Algorithm 1 details StrongBox’s read operation.
+Likereads,whenawriterequestisreceived,therequest
+is irst partitioned with respect to afected nuggets. For each
+afected nugget, we calculate which lakes are touched by
+the request and then check if any of those lakes are marked
+as lagged in the transaction journal. If one or more of them
+have been marked lagged, we trigger rekeying for this spe-
+ciic nugget (see: Algorithm 3) and end there. Otherwise,
+wemarkthesetouchedlakesaslaggedinthetransaction
+journal.Wetheniterateoverthesetouchedlakes.Forthe
+irstandlastlakestouchedbythewriterequest,weexecute
+an internal read request (see: Algorithm 1) to both obtain
+the lake data and verify that data with the Merkle Tree. We
+thenoverwriteeverytouchedlakewiththedatafromthe
+requestedoperation,updatetheMerkleTreetorelectthis
+change,encryptandwriteoutthenewlakedata,andcommit
+allcorrespondingmetadata.Algorithm2detailsStrongBox’s
+write operation.
+3.2.1 Transaction Journal
+Anoverwritebreaksthesecurityguaranteeoferedbyany
+streamcipher.Topreventthisfailure,StrongBoxtracksin-
+coming write requests to prevent overwrites. Thistracking
+is done with the transaction journal, featured in Fig. 2.
+Thetransaction journalconsistsof N⌈P/8⌉-bytebit vec-
+tors where Nis the number of nuggets and Pis the number
+of lakes per nugget. A bit vector vcontains at least Pbits
+v={b0,b1,b2,...,bP−1,...}, with extra bits ignored. Each
+vectorisassociatedwithanuggetandeachbitwithalake
+belongingtothatnugget.Whenanincomingwriterequest
+occurs,thecorrespondingbitvectorisupdated(setto1)to
+relect the new lagged state of those lakes.
+The transaction journal is referenced during each write
+request,whereitisupdatedtorelectthestateofthenugget
+and checked to ensure the operation does not constitute
+anoverwrite.Iftheoperation doesconstituteanoverwrite,Algorithm1 StrongBoxhandlinganincomingreadrequest.
+Require: The read request is over a contiguous segment of the backing
+store
+Require: ℓ, ℓ′←read requested length
+Require:ℵ←master secret
+Require: nindex←irst nugget index to be read
+1:data←empty
+2:whileℓ/nequal0do
+3:knindex←GenKey nuддet(nindex,ℵ)
+4: Fetch nugget keycount nkcfrom Keycount Store.
+5: Calculate indices touched by request: ffirst,flast
+6:nflakedat←ReadFlakes (ffirst, .. .,flast)
+7:forfcurrent=ffirsttoflastdo
+8: kfcurrent←GenKey flake(knindex,fcurrent,nkc)
+9: taдfcurrent←GenMac (kfcurrent,nflakedat [fcurrent])
+10: Verify taдfcurrentin Merkle Tree.
+(*) denotes requested subset of nugget data
+11:data←data+Decrypt (∗nflakedat ,knindex,nkc)
+12:ℓ←ℓ−∥∗nflakedat∥
+13:nindex←nindex+1
+14:returndata ▷Fulill the read request
+Ensure:∥data∥<=ℓ′
+Ensure: ℓ=0
+Algorithm 2 StrongBox handling an incoming write re-
+quest.
+Require: Thewriterequestistoacontiguoussegmentofthebackingstore
+Require: ℓ, ℓ′←write requested length
+Require:ℵ←master secret
+Require: data←cleartext data to be written
+Require: nindex←irst nugget index to be afected
+1: Increment secure counter: by 2 if we recovered from a crash, else 1
+2:whileℓ/nequal0do
+3: Calculate indices touched by request: ffirst,flast
+4:ifTransaction Journal entries for ffirst, .. .,flast/nequal0then
+5: Trigger rekeying procedure (see: Algorithm 3).
+6: continue
+7: Set Transaction Journal entries for ffirst, .. .,flastto 1
+8:knindex←GenKey nuддet(nindex,ℵ)
+9: Fetch nugget keycount nkcfrom Keycount Store.
+10:forfcurrent=ffirsttoflastdo
+11: nflakedat←empty
+12: iffcurrent==ffirst∥fcurrent==flastthen
+13: nflakedat←CryptedRead (FSIZE,ℵ,nindex@foffset)
+14: nflakedat←Encrypt (nflakedat ,knindex,nkc)
+15: kfcurrent←GenKey flake(knindex,fcurrent,nkc)
+16: taдfcurrent←GenMac (kfcurrent,nflakedat )
+17: Update new taдfcurrentin Merkle Tree.
+18: WriteFlake (fcurrent,nflakedat )
+19:
+(*) denotes requested subset of nugget data if applicable
+20: ℓ←ℓ−∥∗nflakedat∥
+21:nindex←nindex+1
+22: Update and commit metadata and headers
+Ensure: ℓ=0
+StrongBoxtriggersarekeyingprocedurefortheentirenugget
+before safely completing the request.
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+7123.2.2 Merkle Tree
+Trackingwriteswiththetransactionjournalmaystymiea
+passive attacker by preventing explicit overwrites, but a suf-
+icientlymotivatedactiveattackercouldresorttoallmanner
+ofcut-and-pastetacticswithnuggets,lakes,andevenblocks
+and sectors. If, for example, an attacker purposefully zeroed-
+out the transaction journal entry pertaining to a speciic
+nuggetinsome out-of-bandmannerÐsuchaswhenStrong-
+Box is shut down and then later re-initialized with the same
+backing storeÐStrongBox would consider any successive
+incoming writes as if the nugget were in a completely clean
+state, even though it actually is not. This attack would force
+StrongBox to make compromising overwrites. To prevent
+such attacks, we must ensure that the backing store is al-
+waysinavalidstate.Moreconcretely:wemustprovidean
+integrity guarantee on top of a conidentiality guarantee.
+StrongBox uses our chosen Message Authentication Code
+(MAC) generating algorithm and each lake’s unique key to
+generate a per-lake MAC tag (łMACedž). The purpose of
+thistag isto authenticatelakedata andconirm thatithas
+not been tampered with. Each tag is then appended to the
+Merkle Tree along with StrongBox’s metadata.
+The transaction journal entries are handled specially in
+thatthebitvectorsareMACedandtheresultisappendedto
+the Merkle Tree. This is done to save space.
+TheMerkleTreethentiestheintegrityofanysinglelake
+to the integrity of the system as a whole such that if the for-
+merfails, i.e.,thereisaMACtagmismatchforanyparticular
+lake, the latter immediately and obviously fails.
+3.2.3 Keycount Store
+To prevent a many-time pad attack, each nugget is assigned
+itsownformofnoncewerefertoasa keycount.Thekeycount
+storeinFig.2representsabyte-arraycontaining N8-byte
+integerkeycountsindexedtoeachnugget.Alongwithacting
+astheper-nuggetnonceconsumedbythestreamcipher,the
+keycountisusedtoderivetheper-lakeuniquesubkeysused
+in MAC tag generation.
+3.2.4 Rekeying Procedure
+Whenawriterequestwouldconstituteanoverwrite,Strong-
+Box will trigger a rekeying process instead of executing the
+write normally. This rekeying process allows the write to
+proceedwithoutcausingacatastrophicconidentialityviola-
+tion.
+Whenrekeyingbegins,thenuggetinquestionisloaded
+into memory and decrypted. The target data is written into
+its proper ofset in this decrypted nugget. The nugget is
+then encrypted, this time with a diferent nonce (keycount +
+1),andwrittentothebackingstore,replacingtheoutdated
+nugget data. See: Algorithm 3.Algorithm 3 Str ongBox rekeying process.
+Require: Theoriginalwriteappliedtoacontiguousbackingstoresegment
+Require: ℓ←write requested length
+Require:ℵ←master secret
+Require: data←cleartext data to be written
+Require: nindex←nugget rekeying target
+▷Read in and decrypt the entire nugget
+1:nnuддetdat←CryptedRead (NSIZE,ℵ,nindex)
+2: Calculate indices touched by request: ffirst,flast
+3: Writedataintonnuддetdat at proper ofset with length ℓ
+4: Set Transaction Journal entries for ffirst, .. .,flastto 1
+5:knindex←GenKey nuддet(nindex,ℵ)
+6:Fetch nuggetkeycount nkcfrom Keycount Store. Incrementit byone.
+7:nnuддetdat←Encrypt (nnuддetdat ,knindex,nkc)
+8: Commit nnuддetdat to the backing store
+▷Iterate over all lakes in the nugget
+9:for alllakesfcurrentinnindexdo
+10:kfcurrent←GenKey flake(knindex,fcurrent,nkc)
+11: Copy fcurrentdata from nnuддetdat→nflakedat
+12:taдfcurrent←GenMac (kfcurrent,nflakedat )
+13: Update new taдfcurrentin Merkle Tree.
+14: Update and commit metadata and headers
+3.3 Defending Against Rollback Attacks
+To prevent StrongBox from making overwrites, the status of
+eachlakeistrackedandoverwritestriggerarekeyingpro-
+cedure.Tracking lakestatusalone isnotenough, however.
+An attacker could take a snapshot of the backing store in its
+currentstateandtheneasilyrollbacktoapreviouslyvalid
+state. At this point, the attacker could have StrongBox make
+writes that it does not recognize as overwrites.
+With AES-XTS, the threat posed by rolling the backing
+storetoapreviouslyvalidstateisoutsideofitsthreatmodel.
+Despite this, data conidentiality guaranteed by AES-XTS
+holds inthe event of arollback, even ifintegrity is violated.
+StrongBox uses a monotonic global version counter to
+detect rollbacks. When a rollback is detected, StrongBox
+will refuse to initialize unless forced, using root permission.
+Wheneverawriterequestiscompleted,thisglobalversion
+counter is committed to the backing store, committed to
+secure hardware, and updated in the in-memory Merkle
+Tree.
+3.4 Recovering from Inconsistent State
+If StrongBox is interrupted during operation, the backing
+storeÐconsisting of user data and StrongBox metadataÐwill
+beleftinaninconsistentstate.StrongBoxreliesontheoverly-
+ingilesystem e.g.,F2FStomanageuser-datarecovery,which
+iswhatthese ilesystemsaredesignedtodo anddowell.We
+detailhowStrongBoxhandlesitsowninconsistentmetadata.
+Letcbethevalueoftheon-chipmonotonicglobalversion
+counter and dbe the value of the on-drive global version
+counter header (TPMGLOBALVER). Consider the following:
+•c==dandMTRHisconsistent: StrongBoxisoperating
+normally and will mount without issue.
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+713•c<dorc==dbut MTRH is inconsistent: Since the
+global version counter is updated before any write,
+thiscasecannotbereachedunlessthebackingstore
+was manipulated by an attacker. So, StrongBox will
+refuse to initialize and cannot be force mounted.
+•c>d+1:Since the global version counter is updated
+once per write, this case cannot be reached unless
+the backing store was rolled back or otherwise ma-
+nipulatedbyanattacker.Inthiscase,therootuseris
+warnedandStrongBoxwillrefusetoinitializeandcan-
+notbeforcemountedunlessthe MTRHisconsistent.
+We allow the root user to force mount here if the root
+userinitiatedtherollbackthemselves,suchaswhen
+recovering from a drive backup.
+•c==d+1:In this case, StrongBox likely crashed
+during a write, perhaps during an attempted rekeying.
+If the rekeying journal is empty or the system cannot
+completetherekeyingand/orbringtheMTRHintoa
+consistentstate,therootuseriswarnedandallowedto
+forcemount.Otherwise,StrongBoxwillnotinitialize.
+For subsequent rekeying eforts in the latter two cases,
+ratherthanincrementingthecorrespondingkeystorecoun-
+ters by 1 during rekeying, they will be incremented by 2.
+Thisisdonetopreventpotentialreuseofanyderivednugget
+keys that might have been in use right before StrongBox
+crashed.
+WhenStrongBoxcandetecttampering,itwillnotinitialize.
+WhenStrongBoxcannotdistinguishbetweentamperingand
+crash,itoferstherootuserachoicetoforcemount.Thus,
+anattackercouldforceacrashanduserootaccesstoforce
+mount. We assume, however, that if an attacker has root
+access to a device, its security is already compromised.
+4 StrongBox Implementation
+OurimplementationofStrongBoxiscomprisedof5000lines
+of C code. StrongBox uses OpenSSL version 1.0.2 and Lib-
+Sodiumversion1.0.12foritsChaCha20,Argon2,Blake2,and
+AES-XTS implementations, likewise implemented in C. The
+SHA-256 Merkle Tree implementation is borrowed from the
+SecureBlockDevicelibrary[ 18].StrongBox’simplementa-
+tion is available as open-source.3
+Toreducethecomplexityoftheexperimentalsetup,estab-
+lishafairbaseline,andallowStrongBoxtoruninuserspace,
+weuseaBUSE[ 7]virtualblockdevice.BUSEisathin(200
+LOC) wrapper around the standard Linux Network Block
+Device (NBD), which allows a machine to serve requests for
+readsandwritestovirtualblockdevicesexposedviadomain
+socket. We built StrongBox on top of BUSE/NBD because
+asimpleblockdeviceinuserspaceallowsforquickexper-
+imentation and rapid prototyping. It is not required for a
+proper implementation.
+3https://git.xunn.io/research/buselfs-public4.1 Deriving Subkeys
+The cryptographic driver requires a shared master secret.
+Thederivationofthismastersecretisimplementationspe-
+ciic and has no impact on performance as it is completed
+during StrongBox’s initialization. Our implementation uses
+the Argon2 KDF to derive a master secret from a given pass-
+word with an acceptable time-memory trade-of.
+To assign each nugget its own unique keystream, that
+nuggetrequiresauniquekeyandassociatednonce.Wede-
+rive these nugget subkeys from the master secret during
+StrongBox’s initialization. To guarantee the backing store’s
+integrity,eachlakeistaggedwithaMAC.WeusePoly1305,
+acceptinga32-byteone-timekeyandaplaintextofarbitrary
+length to generate tags. These one-time lake subkeys are
+derived from their respective nugget subkeys.
+4.2 A Secure, Persistent, Monotonic Counter
+Our target platform uses an embedded Multi-Media Card
+(eMMC)asabackingstore.Inadditiontobootanduserdata
+partitions,theeMMCstandardincludesasecurestoragepar-
+tition called a Replay Protected Memory Block (RPMB) [ 10].
+TheRPMBpartition’ssizeisconigurabletobeatmost16MB
+(32MB on some Samsung devices) [ 25]. All read and write
+commandsissuedtotheRPMBmustbeauthenticatedbya
+keyburnedintowrite-oncestorage(typicallyeFUSE)during
+some one-time, secure initialization process.
+ToimplementrollbackprotectionontopoftheRPMB,the
+keyforauthenticatingRPMBcommandscanbecontainedin
+TEE sealed storage or derived from the TPM. For this imple-
+mentation, StrongBox requires interaction with TPM/TEE
+secure storage only at mount time, where the authentica-
+tion key can be retrieved and cached for the duration of
+StrongBox’s lifetime. Withthe cached key onhand, our im-
+plementationmakestraditionalIOCTLcallstoreadandwrite
+global version counter data to the RPMB eMMC partition,
+enforcing the invariant that it only increase monotonically.
+OurdesignisnotdependentontheeMMCstandard,how-
+ever.TrustedhardwaremechanismsotherthantheeMMC
+RPMB partition, including TPMs, support secure, persistent
+storage and/or monotonic counters directly. These can be
+adapted for use with StrongBox just as well.
+Therearetwopracticalconcernswemustaddresswhile
+implementing the secure counter: wear and performance
+overhead. Wear is a concern because the counter is imple-
+mentedinnon-volatilestorage.TheRPMBimplementsall
+the same wear protection mechanisms that are used to store
+user-data [ 10]. Additionally, StrongBox writes to the global
+versioncounteronceperwritetouser-data.Giventhatthe
+eMMC implements the same wear protection for the RPMB
+anduserdata,andthattheratioofwritestotheseareasis1:1,
+weexpectStrongBoxplacesnoadditionalwearburdenonthe
+hardware.Further,withtheJEDECspecsuggestingRPMB
+implementations use more durable and faster single-level
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+714NANDlashcellsratherthancheaperandslowermulti-level
+NAND lash cells [ 10,25], the RPMB partition will likely
+outliveandoutperform theuser-dataportionofthe eMMC.
+In terms of performance overhead, updating the global
+version counter requires making one 64-bit authenticated
+write per user-data write. As user-data writes are almost
+alwayssubstantiallylarger,weseenosigniicantoverhead
+from the using the RPMB to store the secure counter.
+4.3 LFS Garbage Collection
+AnLFSattemptstowritetoadrivesequentiallyinanappend-
+onlyfashion,asifwritingtoalog.Thisrequireslargeamounts
+ofcontiguousspace,called segments.Sinceanybackingstore
+isnecessarilyinite,anLFScanonlyappendsomuchdata
+beforeitrunsoutofspace.Whenthisoccurs,theLFStrig-
+gersasegmentcleaningalgorithm toeraseoutdateddataand
+compresstheremainderofthelogintoasfewsegmentsas
+possible[ 22,27].Thisprocedureisknownmorebroadlyas
+garbage collection [22].
+In the context of StrongBox, garbage collection could po-
+tentially incur high overhead. The procedure itself would,
+withitseverywrite,requirearekeyingofanyafectednuggets.
+Worse,everyproceedingwritewouldappeartoStrongBoxas
+if it were an overwrite, since there is no way for StrongBox
+to know that the LFS triggered garbage collection internally.
+In practice, modern production LFSes are optimized to
+performgarbagecollectionasfewtimesaspossible[ 22].Fur-
+ther, they often perform garbage collection in a background
+thread that triggers when the ilesystem is idle and only
+perform expensive on-demand garbage collection when the
+backing store is nearing capacity [ 21,22]. We leave garbage
+collectionturnedonforallofourtestsandseenosubstan-
+tial performance degradation from this process because it is
+scheduled not to interfere with user I/O.
+4.4 Overhead
+StrongBox stores metadata on the drive it is encrypting (see
+Fig. 3). This metadata should be small compared to the user
+data.Ourimplementationuses4KBlakes,256lakes/nugget,
+and1024nuggetsperGBofuserdata.Giventhelakeand
+nugget overhead, this coniguration requires just over 40KB
+of metadata per 1 GB of user data. There is an additional,
+single static header that requires just over 200 bytes. Thus
+StrongBox’s overhead in terms of storage is less than one hun-
+dredth of a percent.
+5 Evaluation
+5.1 Experimental Setup
+We implement a prototype of StrongBox on a Hardkernel
+OdroidXU3ARMbig.LITTLEsystem(SamsungExynos5422
+A15andA7quadcoreCPUs,2GbyteLPDDR3RAMat933
+MHz,eMMC5.0HS400backingstore)runningUbuntuTrusty
+14.04 LTS, kernel version 3.10.58. The maximum theoreticalmemory bandwidth for this model is 14.9GB/s. Observed
+maximum memory bandwidth is 4.5GB/s.
+5.2 Experimental Methodology
+In this section we seek to answer three questions:
+1.What is StrongBox’s overhead when compared to dm-
+crypt AES-XTS?
+2.HowdoesStrongBoxunderanLFS(i.e., F2FS)conig-
+urationcomparetothepopulardm-cryptunderExt4
+coniguration?
+3. Where does StrongBox derive its performance gains?
+Implementation? Choice of cipher?
+To evaluate StrongBox’s performance, we measure the
+latency(seconds/millisecondsperoperation)ofbothsequen-
+tial and random read and write I/O operations across four
+diferentstandardLinuxilesystems:NILFS2,F2FS,Ext4in
+orderedjournalingmode,andExt4infulljournalingmode.
+TheI/O operationsare performed usingilesizes between
+4KBand40MB.Theseileswerepopulatedwithrandomdata.
+The experiments are performed using a 1GB standard Linux
+ramdisk (tmpfs) as the ultimate backing store.
+ForsequentialF2FSspeciically,weincludelatencymea-
+surementsdealingwithailesize2 .5×thesizeofavailable
+DRAM,i.e.,5GB,supportedbyadistincttmpfsbackingstore
+swapped into memory.
+Ext4’sdefaultisorderedjournalingmode( data=ordered ),
+where metadata is committed to the ilesystem’s journal
+while theactual datais writtenthrough tothe main ilesys-
+tem.Givenacrash,theilesystemusesthejournaltoavoid
+damage and recover to a consistent state. Full journaling
+mode(data=journal )journalsbothmetadataandtheilesys-
+tem’sactualdataÐessentiallyadoublewrite-backforeach
+write operation. Given a crash, the journal can replay entire
+I/O events so that both the ilesystem and its data can be
+recovered.WeincludebothmodesofExt4tofurtherexplore
+the impact of frequent overwrites against StrongBox.
+Theexperimentconsistsofreadingandwritingeachile
+in its entirety 30 times sequentially, and then reading and
+writing random portions of each ile 30 times. In both cases,
+the same amount of data is read and written per ile. The
+medianlatencyistakenperresultset.Wechose30read/write
+operations (10 read/write operations repeated three times
+each) to handle potential variation. The Linux page cache
+isdroppedbeforeeveryreadoperation,eachileisopened
+in synchronous I/O mode via O_SYNC, and we rely on non-
+buferedread()/write() systemcalls. Ahigh-levelI/Osize
+of 128KB was used for all read and write calls that hit the
+ilesystems; however, the I/O requests being made at the
+blockdevicelayervariedbetween4KBand128KBdepending
+on the ilesystem under test.
+The experiment is repeated on each ilesystem in three
+diferent conigurations:
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+7151.unencrypted : Filesystem mounted atop a BUSE virtual
+blockdevicesetuptoimmediatelypassthroughany
+incoming I/O requests straight to the backing store.
+Weusethisasthebaselinemeasurementoftheilesys-
+tem’s performance without any encryption.
+2.StrongBox : Filesystem mounted atop a BUSE virtual
+block device providedby our StrongBox implementa-
+tion to perform full-drive encryption.
+3.dm-crypt : Filesystem mounted atop a Device Map-
+per[2]higher-levelvirtualblockdeviceprovidedby
+dm-crypt to perform full-drive encryption, which it-
+self is mounted atop a BUSE virtual block device with
+passthrough behavioridenticalto thedevice usedin
+thebaselineconiguration.dm-cryptwasconigured
+to use AES-XTS as its full-drive encryption algorithm.
+All other parameters were left at their default values.
+Fig. 4 compares StrongBox to dm-crypt under the F2FS
+ilesystem.Thegamutofresultsetsoverdiferentilesystems
+can be seen in Fig. 5. Fig. 6 compares Ext4 with dm-crypt to
+F2FS with StrongBox.
+5.3 StrongBox Read Performance
+Fig. 4 shows the performance of StrongBox in compari-
+son to dm-crypt, both mounted with the F2FS ilesystem.
+We see StrongBox improves on the performance of dm-
+crypt’s AES-XTS implementation across sequential and ran-
+dom read operations on all ile sizes. Speciically, 2 .36×
+(53.05m/22.48m)forsequential5GB,2 .07×(2.09s/1.00s)for
+sequential 40MB, 2 .08×(267.34ms/128.22ms) for sequential
+5MB, 1.85×(28.30ms/15.33ms) for sequential 512KB, and
+1.03×(0.95ms/0.86ms) for sequential 4KB.
+Fig.5providesanexpandedperformanceproileforStrong-
+Box,testingagamutofilesystemsbrokendownbywork-
+load ile size. For sequential reads across all ilesystems and
+ile sizes, StrongBox outperforms dm-crypt. This is true
+even on the non-LFS Ext4 ilesystems. Speciically, we see
+read performance improvements over dm-crypt AES-XTS
+for40MBsequentialreadsof2 .02×(2.15s/1.06s)forNILFS,
+2.07×(2.09s/1.00s) for F2FS, 2 .09×(2.11s/1.01s) for Ext4 in
+ordered journaling mode, and 2 .06×(2.11s/1.02s) for Ext4
+in full journaling mode. For smaller ile sizes, the perfor-
+manceimprovementislesspronounced.For4KBreadswe
+see 1.28×(1.62ms/1.26ms) for NILFS, 1 .03×(0.88ms/0.86ms)
+for F2FS, 1.04×(0.95ms/0.92ms) for Ext4 in ordered journal-
+ing mode, and 1.07×(0.97ms/0.91ms) for Ext4 in full jour-
+naling mode. When it comes to random reads, we see vir-
+tuallyidenticalresultssavefor4KBreads,wheredm-crypt
+proved slightly more performant under the NILFS LFS at
+1.12×(1.73ms/1.54ms).Thisbehaviorisnotobservedwith
+the more modern F2FS.StrongBox vs dm-crypt AES-XTS: F2FS TestLatency (normalized to unencrypted)
+4K 512K 5M 40M 5G Mean1234
+1
+4.2 5 .5 7 .1
+File Size (bytes)
+StrongBox/reads
+ dm-crypt/reads
+StrongBox/writes
+ dm-crypt/writes
+Figure4.a:Se quential I/O expanded F2FS result set.Latency (normalized to unencrypted)
+4K 512K 5M 40M Mean1234
+1
+4.7
+File Size (bytes)
+Figure4.b:Random I/O expanded F2FS result set.
+Figure4. Test of the F2FS LFS mounted atop both dm-crypt
+and StrongBox;median latency of diferentsized whole ile
+readandwriteoperationsnormalizedtounencryptedaccess.
+Byharmonicmean,StrongBoxis1 .72×fasterthandm-crypt
+for sequential reads and 1 .27×faster for sequential writes.
+5.4 StrongBox Write Performance
+Fig.4showstheperformanceofStrongBoxincomparison
+to dm-crypt under the modern F2FS LFS broken down by
+workload ile size. Similar to read performance under the
+F2FS, we see StrongBox improves on the performance of
+dm-crypt’s AES-XTS implementation across sequential and
+random write operations on all ile sizes. Hence, StrongBox
+underF2FSisholisticallyfasterthandm-cryptunderF2FS.
+Speciically, 1.55×(1.80h/1.16h) for sequential 5GB, 1 .33×
+(3.19s/2.39s)forsequential40MB,1 .21×(412.51ms/341.56ms)
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+716StrongBox Four Filesystems TestLatency (normalized to dm-crypt)
+4K 512K 5M 40M00.51.52
+1
+File Size (bytes)
+NILFS/reads
+ F2FS/reads
+Ext4OJ/reads
+ Ext4FJ/reads
+Figure5.a:Se quential reads.4K 512K 5M 40M00.51.52
+1
+2.48.1 5.3 2.4 3.614.5 2.9 2.5 3.6
+File Size (bytes)
+NILFS/writes
+ F2FS/writes
+Ext4OJ/writes
+ Ext4FJ/writes
+Figure5.b:Se quential writes.Latency (normalized to dm-crypt)
+4K 512K 5M 40M00.51.52
+1
+File Size (bytes)
+Figure5.c:Random reads.4K 512K 5M 40M00.51.52
+1
+2.910.3 4.5 2.7 3.68.0 3.0 2.5 3.6
+File Size (bytes)
+Figure5.d:Random writes.
+Figure 5. Comparison of four ilesystems running on top
+of StrongBox performance is normalized to the same ile
+systemrunningondm-crypt.Pointsbelowthelinesignify
+StrongBox outperforming dm-crypt. Points above the line
+signify dm-crypt outperforming StrongBox.
+for sequential 5MB, 1 .15×(65.23ms/56.63ms) for sequential
+512KB, and 1.19×(30.30ms/25.46ms) for sequential 4KB.
+Fig.5providesanexpandedperformanceproileforStrong-
+Box,testingagamutofilesystemsbrokendownbyworkload
+ile size. Unlike read performance, write performance un-
+der certain ilesystems is more of a mixed bag. For 40MB
+sequentialwrites,StrongBoxoutperformsdm-crypt’sAES-
+XTS implementation by 1 .33×(3.19s/2.39s) for F2FS and
+1.18×(4.39s/3.74s)forNILFS.WhenitcomestoExt4,Strong-
+Box’s write performance drops precipitously with a 3 .6×
+slowdown for both ordered journaling and full journalingmodes (respectively: 12.64s/3.51s, 24.89s/6.88s). For non-LFS
+4KB writes, the performance degradation is even more pro-
+nounced with a 8.09×(118.48ms/14.65ms) slowdown for or-
+deredjournalingand14 .5×(143.15ms/9.87ms)slowdownfor
+full journaling.
+This slowdown occurs in Ext4 because, while writes in
+StrongBox from non-LFS ilesystems have a metadata over-
+head that is comparable to that of forward writes in an LFS
+ilesystem, Ext4 is not an append-only or append-mostly
+ilesystem. This means that, at any time, Ext4 will initiate
+one or more overwrites anywhere on the drive (see Table 1).
+AsdescribedinSection3,overwritesoncedetectedtrigger
+therekeyingprocess,whichisarelativelyexpensiveoper-
+ation.Multipleoverwritescompoundthisexpensefurther.
+This makes Ext4 and other ilesystems that do not exhibit at
+leastappend-mostlybehaviorunsuitableforusewithStrong-
+Box. We include it in our result set regardless to illustrate
+the drastic performance impact of frequent overwrites on
+StrongBox.
+For both sequential and random 4KB writes among the
+LFSes, the performance improvement over dm-crypt’s AES-
+XTSimplementationforLFSesdelates.Forthemoremodern
+F2FS atop StrongBox, there is a 1 .19×(30.30ms/25.46ms)
+improvement.FortheolderNILFSilesystematopStrongBox,
+there is a 2.38×(27.19ms/11.44ms) slowdown. This is where
+webegintoseetheoverheadassociatedwithtrackingwrites
+and detecting overwrites potentially becoming problematic,
+though the overhead is negligible depending on choice of
+LFS and workload characteristics.
+TheseresultsshowthatStrongBoxissensitivetothebe-
+havior of the LFS that is mounted atop it, and that any prac-
+tical use of StrongBox would require an extra proiling step
+todeterminewhichLFSworksbestwithaspeciicworkload.
+WiththecorrectselectionofLFS,suchasF2FSforworkloads
+dominatedbysmallwriteoperations,potentialslowdowns
+when compared to mounting that same ilesystem over dm-
+crypt’s AES-XTS can be efectively mitigated.
+5.5 On Replacing dm-crypt and Ext4
+Fig. 6 describes the performance beneit of using StrongBox
+withF2FSoverthepopulardm-cryptwithExt4inordered
+journalingmodecombinationforbothsequentialandran-
+domreadandwriteoperationsofvarioussizes.Otherthan
+4KBand512KBwriteoperations,whichareinstanceswhere
+baselineF2FSwithoutStrongBoxissimplyslowerthanbase-
+line Ext4 without dm-crypt, StrongBox with F2FS outper-
+forms dm-crypt’s AES-XTS implementation with Ext4.
+These results show that conigurations taking advantage
+of the popular combination of dm-crypt, AES-XTS, and Ext4
+could see a signiicant improvement in read performance
+without a degradation in write performance except in cases
+where small (≤512KB) writes dominate the workload.
+Note, however, that several implicit assumptions exist in
+our design. Forone, we presume there isample memory at
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+717StrongBox F2FS vs dm-crypt AES-XTS Ext4-OJ Latency (normalized to Ext4)
+4K 512K 5M 40M Mean0.51.522.53.03.5
+1
+4.2 5.6
+File Size (bytes)
+unencrypted F2FS/reads
+ StrongBox F2FS/reads
+ dm-crypt Ext4/reads
+unencrypted F2FS/writes
+ StrongBox F2FS/writes
+ dm-crypt Ext4/writes
+Figure6.a:Se quential I/O F2FS vs Ext4 result set.Latency (normalized to Ext4)
+4K 512K 5M 40M Mean0.51.522.53.03.5
+1
+4.7
+File Size (bytes)
+Figure6.b:Random I/O F2FS vs Ext4 result set.
+Figure 6. Comparison of Ext4 on dm-crypt and F2FS on
+StrongBox. Results are normalized to unencrypted Ext4 per-
+formance. Unecrypted F2FS results are shown for reference.
+Pointsbelow thelineare outperformingunencryptedExt4.
+Points above the line are underperforming compared to un-
+encrypted Ext4.
+handtohousetheMerkleTreeandallotherdataabstractions
+usedbyStrongBox.Eicientmemoryusewasnotagoalof
+our implementation of StrongBox. In an implementation
+aimingtobeproductionready,muchmorememoryeicient
+data structures would be utilized.
+ItisalsoforthisreasonthatpopulatingtheMerkleTree
+necessitates a rather lengthy mounting process. In our tests,
+a1GBbackingstoreontheodroidsystemcantakeaslong
+as 15 seconds to mount.ChaCha20 vs AES: StrongBox F2FS Sequential TestLatency (normalized to ChaCha20)
+4K 512K 5M 40M Mean00.51.52
+1
+File Size (bytes)
+AES-XTS/reads
+ AES-CTR/reads
+AES-XTS/writes
+ AES-CTR/writes
+Figure7. ComparisonofAESinXTSandCTRmodesversus
+ChaCha20 in StrongBox; median latency of diferent sized
+wholeilesequential readandwriteoperationsnormalized
+toChaCha20(defaultcipherinStrongBox).Pointsbelowthe
+line signify AES outperforming ChaCha20. Points above the
+line signify ChaCha20 outperforming AES.
+5.6 Performance in StrongBox: ChaCha20 vs AES
+Fig. 5 and Fig. 4 give strong evidence for our general perfor-
+manceimprovementoverdm-cryptnotbeinganartifactof
+ilesystem choice. Excluding Ext4 as a non-LFS ilesystem
+underwhichtorunStrongBox,ourtestsshowthatStrong-
+Box outperforms dm-crypt under an LFS ilesystem in the
+vast majority of outcomes.
+Wethentesttoseeifourgeneralperformanceimprove-
+mentcanbeattributedtotheuseofastreamcipherovera
+blockcipher.dm-cryptimplementsAESinXTSmodetopro-
+vide full-drive encryption functionality. Fig. 7 describes the
+relationshipbetweenChaCha20,thecipherofchoiceforour
+implementationofStrongBox,andtheAEScipher.Swapping
+out ChaCha20 for AES-CTR resulted in slowdowns of up to
+1.33×forreadsand1.15×forwritesacrossallconigurations,
+as described in Fig. 7.
+Finally,wetesttoseeifourgeneralperformanceimprove-
+ment can be attributed to our implementation of StrongBox
+ratherthanour choiceofstreamcipher.Wetestthis byim-
+plementing AES in XTS mode on top of StrongBox using
+OpenSSLEVP(see:Fig.7).StrongBoxusingOpenSSLAES-
+XTSexperiencesslowdownsofupto1 .33×forreadsand1.6×
+for writes compared to StrongBox using ChaCha20 (sequen-
+tial,40MB).Interestingly,whilesigniicantlylessperformant,
+thisslowdownisnotentirelyegregious,andsuggeststhat
+perhapstherearepartsofthedm-cryptcodebasethatwould
+beneit from further optimization; however, it is possible
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+718thatnecessarychoicestohardenStrongBoxforaproduction
+environment could slow it down as well.
+Considering hardware support for dedicated AES instruc-
+tions, Fig. 7 shows StrongBox with AES-CTR outperforms
+AES-XTS. Therefore, StrongBox should still outperform dm-
+crypt where AES hardware support is available.
+5.7 Overhead with a Full Drive
+DuringI/OoperationsunderanappropriatechoiceofLFS,
+wehaveshownthatfull-driveencryptionprovidedbyStrong-
+Boxoutperformsfull-driveencryptionprovidedbydm-crypt.
+However,thisisnotnecessarilythecasewhenthebacking
+store becomes full and the LFS is forced to cope with an
+inability to write forward as eiciently.
+In the case of the F2FS LFS, upon approaching capacity
+andbeingunabletoperformgarbagecollectionefectively,
+it resorts to writing blocks out to where ever it can ind free
+space in the backing store [ 22]. It does this instead of trying
+to maintain an append-only guarantee. This method of exe-
+cuting writes is similar to how a typical non-LFS ilesystem
+operates.Whenthishappens,theF2FSaggressivelycauses
+overwrites in StrongBox, which has a drastic impact on per-
+formance.
+Fig.8showstheimpactofthese(sequential)overwrites.
+Read operation performance remains faster on a full Strong-
+Box backing store compared to dm-crypt. This is not the
+case with writes. Compared to StrongBox under non-full
+conditions, 40MBsequential writes were slowedby 2 .8×as
+StrongBox approached maximum capacity.
+5.8 Threat Analysis
+Table 2 lists possible attacks and their results. It can be in-
+ferredfromtheseresultsandStrongBox’sdesignthatStrong-
+Boxaddressesitsthreatmodelandmaintainsconidentiality
+and integrity guarantees.
+6 Related Work
+Some of the most popular cryptosystems ofering a coni-
+dentiality guarantee for data at rest employ a symmetric en-
+cryptionschemeknownasaTweakableEncipheringScheme
+(TES) [13,26]. There have been numerous TES-based con-
+structionssecuringdataatrest[ 13,17,33],includingthewell
+known XEX-based XTS operating mode of AES [ 4] explored
+earlier in this work. Almost all TES constructions and the
+storage management systems that implement them use one
+or more block ciphers as their primary primitive [13, 28].
+OurStrongBoximplementation borrows fromthedesign
+ofthesesystems.Oneinparticularis dm-crypt,aLinuxframe-
+workemployinga LinuxDeviceMapper toprovideavirtual
+blockinterfaceforphysicalblockdevices.Dm-cryptprovides
+an implementation of the AES-XTS algorithm among others
+andisusedwidelyintheLinuxecosystem[ 1,8].Thealgo-
+rithms provided by dm-crypt all employ block ciphers [ 8].Near-Full Drive F2FS TestLatency (normalized to dm-crypt)
+4K 512K 5M 40M Mean00.51.52
+1
+3.2 3.0 2 .8 2 .8 3 .0
+File Size (bytes)
+unencrypted/reads
+ StrongBox/reads
+unencrypted/writes
+ StrongBox/writes
+Figure 8. Comparison of F2FS baseline, atop dm-crypt, and
+atopStrongBox.Allconigurationsareinitializedwithanear-
+fullbackingstore;medianlatencyofdiferentsizedwhole
+ilereadandwriteoperationsnormalizedtodm-crypt.Points
+belowthelineareoutperformingdm-crypt.Pointsabovethe
+line are underperforming compared to dm-crypt.
+Table 2.Attacks on StrongBox and their results
+Attack Result Explanation
+Nugget user data in
+backing
+store is
+mutated out-of-band
+onlineStrongBox
+Imme
+diately fails
+with exception on
+successive IO requestThe MTRH is
+inconsistent
+Header metadata in
+backing
+store is
+mutated out-of-band
+online, making the
+MTRH inconsistentStrongBox
+Imme
+diately fails
+with exception on
+successive IO requestThe MTRH is
+inconsistent
+Backing store is
+r
+olled back to a
+previously consistent
+state while onlineStrongBox
+Imme
+diately fails
+with exception on
+successive IO requestTPMGLOBALVER
+and
+RPMB secure
+counter out of sync
+Backing store is
+r
+olled back to a
+previously consistent
+state while oline,
+RPMB secure counter
+wildly out of syncStrongBox refuses to
+mount;
+allows for
+force mount with
+root accessTPMGLOBALVER
+and
+RPMB secure
+counter out of sync
+MTRH made
+inconsistent
+by
+mutating backing
+store out-of-band
+while oline, RPMB
+secure counter in
+syncStrongBox refuses to
+mountTPMGLOBALVER
+and
+RPMB secure
+counter are in sync,
+yet illegal data
+manipulation
+occurred
+Instead of a block cipher, however, StrongBox uses a stream
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+719ciphertoprovidethesameconidentialityguaranteeandcon-
+sistentorbetterI/Operformance.Furtherunlikedm-crypt
+and other similar virtualization frameworks, StrongBox’s
+ciphering operations do not require sector level tweaks, de-
+pending on the implementation. With StrongBox, several
+physicalblocksconsistingofoneormoresectorsareconsid-
+ered as discrete logical units, i.e.,nuggets and lakes.
+Substitutinga blockcipherfora streamcipherforms the
+core ofseveral contributions tothe state-of-the-art [ 13,28].
+Chakraborty et al. proposed STESÐa stream cipher based
+low cost scheme for securing stored data [ 13]. STES is a
+novelTESwhichcanbeimplementedcompactlywithlow
+overallpowerconsumption.Itcombinesastreamcipherand
+a universal hash function via XOR and is targeting low cost
+FPGAs to provide conidentiality of data on USBs and SD
+cards.OurStrongBox,ontheotherhand,isnotaTESand
+does not directly implement a TES. StrongBox combines
+a stream cipher with nonce łtweakž and nugget data via
+XOR and is targeting any coniguration employing a well-
+behaved Log-structured Filesystem (LFS) at some level to
+provide conidentiality of data.
+Ofering a transparent cryptographic layer at the block
+device level has been proposed numerous times [ 18]. Pro-
+ductionimplementationsincludestoragemanagementsys-
+tems like dm-crypt. Speciically, Hein et al. proposed the
+Secure Block Device (SBD) [ 18]Ðan ARM TrustZone secure
+world transparent ilesystem encryption layer optimized for
+ANDIX OS and implemented and evaluated using the Linux
+NetworkBlockDevice(NBD)driver.StrongBoxisalsoim-
+plementedandevaluatedusingthe NBD,butisnotlimited
+toone speciicoperating system.Further unlikeStrongBox,
+SBD is not explicitly designed for use outside of the ARM
+TrustZonesecureworld.Contrarily,StrongBoxwasdesigned
+to be used on any system that provides a subset of function-
+alityprovidedbyaTrustedPlatformModule(TPM)and/or
+TrustedExecutionEnvironment(TEE).Speciically,Strong-
+Box requires the availability of a dedicated hardware pro-
+tected secure monotonic counter to prevent rollback attacks
+and ensure the freshness of StrongBox. The primary design
+goal of StrongBox is to achieve provide higher performance
+than the industry standard AES-XTS algorithm utilizing a
+stream cipher.
+StrongBox’sdesignisonlypossiblebecauseoftheavail-
+ability of hardware supportfor security, which has been a
+major thrust of research eforts [ 15,19,23,30,31,34], and
+is now available in almost all commercial mobile proces-
+sors [16,20,25,29]. Our implementation makes use of the
+replayprotectedmemoryblockoneMMCdevices[ 10,25],
+but it could be reimplemented using any hardware that sup-
+ports persistent, monotonic counters.
+Thecombinationoftrustedhardwareandmonotoniccoun-
+tersenablesnewsecuritymechanisms.Forexample,vanDijk
+etal.usethiscombinationallowclientstosecurlystoredata
+on an untrusted server [ 32]. Like StrongBox, their approachrelies on trusted hardware (TPM speciically [ 16]), logs, and
+monotonic counters. The van Dijk et al. approach, however,
+uses existing secure storage and is not concerned with stor-
+age speed. StrongBox uses these same mechanisms along
+with novel metadata layout and system design to solve a
+diferent problem: providing higher performance than AES-
+XTS based approaches.
+Achieving on-drive dataintegrity protection through the
+use of checksums has been used by ilesystems and many
+otherstoragemanagementsystems.ExamplesincludeZFS[ 3]
+andothers[ 18].ForourimplementationofStrongBox,we
+used the Merkle Tree library ofered by SBD to manage our
+in-memorychecksumveriication.Aproperimplementation
+of StrongBox need not use the SDB SHA-256 Merkle Tree
+library. It was chosen for convenience.
+7 Conclusion
+The conventional wisdom is that securing data at rest re-
+quiresonemustpaythehighperformanceoverheadofen-
+cryptionwithAESisXTSmode.Thispapershowsthattech-
+nological trends overturn this conventional wisdom: Log-
+structured ile systems and hardware support for secure
+countersmakeitpracticaltouseastreamciphertosecure
+dataatrest.Wedemonstratethispracticalitythroughourim-
+plementationofStrongBoxwhichusestheChaCha20stream
+cipher and the Poly1305 MAC to provide secure storage and
+can be used as a drop-in replacement for dm-crypt.
+Our empirical results show that under F2FSÐa modern,
+industrial-strength Log-structured ilesystemÐStrongBox
+provides upwards of 2 ×improvement on read performance
+and average 1.27×improvement on write performance com-
+pared to dm-crypt. Further, our results show that F2FS plus
+StrongBoxprovidesahigherperformancereplacementfor
+Ext4backedwithdm-crypt.Wemakeourimplementationof
+StrongBoxavailableopensourcesothatotherscanextend
+it or compare to it.4Our hope is that this work motivates
+further exploration of fast stream ciphers as replacements
+for AES-XTS for securing data at rest.
+Acknowledgments
+Wewouldliketothanktheanonymousreviewersfortheir
+insightful feedback and comments. This material is based
+upon work supported by the National Science Foundation
+underGrantNo.CNS-1526304.Anyopinions,indings,and
+conclusions or recommendations expressed in this material
+are those of the author and do not necessarily relect the
+views of the National Science Foundation.
+4https://git.xunn.io/research/buselfs-public
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+720References
+[1][n.d.]. AndroidOpenSourceProject:Full-DiskEncryption. ([n.d.]).
+htps://source.android.com/security/encryption/full-disk
+[2][n. d.]. RedHat: Device-mapper Resource Page. ([n. d.]). htps://www.
+sourceware.org/dm
+[3]2005. Oracle blog: ZFS End-to-End Data Integrity. (2005). htps:
+//blogs.oracle.com/bonwick/zfs-end-to-end-data-integrity
+[4]2008. The XTS-AES Tweakable Block Cipher. (2008). IEEE Std
+1619-2007.
+[5]2010. Recommendation for Block Cipher Modes of Operation: The
+XTS-AESModeforConidentialityonStorageDevices. (2010). htp:
+//nvlpubs.nist.gov/ NIST Special Publication 800-38E.
+[6]2011. Message Authentication Code Standard ISO/IEC 9797-1:2011.
+(2011).htps://www.iso.org/standard/50375.html
+[7]2012.Ablockdeviceinuserspace.(2012). htps://github.com/acozzete/
+BUSE
+[8]2013. Linux kernel device-mapper crypto target. (2013). htps://gitlab.
+com/cryptsetup/cryptsetup
+[9]2014. TLS Symmetric Crypto. (2014). htps://www.imperialviolet.org/
+2014/02/27/tlssymmetriccrypto.html
+[10]2015. EMBEDDED MULTI-MEDIA CARD (eâĂćMMC), ELEC-
+TRICAL STANDARD (5.1). (2015). htps://www.jedec.org/
+standards-documents/results/jesd84-b51
+[11]Daniel J. Bernstein. 2005. The Poly1305-AES message-authentication
+code. Technical Report. University of Illinois at Chicago.
+[12]Daniel J. Bernstein. 2008. ChaCha, a variant of Salsa20. Technical
+Report. University of Illinois at Chicago.
+[13]D. Chakraborty, C. Mancillas-LÃşpez, and P. Sarkar. 2015. STES: A
+StreamCipherBasedLowCostSchemeforSecuringStoredData. IEEE
+Trans. Comput. 64, 9 (2015), 2691ś2707. htps://doi.org/10.1109/TC.
+2014.2366739
+[14]MichaelCornwell.2012. AnatomyofaSolid-stateDrive. Queue10,10,
+Article30(Oct.2012),7pages. htps://doi.org/10.1145/2381996.2385276
+[15]AndrewFerraiuolo,RuiXu,DanfengZhang,AndrewC.Myers,and
+G. Edward Suh. 2017. Veriication of a Practical Hardware Security
+ArchitectureThroughStaticInformationFlowAnalysis.In Proceed-
+ings of the Twenty-Second International Conference on Architectural
+SupportforProgrammingLanguagesandOperatingSystems,ASPLOS
+2017,Xi’an,China,April8-12,2017.555ś568. htps://doi.org/10.1145/
+3037697.3037739
+[16]Trusted Computing Group. 2008. TCG: Trusted platform module
+summary. (2008).
+[17]Shai Halevi and Phillip Rogaway. 2003. A Tweakable Enciphering
+Mode. Springer Berlin Heidelberg, Berlin, Heidelberg, 482ś499. htps:
+//doi.org/10.1007/978-3-540-45146-4_28
+[18]D. Hein, J. Winter, and A. Fitzek. 2015. Secure Block Device ś Secure,
+Flexible,andEicientDataStorageforARMTrustZoneSystems.In
+2015IEEETrustcom/BigDataSE/ISPA,Vol.1.222ś229. htps://doi.org/
+10.1109/Trustcom.2015.378
+[19]Matthew Hicks, Cynthia Sturton, Samuel T. King, and Jonathan M.
+Smith. 2015. SPECS: A Lightweight Runtime Mechanism for Protect-
+ing Software from Security-Critical Processor Bugs. In Proceedings
+ofthe Twentieth InternationalConference onArchitectural Supportfor
+Programming Languages and Operating Systems, ASPLOS ’15, Istanbul,
+Turkey,March14-18,2015.517ś529. htps://doi.org/10.1145/2694344.
+2694366
+[20]Darko Kirovski, Milenko Drinić, and Miodrag Potkonjak. 2002. En-
+ablingTrustedSoftwareIntegrity.In Proceedingsofthe10thInterna-
+tional Conference on Architectural Support for Programming Languages
+andOperatingSystems(ASPLOSX).ACM,NewYork,NY,USA,108ś120.
+htps://doi.org/10.1145/605397.605409[21]Ryusuke Konishi, Yoshiji Amagai, Koji Sato, Hisashi Hifumi, Seiji
+Kihara, and Satoshi Moriai. 2006. The Linux Implementation of a
+Log-structuredFileSystem. SIGOPSOper.Syst.Rev. 40,3(July2006),
+102ś107. htps://doi.org/10.1145/1151374.1151375
+[22]ChangmanLee,DonghoSim,JooyoungHwang,andSangyeunCho.
+2015. F2FS: A New File System for Flash Storage. In 13th USENIX Con-
+ferenceonFileandStorageTechnologies(FAST15).USENIXAssociation,
+Santa Clara, CA, 273ś286. htps://www.usenix.org/conference/fast15/
+technical-sessions/presentation/lee
+[23]Xun Li, Vineeth Kashyap, Jason K. Oberg, Mohit Tiwari, Vasanth Ram
+Rajarathinam, Ryan Kastner, Timothy Sherwood, Ben Hardekopf, and
+Frederic T. Chong. 2014. Sapper: a language for hardware-level se-
+curitypolicyenforcement.In ArchitecturalSupportforProgramming
+LanguagesandOperatingSystems,ASPLOS’14,SaltLakeCity,UT,USA,
+March 1-5, 2014. 97ś112. htps://doi.org/10.1145/2541940.2541947
+[24]ARM Limited. 2009. ARM security technology: Building a secure
+system using TrustZone technology. (2009). PRD29-GENC-009492C.
+[25]Anil Kumar Reddy, P. Paramasivam, and Prakash Babu Vemula. 2015.
+MobilesecuredataprotectionusingeMMCRPMBpartition.In 2015
+International Conference on Computingand Network Communications
+(CoCoNet). 946ś950. htps://doi.org/10.1109/CoCoNet.2015.7411305
+[26]PhillipRogaway.2004. EicientInstantiationsofTweakableBlockciphers
+andReinementstoModesOCBandPMAC.TechnicalReport.University
+of California at Davis.
+[27]Mendel Rosenblum and John K. Ousterhout. 1992. The Design and
+Implementation of a Log-structured File System. ACM Trans. Comput.
+Syst.10, 1 (Feb. 1992), 26ś52. htps://doi.org/10.1145/146941.146943
+[28]Palash Sarkar. 2009. Tweakable Enciphering Schemes From Stream
+Ciphers With IV. Technical Report. Indian Statistical Institute.
+[29]GlobalPlatformDeviceTechnology.2010. TEEclientAPIspeciication
+version 1.0. (2010). GPD_SPE_007.
+[30]Mohit Tiwari, Jason Oberg, Xun Li, Jonathan Valamehr, Timothy E.
+Levin, Ben Hardekopf, Ryan Kastner, Frederic T. Chong, and Timothy
+Sherwood. 2011. Crafting a usable microkernel, processor, and I/O
+system with strict and provable information low security. In 38th
+InternationalSymposiumonComputerArchitecture(ISCA2011),June
+4-8, 2011, San Jose, CA, USA. 189ś200. htps://doi.org/10.1145/2000064.
+2000087
+[31]Jonathan Valamehr, Melissa Chase, Seny Kamara, Andrew Putnam,
+DanielShumow,VinodVaikuntanathan,andTimothySherwood.2012.
+Inspection resistant memory: Architectural support for security from
+physicalexamination.In 39thInternationalSymposiumonComputer
+Architecture(ISCA2012),June9-13,2012,Portland,OR,USA.130ś141.
+htps://doi.org/10.1109/ISCA.2012.6237012
+[32]Marten van Dijk, Jonathan Rhodes, Luis F. G. Sarmenta, and Srinivas
+Devadas.2007. OlineUntrustedStoragewithImmediateDetectionof
+Forking and Replay Attacks. In Proceedings of the 2007 ACM Workshop
+onScalableTrustedComputing(STC’07).ACM,NewYork,NY,USA,
+41ś48.htps://doi.org/10.1145/1314354.1314364
+[33]PengWang,DengguoFeng,andWenlingWu.2005. HCTR:AVariable-
+Input-Length Enciphering Mode. Springer Berlin Heidelberg, Berlin,
+Heidelberg, 175ś188. htps://doi.org/10.1007/11599548_15
+[34]RuiZhang,NatalieStanley,ChristopherGriggs,AndrewChi,andCyn-
+thia Sturton. 2017. Identifying Security Critical Properties for the Dy-
+namic Veriication of a Processor. In Proceedings of the Twenty-Second
+InternationalConferenceonArchitecturalSupportforProgrammingLan-
+guagesandOperatingSystems,ASPLOS2017,Xi’an,China,April8-12,
+2017. 541ś554. htps://doi.org/10.1145/3037697.3037734
+Session 8A: Security and Protection
+ASPLOS’18, March 24–28, 2018, Williamsburg, VA, USA
+721

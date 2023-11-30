@@ -1,0 +1,998 @@
+47Intelligent Social Media Indexing and Sharing Using an Adaptive
+Indexing Search Engine
+CLEMENT H. C. LEUNG and ALICE W. S. CHAN, Hong Kong Baptist University
+ALFREDO MILANI, University of Perugia
+JIMING LIU and YUANXI LI, Hong Kong Baptist University
+Effective sharing of diverse social media is often inhibi ted by limitations in their search and discovery mech-
+anisms, which are particularly restrictive for media that do not lend themselves to automatic processing or
+indexing. Here, we present the structure and mechanism of an adaptive search engine which is designed to
+overcome such limitations. The basic framework of the adaptive search engine is to capture human judg-
+ment in the course of normal usage from user queries i n order to develop semantic indexes which link search
+terms to media objects semantics. This approach is partic ularly effective for the retrieval of multimedia ob-
+jects, such as images, sounds, and videos, where a direct analysis of the object features does not allow them tobe linked to search terms, for example, nontextual/icon-based search, deep semantic search, or when searchterms are unknown at the time the media repository is built. An adaptive search architecture is presentedto enable the index to evolve with respect to user feedback, while a randomized query-processing techniqueguarantees avoiding local minima and allows the meaningful indexing of new media objects and new terms.The present adaptive search engine allows for the efﬁcient community creation and updating of social mediaindexes, which is able to instill and propagate deep knowledge into social media concerning the advancedsearch and usage of media resources. Experiments with v arious relevance distribution settings have shown
+efﬁcient convergence of such indexes, which enable int elligent search and sharing of social media resources
+that are otherwise hard to discover.
+Categories and Subject Descriptors: H.3.1 [ Information Storage and Retrieval ]: Content Analysis and
+Indexing; H.3.3 [ Information Storage and Retrieval ]: Information Search and Retrieval
+General Terms: Design, Experimentation, Human Factors, Performance, Languages
+Additional Key Words and Phrases: Adaptive indexing, multimedia semantics, evolutionary computation,
+genetic algorithms, relevance feedback, social media
+ACM Reference Format:
+Leung, C. H. C., Chan, A. W. S., Milani, A., Liu, J., and Li, Y. 2012. Intelligent social media indexing andsharing using an adaptive indexing search engine. ACM Trans. Intell. Syst. Technol. 3, 3, Article 47 (May2012), 27 pages.DOI = 10.1145/2168752. 2168761 http ://doi.acm.org /10.1145/ 2168752.2168761
+1. INTRODUCTION AND RELATED WORK
+The sharing and retrieval of social medi a provide an immense opportunity to ex-
+ploit the collective behavior of community users interacting in a common environment[John et al. 2008; Lerman 2007; Shaw and Schmitz 2006; Spertus et al. 2005]. The
+Authors’ addresses: C. H. C. Leung (correspondi ng author), A. W. S. Chan, J. Liu, and Y. Li, De-
+partment of Computer Science, Hong Kong Baptist University, Kowloon Tong, Hong Kong; email:
+clement@comp.hkbu.edu.hk; A. Milani, Department o f Mathematics and Computer Science, University of
+Perugia, Via Vanvitelli 1 06123 Perugia, Italy.
+Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted
+without fee provided that copies are not made or distributed for proﬁt or commercial advantage and thatcopies show this notice on the ﬁrst page or initial screen of a display along with the full citation. Copyrightsfor components of this work owned by others than ACM must be honored. Abstracting with credit is permit-
+ted. To copy otherwise, to republish, to post on servers, to redistribute to lists, or to use any component of
+this work in other works requires prior speciﬁc permi ssion and/or a fee. Permissions may be requested from
+the Publications Dept., ACM, Inc., 2 Penn Plaza, Suite 701, New York, NY 10121-0701, USA, fax +1 (212)869-0481, or permissions@acm.org.
+c/circlecopyrt2012 ACM 2157-6904/2012/05-ART47 $10.00
+DOI 10.1145/2168752. 2168761 http ://doi.acm.org /10.1145/ 2168752.2168761
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:2 C. H. C. Leung et al.
+judgment and knowledge derived from user interactions through a single system can
+be capitalized in different ways by preprocessing or postprocessing analysis [Badjioand Poulet 2005; Bian et al. 2008; Leung and Liu 2007; Minetou 2005; Wong and Leung2008], which can be used to adapt and evolve the system behavior to the user’s currentneeds [Milani et al. 2008, 2009]. For example, many social media allow users to rateor vote different resources (e.g., pictures, videos, other user proﬁles, etc.), [Bian et al.2008; Lerman 2007]. The collected information is then eventually used to assess theinterest of resources the community is search ing. Although this form of collective rat-
+ing is mainly aimed at building hot links to attract user attention (such as top-tenlists, best video of the day, most clicked proﬁle, etc.), some examples exist [Baluja et al.2008; Halvey and Keane 2007; Martin 2007; Mislove et al. 2007] of deploying user’s
+ratings to improve the relevance of search results. This perspective is the emerging
+model of a self-organizing search engine, where the rating is not given by a softwareagent [Cheng et al. 2006; Hargittai 2004; Jung et al. 2004; Khopkar et al. 2003] butdirectly by the users, who assess the relevance of objects in the database with respectto different dimensions and search parameters.
+User assessment of objects is particularly suitable for multimedia objects where
+traditional text-based indexing techniques [Ferragina and Manzini 2005; Maass andNowak 2005] cannot be directly applied; moreover, such an approach can better reﬂectthe dynamical evolution of user preferences. Different communities of users can as-sign different relevance to a search term, d epending on time, geographic, and cultural
+interests. For instance, consider the three-term query “champion+football+player” is-
+sued in a U.K. community of users and the same query issued in the U.S.A.; the users’
+opinions about what documents are relevant to this query are probably different indifferent countries, and they probably change over time.
+Although the idea of exploiting users’ feedback to rate relevance seems promising,
+it is quite hard to convince a community of users to spend their time explicitly rat-ing objects [Chakrabarti et al. 2008; Hoashi et al. 2002; Hoi and Lyu 2004; Iwayama2000; Leung and Liu 2007; Vinay et al. 2005; Widyantoro et al. 2003; White and Kelly2006; Zhang et al. 2005]. On the other hand, it can be observed that the history ofuser behavior during a query session contains feedback information which indirectlyassesses the relevance of system answers with respect to user queries. Examples ofthese elements are the number of clicks, if any; the time spent on viewing and judging
+the result list before clicking; the time spent evaluating an object (such as watching a
+video preview before downloading it); possible further queries reﬁning the search; etc.
+Relevance feedback, originally developed for information retrieval, is an online
+learning technique used to improve the effectiveness of the information retrieval sys-tems. Since its introduction into image retrieval around the mid 1990s, it has at-tracted tremendous attention in the content-based image retrieval (CBIR) community.A particularly noteworthy work is that of Rui et al. [1998] which develops a relevancefeedback-based interactive retrieval approach focusing on content-based aspects suchas color, texture, and shape, and relevance feedback has since been shown to providedramatic performance improvement [Cheng et al. 2006; Zhou and Huang 2003]. Recentworks that apply relevance feedback techniques to image retrieval systems include
+that of Azimi-Sadjadi et al. [2009], which makes use of kernel machines and selec-
+tive sampling that adaptively modify the similarity measures and Tao et al. [2007],which develops kernel convex machines and exploits the idea that negative samplesfor relevance feedback form several subclusters, while positive ones group only in onecluster. In Tao et al. [2008], an orthogonal complement component analysis methodwas used that captures the concepts in all positive samples and demonstrates favor-able comparison with those of linear and kernel principal component analysis meth-ods. Here, we apply the user feedback media ranking in a different way. Generally,
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:3
+most of the user feedback media-ranking techniques are applied to the CBIR only.
+CBIR focuses on retrieval based on the visual feature of the image (e.g., color, tex-ture). However, our approach supports the searching of multimedia resources, such asimages, videos, and audios, and it has the advantage of being able to focus on arbitrar-ily higher-level human properties and perceptive details which are not extractable bymachines.
+Particularly signiﬁcant studies of relevance feedback as applied to cross-media re-
+trieval are given in Yang et al. [2010] and Zhuang et al. [2008]. In Zhuang et al. [2008],a uniform cross-media correlation graph (U CCG) is constructed for evaluating the cor-
+relation among media objects of different modalities, with the media objects repre-sented as vertices and their correlations as weights of the weighted edges. Unlike the
+relevance feedback used in Zhuang et al. [2008] which adopts a heuristic approach
+that modiﬁes the edge weights of an underlying graph model, the algorithm used inYang et al. [2010] adopts a statistical approach and reﬁnes the cross-media indexingspace (CMIS) directly, where the mechanism of long-term relevance feedback is for-mulated as a minimization problem, which includes making use of data periodicallyextracted ofﬂine from a log ﬁle for produci ng overall improvement in cross-media re-
+trieval performance. Unlike their approach, which makes use of the concept of a multi-media document (MMD) consisting of a set of heterogeneous multimedia objects of thesame semantics, our approach focuses on each media object separately, and our indexupdate mechanism is carried out continuously online in the course of normal usagerather than done periodically ofﬂine. In addition, with respect to experimentation, we
+base our measurements mostly on concepts rather than content-based features and
+semantic categories. Rocchio’s similarity-based relevance feedback algorithm [Chenand Zhu 2002; Rocchio et al. 1971] is one of the classical query reformation methodsin information retrieval. It is essentially an adaptive supervised learning algorithmfrom examples. Rocchio’s formula is also used in Zhang and Zhang [2007] in the con-text of image retrieval in which the query point vector moving strategy for relevancefeedback is based. Van Uden [1998] comments that the Rocchio algorithm aims atﬁnding a request that best suits the user’s information need (i.e., user input query) byusing relevance feedback. The ranking of this algorithm relies heavily on the iterativeexplicit user feedback. On the other hand, our approach not only takes into accountexplicit user feedback but also implicit feedback, incorporating both positive and neg-
+ative feedback forms. Lin’s Web image retrieval reranking process [Lin et al. 2003]
+based on the relevance model utilizes global information from the image’s HTML doc-ument to evaluate the relevance of the image. This approach seems promising whentext-based HTML documents associated with the Web images are available. However,this approach can only perform well when the Web images are rich in related text-based HTML information. Our proposed reranking approach focuses on each type ofmedia separately and does not rely on any extra embedded information, and the mediaresources can be retrieved e ven though there is no supplementary information on the
+object. This work focuses on the user community feedback as the main source for rank-ing relevance; on the other hand, classical search methods, such as query expansion[Efthimiadis 1996] and pseudo relevance feedback [Buckley 1995], can be easily inte-
+grated in the search engine. These methods have proven to be particularly effective
+when additional textual information (e.g., annotations, abstracts, dialogue transcriptsextracted from videos, etc.) is available on the multimedia objects [Rudinac et al. 2009;Torjmen et al. 2008; Yan et al. 2003].
+The motivation of this work is to harness considerable user judgment and human
+evaluation of media objects in the course of users’ normal interactions with the searchsystem, which collectively over the community and cumulatively over time can amountto highly substantial efforts. The basic idea of this work is that information derived
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:4 C. H. C. Leung et al.
+by the queries issued by a community of users can be used to drive and adapt future
+systems’ answers to similar queries. In this work, we shall focus on a single-click feed-back model, that is, we assume that the only form of feedback the user can provideis to click on a single object link or not clicking at all when the answer lists are notsufﬁciently relevant to the query. While the analysis of a more speciﬁc session model isbeyond the scope of the article, the single-click feedback model is quite universally ap-plicable to most search engine interfaces. The increasing relevance of privacy concernsand legal issues makes user proﬁle and client-side monitoring of user tasks increas-ingly difﬁcult. A single-click anonymous user feedback model is then a quite realistichypothesis.
+The key contributions of this article are the development of an adaptive search en-
+gine architecture and a robust adaptive index update strategy which enable the system
+to improve its performance over time. In the course of normal usage, the underlyingindex structure and contents are gradually and dynamically reorganized. This ap-proach realizes a form of machine learning which can be put into relationship with re-inforcement learning [Kaelbling et al. 1996] and genetic algorithms-based approaches[Goldberg and Holland 1988] where the feedback from the environment—here repre-sented by the user community—is used to evolve the system behavior. A major differ-ence from a typical supervised learning scheme is the absence of a separate trainingphase. Here, the learning phase is a continuo us interactive process, since the object
+repository, the community of users, and user judgment of the relevance of objects tosearch terms dynamically evolve over time. For this reason, an adaptive algorithm
+has been devised to reﬂect the continuous change in the term/objects index. The adap-
+tive engine exploits some typical evolutionary techniques, such as mutation, randomtournament, and elitism. Systematic simulation experiments on a large number of ob-jects and search queries have been held to tune parameters and to evaluate adaptiveability, performance, and scalability of the approach. In addition, experiments on realdata with actual users have been performed.
+2. EVOLUTIONARY SELF-ORGANIZING SEARCH ENGINE
+A search engine can be characterized as a set of structures and algorithms which in-dexes a database of resource objects with respect to search term relevance. Whenevera query consisting of one or more search terms is issued, the engine is expected to
+return a k-bounded list of objects relevant to the search terms. Compared with other
+approaches, a particular advantage of the present approach is that it is able to incor-porate highly subtle nuances, elusive attributes, and deep-level semantics that maybe associated with a particular media object, and that search performance may beimproved continuously and automatically without additional intervention. To ensureprecision of meaning, it is useful to deﬁne some concepts accurately.
+Deﬁnition of Indexing. Our approach supports searching of media resources, such as
+images, videos, and audios. As it is impossible to extract the semantics in the multi-media data automatically with the current technology, effective indexing and retrievalof multimedia resources are necessary for a successful search system [Leung and Liu2007]. Since the concept-based (higher-level human perception) indexing of the multi-media resources are more meaningful than its low-level contents (e.g., color, texture,size), our collective indexing approach focuses on the concept-based approach. Throughthe iterative use of our model, knowledge from users are collected and novel indexes
+would be built gradually.
+Deﬁnition of Static Search Engine. Given a set of nobjects /Omega1={o1,...,on},as e to f
+msearch terms T={t1,...,tm},aq u e r y Q⊆T, a bound kon the answer length,
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:5
+Table I. Illustration of the Relevance Indexing Function I
+/Omega1
+ 2T
+R
+ I
+o1
+ {t1,t2,t5}
+ 0.3
+ ({t1,t2,t5},o1)→0.3
+o2
+ {t1,t2,t4}
+ 0.6
+ ({t1,t2,t4},o2)→0.6
+o2
+ {t4,t6,t7}
+ 0.2
+ ({t4,t6,t7},o2)→0.2
+o3
+ {t7,t8,t10}
+ 0.7
+ ({t7,t8,t10},o3)→0.7
+o4
+ {t4,t6,t7}
+ 0.8
+ ({t4,t6,t7},o4)→0.8
+.
+ .
+ .
+ .
+.
+ .
+ .
+ .
+and a relevance indexing function I:2T×/Omega1→R,w h e r e R=[ 0,1], a static
+search engine Ecan be deﬁned by a four-tuple E≡(/Omega1,T,I,α), where αis an answer
+function α:2T×I→/Omega1kwhich returns α(Q,I)=V=[o1,...,ok]—a vector of kobjects
+in/Omega1ranked according to relevance I—such that oi/precedesequaloj⇔I(Q,oi)≤I(Q,oj)w h e r e
+i,j∈[1,k]. (Note: the notation 2Sdenotes the power set of S , that is, the set of all
+subsets of S). As an illustration, consider a speciﬁc instance of Ishown in Table I.
+Assuming {t4,t6,t7}appears only in rows three and ﬁve in Table I, from the query
+terms {t4,t6,t7},w eh a v e α({t4,t6,t7},I)=V[o2,o4]. Practically, we can initially assign
+random values to the relative relevance values for each term of each object. Those ran-dom values can be in [0,1] and follow the Gaussian distribution (normal distribution).Since the normal distribution is a well known model of quantitative phenomena in the
+natural and behavioral sciences, it is appropriate to use it for the relevance indexing
+function.
+Deﬁnition of User Feedback. The user feedback F QVin response to an answer vector
+V=[o1,o2,...,ok]f o raq u e r y Qis an integer FQV∈[0,k] which identiﬁes the object
+that the user decides to click on, where 0 encodes negative feedback, that is, the fact
+that no object is clicked after a given amount of time.
+As previously pointed out, we assume a single-click feedback model, and the user is
+expected to click on a single object because of its relevance or not clicking at all if thereturned answer vector does not contain objects that the user considers to be relevant.
+Issues such as monitoring user multiple queries sessions or explicit scoring of the
+queries are beyond the scope of this article. Most search engine interfaces allow oneto easily implement the single-click feedback model, while a more complex detectionof the user session behavior would require special software (such as plug-ins or client-side scripts) to monitor user activity.
+Deﬁnition of Adaptive Search Engine. Anadaptive search engine is a search engine which
+adapts its response to user feedback, that is, the answer to a query depends on the en-gine’s initial state and the query history. It can be seen as a process over time in which,given an initial engine state E
+0≡(/Omega1,T,I,k,α) and a series of timed triple ( Q,V,FQV)
+and object insertion operations, the internal structures of the search engine is contin-
+uously being updated.
+The adaptive engine can be characterized by describing the answer function αand
+by the methods used to update the relevance index I,t h es e to fo b j e c t s /Omega1,a n dt h es e t
+of terms T, which are terms given in a query to specify the properties of the target
+data objects.
+2.1. Adaptive Search Engine Architecture
+The general architecture of the adaptive search engine is shown in Figure 1. Auser submits a query Qthrough the user interface ( step 1 ); the αmodule processes
+the query by analyzing the relevance index Iand the structure Hwhich contains
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:6 C. H. C. Leung et al.
+Fig. 1 . The adaptive search engine architecture.
+additional historical statistical information on previous queries, and a sorted vector
+V=[o1,..,ok] is then returned to the user ( step 2 ).
+The user feedback FQVis used by the update module in order to update the rel-
+evance index Iand the statistical data H(step 3 ). The underlying intuition is that
+objects with positive feedback increase their relevance, while negative feedback pro-duces a relevance decrement. If the query Qintroduces new terms or new objects are
+added to the systems, the index Iand the statistics Hare also updated accordingly
+(step 4 ).
+2.2. Query Processing
+In general, the aim of a typical search engine is to return the best kobjects which
+are most relevant to the query terms [Akbarinia et al. 2007; Anh and Moffat 2006; Liuet al. 2006; Panda and Chang 2006; Shen and Zhai 2005; Soliman et al. 2008; Theobaldet al. 2004, 2005, 2008; Vlachou et al. 2008] according to the current term/objects rele-vance index. In search engines for text-based documents [Diligenti et al. 2002; Dworket al. 2001; Haveliwala 2002, 2003], a preprocessing analysis is crucial for two activ-ities: (1) identifying the potential index terms and (2) computing the relevance of ob-jects with respect to those terms. Once the index has been built after the preprocessing
+phase, it can be used for retrieval [Azzam et al. 2004, 2005; Over et al. 2004]. After-
+wards, the index is typically updated only when either new documents are indexed, orwhen document relevance indicators, such as reference links and document citations,have changed (e.g., these changes are usually detected by a spiderbot software agent
+[´Angeles Serrano et al. 2007; Bergmark 2002; Chau et al. 2003; Dimou et al. 2006;
+Kammenhuber et al. 2006; Kobayashi and Takeda 2000; Lee et al. 2008; Li et al. 2007;Lourenc ¸o and Belo 2006; Sun et al. 2007]).
+In an adaptive search engine, the computation of the relevance index relies instead
+on the interactive process of collecting users feedback, since the purpose is to reﬂect
+the relevance rating as evaluated by a community of users at a given period of time.
+We shall consider a number of strategies.
+2.2.1. Na¨ ıve Greedy Strategy. A ﬁrst strategy, which can be considered as candidate
+for object selection, is the na ¨ıve greedy strategy, consisting in returning the best k
+relevant objects which appear in the current index for a query term t.
+This is the typical strategy used to build hot links, such as the mentioned “top-
+ten list of most clicked links” which can be found in many portals’ homepage. Moreprecisely, if the probability of a top-ten object o
+jbeing clicked is pi,t h e n
+pi∝ri,( 1 )
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:7
+where riis the rank of object oi. A question can be posed: “how reliable is a top-ten
+to really represent the best ten links?” Th e problem is that since the top-ten are more
+likely to be seen because they are on the homepage, they are also more likely to beclicked. In other words, an initial bias in some of the top-ten links could randomlyboost up the rate of not very relevant links.
+It is easy to see that this na ¨ıve greedy strategy can easily lead to a local maximum
+problem when it is applied to an adaptive search engine. Let us assume, for instance,that the sorted vector V=[o
+1,...,ok] contains the current best kobjects for query
+Q={t},t h a ti s , ∀o∈V,∀o/prime∈{O−{o1,...,ok}},I(Q,o/prime)≤I(Q,o), and let us assume
+that the objects in Vare sufﬁciently relevant to produce a user click, that is, positive
+feedback. Then, any next query Q={t}would eventually contain the same objects,
+although possibly in a different order, thus hiding potentially more relevant objects
+which have not had the chance to be shown to the user to receive positive feedback.
+More precisely, let the probability of producing a click for object oibepiwith p1≥
+p2≥...≥pk>p0, where (as before) p0is the probability of producing no click from
+the list V. Consider a particular object oj∈V; then for each appearance of oj,t h e
+corresponding index relevance w ill increase by an average amount of
+/triangleI=pjfpos−p0fneg,
+where fpos>0a n d fneg>0 respectively signify the increase in index relevance due
+to positive feedback and decrease in index relevance due to negative feedback. For
+fpos≥fneg, (see a more detailed explanation in the next section for its justiﬁcation), we
+have
+/triangleI=pjfpos−p0fneg≥(pj−p0)fpos>0.
+Hence, over time, what already appears in Vwill keep on being shown as the cor-
+responding index relevance tend to increase. On the other hand, for a possibly highlyrelevant object o
+/primenot belonging to V, it stands no chance of raising the corresponding
+index relevance. Thus the index relevance of the two groups Vand O−Vwill tend to
+diverge, and the objects being shown to the users may not contain the most relevant
+object.
+It is therefore desirable to devise a mechanism where the query answer α(Q,I)=
+[o1,o2,...,ok] reﬂects the current system relevance order, but at the same time, it also
+allows underestimated or recently inserted objects to be submitted to the user forevaluation.
+2.2.2. Randomized Strategy. In order to overcome the problem of local maximum and
+discover the hidden objects in the search domain, a randomized algorithm has beendesigned which selects the kobjects in the answer vector by sequential random extrac-
+tions from the index. The algorithm gives proportionally higher chances to best rated
+objects, but it also gives a non-null probability of appearing in the answer vector to
+objects which have never been submitted to the evaluation of the user community.
+The randomized query processing consists of a randomized tournament among the
+database objects, which is repeated until kdistinct objects are selected. The vector
+of selected objects, ranked by decreasing relevance, is then returned as an answer toquery Q.
+Deﬁnition of Randomized Query Processing. Let A(t,o) be the number of times the ob-
+jects has appeared in the answer for a single term t,a n dl e t C(t,o) be the number of
+clicks which has been received by the queries, including the single term t.L e t A(Q,o),
+C(Q,o), and I(Q,o) for each object denote, respectively, the cumulative values for
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:8 C. H. C. Leung et al.
+appearances ,clicks ,a n d relevance over the terms of the query Q={t1,t2,...,tm}.L e t
+AQ/Omega1,CQ/Omega1,a n d IQ/Omega1be the total values over all the objects in the current domain.
+A(Q,o)=/summationtext
+t∈QA(t,o)AQ/Omega1=/summationtext
+o∈/Omega1A(Q,o). (2)
+C(Q,o)=/summationtext
+t∈QC(t,o)CQ/Omega1=/summationtext
+o∈/Omega1C(Q,o). (3)
+I(Q,o)=/summationtext
+t∈QI(t,o)IQ/Omega1=/summationtext
+o∈/Omega1I(Q,o). (4)
+Then, an object ois assigned probability /Delta1o//Phi1of being selected in the extraction tour-
+nament as an answer for a query Qwhere
+/Delta1o=(c1∗I(Q,o)/I/Omega1+c2∗C(Q,o)/A(Q,o)+c3∗(1/max{A(Q,o),min A}))
+is a weighted combination of the object relevance and statistics; min Ais the minimum
+nonzero value (but close to zero) for the number of times that the object has appearedin the answer for a query; and /Phi1is a normalization term /Phi1=/Sigma1
+o∈/Omega1/Delta1o.
+It is worth pointing out the roles of different terms in the /Delta1oexpression: term
+I(Q,o)/I/Omega1denotes the relative relevance of object oin the current index; term
+C(Q,o)/A(Q,o) denotes the success rate of an object, that is, how many times an
+object has been clicked with respect to the times it has appeared in an answer vector;term 1 /max{A(Q,o),min
+A}is reciprocal of the number of answers in which it has ap-
+peared where max{A(Q,o),min A}is used to avoid a zero divide error when object ohas
+appeared zero times (i.e., A(Q,o)=0 ); c1,c2,c3and are weights parameters, which
+are ﬁxed such that a high value for relative relevance prevails over the success rate,which prevails over the inverse appearance term.
+The idea underlying the randomized tournament with weights /Delta1
+o//Phi1is that most
+successful objects are preferred among obje cts of similar relevance and among objects
+with the same success rate, and objects wit h the lesser appearance are given a greater
+chance to be evaluated by the user community.
+2.2.3. Coverage and Mutation. One of the main features of the proposed randomized
+query processing is that on a large number of e xtraction tournaments, the objects are,
+on average, expected to be extracted proportionally to their relative relevance, that is,to term I(Q,o)/I
+/Omega1. At the same time, all the objects still have a chance to be extracted
+and submitted for the evaluation of the user community, which eventually can boost
+up their relevance, thus eliminating possible bias in the current relevance index. This
+mechanism is similar to the technique of mutations in genetic algorithms [Jansen andWegener 2006; Saha and Bandyopadhyay 2007; Yang and S ¸ ima Uyar 2006]; the ran-
+domized extraction guarantees a coverage of the whole object domain where the term1/max{A(Q,o),min
+A}in expression /Delta1o//Phi1is intended to take into account such domain
+coverage. A more complex technique of dynamic elitism is also used to determine thesize of the mutation.
+2.2.4. Dynamic Elitism. The randomized query processing guarantees to avoid local
+maxima and to limit the effect of initial bias in the relevance index. On the other hand,it also introduces some noise which tends to lower the overall system performance.While the set of query answers will tend, in the long run, to contain the best kobjects,
+each single answer will actually contain some good relevant objects as well as someirrelevant ones, which downgrades the quality of the provided solution.
+The risk of having irrelevant objects is intrinsic to the randomized method, but it is
+repaid back by the advantage of having genomic variety, which allows for the discoveryof new objects with a good degree of relevance not yet evaluated by the user.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:9
+In order to reduce the noise due to randomized query processing, we introduce
+elitism , a technique taken from genetic algorithms [Bhattacharya 2004; Eskandari
+et al. 2005; Piszcz and Soule 2006], which consists of transmitting from one generationto another a certain amount eof best objects, that is, the elite. The problem of deciding
+the elitism degree eis concerned with the two extremes: e= 0, where no elitism guar-
+antees fast coverage of the domain but with maximum noise, and e=k,w h e r et h e r e
+is no noise, but the algorithm can trap into possible suboptimal local maximum. Notethat elitism e=kis equivalent to applying the previously mentioned na ¨ıve greedy
+strategy.
+It has been experimentally observed that low elitism is preferable in the ﬁrst stages
+when the search engine is operating on new terms. Since there is no separate train-
+ing phase in our adaptive indexing search engine, our model will evolve continuously
+through the interactive learning phase initially. Our model will only accept a low levelof noise objects in the query results. Subsequently, the index would become conver-gent after this phase, and the tolerance of the noise objects can be accepted. Therefore,the elitism degree will gradually increase with the usage of the model, that is, whencoverage is important and initial biases could mislead the convergence. On the otherhand, in an advanced phase when many queries have been eventually issued, a higherelitism degree would improve the quality of the query answer.
+Our solution dynamically increases elitism efrom the initial stage of 0% elitism
+toward a more stable situation where elitism is about 80% of k, that is, the minimal
+elitism is p
+min=0.2.
+The dynamic progression of elitism values is computed for the qth query by eq=
+⌊q∗⌊(1−pmin)∗k⌋)/QC⌋ifq≤QCand by eq=⌊(1−pmin)∗k⌋)i fq>QC,w h e r e qis
+the number of issued queries, QCis the number of queries which are estimated to be
+necessary for the index to converge, and pminis the minimal elitism.
+The minimal elitism pmin, that is, the minimal percentage of solution which can
+vary, together with the relative relevanc e values of objects can be regarded as pro-
+viding an analogous of probability of mutation [Jansen and Wegener 2006; Saha andBandyopadhyay 2007; Yang and S ¸ ima Uyar 2006] with respect to the best kobjects.
+2.3. Feedback Processing
+The general idea of a collective search engine is to prize the relevance index of objects
+which receive positive feedback from users, while punishing negative feedback. Thesingle-click feedback model assumes that positive feedback can be detected by a click,since it reﬂects an explicit user choice. The idea of prizing a clicked object is basedon the reasonable assumption that the distribution of clicks, when accumulated overthe time, will tend to reﬂect the distribution of user relevance. On the other hand,negative feedback can be detected only when no object is clicked in an answer list.The underlying hypothesis is that, as observed in real behaviors, users tend not to
+click if they receive a list of objects of little relevance, that is, not useful for their
+purposes.
+Note that when an answer vector Vreceives a click on an object o, nothing nega-
+tive can be concluded about the rest of the objects which do not receive the click, forexample, they could have a relevance slightly less than obut still good. The difference
+in relevance will eventually emerge in subsequent queries where they will collect, onaverage, a smaller number of clicks. On the other hand, if an answer vector Vreceives
+no clicks at all, it can be reasonably concluded that, on average, all the objects in thelist are not very relevant and the fact can be annotated by punishing the associatedrelevance index. The feedback update mechanism reﬂects this criteria by appropriateincrement/decrement of the index terms.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:10 C. H. C. Leung et al.
+Deﬁnition of Positive Feedback. Positive feedback is a single click on an object in the
+answer list. The index relevance of the clicked object is increased by a quantity fpos;
+appearance and click statistics are also updated.
+ifFQV/negationslash=0a n d oclick=V[FQV]t h e n
+∀t∈Q,I(t,oclick):=I(t,oclick)+fpos, (5)
+∀t∈Q,C(t,oclick):=C(t,oclick)+1,
+∀i∈[1,k],∀t∈Q,A(t,V[i]):=A(t,V[i]) + 1.
+Deﬁnition of Negative Feedback. Negative feedback takes place when no object is clicked
+in the answer list. The index relevance of all the objects in the answer vector is de-creased by a quantity f
+neg, appearance statistics are also updated.
+ifFQV=0t h e n
+∀∈i[1,k],∀t∈Q,I(t,V[i]):=I(t,V[i])−fneg, (6)
+∀i∈[1,k],∀t∈Q,A(t,V[i]):=A(t,V[i]) + 1.
+Increment/Decrement Values. Since the absence of clicking is a random process, that
+is, answer vectors which contains relevant objects are not clicked with a low (but not
+zero) probability, the amount fnegshould not punish the object relevance too much. It
+has been experimentally found that a good value for fnegisfneg=fpos/k,t h a ti s ,t o
+distribute a −fposdecrement over the kobjects in the answer. The value of fposis
+usually taken equal to 1.
+2.4. Introducing New Terms and New Objects
+The insertion of new terms and/or new objects can be seen as moving from engine
+E≡(/Omega1,T,I,k,α)t oe n g i n e E/prime≡(/Omega1/prime,T/prime,I/prime,k,α). In the following, we will characterize
+the modiﬁcation introduced in /Omega1,T,a n d Iby insertion operations.
+2.4.1. Object Insertion. When a new object onewis inserted in the index, its relevance
+with respect to all index terms is set to the initial value Iinit, and its statistics are
+initialized to 0.
+/Omega1/prime=/Omega1∪o,T/prime=Tand I/primesuch that
+∀t∈T,∀o∈/Omega1,I/prime(t,o):=I(t,o)a n d ∀t∈T,I/prime(t,onew):=Iinit, (7)
+∀t∈T,∀o∈/Omega1,A/prime(t,o):=A(t,o)a n d ∀t∈T,A/prime(t,onew):=0 ,
+∀t∈T,∀o∈/Omega1,C/prime(t,o):=A(t,o)a n d ∀t∈T,C/prime(t,onew):=0.
+The inverse appearance component 1 /max{A(Q,o),min A}in the randomized tourna-
+ment increases the chance for newly introduced objects to appear in a query answer.Initially, the new object will be randomly returned to the users in relation to differentterms, as more queries are issued, either the new object will eventually increase itsrelevance with respect to some term, or t he same inverse appearance component will
+tend to discard the object if selected but not clicked.
+2.5. Term Insertion
+The introduction of new terms in the index is typically triggered by a single term queryor a multiple terms query which contains some new terms t
+new1,...,tnewknot present in
+the current domain for T.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:11
+When a new term is inserted into the index, the relevance index for all the objects
+with respect to the new term tnewis set to an initial Iinitrelevance value.
+T/prime=T∪{tnew
+1,...,tnew
+k},/Omega1/prime=/Omega1,a n d I/primesuch that
+∀o∈/Omega1,∀t∈T,I/prime(t,o):=I(t,o), and (8)
+∀o∈/Omega1,∀{tnew
+1,...tnew
+k},I(tnew,o):=Iinit.
+It is worth noting that the evaluation of a query Q={tnew
+1,...tnew
+k}completely
+based on new terms would produce a highly randomized answer with high chances ofnot being clicked.
+On the other hand, the evaluation of a multiple terms query, such as
+Q={t
+new,t1,t2,...,tq},
+which mixes one or more new term tnewwith several old terms ( t1,...,tq), would produce
+a more meaningful answer based on the already evaluated index. In this latter case,the new term is indirectly exploiting its relationship with the other terms to increasethe index relevance.
+3. EXPERIMENTAL DESIGN AND EVALUATION
+One of the main problems in testing an adaptive search engine is to use a methodologywhich meets the scientiﬁc requirements of being systematic, scalable, and repeatable.Moreover, tests are also needed in order to reﬁne and tune system parameters (suchasc
+1,c2,c3,c4weights in the randomized query evaluations, Iinitinitial values, mini-
+mal elitism pmin, and other parameters). Last but not least, there is the problem of
+establishing reference points for system performance evaluation, that is, being able to
+assess the relevance indexes the system is producing.
+Although testing the effectiveness of the adaptive search engine with real users on
+real data is a ﬁnal and primary objective, some major problems exist for tests with realusers: they are not repeatable due to the interactive nature of the tests; they cannot beused for a systematic tuning of the adaptive search engine parameters; and moreover,they cannot be done on a large scale to show asymptotic behaviors.
+We have then decided to design a two-phase set of experiments consisting of simu-
+lated user tests and real user tests. In the ﬁrst stage, in order to better evaluate theeffectiveness of the adaptive engine on a large scale, a simulation approach based onhidden relevance values has been adopted. Simulated user tests have been prelimi-
+narily done to validate the theoretical expected behavior of the adaptive engine and to
+ﬁne tune the engine parameters. In the second phase, real user tests, have been heldto verify the theoretical expectations and the simulated results on a set of benchmarkimages from Flickr with a set of predesigned queries covering different semantic situ-ations. The real user tests have been run on a prototype version of the adaptive enginewhere volunteer student users of Hong Kong Baptist University have been using thesystem for a total of about 1,300 user sessions and 21,000 feedback evaluations.
+3.1. Simulated User Test Model
+The main idea behind the simulation approach based on hidden relevance is that eachterm/object pair is assigned a hidden relevance value, representing an artiﬁcially gen-erated user relevance; the hidden values are used to generate positive/negative userfeedback. The goal of the adaptive search engine in the simulated user tests is then toapproach, as close as possible, these hidden values which are unknown to the adaptivealgorithm.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:12 C. H. C. Leung et al.
+Fig. 2 . User model testing architecture.
+The architecture of such a test model is shown in Figure 2. A blackbox user model
+provides a sequence of random queries to the search engine. The search engine, which
+has no access to the hidden relevance values, computes the query answers using its
+internal structures as described in the prev ious paragraphs. Answers are then sent to
+the user module which simulates user feedback on the basis of users’ hidden values.
+The main advantage of such an approach is that the tests are repeatable and can
+be held on different problem sizes, that is, terms and objects, as well as different dis-tributions of hidden relevance. Moreover, objective performance indexes can be easilyestablished, like measures of distance between the system computed relevance and theuser hidden relevance.
+In the following, we describe the main features of the user model used in the
+experiments.
+3.1.1. Relevance Distribution Models. Let us assume that U:T×/Omega1→[0,1] is a func-
+tion which assigns a hidden relevance value to every term/object pair, where 0 meansnot relevant at all, and 1 means totally relevant; then, a relevance distribution modelestablishes how the hidden relevance values are distributed among the objects. Inour tests, we have experimented normal distributions with different parameters andr-reduced normal distribution. The latter consists in setting to 0 the relevance of r
+percent objects in /Omega1and assigning a normal distribution to the others. The r-reduced
+normal distribution models the more realistic situation in which each term has a cer-
+tain percentage of completely uncorrelated objects in the database. The assignment ofa distribution is realized by a pseudorandom generator.
+3.1.2. Feedback Model. The feedback model is the main part of the user model since it
+simulates a user evaluating the query answer and decides whether to click an object
+or not click any object in the answer list, and, in the ﬁrst case, which object to click.
+The user feedback model is based on the assumption that evaluation of a user com-
+munity is a randomized process with a bias toward user hidden relevance values. Sinceeach user in the community which builds the index has his/her own mental model ofrelevance between terms and objects, we expect that, on average, the user tends to clickmore on objects with greater relevance, that is, greatest hidden values with respect to
+objects with lower relevance.
+We also assume that the attitude of the user of not clicking at all is inﬂuenced by
+the most relevant objects on the answer list instead of being determined by the globalrelevance of the answer list. In other words, the attitude to click a list which has verygood objects is much higher than to click a list with greater global relevance but not
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:13
+a good maximum. For example, assume list a
+1o f2 0o b j e c t sw h i c hs u mu pat o t a l
+relevance of 1.490, where two objects have 0.7 relevance, while the other 18 objectshave a very low 0.005 relevance; let a
+2 be another list of 20 objects having a total
+relevance of 3.0 distributed uniformly on the 20 objects for a relevance of 0.15 each. Itis apparent a
+2 would result in being less appealing than a
+1.
+These criteria have been implemented by a model where the feedback FQVto the
+answer vector Vof length kfor a query Qis computed by making a randomized tour-
+nament among k+ 1 elements, where choosing the ( k+ 1)th element represents the
+choice of not clicking the answer list at all.
+Let us assume that the user model preliminarily sorts the vector V in ascending
+order with respect to the hidden values; then the weight for not clicking in the random
+tournament is taken as
+wnoclick =( 1−max VQ)∗c4,( 9 )
+where max VQis the maximum hidden value and c4a tuning parameter, while the
+weights of the candidate elements to be clicked are computed by
+wV[i]=U(Q,V[i])∗U(Q,V[i])i=1,...,k, (10)
+where U(Q,V[i]) is the sum of hidden evaluations over t∈Qfor the ith object, and
+the square component ampliﬁes the difference among elements. The effect is that theweight of elements with high relevance is greatly ampliﬁed when, for instance, theycoexist with many low relevance elements. On the other hand, elements which differa little still tend to have uniform chances.
+The probability values used in the tournament are, respectively,
+w
+noclick//Phi1user, probability that the user does not click on any object;
+wV[i]//Phi1user, probability that the user clicks on object of answers list; (11)
+where /Phi1useris a normalization factor /Phi1user=wnoclick +/Sigma1i∈[1,k]wV[i].
+The modeled behavior is then (i) to have a higher probability of not clicking when
+the list does not contain good elements, (ii) to have a similar probability of clickingelements with similar hidden relevance, and (iii) to amplify the gradient between goodand not good elements.
+Let us suppose, for instance, a vector Vof 20 elements where V[1] and V[2] have
+relevance 0.9, and V[3]...V[20] has relevance 0.1. A random click tournament-based
+only on total hidden relevance would click 50% of the time on the ﬁrst two elements and
+50% of the times on the other 18 ones. On the other hand, the quadratic ampliﬁcationof gradient would give V[1] and V[2] a probability of about 90% and a probability of
+about 10% of choosing one the others 18 elements.
+3.1.3. Query Model. The query model is the component of the simulated user model
+responsible for generating a sequence of random queries Q1,...,Qnqto be submitted to
+theadaptive engine . In the case of single-term queries, the only relevant parameter is
+the single term tto test and the number of queries nq.
+For multiple-term queries, the relevant parameters are the terms’ domain Tand
+the bounds min qand max q, that is, the minimum and maximum number of terms re-
+spectively allowed in a query, and for each query, the following must hold: min q≤
+Qi≤max q. Another relevant element is the distribution of the occurrence of the
+terms in each query when min q<|T|; in the experiments, they have been tested
+single-term queries, ﬁxed-size queries where |T|=min q=max q,ﬁ x e d - s i z eq u e r i e s
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:14 C. H. C. Leung et al.
+Table II. Real User Tests: Experimental Setting
+Test
+ Query Key
+ GTIm a ges
+ TotIma ges
+ AnswerSize
+ Elitism
+1
+ apple
+ 80
+ 354
+ 20
+ dynamic
+2
+ orange
+ 80
+ 1,200
+ 20
+ 25%
+3
+ bi cycl e
+ 80
+ 1,200
+ 10
+ 40%
+4
+ green
+ 80
+ 500
+ 20
+ −
+5
+ fl ower
+ 80
+ 354
+ 10
+ −
+where min q=max q<|T|, and variable-length queries where max qis uniformly as-
+cending/descending over time.
+3.2. Real User Test Design
+Real user tests have been designed in order to verify the results obtained from thetheoretical tests both in terms of convergency properties and behavior determined bythe parameters. The benchmark is represented by a set of 1,200 images downloadedfrom Flickr, a popular image and video storing and sharing platform ( www.flickr.com )
+where the ground truth (GT) is represented by the relevance tags assigned by Flickrwhich have been successively ﬁltered and checked manually.
+Since real user feedback is a very rare and p recious resource for the experiment, the
+queries and the experimental settings have been carefully designed in order to pointout different aspects of the engine and to asses different properties of domains andsystem settings.
+Five different classes of queries with speciﬁc keywords covering different semantic
+situations have been proposed to the users. We have tested three noun keywords:apple, bicycle, ﬂower and two adjective/noun keywords: green and orange . The idea is
+that the visual information connected with a noun describing an object, for example,aﬂower , is intrinsically less ambiguous than more smooth concepts which are usually
+linked to adjectives. Let us consider, for example, the notion of relevant to green :t h e
+green keyword, depending on the user’s intended meaning/context, can either refer to
+a vegetable or to the dominant color in the picture or to an environmentally friendly
+object in the picture, etc. Moreover, visual a mbiguity can also be associated to certain
+objects; for instance, we can be quite sure about the presence/absence of a bicycle in apicture, while an apple can be more easily confused with other round and red objectsor fruits, like a red ball, a strawberry, or a peach. The presence of a fuzzy semanticand visual ambiguity can lead real users to make feedback errors with respect to the
+GT , thus introducing a form of noise into the system.
+In order to assess the engine with the real user, a range of different settings, the
+maximum answer list size (i.e., the number of images returned by a query) has been
+ﬁxed either to 20 (for tests 1, 2, and 4) or to 10 (for tests 3 and 5), and the number ofground truth-relevant images is set to 80 for each keyword, while a different number of
+total images ranging from 354 to 1,200 have been used. The other parameter varying
+in the tests is the elitism, where dynamic elitism has been tested in test 1, staticelitism in tests 2 (20%) and 4 (40%), and no elitism in tests 4 and 5.
+Table II shows the detailed settings used in the real user tests.Volunteer students at Hong Kong Baptist University have used the system for a
+total of about 1,300 user sessions and 21,000 feedback evaluations.
+It is interesting to note that in all the experiments, the engine started with a com-
+pletely empty index, where all the terms have the same initial relevance value withthe same default score, and the adaptive engine has no clue of image relevance. Asthe user feedbacks are collected, the relevance indexes are dynamically built by therandomized algorithm in order to converge toward the ground truth.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:15
+3.3. Performance Evaluation
+Both in the hidden relevance tests and in the real user tests, the following quality
+measures for the system have been considered.
+—Relative answer relevance (Rtot) is the ratio between the total (hidden/ground truth)
+relevance of a query answer and the best possible answer of length k; the aim of this
+measure is to express how optimal the current query answer is with respect to theobject currently in the database; if relevance is interpreted as a binary classiﬁcation(relevant/not relevant) this metric can be seen as a measure of the precision of thequery answer with respect to the class of relevant objects.
+—Global answer relevance is the sum over time of answer relevance normalized with
+respect to the maximum possible relevance in a given period of time. It is a mea-sure of the global performance of the system over a ﬁxed period of time with valuesnormalized for comparison purposes.
+—Relevance coverage measures the proportion of objects which have been assessed as
+relevant over the total number of relevant objects; it is similar to the concept ofrecall in classiﬁcation problems.
+Another important parameter, convergence speed , is easily readable from diagrams
+which show the time evolution of the quality measures. Relative answer relevanceis a measure of the single query optimality, and global relative answer relevance isa measure of the quality over the time of the system. The relevance coverage, onthe other hand, tries to assess if the adaptive system focus only on the top relevantelements and how reliable is the randomized algorithm in measuring the relevance ofthe whole set of objects.
+3.4. Test Results and Discussions
+The experiments focus on testing the convergence of the simulation model with respect
+to the total number of objects in the index, the total number of queries, the answer
+size (i.e., the number of objects returned by a query), and with respect to different
+conﬁguration settings of the weight parameters ( c1,c2,c3,c4are respectively weighting
+accumulated relevance ,success rate ,inverse appearance ,not clicking ), and different
+conﬁgurations of the static/dynamic elitism ratio.
+3.4.1. Parameters Tuning. The ﬁrst part of the experiments focused on system parame-
+ters tuning of weights ( c1,c2,c3,c4). In the ﬁrst series of runs shown in Figure 3, 1,000
+objects in 5,000 queries of answer size ten were performed with different sets of theweight parameters value ( c
+1,c2,c3). In these ﬁgures, the “number of queries” refers
+to the number of queries issued against the collection of data objects. By comparingthese runs (Figure 3(f)), the performance of the 3rd runs ( c
+1= 100, c2=0.1,c3=0.01)
+results is the best one and very similar to that of the 4th run ( c1=1 , c2=0 , c3=0 ) ,
+while the performance of the 5th run ( c1=1 , c2= 10, c3= 100) is the worst. As already
+noted, the experiments conﬁrm that the contribution of term c1, that is, accumulated
+relevance, should prevail on c2and c3, that is, on success rate and inverse appearance.
+It is worth noting that the convergence is quite fast with the best conﬁguration
+settings of Figure 3(c). After 500 queries, we already obtain results with over 90%relative relevance, with an average of 70%; eventually, after about 2,500 queries, theaverage relative relevance is over 90% and constantly converging to about 98%. Thenoise which can be noted in the graphs is due to the randomized component in thequery answer and is essential to guaranteeing the exploration of the available objectspace. The poor result in Figure 3(e) is due to the fact that giving more weight to
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:16 C. H. C. Leung et al.
+Fig. 3 . Parameters tuning on weight parameters c1,c2,a n d c3.
+inverse appearance, the algorithm tends to distribute uniformly the appearance of
+objects. This tendency also is appare nt and present in Figures 3(a) and (b).
+In comparing the performance of Figures 3(c) and (d), it may be concluded that the
+performance of the former is slightly supe rior. Therefore, we investigate these two
+cases further. We rerun these two cases ﬁve times, and in these two sets of runs, wekeep all the variables unchanged except the values of the weight parameters c
+1,c2,a n d
+c3. In addition, the runs within the same set are performed with the same variables
+except the initial random relative relevance v alues. These initial random relative rele-
+vance values follow the same distribution with the same mean and standard deviation.In these runs, we have found that the ﬁrst set of runs consistently outperforms thosein the second set. Although the differences are sometimes marginal, in one case, the
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:17
+Table III. Results Comparison between Two Sets of Runs
+Queries
+ c1= 100,c2=0.1,c3=0.01
+ c1=1,c2=0,c3=0
+ % Difference
+500
+ 0.694454
+ 0.648661
+ 7.06
+1,000
+ 0.819258
+ 0.740686
+ 10.61
+1,500
+ 0.864326
+ 0.780576
+ 10.73
+2,000
+ 0.890976
+ 0.806454
+ 10.48
+2,500
+ 0.904069
+ 0.822060
+ 9.98
+3,000
+ 0.916235
+ 0.832256
+ 10.09
+3,500
+ 0.922070
+ 0.841829
+ 9.53
+4,000
+ 0.927092
+ 0.846728
+ 9.49
+4,500
+ 0.932765
+ 0.853442
+ 9.29
+5,000
+ 0.937448
+ 0.855796
+ 9.54
+two exhibit noticeable diffe rences in performance. The results are given in Table III,
+where the difference can be as much as over 10%.
+The tests used to tune the weight parameter c4, that is, weight for not clicking
+decrement, are shown in Figure 4. The tests have been held varying c4in the set 1,
+0.1, 10, 0, 0.01, while keeping other weight parameters constant, as determined in the
+best conﬁguration ( c1= 100, c2=0.1,c3=0.01). In these tests, the best performance
+results were when c4= 10, while the worst performance results were when c4=0 .T h i s
+result can be explained intuitively with the idea that not clicking should not drasticallydecrease the relative relevance o f an object with respect to a term.
+3.4.2. Scalability and Queries/Objects Ratio. In the series of tests shown in Figure 5, the
+scalability of the adaptive search engine is evaluated with respect to an increasingnumber of objects (i.e., number of objects = 1,000, 2,000, 3,000, 4,000, 5,000), whilekeeping the number of queries and answer size constant, respectively, to 5,000 and10. The results shown in Figure 5(f) are as expected: that while the number of objectsincreases, the general perfo rmance decreases. The intuitive reason is that the same
+amount of queries and answer size cannot guarantee adequate coverage to an increas-
+ing amount of objects. Nevertheless, after 5,000 queries, the index converges on 5,000
+objects up to 90% relative relevance, with an average of 85% (Figures 5(e) and (f)).A more remarkable result shown in Figure 5(f) is that the time of index convergenceseems to be linearly proportional to the number of queries over the number of objectsratio, #queries/#objects.
+3.4.3. Static and Dynamic Elitism. The purpose of this series of tests was to investi-
+gate the inﬂuence of elitism degree on the convergence of the adaptive engine. The
+tests have been held with no elitism ,static elitism degree ,a n d dynamic elitism .T h e
+other parameters settings remains unchanged. Figure 6 shows the results for staticelitism degrees of 10%(b), 30%(c), 50%(d), 70%( e), and 90%(f). Figures 6(a–f) show
+that an increasing elitism degree does not p roduce any improvement with respect to
+no elitism. The static 90% elitism improves quickly in the early stage, but afterwards
+it does not produce any improvement in the long term. It is worth noting that thestatic 90% elitism corresponds to the greedy strategy of always keeping the best ele-ments; only 10% of the evolution is allowed. On the other hand, the best approach isdynamic elitism, which performs signiﬁcantly better (also with respect to no elitism).In dynamic elitism, the elitism degree is low in the early stage when adaptation andcoverage of objects are important and is gr adually increased when relevant objects
+have been focused on.
+A further conﬁrmation of this fact can be found by evaluating the global relative
+relevance of the experiments, shown in Table IV, where the relevance is accumu-lated and normalized over time. For each experiment, the ﬁrst number is the global
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:18 C. H. C. Leung et al.
+Fig. 4 . Parameters tuning on weight parameters c4.
+relevance for all 5,000 queries, while the number in bold face is the same measure
+limited to the last 1,000 queries. It can be observed that the general increment ofthe global relative relevance in the second case is due to the impact on the global per-formance of the preliminary convergence phase. Once more, it is worth to point out
+the results of the dynamic elitism run of Figure 6(f), which is very sensitive to theperformance increment.
+3.4.4. Real User Tests: Convergence. The tests with real users have been conducted
+with the c1–c4best parameters combination determined in the ﬁrst phase of simulated
+user tests. The convergence results for the experiments are shown in Figure 7.
+The results with real user tests are quite encouraging, and they generally conﬁrm
+the properties of convergence, scalability of the algorithm, as well as the beneﬁts ofthe dynamic elitism observed in the simulated user tests.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:19
+Fig. 5 . Increasing the total number of objects.
+It is also useful to point out that in the experiments with answer size ten, the num-
+ber of relevance feedbacks was about half of that obtained for that of answer size 20.
+The behavior with real users conﬁrms that performance linearly depends on the totalnumber of images and on the answer size, since they constraint the discovery of rele-vant images and the coverage capability of the algorithm. The test also conﬁrms thatstatic elitism negatively affects convergence performance, despite quickly reaching arelevance level corresponding exactly to the static elitism quota (respectively 25% intest 2 and 40% in experiment test 3); the static elitism acts against the explorativecapability of the algorithm, especially in the early stage of the research, avoiding thatother relevant objects can be assessed.
+The greater variance which can be observed in the real user tests with respect to the
+simulated user tests has a twofold explanation: ﬁrst, the ground truth (as provided by
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:20 C. H. C. Leung et al.
+Fig. 6 . Comparison of elitism strategies.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:21
+Table IV. Global Relative Relevance
+Run
+Test
+ (a)
+ (b)
+ (c)
+ (d)
+ (e)
+ (f)
+ (g)
+Tuning Weights
+ 0.68
+ 0.82
+ 0.94
+ 0.93
+ 0.58
+c1,c2,c3
+ 0.63
+ 0.73
+ 0.88
+ 0.88
+ 0.56
+ N/A
+ N/A
+Tuning Weight
+ 0.91
+ 0.91
+ 0.92
+ 0.91
+ 0.92
+c4
+ 0.85
+ 0.86
+ 0.86
+ 0.85
+ 0.87
+ N/A
+ N/A
+Increasing
+ 0.92
+ 0.89
+ 0.88
+ 0.85
+ 0.84
+Objects
+ 0.86
+ 0.82
+ 0.79
+ 0.76
+ 0.75
+ N/A
+ N/A
+Dynamic
+ 0.84
+ 0.84
+ 0.85
+ 0.86
+ 0.73
+ 0.82
+ 0.94
+Elitism
+ 0.78
+ 0.75
+ 0.79
+ 0.81
+ 0.70
+ 0.81
+ 0.84
+Flickr) is a crispy boolean value, while the ground truth artiﬁcially generated in the
+simulated tests was a real value distributed in [0,1]. In other words, even when notfully relevant images are extracted in the answer list, they can have intermediate rel-evance values which can make the simulated test graph smoother. The second reasonis that this phenomenon is greatly ampliﬁed when there is no dynamic elitism control,like in test 4 (see Figure 7(e)), since occasionally, despite the average good performance,very bad answers are still possibly generated by a completely free random tournament.
+On the other hand, having a certain amount of irrelevant objects is an intrinsic
+property of the proposed randomized method which guarantees its adaptive behavior,
+and due to the binary GT of Flickr and the small size of the generated query answer(i.e., a list of ten or 20 images), variations of few elements can result in great variationsof the performance indicators.
+3.4.5. Real User Tests: Coverage and Noise. Another important result which is worth
+pointing out is the good relevance coverage , that is, the ability of the engine to assess
+the relevance of the objects in the repository. The precision of such a relevance evalu-ation according to the ground truth is also remarkable. Table V shows that relevancecoverage and precision are generally quite satisfactory. Another positive result is theability of the algorithm to be noise tolerant; in Table V, we indicated as WNF and
+WPF , respectively, the wrong negative feedbacks and the wrong positive feedbacks,
+that is, when the user wrongly gave an image whose ground truth deﬁnes relevant afeedback rating as nonrelevant, and vice versa. The wrong user feedback is a formof data noise that can be due to the phenomenon of visual or semantic ambiguity, to
+an actual user error, to a user disagreeing with the community knowledge, or possibly
+to a bias in the ground truth. In Table V, answer size ,WNF ,a n d WPF are given as
+numbers of units, while coverage, precision ,a n d noise are given as percentage values.
+It must be noted that even a high level of noise (12%) is not affecting the precisionof classiﬁcation, with the exception of orange , where the ambiguity can be a suitable
+explanation. Finally, note that as expected, the level of observed noise for wrong nega-tives accounts for most of the total noise, from a minimum of 82% for test 4 (green) to95% for test 1 (apple). In other words, the cases of relevance not recognized by the userare largely greater than noise generated from wrong positives, that is, images whichthe users consider relevant while they are n ot. (Only two users apparently recognized
+a bicycle where there was not one!)
+4. CONCLUSIONS
+The key contributions of this article are the development of an adaptive search enginearchitecture and a robust adaptive index update strategy which enable the systemto improve its performance over time. A particular advantage of the present system
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:22 C. H. C. Leung et al.
+Fig. 7 . Relative relevance for real user tests.
+Table V. Coverage and Noise in Real User Tests
+Test
+ Query
+ Answer Size
+ Coverage
+ Precision
+ WNF
+ WPF
+ Noise
+1
+ apple
+ 20
+ 1.00
+ 0.96
+ 760
+ 39
+ 0.12
+2
+ orange
+ 20
+ 0.75
+ 0.76
+ 381
+ 23
+ 0.07
+3
+ bi cycl e
+ 10
+ 0.77
+ 0.92
+ 123
+ 2
+ 0.05%
+4
+ green
+ 20
+ 0.75
+ 0.97
+ 447
+ 96
+ 0.12
+5
+ fl ower
+ 10
+ 0.98
+ 0.97
+ 116
+ 23
+ 0.05
+is that the underlying index structure and contents are gradually and dynamically
+reorganized in the course of normal usage without the need to deliberately activatespecial procedures from time to time. We have presented an adaptive indexing searchengine whereby the indexing of social media resources may be done systematically bykeeping track of the users querying behavior. By analyzing the search, relevance feed-back, and results selection patterns of the community of users, our indexing engineallows advanced properties of media resources—which otherwise are not automati-cally extractable—to be gradually indexed and discovered. Through this engine, the
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:23
+retrieval and consumption of multimedia objects, such as images, sounds, and videos,
+becomes possible and effective. Given that t he automatic capturing of the properties
+of most media resources, and hence their automatic indexing, is not possible, such anevolutionary approach will allow user intelligence and judgment to be progressivelycaptured and transferred from the community to the index and will bring substantialbeneﬁts to the quality of query answers. In particular, this will obviate the need toperform time-consuming, intensive, dedicated manual cataloging and indexing, whichhas shown to be costly and—if done by a small unrepresentative group—can also pro-duce a biased and subjective indexing structure not shared by the social community.Although such indexing is not one-off or immediate, we have shown that a competentlevel of retrieval performance may be achieved over a reasonable time period. Our
+engine also incorporates genetic algorithms to enable the mining and discovery of oth-
+erwise obscured or hidden media and is able to respond dynamically to changing usagepatterns caused by evolving community interests and social trends.
+The self-organizing and the exploration capabilities of the algorithm—which is able
+to do the indexing, continuously covering most of the objects—while maintaining agood performance in terms of total relevance to the query answers—together withthe noise tolerance behavior, are some of the remarkable beneﬁts which result fromthe randomized approach. On the other hand, strategies based on straightforward“promotion of the best” focus on some very relevant objects, which prevent them fromassessing the others which are basically ignored and have no chance of receiving feed-back from the users. Although they can obtain good performance in the short term,
+this lack of ﬂexibility is a major drawback in domains where the user relevance eval-
+uation dynamically evolves over time (e.g., social trends) or when new more relevantobjects enter the repository.
+REFERENCES
+AKBARINIA ,R . ,P ACITTI ,E . , AND VALDURIEZ , P. 2007. Best position algorithms for top-k queries. In
+Proceedings of the 33rd International Conference on Very Large Data Bases (VLDB’07) . 495–506.
+´ANGELES SERRANO ,M . ,M AGUITMAN ,A . ,M ARI´ANBOGU N., F ORTUNATO ,S . , AND VESPIGNANI , A. 2007.
+Decoding the structure of the WWW: A comparative analysis of Web crawls. ACM Trans. Web 1 ,2 ,1 0 .
+ANH,V .N . AND MOFFAT , A. 2006. Pruning strategies for mixed-mode querying. In Proceedings of the
+15th ACM International Conference on Information and Knowledge Management (CIKM’06) . ACM,
+New York, NY, 190–197.
+AZIMI -SADJADI ,M . ,S ALAZAR ,J . , AND SRINIVASAN , S. 2009. An adaptable image retrieval system with
+relevance feedback using kernel machines and selective sampling. IEEE Trans. Image Process. 18 ,7 ,
+1645–1659.
+AZZAM ,I .A . ,L EUNG ,C .H .C . , AND HORWOOD , J. F. 2004. Implicit concept-based image indexing and
+retrieval. In Proceedings of the 10th International Multimedia Modeling Conference ( MMM’04) . Y.-P. P.
+Chen Ed., IEEE Computer Society, 354.
+AZZAM ,I .A . ,L EUNG ,C .H .C . , AND HORWOOD , J. F. 2005. A fuzzy expert syst em for concept-based image
+indexing and retrieval. In Proceedings of the 11th International Conference on Multi Media Modeling
+(MMM’05) . Y.-P. P. Chen Ed., IEEE Computer Society, 452–457.
+BADJIO ,E .F . AND POULET , F. 2005. User guidance: From theory to practice, the case of visual data mining.
+InProceedings of the 17th IEEE International Conference on Tools with Artiﬁcial Intelligence (ICTAI’05) .
+IEEE Computer Society, Los Alamitos, CA, 708–709.
+BALUJA ,S . ,S ETH ,R . ,S IVAKUMAR ,D . ,J ING,Y . ,Y AGNIK ,J . ,K UMAR ,S . ,R AVICHANDRAN ,D . , AND ALY,
+M. 2008. Video suggestion and discovery for YouTube: Taking random walks through the view graph.
+InProceedings of the 17th International Conference on the World Wide Web ( WWW’08) . ACM, New York,
+NY, 895–904.
+BERGMARK , D. 2002. Collection synthesis. In Proceedings of the 2nd ACM/IEEE-CS Joint Conference on
+Digital Libraries (JCDL’02) . ACM, New York, NY, 253–262.
+BHATTACHARYA , M. 2004. An informed operator approach to tackle diversity constraints in evolutionary
+search. In Proceedings of the International Conference on Information Technology: Coding and Comput-
+ing (ITCC’04) . Vol. 2, IEEE Computer Society, Los Alamitos, CA, 326.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:24 C. H. C. Leung et al.
+BIAN,J . ,L IU,Y . ,A GICHTEIN ,E . , AND ZHA, H. 2008. Finding the right facts in the crowd: Factoid question
+answering over social media. In Proceedings of the 17th International Conference on the World Wide Web
+(WWW’08) . ACM, New York, NY, 467–476.
+BUCKLEY , C., S. A. M. M. 1995. New retrieval approaches using smart : Trec 4. In Proceedings of the Text
+REtrieval Conference-4 . 25–48.
+CHAKRABARTI ,D . ,A GARWAL ,D . , AND JOSIFOVSKI , V. 2008. Contextual advertising by combining rele-
+vance with click feedback. In Proceedings of the 17th International Conference on the World Wide Web
+(WWW’08) . ACM, New York, NY, 417–426.
+CHAU ,M . ,H UANG ,Z . , AND CHEN , H. 2003. Teaching key topics in computer science and information
+systems through a Web search engine project. J. Educ. Resour . Comput. 3, 3, 2.
+CHEN ,Z . AND ZHU, B. 2002. Some formal analysis of Rocchio’s si milarity-based relevance feedback algo-
+rithm. Inform. Retriev. 5 , 1, 61–86.
+CHENG ,E . ,J ING,F . ,L I,M . ,M A,W . - Y . , AND JIN, H. 2006. Using implicit relevant feedback to advance
+Web image search. In Proceedings of the IEEE International Conference on Multimedia and Expo .
+1773–1776.
+DILIGENTI ,M . ,G ORI,M . , AND MAGGINI , M. 2002. Web page scoring systems for horizontal and vertical
+search. In Proceedings of the 11th International Conference on the World Wide Web ( WWW’02) . ACM,
+New York, NY, 508–516.
+DIMOU ,C . ,B ATZIOS ,A . ,S YMEONIDIS ,A .L . , AND MITKAS , P. A. 2006. A multi-agent simulation frame-
+work for spiders traversing the semantic Web. In Proceedings of the 2006 IEEE/WIC/ACM International
+Conference on Web Intelligence (WI’06) . IEEE Computer Society, Los Alamitos, CA, 736–739.
+DWORK ,C . ,K UMAR ,R . ,N AOR ,M . , AND SIVAKUMAR , D. 2001. Rank aggregation methods for the Web. In
+Proceedings of the 10th International Conference on the World Wide Web ( WWW’01) . ACM, New York,
+NY, 613–622.
+EFTHIMIADIS , E. N. 1996. Query expansion. Ann. Rev. Inform. Syst. Technol. 31 , 121–187.
+ESKANDARI ,H . ,R ABELO ,L . , AND MOLLAGHASEMI , M. 2005. Multiobjective simulation optimization using
+an enhanced genetic algorithm. In Proceedings of the 37th Conference on Winter Simulation (WSC’05) .
+833–841.
+FERRAGINA ,P . AND MANZINI , G. 2005. Indexing compressed text. J. ACM 52 , 4, 552–581.
+GOLDBERG ,D .E . AND HOLLAND , J. H. 1988. Genetic algorithms and machine learning. Mach. Learn. 3 ,
+95–99. 10.1023/A:1022602019183.
+HALVEY ,M .J . AND KEANE , M. T. 2007. Exploring social dynamics in online media sharing. In Proceedings
+of the 16th International Conference on the World Wide Web ( WWW’07) . ACM, New York, NY, 1273–1274.
+HARGITTAI , E. 2004. Do you “google”? Understanding search engine use beyond the hype. First Monday
+9,3 .
+HAVELIWALA . 2003. Topic-sensitive pagerank: A context-s ensitive ranking algorithm for Web search. IEEE
+Trans. Knowl. Data Eng. 15 .
+HAVELIWALA , T. H. 2002. Topic-sensitive pagerank. In Proceedings of the 11th International Conference on
+the World Wide Web (WWW’02) . ACM, New York, NY, 517–526.
+HOASHI ,K . ,Z EITLER ,E . , AND INOUE , N. 2002. Implementation of relevance feedback for content-based
+music retrieval based on user prefences. In Proceedings of the 25th A nnual International ACM SIGIR
+Conference on Research and Development in Information Retrieval (SIGIR’02) . ACM, New York, NY,
+385–386.
+HOI,C . - H . AND LYU, M. R. 2004. A novel log-based relevance feedback technique in content-based
+image retrieval. In Proceedings of the 12th A nnual ACM International Conf erence on Multimedia
+(MULTIMEDIA’04) . ACM, New York, NY, 24–31.
+IWAYAMA , M. 2000. Relevance feedback with a small number o f relevance judgements: Incremental rele-
+vance feedback vs. document clustering. In Proceedings of the 23rd A nnual International ACM SIGIR
+Conference on Research and Development in Information Retrieval (SIGIR’00) . ACM, New York, NY,
+10–16.
+JANSEN ,T . AND WEGENER , I. 2006. On the local performance of simulated annealing and the (1+1)
+evolutionary algorithm. In Proceedings of the 8th A nnual Conf erence on Genetic and Evolutionary
+Computation (GECCO’06) . ACM, New York, NY, 469–476.
+JOHN ,A . ,A DAMIC ,L . ,D AVIS ,M . ,N ACK ,F . ,S HAMMA ,D .A . , AND SELIGMANN , D. D. 2008. The future of
+online social interactions: What to expect in 2020. In Proceeding of the 17th International Conference on
+World Wide Web (WWW’08) . ACM, New York, NY, 1255–1256.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:25
+JUNG ,S . ,H ARRIS ,K . ,W EBSTER ,J . , AND HERLOCKER , J. L. 2004. Serf: Integrating human recommenda-
+tions with search. In Proceedings of the 13th ACM International Conference on Information and Knowl-
+edge Management (CIKM’04) . ACM, New York, NY, 571–580.
+KAELBLING ,L .P . ,L ITTMAN ,M .L . , AND MOORE , A. P. 1996. Reinforcement learning: A survey. J. Artif.
+Intell. Res. 4 , 237–285.
+KAMMENHUBER ,N . ,L UXENBURGER ,J . ,F ELDMANN ,A . , AND WEIKUM , G. 2006. Web search clickstreams.
+InProceedings of the 6th ACM SIGCOMM Conference on Internet Measurement (IMC’06) . ACM, New
+York, NY, 245–250.
+KHOPKAR ,Y . ,S PINK ,A . ,G ILES ,C .L . ,S HAH ,P . , AND DEBNATH , S. 2003. Search engine personalization,
+an exploratory study. First Monday 8 ,7 .
+KOBAYASHI ,M . AND TAKEDA , K. 2000. Information retrieval on the Web. ACM Comput. Surv. 32 ,2 ,
+144–173.
+LEE,H .T . ,L EONARD ,D . ,W ANG ,X . , AND LOGUINOV , D. 2008. Irlbot: Scaling to 6 billion pages and beyond.
+InProceeding of the 17th International Conference on World Wide Web ( WWW’08) . ACM, New York, NY,
+427–436.
+LERMAN , K. 2007. User participation in social media: Digg study. In Proceedings of the IEEE / WIC / ACM In-
+ternational Conferences on Web Intelligence and Intelligent Agent Technology - Workshops (WI-IATW’07) .
+IEEE Computer Society, Los Alamitos, CA, 255–258.
+LEUNG ,C .H .C . AND LIU, J. 2007. Multimedia data mining and searching through dynamic index evo-
+lution. In Proceedings of the International Conference on Visual Information Systems (VISUAL’07) .
+298–309.
+LI,H . ,L EE,W .C . ,S IVASUBRAMANIAM ,A . , AND GILES , L. 2007. SearchGen: A synth etic workload genera-
+tor for scientiﬁc literature digital libraries and search engines. In Proceedings of the 7th ACM / IEEE-CS
+Joint Conference on Digital Libraries (JCDL’07) . ACM, New York, NY, 137–146.
+LIN,W . - H . ,J IN,R . , AND HAUPTMANN , A. 2003. Web image retrieval re-ranking with relevance model.
+InProceedings of the IEEE / WIC International Conference on Web Intelligence (WI’03) . IEEE Computer
+Society, Los Alamitos, CA, 242.
+LIU,J . ,F ENG ,L . , AND XING, Y. 2006. A pruning-based approach for supporting top-k join queries. In
+Proceedings of the 15th International Conference on the World Wide Web ( WWW’06) . ACM, New York,
+NY, 891–892.
+LOURENC ¸O,A .G . AND BELO, O. O. 2006. Catching Web crawlers in the act. In Proceedings of the 6th
+International Conference on Web Engineering (ICWE’06) . ACM, New York, NY, 265–272.
+MAASS AND NOWAK . 2005. Text indexing with errors. In Proceedings of the 16th Symposium on Combina-
+torial Pattern Matching (CPM) .
+MARTIN , C. D. 2007. Blogger ethics and YouTube common sense. SIGCSE Bull. 39 , 4, 11–12.
+MILANI ,A . ,L EUNG ,C . , AND CHAN , A. 2008. Adaptive search engines as d iscovery games: An evolutionary
+approach. In Proceedings of the 6th International Conference on Advances in Mobile Computing and
+Multimedia . ACM, New York, NY, 444–449.
+MILANI ,A . ,L EUNG ,C . , AND CHAN , A. 2009. Community adaptive search engines. Int. J. Adv. Intell.
+Paradigms 1 , 4, 432–443.
+MINETOU , C. G. 2005. Grouping users’ communities in an interactive Web-based learning system: A data
+mining approach. In Proceedings of the 5th IEEE International Conference on Advanced Learning Tech-
+nologies (ICALT’05) . IEEE Computer Society, Los Alamitos, CA, 474–475.
+MISLOVE ,A . ,M ARCON ,M . ,G UMMADI ,K .P . ,D RUSCHEL ,P . , AND BHATTACHARJEE , B. 2007. Measure-
+ment and analysis of online social networks. In Proceedings of the 7th ACM SIGCOMM Conference on
+Internet Measurement (IMC’07) . ACM, New York, NY, 29–42.
+OVER,P . ,L EUNG ,C .H .C . ,I P,H .H .S . , AND GRUBINGER , M. 2004. Multimedia retrieval benchmarks.
+IEEE Multimedia 11, 2, 80–84.
+PANDA ,N . AND CHANG , E. Y. 2006. Efﬁcient top-k hyperplane query processing for multimedia infor-
+mation retrieval. In Proceedings of the 14th A nnual ACM International Conf erence on Multimedia
+(MULTIMEDIA’06) . ACM, New York, NY, 317–326.
+PISZCZ ,A . AND SOULE , T. 2006. Dynamics of evolutionary robustness. In Proceedings of the 8th A nnual
+Conference on Genetic and Evolutionary Computation (GECCO’06) . ACM, New York, NY, 871–878.
+ROCCHIO ,J . ET AL . 1971. Relevance feedback in information retrieval. In The SMART Retrieval System:
+Experiments in Automatic Document Processing , 313–323.
+RUDINAC ,S . ,L ARSON ,M . , AND HANJALIC , A. 2009. Semantic-theme-based video retrieval using multi-
+modal pseudo-relevance feedback. In Proceedings of the 15th A nnual Conf erence of the Advanced School
+for Computing and Imaging .
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.47:26 C. H. C. Leung et al.
+RUI,Y . ,H UANG ,T . ,O RTEGA ,M . , AND MEHROTRA , S. 1998. Relevance feedback: A power tool for interac-
+tive content-based image retrieval. IEEE Trans. Circuits Syst. Video Technol. 8 , 5, 644–655.
+SAHA ,S . AND BANDYOPADHYAY , S. 2007. A genetic clustering technique using a new line symmetry based
+distance measure. In Proceedings of the 15th International Conference on Advanced Computing and
+Communications (ADCOM’07) . IEEE Computer Society, Alamitos, CA, 365–370.
+SHAW ,R . AND SCHMITZ , P. 2006. Community annotation and remix : A research platform and pilot deploy-
+ment. In Proceedings of the 1st ACM International Workshop on Human-Centered Multimedia (HCM’06) .
+ACM, New York, NY, 89–98.
+SHEN ,X . AND ZHAI, C. 2005. Active feedback in ad hoc information retrieval. In Proceedings of the 28th
+Annual International ACM SIGIR Conf erence on Research and Development in Information Retrieval
+(SIGIR’05) . ACM, New York, NY, 59–66.
+SOLIMAN ,M .A . ,I LYAS ,I .F . , AND CHANG , K. C. C. 2008. Probabilistic top-k and ranking-aggregate
+queries. ACM Trans. Datab. Syst. 33 , 3, 1–54.
+SPERTUS ,E . ,S AHAMI ,M . , AND BUYUKKOKTEN , O. 2005. Evaluating similarity measures: A large-scale
+study in the orkut social network. In Proceedings of the 11th ACM SIGKDD International Conference
+on Knowledge Discovery in Data Mining (KDD’05) . ACM, New York, NY, 678–684.
+SUN,Y . ,Z HUANG ,Z . , AND GILES , C. L. 2007. A large-scale study of robots.txt. In Proceedings of the 16th
+International Conference on the World Wide Web ( WWW’07) . ACM, New York, NY, 1123–1124.
+TAO,D . ,L I,X . , AND MAYBANK , S. 2007. Negative samples analysis in relevance feedback. IEEE Trans.
+Knowl. Data Eng. 568–580.
+TAO,D . ,T ANG ,X . , AND LI, X. 2008. Which components are important for interactive image searching?
+IEEE Trans. Circuits Syst. Video Technol. 18 , 1, 3–11.
+THEOBALD ,M . ,W EIKUM ,G . , AND SCHENKEL , R. 2004. Top-k query evaluation with probabilistic guaran-
+tees. In Proceedings of the 13th International Conference on Very Large Data Bases (VLDB’04) . 648–659.
+THEOBALD ,M . ,S CHENKEL ,R . , AND WEIKUM , G. 2005. Efﬁcient and self-tuning incremental query expan-
+sion for top-k query processing. In Proceedings of the 28th A nnual International ACM SIGIR Conf erence
+on Research and Development in Information Retrieval (SIGIR’05) . ACM, New York, NY, 242–249.
+THEOBALD ,M . ,B AST,H . ,M AJUMDAR ,D . ,S CHENKEL ,R . , AND WEIKUM , G. 2008. Topx: Efﬁcient and
+versatile top-k query processing for semistructured data. VLDB J. 17 , 1, 81–115.
+TORJMEN ,M . ,P INEL -SAUVAGNAT ,K . , AND BOUGHANEM , M. 2008. Using pseudo-relevance feedback to
+improve image retrieval results. In Advances in Multilingual and Multimodal Information Retrieval .
+Lecture Notes in Computer Science, vol. 5152, Springer Berlin, 665–673.
+VANUDEN , M. 1998. Rocchio: Relevance feedback in learning classiﬁcation algorithms. In Proceedings of
+the ACM SIGIR Conference .
+VINAY ,V . ,W OOD ,K . ,M ILIC -FRAYLING ,N . , AND COX, I. J. 2005. Comparing relevance feedback algorithms
+for Web search. In Special Interest Tracks and Posters of the 14th International Conference on the World
+Wide Web (WWW’05) . ACM, New York, NY, 1052–1053.
+VLACHOU ,A . ,D OULKERIDIS ,C . ,N ØRV ˚AG,K . , AND VAZIRGIANNIS , M. 2008. On efﬁcient top-k query pro-
+cessing in highly distributed environments. In Proceedings of the ACM SIGMOD International Confer-
+ence on Management of Data (SIGMOD’08) . ACM, New York, NY, 753–764.
+WHITE ,R .W . AND KELLY , D. 2006. A study on the effects of personalization and task information on
+implicit feedback performance. In Proceedings of the 15th ACM International Conference on Information
+and Knowledge Management (CIKM’06) . ACM, New York, NY, 297–306.
+WIDYANTORO ,D .H . ,I OERGER ,T .R . , AND YEN, J. 2003. Tracking changes in user interests with a few
+relevance judgments. In Proceedings of the 12th International Conference on Information and Knowledge
+Management (CIKM’03) . ACM, New York, NY, 548–551.
+WONG ,R .C .F . AND LEUNG , C. H. C. 2008. Automatic semantic annotation of real world Web images.
+IEEE Trans. Pattern Anal. Mach. Intell. 30 , 11, 1933–1944.
+YAN,R . ,H AUPTMANN ,E . , AND JIN, R. 2003. Multimedia search with pseudo-relevance feedback. In
+Proceedings of the International Conference on Image and Video Retrieval . 238–247.
+YANG ,S . AND S¸IMA UYAR. 2006. Adaptive mutation with ﬁtness and allele distribution correlation for
+genetic algorithms. In Proceedings of the ACM Symposium on Applied Computing (SAC’06) . ACM, New
+York, NY, 940–944.
+YANG ,Y . ,W U,F . ,X U,D . ,Z HUANG ,Y . , AND CHIA, L.-T. 2010. Cross-media retrieval using query dependent
+search methods. Pattern Recogn. 43 , 8, 2927–2936.
+ZHANG ,C . ,C HAI,J .Y . , AND JIN, R. 2005. User term feedback in interacti ve text-based image retrieval. In
+Proceedings of the 28th A nnual International ACM SIGIR Conf erence on Research and Development in
+Information Retrieval (SIGIR’05) . ACM, New York, NY, 51–58.
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.Intelligent Social Media Indexing and Sharing 47:27
+ZHANG ,R . AND ZHANG , Z. 2007. Effective image retrieval based on hidden concept discovery in image
+database. IEEE Trans. Image Process. 16 , 2, 562–572.
+ZHOU ,X .S . AND HUANG , T. S. 2003. Relevance feedback in image retrieval: A comprehensive review.
+Multimedia Syst. 8 , 536–544. 10.1007/s00530-002-0070-3.
+ZHUANG ,Y . ,Y ANG ,Y . , AND WU, F. 2008. Mining semantic correlation of heterogeneous multimedia data
+for cross-media retrieval. IEEE Trans. Multimedia 10 , 2, 221–229.
+Received April 2010; revised October 2010, December 2010; accepted February 2011
+ACM Transactions on Intelligent Systems and Technology, Vol. 3, No. 3, Article 47, Publication date: May 2012.

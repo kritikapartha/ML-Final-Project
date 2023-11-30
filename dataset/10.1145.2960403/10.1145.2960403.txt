@@ -1,0 +1,746 @@
+102     COMMUNICATIONS OF THE ACM   |   DECEMBER 2016  |   VOL. 59  |   NO. 12review articles
+DOI:10.1145/2960403
+Social computing benefits from mathematical 
+foundations, but research has barely 
+scratched the surface.
+BY YILING CHEN, ARPITA GHOSH, MICHAEL KEARNS,  
+TIM ROUGHGARDEN, AND JENNIFER WORTMAN VAUGHAN
+SOCIAL COMPUTING ENCOMPASSES  the mechanisms 
+through which people interact with computational systems: crowdsourcing systems, ranking and 
+recommendation systems, online prediction markets, citizen science projects, and collaboratively edited wikis, to name a few. These systems share the 
+common feature that humans are active participants, 
+making choices that determine the input to, and therefore the output of, the system. The output of 
+these systems can be viewed as a joint computation 
+between machine and human, and can be richer than what either could produce alone. The term social computing is often used as a synonym for several 
+related areas, such as “human computation” and 
+subsets of “collective intelligence;” we use it in its broadest sense to encompass all of these things.Social computing is blossoming 
+into a rich research area of its own, 
+with contributions from diverse dis-
+ciplines including computer science, economics, and other social sciences. 
+The field spans everything from sys-
+tems research directed at building 
+scalable platforms for new social com-
+puting applications to HCI research directed toward user interface design, 
+from studies of incentive alignment in 
+online applications to behavioral ex-periments evaluating the performance 
+of specific systems, and from under-
+standing online human social behav-
+ior to demonstrating new possibilities 
+of organized social interactions. Yet a broad mathematical foundation for so-
+cial computing is yet to be established, 
+with a plethora of under-explored op-portunities for mathematical research 
+to impact social computing.
+In many fields or subfields, math-
+ematical theories have provided major contributions toward real-world ap-
+plications. These contributions often 
+come in the form of mathematical 
+models to address the closely-related problems of analysis—why do exist-
+ing systems exhibit the outcomes they 
+do?—and design—how can systems be engineered to produce better out-
+comes? In computer science, math-
+ematical research led to the develop-
+ment of commonly used practical 
+machine learning methods such as Mathematical 
+Foundations for Social Computing
+ key insights
+ ˽The output of a social computing system 
+can be viewed as a joint computation between humans and machines,  
+and can be richer than what either  
+can produce alone.
+ ˽Mathematical research has led to innovations in social computing such as crowdsourced democracy, prediction markets, and fair division are all examples of social computing applications.
+ ˽Social computing systems cannot  
+be properly modeled or analyzed  
+without accounting for the behavior  
+of their human components,  
+which requires a dialog between theoretical, experimental, and  
+empirical research and across disciplinary boundaries.
+IMAGE BY TTFNROB/MILKYWAYPROJECT.ORG, COURTESY OF ZOONIVERSEDECEMBER 2016  |  VOL. 59  |  NO. 12  |   COMMUNICATIONS OF THE ACM    103boosting and support vector machines, 
+public-key cryptography including the 
+RSA protocol, widely used data struc-
+tures such as splay trees and tech-niques like locality-sensitive hashing, 
+and more. Well-known examples in 
+economics include the analysis and de-
+sign of matching markets that have en-abled kidney exchanges and have led to 
+significant successes in public school 
+admissions and residence matching 
+for doctors and hospitals, the influ-ence of auction theory on the design 
+of the FCC spectrum auctions, and the 
+design and redesign of the auctions 
+used in online advertising markets.As in other fields, there is great po-
+tential for mathematical work to in-fluence and shape the future of social 
+computing. There is a small literature using mathematical models to analyze 
+and propose design recommendations 
+for social computing systems includ-
+ing crowdsourcing markets,
+7,18,24,25,30,37 A mosaic for the Milky Way Project that was created from data analyzed by citizen scientists at Zooniverse.104     COMMUNICATIONS OF THE ACM   |   DECEMBER 2016  |   VOL. 59  |   NO. 12review articles
+coming the leader for such processes in 
+the U.S.e For example, this platform was 
+recently used to decide how to spend 
+$250,000 of infrastructure funds to im-
+prove Long Beach (CA) Council District 9, and how to allocate $2.4 million of 
+Vallejo’s capital improvement budget. 
+Looking forward, it is an interesting 
+and open research challenge to under-
+stand if these algorithms and systems yield near-optimal aggregations of so-
+cietal preferences, or decisions that are 
+near-optimal in terms of overall soci-etal utility.
+Automated market makers for pre-
+diction markets. A prediction market 
+is a financial market designed to ex-
+tract and aggregate predictions from a crowd. In a typical prediction market, 
+traders buy and sell securities with pay-
+ments that are contingent on the out-come of a future event. For example, a 
+security may yield a payment of $1 if a 
+Democrat wins the 2016 U.S. Presiden-tial election and $0 otherwise. A trader 
+who believes the true probability of 
+a Democrat winning the election is p 
+maximizes his expected utility by pur-
+chasing the security if it is available at a price less than $p and selling the se-
+curity if it is available at a price greater 
+than $p. The market price of this secu-rity is thought to reflect the traders’ col-
+lective belief about the likelihood of a 
+Democrat winning.
+Prediction markets have been shown 
+to produce forecasts at least as accurate as other alternatives in a wide variety of 
+domains, including politics, business, 
+disease surveillance, entertainment, and beyond, and have been widely cited 
+by the press during recent elections. 
+However, markets operated using tra-ditional mechanisms like continuous 
+double auctions (similar to the stock 
+market) often suffer from low liquid-
+ity. Without liquidity, a market faces 
+a chicken-and-egg problem: potential traders are dissuaded from participat-
+ing due to lack of counterparties, which 
+contributes to an even greater reduction in future trading opportunities.
+Low liquidity can also lead to high 
+price volatility and large spreads, both 
+of which cause the market price to yield 
+a less meaningful prediction.
+To combat this problem, Hanson
+23 
+proposed the idea of operating mar-
+e https://pbstanford.org/cambridge/approvalprediction markets,1,2,33 human com-
+putation games,28,39 and user-generated 
+content sites;12,15,17,29 see, for example, 
+Ghosh14 for a survey of one facet of this 
+work. However, we are far from having 
+the systematic and principled under-
+standing of the advantages, limitations, and potentials of social computing re-
+quired to match the impact on applica-
+tions that has occurred in other fields.
+We note that social computing en-
+joys a close relationship with another emerging discipline, which is compu-
+tational social science.
+19,34,a But it is also 
+distinct from that field. While human and social behavior, ability, and perfor-
+mance are central to both, computa-tional social science focuses primarily 
+on the use of modern technology, data, 
+and algorithms to understand and de-
+scribe social interactions in their “natu-
+ral habitats.” In contrast, social comput-ing (as the name suggests) has a much 
+more deliberate focus on engineering 
+systems that are hybrids of humans and machines, which may often entail 
+shaping collective behavior in unfamil-
+iar environments. Nevertheless, we an-
+ticipate a continued close relationship 
+and even blurring of the two efforts. As an example, one should expect the vast 
+theoretical and experimental literature 
+on the diffusion of influence and behav-ior in social networks to be relevant to 
+any effort to design a social computing 
+system that relies on such dynamics to recruit and engage workers.
+In June 2015, we brought together 
+roughly 25 experts
+b in related fields at 
+a CCC-sponsored Visioning Workshop 
+on the Theoretical Foundations of So-
+cial Computingc to discuss the promise 
+and challenges of establishing mathe-
+matical foundations for social comput-
+ing. This document captures several of the key ideas discussed.
+Success Stories
+We begin by describing some examples 
+in which mathematical research has led to innovations in social computing.
+Crowdsourced democracy. You -
+Tube competes with Hollywood as 
+a There are also clear connections to, and influence 
+from, older topics and models in the classical 
+mathematical sociology literature.6
+b Participant list and bios available at http://bit.ly/  
+1Vy9Ck7.
+c http://cra.org/ccc/events/theoretical-founda-
+tions-forsocial-computing/an entertainment channel, and also 
+supplements Hollywood by acting 
+as a distribution mechanism. Twit-
+ter has a similar relationship to news media, and Coursera to universities. 
+But Washington has no such counter-
+part; there are no online alternatives 
+for making democratic decisions at 
+large scale as a society. As opposed to building consensus and compromise, 
+public discussion boards often devolve 
+into flame wars when dealing with con-tentious socio-political issues. This 
+motivates the problem of designing 
+systems in which crowds of hundreds, 
+perhaps millions, of individuals col-
+laborate together to come to consen-sus on difficult societal issues.
+Mathematical research has recent-
+ly led to new systems implementing crowdsourced democracy.
+21 This work 
+builds upon a body of research on so-
+cial choice that examines how to best 
+take the preferences of multiple agents (human or otherwise) and obtain from 
+them a social decision or aggregate so-
+cial preference, typically accomplished 
+through some form of voting.
+d
+Consider situations where a highly 
+structured decision must be made. Some examples are making budgets, 
+assigning water resources, and setting tax rates. Goel et al.
+21 made significant 
+progress towards understanding the 
+“right” mechanisms for such problems. 
+One promising candidate is “Knapsack Voting.” Recall that in the knapsack 
+problem, a subset of items with differ-
+ent values and weights must be placed 
+in a knapsack to maximize the total 
+value without exceeding the knapsack’s capacity. This captures most budgeting 
+processes—the set of chosen budget 
+items must fit under a spending limit, while maximizing societal value. Goel et 
+al.
+21 prove that asking users to compare 
+projects in terms of “value for money” or asking them to choose an entire 
+budget results in provably better prop-erties than using the more traditional 
+approaches of approval or rank-choice 
+voting. Inspired by these mathematical 
+results, Goel et al. designed a participa-
+tory budgeting platform that is fast be-
+d A significant research community concerns 
+itself primarily with computational social 
+choice:4 This area has particular promise for so-
+cial computing because of the problems of scale that are associated with group decision-making 
+online, such as in crowdsourced democracy.DECEMBER 2016  |  VOL. 59  |  NO. 12  |   COMMUNICATIONS OF THE ACM    105review articles
+kets using an automated market maker 
+called a market scoring rule. This mar-
+ket maker is an algorithmic agent that 
+is always willing to buy or sell securities at current market prices that depend 
+on the history of trade. Hanson’s ideas 
+build on the extensive literature on 
+proper scoring rules,
+20 payment rules 
+that elicit honest predictions from agents. Market scoring rules ensure 
+the market maker has bounded risk and that traders are unable to engage 
+in arbitrage. Because of these desirable 
+properties, Hanson’s market scoring 
+rules have become the prediction mar-
+ket implementation of choice used by companies including Consensus Point, 
+Inkling, and Augur, and large-scale 
+academic projects including SciCast (http://scicast.org) and the Good Judg-
+ment Project.
+38
+Recently there has been interest in 
+further tapping into the informational efficiency of prediction markets and 
+using them to obtain accurate predic-tions on more fine-grained events. For 
+example, instead of viewing a Presiden-
+tial election as having two possible out-
+comes (Democrat wins or Republican 
+wins), we could view it as having 2
+50 po-
+tential outcomes, with each outcome 
+specifying a winner in each U.S. state. 
+Traders could then trade securities on events (combinations of outcomes) to 
+profit on their unique knowledge, such 
+as whether or not the same candidate 
+will win in both Ohio and Florida, or 
+whether or not the Republican candi-date will win in at least one of Ohio, 
+Pennsylvania, and Virginia. Such a pre-
+diction market is called a combinato-rial prediction market. Unfortunately, 
+due to the difficulty of keeping prices 
+logically consistent across large out-
+come spaces, running market scoring 
+rules off-the-shelf is computationally intractable for many natural examples 
+of combinatorial markets.
+5
+In search of pricing rules that are 
+tractable and preserve the logical rela-tionships between security payoffs, Ab-
+ernethy, Chen, and Vaughan
+1 proposed 
+a general framework for the design of 
+efficient automated market makers 
+over very large or infinite outcome spac-es. They took an axiomatic approach, 
+defining a set of formal mathematical 
+properties that correspond to economic 
+properties that any reasonable market 
+should satisfy (such as “no arbitrage” and an “information incorporation” 
+property) and fully characterized the set 
+of pricing mechanisms that satisfy these properties. Then, using techniques 
+from convex analysis, they provided a 
+method for designing specific market makers that satisfy these properties. 
+The framework enables formal reason-
+ing of trade-offs between different eco-
+nomic features of these market makers 
+as well as evaluating the computational efficiency of the pricing algorithms.
+This framework is particularly ex-
+citing because it offers a way to think about approximate pricing in combina-
+torial markets when exact pricing is still 
+intractable. Approximate pricing for markets is challenging because approx-
+imation errors may be exploited by trad-
+ers to cause the market maker to incur 
+a large or even infinite loss. The frame-
+work of Abernethy, Chen, and Vaughan
+1 
+characterizes deviations from exact 
+pricing that won’t add additional cost to 
+the market maker. Building upon this understanding, Dudík et al.
+9 further 
+developed a computationally tractable 
+method to run a large-scale prediction 
+market that allows participants to trade almost any contract they can define over 
+an exponentially large outcome space. 
+This method is starting to gain traction 
+in industry where it has been used in the 
+PredictWise election market
+10 and pre-
+vious and upcoming iterations of the 
+Microsoft Prediction Service.f
+Fair division for the masses. Social 
+computing systems can be used to help groups of people make decisions about 
+their day-to-day lives. One particularly innovative example is Spliddit,
+g a web-
+site that provides tools that help groups 
+of people achieve fair allocations. Splid-
+dit currently offers tools to allocate rooms and divide rent payments among 
+roommates, split taxi fares among pas-
+sengers, assign credit in group projects, 
+divide sets of (divisible or indivisible) 
+goods among recipients, or split up tasks among collaborators. It has been 
+featured in the New York Times
+h and had 
+tens of thousands of users as of 2014.22
+Spliddit’s website boasts “indisput-
+able fairness guarantees.” Indeed, each of the division mechanisms employed 
+on the site stems from the body of re-
+f http://nyti.ms/1sL06wt
+g http://www.spliddit.org/
+h http://nyti.ms/1o0TUtORecently there 
+has been interest in further tapping into the information efficiency of prediction markets and using them to obtain accurate predictions of more fine-grained events.106     COMMUNICATIONS OF THE ACM   |   DECEMBER 2016  |   VOL. 59  |   NO. 12review articles
+able fairness properties. As one ex-
+ample, a representative of one of the 
+largest school districts in California 
+approached the Spliddit team about a problem he was tasked with solving: 
+fairly allocating unused classrooms in 
+public schools to the district’s charter 
+schools. This led the Spliddit team, 
+in collaboration with the California school district, to design a practical 
+new approach to classroom allocation 
+that guarantees envy-freeness as well as several other desirable properties.
+32
+A Challenge Problem:  The Crowdsourcing Compiler
+A concrete challenge problem for fu-
+ture research in social computing is what might be called the “Crowdsourc-
+ing Compiler:”
+i the development of 
+high-level programming languages for specifying large-scale, distributed tasks 
+whose solution requires combining tra-ditional computational and network-
+ing resources with volunteer (or paid) 
+human intelligence and contributions. 
+The hypothetical compiler would trans-
+late an abstract program into a more de-tailed organizational plan for machines 
+and people to jointly carry out the de-
+sired task. In the same way that today’s Java programmer is relieved of low-
+level, machine-specific decisions (such 
+as which data to keep in fast registers, 
+and which in main memory or disk), 
+the future crowdsourcing programmer would specify the goals of their system, 
+and leave many of the implementation 
+details to the Crowdsourcing Compiler. Such details might include which com-
+ponents of the task are best carried out 
+by machine and which by human vol-unteers; whether the human volunteers 
+should be incentivized by payment, rec-
+ognition, or entertainment; how their 
+contributions should be combined to 
+solve the overall task; and so on. While a fully general Crowdsourcing Compiler 
+might well be unattainable, significant 
+progress toward it would imply a much deeper scientific understanding of 
+crowdsourcing than we currently have, 
+which in turn should have great engi-
+neering benefits. Noteworthy research 
+efforts which can be viewed as steps on the path to the Crowdsourcing Compiler 
+include Emery Berger’s AutoMan Proj-
+i See http://bit.ly/20juYEX and http://bit.ly/ 
+1nIyc3P.search on (computational) fair divi-
+sion36 and comes with provable math-
+ematical guarantees. For example, the 
+algorithm used for room assignment 
+and rent splitting relies on the fact that there always exists an assignment of 
+rooms and a corresponding set of prices 
+that are envy-free: every roommate pre-
+fers the room he is assigned to any other 
+room given the prices. Each roommate submits her own value for each of the 
+rooms, under the constraint that the to-
+tal value of all rooms matches the total rent for the apartment; viewed another 
+way, each roommate is essentially sub-
+mitting a proposed set of prices for each 
+room such that she would be equally 
+happy obtaining any room at the speci-fied price. The algorithm then maximiz-
+es the minimum utility (value of room 
+minus price) of any roommate subject to the constraint that envy-freeness is 
+satisfied. The solution is also Pareto ef-
+ficient, meaning there is no other allo-cation that would increase the utility of 
+any roommate without decreasing the 
+utility of another.
+As another example, the credit as-
+signment problem is solved using an algorithm of de Clippel et al.
+8 Each col-
+laborator reports the relative portion 
+of credit that he believes should be as-
+signed to each of the other collabora-tors. For example, on a project with four 
+collaborators, collaborator A might re-
+port that collaborators B and C should 
+receive equal credit while D should 
+receive twice as much credit. The algo-rithm takes these reports as input and 
+produces a credit assignment that is 
+impartial, meaning that an individual’s share of credit is independent of his 
+own report, and consensual, meaning 
+that if there is a division of credit that 
+agrees with all collaborators’ reports 
+then this division is chosen. While these conditions may not sound restrictive, 
+de Clippel et al.
+8 show they are not si-
+multaneously achievable with three col-laborators. Their algorithm therefore 
+requires at least four.
+In addition to providing a useful set 
+of tools, part of Spliddit’s mission is to “communicate to the public the beauty 
+and value of theoretical research in 
+computer science, mathematics, and economics, from an unusual perspec-
+tive.” Indeed, the project has inspired 
+some members of the public to take an interest in algorithms with prov-Mathematical 
+and experimental research are complementary and both are needed to develop relevant mathematical foundations for social computing.DECEMBER 2016  |  VOL. 59  |  NO. 12  |   COMMUNICATIONS OF THE ACM    107review articles
+ect (http://emeryberger.com/research/
+automan/),3 as well as both academic 
+and commercial efforts to automate 
+workflow in crowdsourcing and social 
+computing systems (see, for example, http://groups.csail.mit.edu/uid/turkit/ 
+and http://www.crowdflower.com/).
+We note the organizational schemes 
+in most of the successful crowdsourc-
+ing examples to date share much in common. The tasks to be performed 
+(for example, building an online en-
+cyclopedia, labeling images for their content, creating a network of website 
+bookmark labels, finding surveillance 
+balloons) are obviously parallelizable, 
+and furthermore the basic unit of hu-
+man contribution required is extremely small (fix some punctuation, label an 
+image, and so on). Furthermore, there 
+is usually very little coordination re-quired between the contributions. The 
+presence of these commonalities is a 
+source of optimism for the Crowdsourc-ing Compiler—so far, there seems to 
+be some shared structure to success-
+ful crowdsourcing that the compiler 
+might codify. But are such common-
+alities present because they somehow delineate fundamental limitations on 
+successful crowdsourcing—or simply 
+because this is the “low-hanging fruit?”
+Today, the Crowdsourcing Compiler 
+is clearly a “blue sky” proposal meant more to delineate an ambitious re-
+search agenda for social computation 
+than to serve as a guide to short-term steps. But we believe that such an agen-
+da would both need and drive research 
+on theoretical foundations. First steps toward developing the mathematical 
+foundations of a Crowdsourcing Com-
+piler include formally addressing the following questions:
+ ˲For a given set of assumptions 
+about the volunteer force, and given 
+the nature of the task, what is the best 
+scheme for organizing the volunteers and their contributions? For instance, 
+is it a “flat” scheme where all contribu-
+tors are equal and their contributions 
+are combined in some kind of majority 
+vote fashion? Or is it more hierarchical, with proven and expert contributors 
+given higher weight and harder sub-
+problems? Which of these (or other) schemes should be used under what as-
+sumptions on the nature of the task and 
+what assumptions on the volunteers?
+ ˲How can we design crowdsourced systems for solving tasks that are much 
+more challenging and less “transac-
+tional” than what we currently see in the field—for instance, complex prob-
+lems where there are strong constraints 
+and interdependencies between the contributions of different volunteers? 
+Behavioral research in recent years has 
+shown that groups of humans can in-
+deed excel on such tasks,
+31 but we are 
+far from understanding when and why.
+Finally, we note that while the com-
+parison to traditional compilers might 
+be a useful guide and metaphor, a 
+crowdsourcing analogue would have 
+to face a variety of issues that simply 
+do not arise with standard hardware 
+and software. In addition to the afore-mentioned challenges of deciding how 
+to organize and incentivize human 
+contributions, there may also be the potential for malicious or deceptive 
+behavior by workers, and the need for 
+error correction of crowd work (which 
+is currently largely handled by redun-
+dancy and voting techniques).
+Challenges to Overcome
+We have argued that mathematical re-search has the potential to make great 
+contributions to social computing. 
+However, before this potential is fully realized, there are several challenges 
+that must be addressed.
+Blending mathematical and experi-
+mental research. Mathematical and ex-
+perimental research are complemen-tary and both are needed to develop 
+relevant mathematical foundations 
+for social computing. The strengths of mathematical work include:
+1. Mathematical modeling and 
+analysis can be used to cleanly formu-
+late and answer many questions about 
+system behavior without requiring that we build a complete system, providing 
+us with a tool to evaluate the impact 
+of design decisions before commit-ting to any particular design. For ex-
+ample, such models can provide guid-
+ance on how to increase participation (such as, comparing a leaderboard to 
+badges
+16,27), predict whether a social 
+computing system will achieve critical mass, and perhaps understand how 
+the behavior of groups of users change as the system scales.
+2. Mathematical guarantees are de-
+sirable for properties like user privacy 
+(that can be obtained, for example, us-ing techniques from the extensive and 
+growing literature on differential priva-
+cy
+11), correctness of a system’s output, 
+or the scalability of a social computing system.
+3. Theoretical work in computer sci-
+ence provides tools for designing and analyzing new algorithms that could 
+lie at the heart of social computing ap-
+plications, answering questions like 
+how to aggregate noisy and unstruc-tured estimates or information from 
+crowds,
+25,30 how to optimally divide a 
+community into subgroups, or how to bring people together in moments of 
+spare time to achieve a common goal.
+4. Mathematical models can be 
+used to explore counterfactual analy-sis, something that is notoriously dif-
+ficult to do through experiments alone.
+Needless to say, mathematical mod-
+eling should not and cannot replace experimental work. A mathematical 
+theory can only be truly tested through experiments, and discrepancies be-
+tween the theory and experimental re-
+sults provide guidance about how to 
+revise the theory. For example, the abil-
+ity of mathematical models to make valuable predictions about system be-
+havior depends on an accurate model 
+of system users, which is generally best developed through experimental work.
+Learning from the social sciences. 
+Computer scientists cannot develop the mathematical foundations of social 
+computing in isolation. Social comput-
+ing systems are fundamentally social. 
+These systems cannot be properly mod-
+eled or analyzed without accounting for the behavior of their human com-
+ponents. Much of the literature thus 
+far uses standard models of economic agents and corresponding assumptions 
+about agent preferences, but a growing 
+literature based on experimental work 
+on online platforms suggests that hu-
+man behavior in several online settings might deviate from these models,
+26,35,40 
+and these deviations can have signifi-
+cant consequences for how to optimally 
+design social computing systems.13,26
+In order for mathematical founda-
+tions to provide useful practical results, 
+it is necessary to base it on models that 
+better reflect human behavior. This is most effectively achieved via a dialog be-
+tween theoretical and experimental and 
+empirical research, with studies of hu-
+man behavior informing mathematical108     COMMUNICATIONS OF THE ACM   |   DECEMBER 2016  |   VOL. 59  |   NO. 12review articles
+International World Wide Web Conference, 2011.
+18. Ghosh, A. and McAfee, P. Crowdsourcing with endogenous 
+entry. In Proceedings of the 21st International World Wide 
+Web Conference, 2012.
+19. Giles, J. Computational social science: Making the links. 
+Nature 488, 7412 (2012).
+20. Gneiting, T. and Raftery, A.E. Strictly proper scoring rules, prediction, and estimation. J. American Statistical Association 102, 477 (2007), 359–378.
+21. Goel, A., Krishnaswamy, A., Sakshuwong, S. and Aitamurto, T. Knapsack voting. Collective Intelligence, 
+2015.
+22. Goldman, J. and Procaccia, A.D. Spliddit: Unleashing fair division algorithms. SIGecom Exchanges 13, 2 (2014), 
+41–46.
+23. Hanson, R. Combinatorial information market design. 
+Information Systems Frontiers 1 (2003), 105–119.
+24. Ho, C.-J. and Vaughan, J.W. Online task assignment in crowdsourcing markets. In Proceedings of the 26
+th AAAI 
+Conference on Artificial Intelligence, 2012.
+25. Ho, C.-J., Jabbari, S. and Vaughan, J.W. Adaptive task assignment for crowdsourced classification. In 
+Proceedings of the 26
+th International Conference on  
+Machine Learning, 2013.
+26. Ho, C.-J., Slivkins, A., Suri, S. and Vaughan, J.W. 
+Incentivizing high quality crowdwork. In Proceedings of 
+the 24th International World Wide Web Conference, 2015.
+27. Immorlica, N., Stoddard, G. and Syrgkanis, V. Social status and badge design. In Proceedings of the 24
+th 
+International World Wide Web Conference, 2015.
+28. Jain, S. and Parkes, D.C. A game-theoretic analysis of the ESP Game. ACM Trans. Economics and Computation 1, 1 
+(2013), 3:1–3:35.
+29. Jain, S., Chen, Y. and Parkes, D.C. Designing incentives 
+for online question-and-answer forums. Games and 
+Economic Behavior 86 (2014), 458–474.
+30. Karger, D., Oh, S. and Shah, D. Iterative learning for reliable crowdsourcing systems. Advances in Neural Information Processing Systems, 2011.
+31. Kearns, M. Experiments in social computation. Commun. 
+ACM 55, 10 (Oct. 2012).
+32. Kurokawa, D., Procaccia, A.D. and Shah, N. Leximin 
+allocations in the real world. In Proceedings of the 16
+th 
+ACM Conference on Economics and Computation, 2015.
+33. Lambert, N.S., Langford, J., Vaughan, J.W., Chen, Y., 
+Reeves, D., Shoham, Y. and Pennock, D.M. An axiomatic 
+characterization of wagering mechanisms. J. Economic 
+Theory 156 (2015), 389–416.
+34. Lazer, D. et al. Computational social science. Science 323, 
+5915 (2009), 721–723.
+35. Mason, W. and Watts, D. Financial incentives and the 
+“performance of crowds.” In Proceedings of the First 
+Human Computation Workshop, 2009.
+36. Procaccia, A.D. Cake cutting: Not just child’s play. Commun. ACM 56, 7 (July 2013), 78–87.
+37. Slivkins, A. and Vaughan, J.W. Online decision making in 
+crowdsourcing markets: Theoretical challenges. ACM 
+SIGecom Exchanges 12, 2 (2013).
+38. Ungar, L., Mellors, B., Satopää, V., Baron, J., Tetlock, P., Ramos, J. and Swift, S. The good judgment project: A 
+large-scale test of different methods of combining expert predictions. AAAI Technical Report FS-12-06, 2012.
+39. Waggoner, B. and Chen, Y. Output agreement mechanisms and common knowledge. In Proceedings of the 2
+nd AAAI Conference on Human Computation and 
+Crowdsourcing, 2014.
+40. Yin, M., Chen, Y. and Sun, Y.-A. The effects of performance-contingent financial incentives in online labor markets. In Proceedings of the 27
+th AAAI 
+Conference on Artificial Intelligence, 2013.
+Yiling Chen (yiling@seas.harvard.edu) is Gordon McKay 
+Professor of Computer Science at Harvard University, 
+Cambridge, MA.
+Arpita Ghosh (arpitaghosh@cornell.edu) is an associate 
+professor of information science at Cornell University, 
+Ithaca, NY.
+Michael Kearns (mkearns@cis.upenn.edu) is a professor and 
+National Center Chair of Computer and Information Science 
+at the University of Pennsylvania, Philadelphia, PA.
+Tim Roughgarden (tim@cs.stanford.edu) is an associate 
+professor of CS at Stanford University, Stanford, CA.
+Jennifer Wortman Vaughan (jenn@microsoft.com) is a 
+senior researcher at Microsoft Research, New York, NY.
+Copyright held by owners/authors.  
+Publication rights licensed to ACM. $15.00.modeling choices, as well as mathemat-
+ical results suggesting the most impor-
+tant agent characteristics to understand 
+via experimental research. It will be important to understand and incorpo-
+rate relevant research from psychology, 
+economics, sociology, and other fields. 
+For example, behavioral economics and 
+psychology provide insight into how hu-mans respond to incentives.
+Generalization. Most of the existing 
+mathematical work on social comput-ing focuses on a single application. 
+What does the research on prediction 
+market design tell us about recom-
+mendation systems or citizen science? 
+Models will have the most potential for impact if they incorporate reus-
+able components, allowing results to 
+generalize to many systems. (This is one motivation for the Crowdsourcing 
+Compiler discussed earlier.)
+A related issue is the lack of con-
+sensus and understanding of the “core social computing problems,” or even 
+if such a set of core problems exists. 
+Mathematical theories are typically 
+developed with one or more such core problems in mind.
+Such problems should capture chal-
+lenges that span a wide range of appli-cations and be robust to small changes 
+in the applications to be sure that they 
+are capturing something “real.” Clear-
+ly, the identification of such problems 
+requires a dialog between practitioners building real systems and theoreticians 
+to identify the most pressing problems 
+requiring mathematical study.
+Transparency, interpretability, and 
+ethical implications. One final chal-lenge to overcome is the potential need to make social computing algorithms 
+and models transparent and interpre-
+table to the users of social computing 
+systems. Users are becoming increas-
+ingly sophisticated and are aware the algorithms employed online impact 
+both their day-to-day user experience 
+and their privacy. When faced with the output of an algorithm, many will ques-
+tion where this output came from and 
+why. It is already difficult to explain to 
+users why complex probabilistic al-
+gorithms and models produce the re-sults they do, and this will only become 
+more difficult as algorithms integrate 
+human behavior to a larger extent.
+The issue of algorithmic transpar-
+ency is often tied to ethical concerns such as discrimination and fairness. Examining and avoiding the unintend-
+ed consequences of opaque decisions 
+made by algorithms is a topic that has been gaining interest in the machine 
+learning and big data communities.
+j 
+Such concerns will undoubtedly need to be addressed in the context of social 
+computing as well.
+Acknowledgments. We thank the 
+participants of the Visioning Work-shop on Theoretical Foundations for 
+Social Computing for their contri-
+butions. We also thank Ashish Goel, Vince Conitzer, David McDonald, Da-
+vid Parkes, and Ariel Procaccia for their 
+feedback. 
+j For example, see the series of recent workshops 
+on Fairness, Accountability, and Transparency in Machine Learning (http://www.fatml.org/).
+References
+1. Abernethy, J., Chen, Y. and Vaughan, J.W. Efficient market 
+making via convex optimization, and a connection to 
+online learning. ACM Trans. Economics and Computation 
+1, 2 (2013), Article 12.
+2. Abernethy, J., Frongillo, R., Li, X. and Vaughan, J.W. 
+A general volume-parameterized market-making 
+framework. In Proceedings of the 15th ACM Conference 
+on Economics and Computation, 2014.
+3. Barowy, D., Curtsinger, C., Berger, E.D. and McGregor, 
+A. Automan: A platform for integrating human-based 
+and digital computation. In Proceedings of the Object-
+Oriented Programming, Systems, Languages, and Applications, 2012.
+4. Brandt, F., Conitzer, V., Endriss, U., Lang, J. and Procaccia, J.D., Eds. Handbook of Computational Social Choice.  
+Cambridge University Press. Forthcoming.
+5. Chen, Y., Fortnow, L., Lambert, N., Pennock, D. and Wortman, J. Complexity of combinatorial market makers. 
+In Proceedings of the 9
+th ACM Conference on Electronic 
+Commerce, 2008.
+6. Coleman, J. Introduction to Mathematical Sociology. Free 
+Press of Glencoe, 1964.
+7. Dasgupta, A. and Ghosh, A. Crowdsourced judgement elicitation with endogenous proficiency. In Proceedings of the 22
+nd International World Wide Web Conference, 2013.
+8. de Clippel, G., Moulin, H. and Tideman, N. Impartial division 
+of a dollar. J. Economic Theory 139, 1 (2008), 176–191.
+9. Dudík, M., Lahaie, S. and Pennock, D.M. A tractable combinatorial market maker using constraint generation. 
+In Proceedings of the 13
+th ACM Conference on Electronic 
+Commerce, 2012.
+10. Dudík, M., Lahaie, S. and Pennock, D.M and Rothschild, D. A combinatorial prediction market for the U.S. elections. 
+In Proceedings of the 14
+th ACM Conference on Electronic 
+Commerce, 2013.
+11. Dwork, C. and Roth, A. The algorithmic foundations of 
+differential privacy. Foundations and Trends in Theoretical 
+Computer Science 9, 34 (2014), 211–407.
+12. Easley, D. and Ghosh, A. Incentives, gamification, and 
+game theory: An economic approach to badge design. In 
+Proceedings of the 14th ACM Conference on Electronic 
+Commerce, 2013.
+13. Easley, D. and Ghosh, A. Behavioral mechanism design: 
+Optimal crowdsourcing contracts and prospect theory. 
+In Proceedings of the 16th ACM Conference on Economics 
+and Computation, 2015.
+14. Ghosh, A. Game theory and incentives in human 
+computation. Handbook of Human Computation. P. 
+Michelucci, ed. Springer, 2014.
+15. Ghosh, A. and Hummel, P. A game-theoretic analysis of rank-order mechanisms for user-generated content. In 
+Proceedings of the 12
+th ACM Conference on Electronic 
+Commerce, 2011.
+16. Ghosh, A. and Kleinberg, R. Behavioral mechanism design: 
+Optimal contests for simple agents. In Proceedings of the 
+15th ACM Conference on Economics and Computation, 2014.
+17. Ghosh, A. and McAfee, P. Incentivizing high-quality user generated content. In Proceedings of the 20
+th

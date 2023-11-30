@@ -1,0 +1,851 @@
+Efﬁcient Keyword Search on Large
+Tree Structured Datasets
+Aggeliki Dimitriou
+School of Electrical and Computer Engineering
+National Technical University of Athens, Greece
+angela@dblab.ntua.grDimitri Theodoratos
+Department of Computer Science
+New Jersey Institute of Technology, USA
+dth@cs.njit.edu
+ABSTRACT
+Keyword search is the most popular paradigm for querying
+XML data on the web. In this context, three challengingproblemsare(a)toavoidmissingusefulresultsintheanswerset, (b) to rank the results with respect to some relevancecriterion and (c) to design algorithms that can eﬃciently
+compute the results on large datasets.
+In this paper, we present a novel multi-stack based algo-
+rithm that returns as an answer to a keyword query all the
+results ranked on their size. Our algorithm exploits a lattice
+of stacks each corresponding to a partition of the keywordset of the query. This feature empowers a linear time per-formance on the size of the input data for a given numberof query keywords. As a result, our algorithm can run ef-
+ﬁciently on large input data for several keywords. We also
+present a variation of our algorithm which accounts for in-frequent keywords in the query and show that it can sig-niﬁcantly improve the execution time. An extensive exper-
+imental evaluation of our approach conﬁrms the theoretical
+analysis, and shows that it scales smoothly when the size ofthe input data and the number of input keywords increases.
+Categories and Subject Descriptors
+H.3.3 [ Information Search and Retrieval ]: Search pro-
+cess; H.3.4 [ Systems and Software ]: Performance evalua-
+tion (eﬃciency and eﬀectiveness)
+General Terms
+Algorithms, Design, Performance
+Keywords
+keyword search, XML, tree-structured data, LCA, searchalgorithm, ranking
+1. INTRODUCTION
+In the era of social media and the web the amount of datathatispublishedandexchangedbetweenvariousdatasources
+Permission to make digital or hard copies of all or part of this work for
+personal or classroo muse is granted without fee provided that copies are
+notmade or distributed for proﬁt or commercial advantage and that copies
+bear this notice and the full citation on the ﬁrst page. To copy otherwise, to
+republish, to post on servers or to redistribute to lists, requires prior speciﬁcpermission and/or a fee.
+KEYS’12, May 20, 2012, Scottsdale, AZ, USA.
+Copyright 2012 ACM 978-1-4503-1198-4/12/06 ...$10.00.grows fast. In this context, tree-structured data in XML
+or JSON [7] have become the predominant formats for ex-
+porting and exchanging data. The reason for this successis twofold: (a) the user does not have to master a com-plex structured query language like XQuery in order to re-trieve data, and (b) keyword queries can be issued against
+data sources without full or even partial knowledge of the
+structure of the source. They can even be issued againstdata sources with evolving schemas or against multiple datasources with diﬀerent structures as is usually needed on the
+web.
+The price to pay for this ﬂexibility of keyword search in
+query formulation is imprecision in the query answers: usu-ally a plethora of candidate solutions are identiﬁed but only
+few of them are useful to the user. The aim of the sev-
+eral approaches assigning semantics to keyword queries isto identify and return to the user all of the candidate solu-tions that are relevant (perfect recall) and no irrelevant ones
+(perfect precision).
+In contrast to the Information Retrieval (IR) perspective
+to keyword search where the candidate solutions are wholedocuments containing instances of all the keywords, in the
+context of XML, the documents have a tree structure. The
+candidate solutions of a query are deﬁned usually as themost speciﬁc subtrees (minimum connected trees) of the in-put XML tree document that contain an instance of all the
+keywords. These subtrees are appropriate as candidate solu-
+tions since they relate the corresponding keyword instancesas closely as possible. The root of these subtrees is the LCAofthesubtreekeywordinstancesandisoftenusedtoidentifythe candidate solutions [18].
+Diﬀerentapproachesthatassignsemanticstokeywordqueries
+on XML data deﬁne a subset of the LCAs as an answer tothe query by exploiting the structural properties of the XML
+trees [8, 26, 17, 27]. We refer to these approaches as ﬁlter-
+ingapproaches as they ﬁlter out part of the LCAs that they
+consider irrelevant. Some ﬁltering approaches, take also into
+account semantic information (node labels and label pathsin the XML tree) in order to ﬁlter out irrelevant LCAs [14,
+6, 12, 10, 15, 24]. Although, ﬁltering approaches are in-
+tuitively reasonable, they are suﬃciently ad-hoc and theyare frequently violated in practice resulting in low precisionand/or recall [23].
+Ranking the results instead of ﬁltering improves the sys-
+63tem’s usability. Several semantics assigning approaches sug-
+gest ranking techniques for keyword queries on XML datathat place on top those LCAs that are believed to be more
+relevant to the user’s intent [8, 6, 2, 13, 5, 23]. We re-
+fer to these approaches as rankingapproaches. In order to
+rank the results they often exploit also value-based statisticstechniques from IR (e.g., PageRank [3] or tf∗idf) adapted
+to the tree structure nature of XML. Ranking approaches,when combined with ﬁltering approaches (that is, when theyrank ﬁltered LCAs) inherit the low recall of the ﬁltering ap-proaches.
+Several algorithms have been proposed for computing key-
+word query answers according to ﬁltering and ranking se-mantics [8, 9, 26, 27, 21, 16, 5]. A major challenge for allthese algorithms is to achieve eﬃciency when the number ofkeywords and the number of instances in the XML dataset
+grows.
+Contribution. In this paper we present an eﬃcient algo-
+rithm for computing keyword queries with many keywords
+on large, deep and complex tree-structured datasets. Ouralgorithm does not exclude any LCA but returns all of themranked on their size. The main contributions of our paper
+are the following:
+•We introduce the notion of LCA size and we use it as arelevance criterion for the results of a keyword query
+•We design an eﬃcient multi-stack based algorithm which
+computes all LCAs of a keyword query on a data tree andranks them based on their size. Our algorithm exploits
+the diﬀerent partitions of the query keywords that to-
+gether are organized into a lattice of multicolumn stacks.
+•Weanalyzeouralgorithmandshowthat, foragivennum-
+ber of query keywords its performance is linear on the size
+of the input keyword inverted lists. This behavior con-trasts with that of previous algorithms that compute allLCAs, whose complexity depends on the product of thesize of the input inverted lists.
+•We consider the case where some keywords have a smallnumberofinstancesinthedataset(rarekeywords)andwedeveloped a variation of our algorithm which runs much
+faster than the basic algorithm (in some cases by orders
+of magnitude).
+•We experimentally evaluate our algorithm on large realand benchmark datasets. Our experiments conﬁrm thetheoretical analysis of the algorithm and show that it out-performs previous algorithms and scales smoothly whenthe size of the input inverted lists and the number of key-words increases.
+Since our algorithm does not restrict the number of LCAsit returns, it shows perfect recall. However, our intensionis not to introduce new keyword query semantics; our algo-rithm can be the basis for implementing other approaches
+that combine LCA sizes with other metrics including rank-
+ing schemes that exploit value-based statistics.
+Outline. In the next section we present related contribu-
+tions. Section 3 introduces the theoretical framework of our
+work. In Section 4, we describe our main algorithm, LCAsz,
+and provide its complexity analysis. Section 5 elaborates ona variation of our algorithm for answering queries with rarekeywords. In Section 6 we experimentally analyze our algo-rithm, and we conclude in Section 7 suggesting also futureresearch directions.
+2. RELATED WORK
+A number of approaches for assigning semantics to keywordqueries on XML trees identify candidate keyword query an-swers among lowest common ancestors (LCAs) of nodes con-taining query keywords [20]. Some of them rely purely on
+hierarchical criteria, disregarding semantic information inthe XML tree (node labels or label paths). According to the
+smallest LCAsemantics(SLCAs)[26, 17, 17]thevalidLCAs
+do not contain other descendant LCAs of the same keywordset. Relaxing this semantics, exclusive LCAs (ELCAs) were
+introduced in [8] and later formally in [27]. ELCAs qual-ify as relevant LCAs also those that are ancestors of otherLCAs, as long as they refer to a diﬀerent set of keyword in-stances. The semantic approaches valuable LCAs (VLCAs)
+[6, 12] and meaningful LCAs [14] (MLCAs) attempt to cap-
+ture the user intent by exploiting the labels that appear inthe paths of the subtree rooted at an LCA. However, allthese semantics are restrictive and demonstrate low recallrates as shown in [23].
+Conference1
+publications1.1
+paper1.1.1
+title1.1.1.1
+XMLauthor1.1.1.2
+John
+Smithcitations1.1.1.3
+paper1.1.1.3.1
+title1.1.1.3.1.1
+XMLauthor1.1.1.3.1.2
+John
+Brownpaper1.1.1.3.2
+title1.1.1.3.2.1
+RDFauthor1.1.1.3.2.2
+John
+Smithpaper1.1.2
+title1.1.2.1
+XMLauthor1.1.2.2
+MarySmith
+Figure 1: Example data tree
+Noneoftheprevioussemanticsinherentlysupportsanyrank-ing capability for presenting relevant qualiﬁed results. In or-der to ﬁll this lack, statistical measures are exploited some-
+times in combination with the aforementioned semantics.
+An adaptation of standard IR (information retrieval) styletf∗idfmeasures for ranking keyword search results on ﬂat
+text documents is very often used [6, 13]. In the context oftree structures, these measures are adapted to refer to a sub-
+tree instead of a whole document and the statistics are com-
+puted based on keyword frequencies and number of nodes.Some of the approaches take into account in their statisticsalso the proximity of keywords in the results. The proxim-
+ity is deﬁned either among pairs of keyword instances [6, 22]
+or as an overall weighted factor obtained from the scores ofindividual keyword instances [8, 1, 2].
+The algorithms proposed for computing LCAs as a keyword
+64citations1.1.1.3
+paper1.1.1.3.1
+title1.1.1.3.1.1
+XMLauthor1.1.1.3.1.2
+John
+Brown
+(a) XML Browncitations1.1.1.3
+paper1.1.1.3.2
+title1.1.1.3.2.1
+RDFauthor1.1.1.3.2.2
+John
+Smith
+(b) RDF Smithcitations1.1.1.3
+paper1.1.1.3.1
+title1.1.1.3.1.1
+XMLpaper1.1.1.3.2
+title1.1.1.3.2.1
+RDF
+(c) XML RDFcitations1.1.1.3
+paper1.1.1.3.1
+author1.1.1.3.1.2
+JohnBrownpaper1.1.1.3.2
+author1.1.1.3.2.2
+John
+Smith
+(d) Brown Smith
+Figure 2: Partial LCA subtrees under LCA 1.1.1.3 of query {XML,Brown,RDF,Smith}
+query answer depend on the LCA semantics and ranking
+method used. They are designed to take advantage of the
+adoptedLCAsemanticsbypruningirrelevantLCAsearlyon
+in the computation. In [8] a stack based algorithm that pro-cesses inverted lists of query keywords and returns rankedELCAs is presented. The ranking is performed based on
+precomputed tree node scores according to an adaptation ofPageRank [3] and of textual keyword proximity in the sub-
+tree of the ranked ELCA. In [26], two eﬃcient algorithms forcomputing SLCAs exploiting special structural properties ofSLCAs are introduced. In addition, the authors suggest an
+extensionoftheirbasicalgorithm, sothatitreturnsallLCAs
+by augmenting the set of already computed SLCAs. How-ever, this approach does not compute LCA subtree sizes aswe do in this paper. They experimentally study their algo-
+rithms for SLCAs on 2-5 keyword queries. In [21] anotheralgorithm for eﬃciently computing SLCAs for both AND
+and OR keyword query semantics is developed. ELCA com-putation which is more eﬃcient than that in [8] is achievedby the indexed stack algorithm designed in [27]. Finally, [1,
+2, 23] elaborate on sophisticated ranking of candidate LCAs
+aiming primarily on eﬀective keyword query answering.
+The approach in [9] is the most relevant to our work. This
+approach returns all minimum connected trees (MCTs) of a
+keyword query whose size is smaller than a given threshold.The main algorithm of this work, SA, aims at grouping to-gether isomorphic MCTs. We experimentally compare ouralgorithm with algorithm SAOne which is a variation of SA
+also introduced in [9] and returns all LCAs.
+3. FRAMEWORK AND DEFINITIONS
+We model XML data, as usual, as ordered labeled trees.
+Tree nodes represent XML elements or attributes. Every
+node has an id, a label (corresponding to an element tag
+or attribute name) and possibly a value (corresponding tothe text content of an element or to an attribute’s value).For identifying tree nodes we adopt the Dewey encodingscheme [4], which encodes tree nodes according to a pre-
+order traversal of the XML tree. The Dewey encoding ex-
+presses naturally ancestor-descendant relationships amongtreenodesandconvenientlysupportstheprocessingofnodesin stacks [8].
+Akeyword query Qis a set of keywords: Q={k
+1,...,k n}.
+Ak e y w o r dk m a ya p p e a ri nt h el a b e lo ri nt h ev a l u eo fa
+nodenin the XML tree, in which case we say that node
+nconstitutes a keyword instance ofk, or more simply aninstance ofk. Since a node may contain multiple distinct
+keywords in its value and label, it may be an instance of
+multiple keywords.
+Theminimum connected tree ,TS,o fas e t Sof nodes in an
+XML tree Tis the minimum subtree TSofTthat contains
+all nodes in S. The root of TSis thelowest common ancestor
+(LCA) of the nodes in S, denoted lca(S). ThesizeofTS
+i st h en u m b e ro fi t se d g e s . L e tI be a set of instances of
+keywords in Q.I fIcontains one instance for every keyword
+inQ,w ec a l l Iaquery instance forQ. The LCA of an
+instance of Qis also called LCA of Q. An LCA of a proper
+subset of Qis apartial LCA of Q.
+We rank LCAs based on their sizew h i c hi sd e ﬁ n e dn e x t .
+LetIandI/primebe two diﬀerent but not necessarily disjoint
+instances of Qin an XML tree T. Clearly, their minimum
+connected trees TIandTI/primemay be rooted at the same LCA
+l.
+Definition 1.Given an XML tree, the size ofan LCA
+lof a query Qis the size of the smallest minimum connected
+tree of the instances of Qrooted at l.
+For example, in the XML tree of Figure 1, the size of LCA
+1.1.1.3 of query Q={XML,John,Smith} is 4 since there
+are exactly two minimum connected trees of instances ofQrooted at 1.1.1.3 (one containing the instance 1.1.1.3.1.2
+ofJohnand the other containing the instance 1.1.1.3.2.2 of
+John) and their sizes are 5 and 4.
+Asolution of a query Qover an XML tree Tis a pair ( l,s)
+of an LCA lofQand its size s. For example, the pair
+(1.1.1.3, 4) is a solution of Q={XML,John,Smith} over the
+XML tree of Figure 1. The answerAofQoverTis the
+list of all the solutions of QoverTranked on their size:
+A=[ (l
+1,s1),(l2,s2),...],s i≤sj,i<j.I ft w os o l u t i o n s
+have the same size, their relative order in the answer is in-
+diﬀerent. The ranking of the LCAs on their sizes is basedon the intuition that the quality of an LCA depends on howclose it brings a set of keyword instances.
+Next, we make some remarks on LCAs and minimum con-
+nected trees that are used in our algorithms.
+65XAJS coarseness level 4XAJ S XAS J XA JS X JAS XJ AS XJS A XS JA coarseness level 3XA J S X JA S X J SA A XJ S A J XS X A JS coarseness level 2X A J S coarseness level 1
+Figure 3: Lattice of the partitions of query {XML, Author, John, Smith}
+Remark 1.LetIbe an instance of a query Q, l=lca(I)
+andI1,...,I nbe subsets of Isuch that/uniontextn
+1Ii=I.L e ta l s o
+pi=lca(Ii),i=1..n, be partial LCAs of Q.T h e n , l=
+lca({p1,...,p n}).
+Two trees TandT/primeare called disjoint if they do not share
+any edges.
+Remark 2.Two trees TandT/prime,r o o t e da tt h es a m en o d e
+r, are disjoint iﬀ Er∩E/prime
+r=∅,w h e r eEr(resp.E/prime
+r)i st h e
+set of incident edges of rinT(resp.T/prime).
+Remark 3.LetTbe a tree rooted at randT1,...,T nbe
+disjoint subtrees of Talso rooted at r, which together contain
+all edges of T. Then, size(T)=/summationtextn1size(Ti).
+The minimum connected tree of a set of keyword instances
+rooted at a partial LCA pof a query instance I, extended
+with the path connecting pwith an ancestor n, deﬁnes a
+partial LCA subtree ofIrooted at node n. As a consequence
+of Remark 3, the size of an LCA lcan be calculated based
+on the sizes of partial LCA subtrees rooted at l.
+Consider the query Q={XML, Brown, RDF, Smith}and the
+LCA 1.1.1.3 of its instance I={1.1.1.3.1.1, 1.1.1.3.1.2,
+1.1.1.3.2.1, 1.1.1.3.2.2 }in Figure 1. Figure 2 shows four
+partial LCA subtrees of Irooted at 1.1.1.3, where shaded
+nodes denote partial LCAs. Based on Remark 1, 1.1.1.3
+=l c a ({1.1.1.3.1, 1.1.1.3.2 })=l c a ( {1.1.1.3, 1.1.1.3 }). Even
+though both combinations of partial LCAs produce LCA
+1.1.1.3, subtrees (c) and (d) cannot be used to compute thesize of this LCA, because they are not disjoint. Subtrees(a) and (b), though, are disjoint according to Remark 2 and
+therefore the sum of their sizes provides the correct size for
+LCA 1.1.1.3, which is 6 (Remark 3).4. COMPUTING LCAS AND THEIR SIZES
+In this section, we present and analyze algorithm LCAsz,
+which computes for a given keyword query the LCAs andtheir sizes in an XML tree.
+4.1 Algorithm LCAsz
+LCAsz is a stack based algorithm that returns all LCAs insize order. The input of the algorithm is the set of the in-verted lists of all keywords of an XML tree Tand a keyword
+queryQ. The output is the answer A=[ (l
+1,s1),(l2,s2),..]
+ofQonT.
+Based on a straightforward interpretation of Deﬁnition 1,the calculation of the size of an LCA implies the compu-
+tation of all minimum connected trees rooted at this LCA
+along with their sizes. Algorithm LCAsz, however, avoidsexhaustively examining all minimum connected trees of eachLCA. In order to do so, it combines keyword instances into
+partial and full LCAs, which are progressively compared re-
+sulting into one winning partial or full LCA with minimumsize for every node and every keyword subset of the keywordquery. LCAsz performs this operation bottom-up combin-ing step by step partial LCAs of instances of a subset Sof
+the query keywords, located lower in the XML tree, intoLCAs of instances of a superset of Sl o c a t e dh i g h e ri nt h e
+tree. Partial LCAs are propagated upwards to their ances-tors. For simplicity, in the rest of the paper, the size of a
+partial LCA lat a node nunder consideration refers to the
+size of the partial LCA subtree of lrooted at n. In this
+sense, during the propagation, the size of a partial LCA is
+incremented to reﬂect the number of upward steps from therelevant partial LCA. At every node in this path, the par-
+tial LCA size is compared against the size of any comparable
+partial LCAs (i.e., LCAs that refer to the same set of key-words) and only the minimum size for every partial LCA isrecorded. This way, only one size is kept for every collec-
+tion of comparable partial LCAs computed that far in the
+subtree of this node. For example, in Figure 1, there are 6diﬀerent partial LCA subtrees rooted at node 1.1.1 for thekeyword set {John,Smith} having 5 diﬀerent sizes. Only the
+minimum size 1 corresponding to partial LCA 1.1.1.2 wins
+66Algorithm 1: LCAsz
+1L C A s z (k1,...,k n: keyword query, invL:i n v e r t e dl i s t s )
+2kwSubsets = {{k 1},{k 2}...{kn}}
+3 while currentNode = getNextNodeFromInvertedLists() do
+4 coarsenessLevel = 1, size=0, provenance=∅
+5 pLCA = newPartialLCA(currentNode.ID, currentNode.kwSubset, size, provenance)
+6 addPartialLCA(1, pLCA)
+7 while partialLCAlists contains partialLCAs for coarsenessLevel do
+8i fnumber of stacks <max number of stacks at this coarsenessLevel then
+9 break
+10 whilepartialLCA = partialLCAlists(coarsenessLevel).next() do
+11 forevery stack of coarsenessLevel containing partialLCA.kwSubset do
+12 push(stack, partialLCA.ID, partialLCA.kwSubset, partialLCA.size)
+13 ifcoarsenessLevel <nthen
+14 addPartialLCA(coarsenessLevel+1, partialLCA)
+15 coarsenessLevel++
+16emptyStacks()
+17 addPartialLCA (coarsenessLevel, partialLCA)
+18 if (partialLCA.ID, partialLCA.kwSubset) not inpartialLCAlists(coarsenessLevel) then
+19 insert partialLCA into partialLCAlists(cL)
+20 else if current (partialLCA.ID, partialLCA.kwSubset) entry size <partialLCA.size then
+21 replace with partialLCA
+22 push (stack, nodeID, kwSubset, size)
+23 while stack.dewey not ancestor of nodeID do
+24 pop(stack)
+25 while stack.dewey /negationslash=nodeID do
+26 addEmptyRow(stack) /* updating stack.dewey until it is equal to nodeID */
+27replaceSizeIfSmallerWith(stack.topRow, kwSubsetColumn, size)
+28 emptyStacks()
+29 foreach coarsenessLevel do
+30 if partialLCAlists(coarsenessLevel) is not empty then
+31 whilepartialLCA = partialLCAlists(coarsenessLevel).next() do
+32 forevery stack of coarsenessLevel containing partialLCA.kwSubset do
+33 push(stack, partialLCA.ID, partialLCA.kwSubset, partialLCA.size)
+34 foreach stack of coarsenessLevel do
+35 repeat
+36 pop(stack)
+37 untiltop entry contains only propagated or empty elements and the other entries are empty ;
+and is propagated upwards to the ancestors of 1.1.1.
+In this framework, the problem of ﬁnding all LCAs with
+their sizes translates into examining all possible arrange-ments of keywords under a candidate LCA and discarding
+among them those with larger LCA sizes. The goal is to
+avoid a partial LCA size computation as low in the XMLtree as possible based on the sizes of its descendant partialLCAs. This way the number of minimum connected trees of
+keyword instances, that need to be computed, decreases.
+A lattice of keyword partitions. The possible arrange-
+ments of a keyword set reﬂects the partitions of the set.
+We can deﬁne a reﬁnement relation ≤on the partitions
+of a set: P
+1≤P2iﬀ for every set s1∈P1there is a set
+s2∈P2such that s1⊆s2.I fP1≤P2,P1is said to beﬁnerthanP2andP2coarser thanP1.I t i s w e l l k n o w n
+that this relation is a partial order and the set of partitionsequipped with this partial order forms a lattice. Figure 3shows the Hasse diagram of the lattice of the keyword set{XML, Author, John, Smith}. At every coarseness level all
+partitions have the same number of elements. Every par-tition in one level can be produced by taking the union oftwo elements of a partition of the previous level. A partitionin one level may be produced by diﬀerent partitions of the
+previous level. In our context, a partition represents a full
+LCA and its elements correspond to partial LCAs. Algo-rithm LCAsz maintains a separate stack for each partition.The unique stack at coarseness level 1, is the initial stackthat contains singletons for all keywords. The last coarse-
+ness level always contains one stack, too. This ﬁnal stack
+holds full LCAs, i.e., query solutions. Every path from the
+67Procedure pop
+1p o p(stack)
+2cols = stack.columns
+/* number of kwSubsets in the partition of the stack */
+3popped = stack.pop()
+4i f cols = 1 then
+5 addResult(stack.dewey,popped[0].size)
+/* Produce new LCAs from two partial LCAs */
+6i f cols>1then
+7f o r i=0 to cols do
+8f orj=i to cols do
+9i fpopped[i] and popped[j] contain sizes AND popped[i].provenance ∩popped[j].provenance = ∅then
+10 newKwSubset = popped[i].kwSubset ∪popped[j].kwSubset
+11 newProvenance = popped[i].provenance ∪popped[j].provenance
+12 newSize = popped[i].size+popped[j].size
+13 createNewStack(stack, stack.coarsenessLevel+1, i, j, newKwSubset) /* if it does not exist */
+14 pLCA = newPartialLCA(stack.dewey, newKwSubset, newSize, newProvenance)
+15 ifcardinalityOf(newKwSubset) = stack.coarsenessLevel+1 then
+16 addPartialLCA(stack.coarsenessLevel+1, pLCA)
+/* Update ancestor (i.e., new top entry) with sizes from popped entry */
+17 if stack is not empty andcols>1then
+18 for i=0 to cols do
+19 ifpopped[i].size+1 <stack.topRow[i].size then
+20 stack.topRow[i].size = popped[i].size+1
+21 stack.topRow[i].provenance = {lastStep(stack.dewey) }
+22removeLastDeweyStep(stack.dewey)
+initial to the ﬁnal stack suggests a unique way of combiningpartial LCAs to produce full LCAs.
+Stack structure. The key data structures used by LCAsz
+are the stacks of the keyword partitions. A stack stores in-
+formation about the nodes in the path deﬁned by a Deweycode. Each stack entry corresponds to a Dewey step and thenode identiﬁed by the Dewey code subsequence to this step.
+E.g., if the top entry of a stack refers to node 1.2.3.4.5, it
+contains information about nodes in the path from the rootto the node 1.2.3.4.5 and the third stack entry from the bot-tom refers to node 1.2.3. Pushing and popping actions on
+the stack add and remove steps from the end of the Dewey
+code. All the entries of the stack are arrays indexed by thekeyword subsets of the partition represented by the stack.Thearrayelementatthecolumnnamedbythekeywordsub-setSmay contain the size sof a partial LCA lofSat the
+node corresponding to the array entry. If a size sis present,
+the element contains also one or more provenance numbers
+(namely Dewey steps) identifying one or more of the outgo-ing edges of the entry node. These edges indicate which one
+of the partial LCA subtrees of Srooted at lcontributes s.
+Algorithm description. The algorithm, outlined in List-
+ing1, implementstheideasdescribedabove. Themainblock
+of LCAsz is a loop (lines 3-15) that iterates over the keywordinverted lists, processing each time the ﬁrst (in documentorder) keyword instance from the nodes in the lists. The
+processing consists of pushing this instance to all the stacks
+that have a column named by the set containing only thecorresponding keyword. This processing applies not only tosingle keyword instances but also to partial LCAs producedby the stacks. In this sense, single keyword instances aretreated uniformly as partial LCAs of a single keyword with
+size 0 (line 5).
+Observing the lattice illustrated in Figure 3, one may notice
+that most partitions have more than one incoming edge.
+These edges entail multiple updates of a single stack for
+the same node. LCAsz, though, avoids this redundancy byusing lists of partial LCAs, one for each coarseness level.Partial LCAs are added to these lists before being propa-gated to the next level (line 6 of algorithm LCAsz and line
+16 of procedure pop). This usage of partial LCA lists ﬁl-
+ters partial LCAs and synchronizes their propagation. As aconsequence, stack pushes are minimized. When a partialLCA appears at a certain coarseness level, it is added to the
+list of the subsequent level (lines 17-21). If a list already
+contains a comparable LCA with the same node id, only thesmallest between the two is kept in the list (lines 20-21).For instance, in the example tree of Figure 1, there are mul-tiple partial LCA subtrees rooted at 1.1.1 for the keyword
+set{XML, John, Smith}. However, in a partial LCA list
+only the partial LCA entry with id 1.1.1 and size 2 appears
+for{XML, John, Smith}. This size corresponds to the min-
+imum connected tree of the instances 1.1.1.1 (for XML)a n d
+1.1.1.2 (for Johnand Smith).
+All partial LCAs are pulled sequentially from partial LCAlists (line 7). They are pushed into stacks only at the coarse-ness level of the list, which contain a column named by the
+68Figure 4: States of the initial stack for the query {XML, John, Smith} when processing XML instance 1.1.2.1
+partial LCA’s keyword subset (lines 11-12). A partial LCA
+is not processed before all the stacks at this level have beencreated (lines8-9). Thisway, LCAsz guaranteesthat no par-tial LCA will fail to be pushed into a stack just because this
+one has not yet been created. When all keyword instances
+are processed, all stacks are emptied in coarseness level or-der (line 16): ﬁrst, for every coarseness level, the remainingpartial LCAs in the corresponding partial LCA list are pro-
+cessed (lines 29-33), and then, procedure pop is called on all
+the entries of the stacks of that level (lines 34-37).
+Pushing a partial LCA into a stack (lines 22-27) can be done
+only if this partial LCA is a child or self of the stack’s top
+node. To thisend, entriesfrom the stack are popped until an
+ancestor of the partial LCA is reached. Figure 4 illustrates asequence of pop and push actions on the stack of coarsenesslevel 1 for query {XML, John, Smith} when instance 1.1.2.1
+forXMLis processed. Under certain conditions, this pop-
+ping may produce new partial LCAs. This issue is discussedin the next paragraph. After popping, LCAsz prepares thestack for the new node, by adding empty entries, until thestack top entry corresponds to the new partial LCA (lines
+25-26). These are the entries at 1.1.2 and 1.1.2.1 in the last
+stack state of Figure 4. Finally, LCAsz replaces the size inthe top stack entry element corresponding to the keywordsubset of the partial LCA with the new one (line 27). The
+replacementisperformedonlyifnosizeforthiskeywordsub-
+set is recorded or the new size is smaller than the recordedone. Size replacement allows LCAsz to process without ex-tra popping and pushing instances of diﬀerent keywords att h es a m en o d e( e . g . , Johnand Smithat 1.1.1.3.2.2 of the
+ﬁrst stack state of Figure 4), as well as keywords at internalnodes of the data tree.
+Procedure pop (invoked at line 24 of LCAsz) is the most im-
+portant of the algorithm, as it is the one that forms partial
+LCAs and returns solutions (full LCAs). The ﬁrst step ofthis procedure (line 3) actually pops the stack’s top entry,leaving the stack with the parent of the previous top entry.Ifthestackcontainsonlyonecolumn, itisthe(ﬁnal)stackof
+the last coarseness level that produces solutions (lines 4-5);
+procedure addResult () ranks the produced full LCAs and
+returns the answer when all of them are computed. Oth-erwise, LCAsz checks for new potential partial LCAs (lines
+Figure 5: Stacks of the second coarseness level for the query{XML, John, Smith} before and after the processing of the
+XML instance 1.1.2.1
+6-16) and updates the partial LCA sizes of the new top entry
+based on the sizes of the popped entry (lines 17-21).
+For all pairs of keyword subsets in the popped entry, which
+have a partial LCA size and do not share any provenance
+Dewey steps (line 9), the algorithm creates a new partial
+LCA. Then, it proceeds by (a) creating a stack at the nextcoarseness level (if it does not already exist) from the cur-rent one by merging the two keyword subsets (line 13), and
+(b) adding the new partial LCA to the partial LCA lists of
+the subsequent coarseness level (lines 14-16). Finally, if anyof the sizes in the popped entry increased by one is smallerthan the corresponding size of the parent entry, LCAsz re-places the size and the provenance indicators in the parent
+entry with the new ones (lines 19-21). For instance, in the
+example of Figure 4, the ﬁrst pop action replaces the sizes of1.1.1.3.2 for JohnandSmithb a s e do nt h es i z e so fi t sp o p p e d
+child 1.1.1.3.2.2 and sets the provenance indicators of these
+elements to 2, as the last dewey step of popped 1.1.1.3.2.2
+entry is 2. This way, the parent of a popped node is up-dated, eventually, with the smallest sizes propagated fromits children for all its keyword subsets.
+The requirement for disjoint provenance indicator sets (line
+9) reﬂects the requirement of Remark 2, and allows only dis-joint partial LCA subtrees to produce new (partial) LCAs.The provenance indicator of an entry element may be set
+in two ways. First, when a partial LCA size for some key-
+69word subset is propagated from a node to its parent, the
+parent’s provenance for the same keyword subset is set tothe last Dewey step of the child node (line 21). This Dewey
+step identiﬁes the root of the partial LCA subtree that con-
+tributes this size. For an example, see the ﬁrst pop actionof Figure 4. Second, if the size corresponds to a partialLCA that was formed at the current entry node by two en-try elements, the provenance indicator is set to be equalto the union of the provenance indicators of these elements(line 11). An example is the provenance indicator of thepartial LCA 1.1.1.3 of {XML, Smith} produced at the third
+pop action in Figure 4 and inserted in the stack {XS, J} of
+Figure 5.
+4.2 LSAsz analysis
+Algorithm LCAsz sequentially processes the instances of the
+invertedlistsofthequerykeywords. Everyinstanceispushed
+in the initial stack and then, partial and full LCAs are pro-gressively formed along the paths of the stack lattice (seeFigure 3). At every stack in a path this instance is possiblyintegrated in a new partial LCA subtree. In the worst case,
+every instance will provoke an update to all the stacks of the
+lattice. The number of all possible partitions (stacks) of aset of keywords {w
+1,...,w k}is given by the Bell number Bk
+Bk=k/summationdisplay
+i=1S(k,i)
+whereS(k,i) is the Stirling number of the second kind of k
+elements partitioned in isubsets. In other words, for each
+i∈[1..k],S(k,i) is the number of partitions in the coarse-
+ness level k−i+1, where the partitions consist of ikeyword
+subsets. Pushing a partial LCA in a stack may require emp-tying completely the stack in the worst case. Consequently,
+for a data tree with depth d,dpop actions are performed at
+most for each push action. Each pop of an entry entails at
+mostk(k−1)/2 element combinations to form partial LCAs
+and at most ksize updates to its parent entry. Therefore,
+the cost of procedure pop is O(k
+2). When a node at depth
+din the tree is pushed, it requires also at most d−1s t a c k
+pushes of empty entries and one size replacement, taking intotalO(d) time. Thus, if |S
+i|is the number of instances of
+the inverted list of keyword wi, the worst case time com-
+plexity of LCAsz for processing all the keyword instancesis:
+O(dk
+2Bkk/summationdisplay
+i=1|Si|)
+The theoretical worst case scenario is not likely to happenin practice. For example, the worst case assumption thatthe push of a node in a stack requires complete emptying ofthe stack, implies that this instance does not share a pathwith any partial LCA in the stack. However, if all instances
+are not correlated, popping of nodes does not result in a
+partial LCA at any level of the tree except from the root.This observation shows that the emptying depth of a stack(factord) and the number of partial LCAs induced by a
+p o pa c t i o n( f a c t o rk
+2) are inversely related. From another
+perspective, updating all the stacks as a result of processinga single keyword instance, implies the presence of all pos-sible keyword arrangements in a subtree of the data tree.Certainly, such a setting imposes high requirements on thenumber of instances in the subtree and on its height, thatcannot be satisﬁed by all keyword instances.
+The complexity shown above is a parameterized time com-
+plexity of LCAsz that depends on the total size of the in-verted lists/summationtext|S
+i|, the number of query keywords kand the
+depth of the data tree d. An important observation is that
+L C A s zi sl i n e a ro nt h es i z eo ft h ei n v e r t e dl i s t sf o rac o n s t a n t
+kandd. In contrast, the complexity of previous algorithms
+is at least O(|Si|k), preventing them from scaling as the size
+of the input inverted lists increases. LCAsz still has an ex-ponential dependency on the number of keywords kbecause
+ofB
+k, but without the involvement of the input size.
+5. LCASZ FOR RARE KEYWORDS
+In this section, we present a variation of LCAsz, namely
+LCAszI, that exploits appropriately the dependence of
+LCAsz performance on the number of keywords to reducethe execution time. The basic idea behind this modiﬁca-tion, is the restriction of the number of query keywordsto the frequent ones. LCAsz is primarily executed on the
+frequent keywords only. The rare keywords are taken into
+account throughout the process, but considered as a newparameter of the algorithm. The following paragraphs out-line the rationale of LCAszI for the special case of unique
+instance keywords. For keywords with few instances (i.e.,
+rare keywords) this procedure is applied repeatedly.
+Conference1, size=7
+publications1.1, size=6
+paper 1.1.1, size=5
+title1.1.1.1
+XMLauthor1.1.1.2
+John
+Smithcitations1.1.1.3, size=4
+paper1.1.1.3.1
+title1.1.1.3.1.1
+XMLauthor1.1.1.3.1.2
+John
+Brownpaper1.1.1.3.2
+title1.1.1.3.2.1
+RDFauthor1.1.1.3.2.2
+John
+Smithpaper1.1.2
+title1.1.2.1
+XMLauthor1.1.2.2
+Mary
+Smith
+Figure 6: Brown and RDF rare keywords’ subtree
+Consider the scenario where a number of rare keywords ap-pears only once in the data tree. In our running example,such keywords are Brownand RDFwith LCA 1.1.1.3. A key-
+word query asking for BrownandRDF, whether also contain-
+ingotherkeywordsornot, isconstraint(Remark1)toreturn
+in the answer node 1.1.1.3 or its ancestors (dashed nodes in
+Figure 6). This observation places every potential solutionto a keyword query containing Brownand RDFon the path
+between nodes 1 and 1.1.1.3. The partial LCA subtree of
+Brownand RDFrooted at 1.1.1.3 contributes equally to the
+size of any full LCA of a query containing these keywords.
+Thus, algorithm LCAszI proceeds by ignoring any contribu-tion to the size of the LCA by the edges of the partial LCAsubtree of the rare keywords. These edges are shown in bold
+(solid or dotted) in Figure 6. To compensate, before a so-
+70lution is returned by LCAszI, the size of the subtree of the
+rare keywords is added to the size of the full LCA. Takingthese remarks into consideration, LCAszI is constructed by
+modifying LCAsz as follows:
+•LCAszI executes LCAsz on the frequent keywords only.
+•DuringthecomputationwhiletherootofthepartialLCA
+subtree of the frequent keywords is not on the path be-tween the root and the partial LCA of the rare keywords,it is not returned as a result. Instead, its size is propa-
+gated to its parent.
+•Before a full LCA lof the frequent keywords is returned
+as a solution, its size is incremented by the size of the
+partial LCA subtree of the rare keywords under l.I n
+Figure 6, the sizes of these subtrees for the rare keywordsBrownand RDFunder diﬀerent nodes are shown next to
+t h en o d ei d s .
+•In computing partial LCA sizes, only the edges outside
+the subtree of the rare keywords are counted (thin edges
+in Figure 6).
+Ignoring the edges of the rare keywords’ partial LCA sub-
+tree (bold solid and dotted edges in Figure 6) does not com-
+promise neither the correctness of the calculation of partialLCA sizes, nor the comparison of partial LCA sizes duringthe algorithm’s execution. The pruning that LCAsz per-
+forms among comparable partial LCAs based on their sizesis done with respect to a speciﬁc node. This node corre-
+sponds to the current stack entry. Under this node, thepartial LCA size of the rare keywords is ﬁxed. For instance,when node 1.1.1 is examined by LCAszI, the size of the
+partial LCA subtree of Brownand RDFis 5. For the key-
+word query {John, Brown, RDF}, the comparison between
+the LCA sizes that correspond to the subtrees containing
+[John,1.1.1.2] or [ John,1.1.1.3.1.2] favors the second, either
+regarded as a comparison of 1 against 0 (i.e., ignoring edgesoutside the subtree of Brown, RDF) or of 6 against 5.
+6. EXPERIMENTAL RESULTS
+We run experiments to study the eﬃciency of LCAsz and
+LCAszI. We also implemented the SAOne algorithm [9],
+which is the only known algorithm that computes all LCAsof a keyword query with their sizes, in order to experimen-tally compare it with LCAsz. Algorithms implementing ﬁl-tering semantics like SLCAs, ELCAs, VLCAs and MLCAs
+are not directly comparable with LCAsz regarding eﬃciency,
+as they compute a signiﬁcantly smaller number of LCAs asan answer to keyword queries.
+The experiments were conducted on a virtual machine in-
+stalled on a Windows 7 system. The virtual machine’s RAMwas set to 8GB. The code was implemented in Java and theJVM heap space was left unchanged to the default value of1.5GB.
+We used the real datasets DBLP [11] and NASA [19] and the
+benchmark auction dataset XMark [25]. Table 1 providesstatistics for them.
+DBLP is much larger with greater variety of keywords but
+very shallow. 99% of the keywords are located at nodes ofdepth 2 and these nodes amount for the 87% of the totalnumber of nodes of the data tree. XMark and NASA areDBLPXMark NASA
+size 850 MB 150 MB 23M B
+maximum depth 5 11 7
+average depth 1.97 6.10 5.06
+avg depth per keyword 2.00 4.53 4.99
+#nodes 20,966,212 1,666,315 476,646
+#keywords 2,599,843 57,775 65,862
+#distinct labels 35 74 61
+#distinct label paths 152 514 95
+Table 1: DBLP, XMark and NASA dataset statistics
+smaller but deeper and more complex since their labels mayappear in many diﬀerent label paths. Keywords and nodesdistribute almost equally in levels 2-10 in XMark and 2-7 in NASA. The NASA dataset, though, in comparison to
+XMark contains more keywords in relation to its size.
+The keyword inverted lists produced by parsing the XML
+datasets where stored in a relational database. In order torunexperimentswithinputinvertedlistsofdiﬀerentsizeswe
+considered inverted lists of keywords of high frequency and
+truncated them at diﬀerent lengths. Choosing keywords ofhigh frequency guarantees that many partial LCAs are pro-duced during the processing. Every displayed measurement
+intheplotsisaveragedover10executionsofdiﬀerentqueries
+formed with the frequent keywords. The loading time of theinverted lists was not taken into account, since it is the samefor all algorithms and we want to focus on comparing theirprocessing time.
+Performance of LCAsz. Table 2 shows the results of a
+sample of queries execution over the three datasets. These
+queries contain keywords with thousands of instances in thecorresponding datasets and LCAsz answers them in practi-
+cal time. Notice, for example, Q
+D
+1that processes 256,086
+instances in about 4 sec returning 1027 results. Query so-
+lutions (LCAs) have diﬀerent sizes (last column) and arereturned ranked. The range of the solution sizes reﬂects the
+correlation among the keywords searched, with 0 denotingco-existence of keywords in the same node.
+Scaling of LCAsz. Figure 7 shows how LCAsz scales when
+the number of keywords and the number of keyword in-
+stances increases in each one of the three datasets. Eachcurve in the plots corresponds to measurements for querieswith the same number of keywords (varying from 2 to 7).
+Queries with 8 keywords follow the same pattern and are
+shown in Figure 8. They are not included in the plots ofFigure 7 for clarity, since their execution time exceeds thetop y axis value of 3.5 sec and their inclusion would sand-wich the other curves. The number of instances per keyword
+ranges from 10 to 1000. This means that for a 7 keyword
+query the total number of instances ranges from 70 to 7000.
+The displayed results conﬁrm the linear behavior of LCAsz
+execution time with respect to the input size for a given
+number of keywords, which was discussed in Section 4.2.The slope diﬀerence between two consecutive lines showshow the execution time of LCAsz scales on the total numberof keyword instances for two consecutive query lengths. For
+71query execution time #keywords total # kw instances #results LCAs i z e s
+DBLP
+QD
+1={information systems security } 4.07 sec 3 256,086 1,027 0-4
+QD2={online analytical processing } 0.86 sec 4 48,609 220-4
+QD3={database query language} 0.96 sec 3 55,250 1200-4
+QD
+4={semantic web services automatic composition } 12.91 sec 5 101,420 100-4
+QD
+5={spatial GIS applications} 1.11 sec 3 66,201 130-4
+QD
+6={sensor networks power consumption } 3.63 sec 4 129,608 150-4
+QD
+7={network computing algorithms } 2.25 sec 3 129,481 260-4
+QD8={database query language} 0.96 sec 3 55,250 1200-4
+XMark
+QX1={province school female student} 0.80 sec 4 15,742 117-1 2
+QX2={province school female male student } 2.20 sec 5 19,387 117-1 6
+QX3={cash shipping Europe} 1.05 sec 3 32,929 433-9
+QX4={charges shipping location United States } 35.55 sec 5 114,319 12,308 2-9
+QX5={certainly apply leading expense offers approved } 3.19 sec 6 5,923 119-1 4
+QX6={approved school expense offers student apply } 3.89 sec 6 8,975 119-1 4
+QX7={cash payment delay order} 3.40 sec 4 47,928 2502-1 0
+NASA
+QN
+1={bright stars photometric measurements } 0.62 sec 4 10,792 270-1 8
+QN2={estimated diameter planetary objects } 0.19 sec 4 2,814 90-1 0
+QN3={stars position meridian circle } 0.54 sec 4 11,052 270-9
+QN4={spectral photovoltaic photoconductive stars measurements } 1.11 sec 5 11,237 30-7
+QN5={photometric equipment calibration spectral band } 0.63 sec 5 5,453 30-7
+QN
+6={stellar spectral classification stars } 0.84 sec 4 12,329 910-1 7
+QN7={stellar spectral classification stars emission } 1.99 sec 5 13,718 350-2 1
+Table 2: DBLP, XMark and NASA queries
+01 ,000 2,000 3, 000 4,000 5, 000 6,00005001,0001,5002,0002,5003,0003,500
+total number of keyword instancestime (msec)2keywords
+3keywords
+4keywords
+5keywords
+6keywords
+7keywords
+(a) DBLP01 ,000 2,000 3,000 4,000 5, 000 6,00005001,0001,5002,0002,5003,0003,500
+total number of keyword instancestime (msec)2keywrods
+3keywords
+4keywords
+5keywords
+6keywords
+7keywords
+(b) XMark01 ,000 2,000 3,000 4,000 5, 000 6,00005001,0001,5002,0002,5003,0003,500
+total number of keyword instancestime (msec)2keywrods
+3keywords
+4keywords
+5keywords
+6keywords
+7keywords
+(c) NASA
+Figure 7: Performance of LCAsz varying keywords and instances
+DBLP this transition is smoother than for the XMark and
+NASA datasets. This happens due to the shallowness ofDBLP that bounds the number of possible pushes and popsin the stacks of LCAsz to the maximum of 5 (1.97 on average
+as shown in Table 1).
+Comparison with a previous algorithm. Figure 8
+presents a comparison of the execution times of LCAsz and
+algorithm SAOne proposed in [9]. The main algorithm SAof [9] aims at identifying minimum connecting trees of a setof keywords with distances (DMCTs), which are homomor-
+phic with respect to the keyword set, and grouping them
+together into grouped distance MCTs (GDMCTs). It re-turns only GDMCTs not exceeding a given threshold size.To this end the sizes of all GDMCTs are also computed.Algorithm SAOne is a variation of SA that computes only
+LCAs, thus avoiding the merge of homomorphic DMCTs. In
+this setting, one DMCT suﬃces for returning an LCA as aresult. In our implementation of SAOne, we let the smallestamong the DMCTs of an LCA to contribute its size to that
+LCA. Without a threshold SAOne returns all DMCTs and
+their sizes. For the sake of comparison we adjusted SAOneappropriately, so that it supports keyword co-occurrence inthe internal nodes of the data tree. We also adapted it towork with Dewey codes instead of regional encoding. Fi-nally, there should be noted, that SAOne beneﬁts from anadditional inverted list of pairwise common ancestors com-
+puted in advance. This precomputation allows bypassing
+internal nodes from processing (i.e., stack pushing and pop-ping) when they are not partial LCAs.
+Figure 8 shows that LCAsz performs in most cases better
+than SAOne for all three datasets. Notice that the executiontime in the y axis is presented in logarithmic scale. SAOneexperiments are illustrated with dotted curves. SAOne per-forms slightly better on the DBLP dataset when the number
+of keywords and instances is small. Increasing the number
+of instances the execution time of SAOne grows very fast,as its complexity depends on the input length to the powerof twice the number of keywords. For example, considering
+the queries of Table 2, SAOne needs 43 sec against 0.96 sec
+for LCAsz for query Q
+D
+3over 55,250 instances of DBLP.
+As the depth of the datasets grow, the number of possible
+7201,000 2,000 3,000 4,000 5,000 6,000 7,000 8,000101102103104105106
+total number of keyword instancestime (msec)LCAsz 2 kws
+LCAsz 4 kws
+LCAsz 6 kws
+LCAsz 8 kws
+SAOne 2 kws
+SAOne 4 kws
+SAOne 6 kws
+SAOne 8 kws
+(a) DBLP01,000 2,000 3,000 4,000 5,000 6,000 7,000 8,000100101102103104105106
+total number of keyword instancestime (msec)LCAsz 2 kws
+LCAsz 3 kws
+LCAsz 4 kws
+LCAsz 6 kws
+LCAsz 8 kws
+SAOne 2 kws
+SAOne 3 kws
+SAOne 4 kws
+(b) XMark01,000 2,000 3,000 4,000 5,000 6,000 7,000 8,000101102103104105106
+total number of keyword instancestime (msec)LCAsz 2 kws
+LCAsz 3 kws
+LCAsz 4 kws
+LCAsz 6 kws
+LCAsz 8 kws
+SAOne 2 kws
+SAOne 3 kws
+SAOne 4 kws
+(c) NASA
+Figure 8: LCAsz in comparison to SAOne varying the number of keywords and instances
+123456020406080100123 4 5 6
+246 8 1012
+36
+9
+12
+15 1848
+125
+106
+127
+8
+9
+10
+number of rare keywordsbeneﬁt %12345678910 instances per rare keyword
+(a) DBLP123456020406080100123 4 5 6
+246 8 10 12
+369 12 1518
+4812
+16
+20
+24510
+15
+612
+714
+number of rare keywordsbeneﬁt %1234567instances per rare keyword
+(b) XMark
+# rare keywords 123456
+DBLP 10376684247734
+XMark 75012725910284101
+(c) Maximum possible number of rare keyword instances making LCAszI beneﬁcial
+Figure 9: The beneﬁt of LCAszI over LCAsz for 8 keywords of 100 instances each varying rare keywords and instances
+GDMCTs that SAOne produces grows fast, too. Thus, for
+the XMark and NASA datasets, LCAsz clearly outperforms
+SAOne for more than a few instances per keyword and for
+all cases of query lengths. SAOne does not return results inpractical time for more than 4 keywords on the XMark andNASA datasets. Therefore, in Figures 8(b) and 8(c), for 6
+and 8 keywords we only show the execution times of LCAsz.
+For 2 keywords in the XMark dataset SAOne performs worsethan LCAsz for 4 keywords for over 100 instances and worsethan LCAsz for 6 keywords for over 1750 instances.
+The beneﬁt of LCAszI over LCAsz. Figure 9 illus-
+trates the experiments on LCAszI performance. In particu-
+lar, the plots show LCAszI time beneﬁt over LCAsz in the
+case of 8 keyword queries with rare keywords that vary from1 to 6. The experiments in this case were run in the set-ting that our scaling experiments did. They were repeatedfor diﬀerent sets of 8 frequent keywords. For every key-
+word 100 instances were chosen. Among the frequent key-words, the rare ones were randomly selected and for those
+an equal number of instances was chosen from their inverted
+lists varying from 1 to 10. In order to let the rare instances
+distribute homogeneously, we chose 1-10 instances from eachlist spread along the whole length of the keyword lists. Foreach selection of rare keywords and instances, LCAsz andLCAszI were repeated 10 times.
+The beneﬁt gained from the execution of LCAszI in most
+cases is obvious. The numbers on the bars indicate the totalnumber of rare instances for all rare keywords. This number
+indicates the minimum total number of instances that shows
+a beneﬁt. For example, a selection of 3 rare keywords of 4instances each results in a total of 12 rare instances but in4
+3= 64 diﬀerent rare keywords subtrees (Section 5). In
+another instance arrangement, e.g., 3 rare keywords with 1,
+1 and 64 instances, the rare keywords’ subtrees are again 64
+(1∗1∗64) but the total number of their instances this time is
+66. In this sense, Table 9(c) shows the maximum number of
+73rare instances that can favor the use of LCAszI over LCAsz
+for a speciﬁc number of rare keywords.
+The beneﬁt of using LCAszI increases as the number of rare
+keywords compared to the total keyword number increases,too. This behavior is justiﬁed by the reduction of the coarse-ness levels and stacks in the execution of LCAsz since onlystacks for the processing of frequent keywords are created.For instance, for an 8 keyword query with 6 rare keywordsthe computation constructs a lattice of stacks for only 2 key-words. XMark can beneﬁt from LCAszI more than DBLP,as the Table 9(c) shows. From another perspective, this is
+indicated also by the smoother slope increase in the scaling
+plots of LCAsz (Figure 7) for DBLP in comparison to that ofXMark. Experiments of LCAszI on NASA dataset for rarekeywords were not included in the paper because of lack ofspace, but the results are similar to those of XMark.
+7. CONCLUSION AND FUTURE WORK
+We introduced LCA size as a measure of relevance of theresults of a keyword query on tree-structured data, and pre-
+sented a novel multi-stack based algorithm that returns all
+LCAs as an answer to a keyword query ranked on their size.Our algorithm exploits a lattice of stacks each correspond-ing to a partition of the keyword set of the query. Because
+of this feature it shows linear performance on the size of
+the input data for a given number of query keywords. As aresult it can run eﬃciently on large input data for severalkeywords. We also presented a variation of our algorithmwhich accounts for infrequent keywords in the query and
+showed that it can signiﬁcantly improve the execution time,
+in many cases by orders of magnitude. An extensive experi-mental evaluation of our algorithms conﬁrms the theoreticalanalysis, and shows that it outperforms a previous approach
+and scales smoothly when the size of the input data and the
+number of input keywords increases.
+Our current work focuses on extending the algorithms pre-
+sented here to support top-K keyword query answering. We
+are also planning to study how our algorithm can be com-
+bined with LCA ﬁltering semantics and with value-basedstatistics approaches for ranking the results.
+8. REFERENCES
+[1] Z. Bao, T. W. Ling, B. Chen, and J. Lu. Eﬀective
+XML Keyword Search with Relevance OrientedRanking. In ICDE, pages 517–528, 2009.
+[2] Z. Bao, J. Lu, T. W. Ling, and B. Chen. Towards an
+Eﬀective XML Keyword Search. IEEE Trans. Knowl.
+Data Eng. , 22(8):1077–1092, 2010.
+[3] S. Brin and L. Page. The Anatomy of a Large-Scale
+Hypertextual Web Search Engine. Computer
+Networks, 30(1-7):107–117, 1998.
+[4] O. C. L. Center. Dewey Decimal Classiﬁcation, 2006.
+[5] L. J. Chen and Y. Papakonstantinou. Supporting
+top-K keyword search in XML databases. In ICDE,
+pages 689–700, 2010.
+[6] S. Cohen, J. Mamou, Y. Kanza, and Y. Sagiv.
+XSEarch: A Semantic Search Engine for XML. In
+VLDB, pages 45–56, 2003.
+[7] D. Crockford. The application/json Media Type for
+JavaScript Object Notation (JSON), 2006.[8] L. Guo, F. Shao, C. Botev, and
+J. Shanmugasundaram. XRANK: Ranked KeywordSearch over XML Documents. In SIGMOD
+Conference , pages 16–27, 2003.
+[9] V. Hristidis, N. Koudas, Y. Papakonstantinou, and
+D. Srivastava. Keyword Proximity Search in XML
+Trees.IEEE Trans. Knowl. Data Eng. , 18(4):525–539,
+2006.
+[10] L. Kong, R. Gilleron, and A. Lemay. Retrieving
+meaningful relaxed tightest fragments for xml keyword
+search. In EDBT, pages 815–826, 2009.
+[11] M. Ley. DBLP (Digital Bibliography & Library
+Project) http://www.informatik.uni-trier.de/ ley/db/,
+2000.
+[12] G. Li, J. Feng, J. Wang, and L. Zhou. Eﬀective
+keyword search for valuable lcas over xml documents.
+InCIKM, pages 31–40, 2007.
+[13] J. Li, C. Liu, R. Zhou, and W. Wang. Suggestion of
+promising result types for XML keyword search. InEDBT, pages 561–572, 2010.
+[14] Y. Li, C. Yu, and H. V. Jagadish. Schema-Free
+XQuery. In VLDB, pages 72–83, 2004.
+[15] X. Liu, C. Wan, and L. Chen. Returning Clustered
+Results for Keyword Search on XML Documents.IEEE Trans. Knowl. Data Eng. , 23(12):1811–1825,
+2011.
+[16] Z. Liu and Y. Chen. Identifying meaningful return
+information for XML keyword search. In SIGMOD
+Conference , pages 329–340, 2007.
+[17] Z. Liu and Y. Chen. Reasoning and identifying
+relevant matches for XML keyword search. PVLDB,
+1(1):921–932, 2008.
+[18] Z. Liu and Y. Chen. Processing keyword search on
+XML: a survey. World Wide Web , 14(5-6):671–707,
+2011.
+[19] NASA. NASA XML project
+http://www.cs.washington.edu/research/xmldatasets-/www/repository.html,2001.
+[20] A. Schmidt, M. L. Kersten, and M. Windhouwer.
+Querying XML Documents Made Easy: Nearest
+Concept Queries. In ICDE, pages 321–329, 2001.
+[21] C. Sun, C. Y. Chan, and A. K. Goenka. Multiway
+SLCA-based keyword search in XML data. In WWW,
+pages 1043–1052, 2007.
+[22] Y. Tao, S. Papadopoulos, C. Sheng, and K. Stefanidis.
+Nearest keyword search in XML documents. In
+SIGMOD Conference, pages 589–600, 2011.
+[23] A. Termehchy and M. Winslett. Using structural
+information in XML keyword search eﬀectively. ACM
+Trans. Database Syst., 36(1):4, 2011.
+[24] D. Theodoratos and X. Wu. An original semantics to
+keyword queries for xml using structural patterns. InDASFAA , pages 727–739, 2007.
+[25] XMark. An XML Benchmark Project
+http://www.xml-benchmark.org, 2001.
+[26] Y. Xu and Y. Papakonstantinou. Eﬃcient Keyword
+Search for Smallest LCAs in XML Databases. InSIGMOD Conference , pages 537–538, 2005.
+[27] Y. Xu and Y. Papakonstantinou. Eﬃcient LCA based
+keyword search in XML data. In EDBT, pages
+535–546, 2008.
+74

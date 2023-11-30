@@ -1,0 +1,1688 @@
+9Peer-to-PeerInformationRetrieval: An Overview
+ALMER S.TIGELAAR, DJOERD HIEMSTRA, and DOLFTRIESCHNIGG,
+University of Twente
+Peer-to-peer technology is widely used for ﬁle sharing. In the past decade a number of prototype peer-to-peer
+information retrieval systems have been developed. Unfortunately, none of these has seen widespread real-
+world adoption and thus, in contrast with ﬁle sharing, information retrieval is still dominated by centralized
+solutions. In this article we provide an overview of the key challenges for peer-to-peer information retrieval
+and the work done so far. We want to stimulate and inspire further research to overcome these challenges.
+This will open the door to the development and large-scale deployment of real-world peer-to-peer information
+retrieval systems that rival existing centralized client-server solutions in terms of scalability, performance,
+user satisfaction, and freedom.
+Categories and Subject Descriptors: H.3.1 [ Information Storage and Retrieval ]: Content Analysis
+and Indexing— Indexing methods ; H.3.3 [ Information Storage and Retrieval ]: Information Search and
+Retrieval— Search process; selection process ; H.3.4 [ Information Storage and Retrieval ]: Systems and
+Software— Distributed systems
+General Terms: Algorithms, Design, Performance, Reliability
+ACM Reference Format:
+Tigelaar, A. S., Hiemstra, D., and Trieschnigg, D. 2012. Peer-to-peer information retrieval: An overview.
+ACM Trans. Inf. Syst. 30, 2, Article 9 (May 2012), 34 pages.
+DOI = 10.1145/2180868.2180871 http://doi.acm.org/10.1145/2180868.2180871
+1. INTRODUCTION
+In centralized search a single party provides a search service over a collection of doc-
+uments. A few commercial search engines dominate search in the world’s largest doc-
+ument collection: the Internet. Their search services use many machines in server
+farms which they exclusively control . This raises at least three ethical concerns.
+Firstly, the search engine operators control the visible information establishing an
+information monopoly and censorship capabilities. Secondly, conﬂicts of interest may
+occur particularly with respect to products and services of competitors. Thirdly, the
+elaborate tracking of user behavior forms a privacy risk. Besides this, the main tech-
+nical concerns are whether such centralized solutions can keep up with the exponential
+growth of Internet content and the proliferation of dynamic content behind Web forms.
+We think it would be better if no single party dominates Internet search. We believe
+users and creators of Web content should collectively provide a search service. This
+The authors gratefully acknowledge the support of the Netherlands Organisation for Scientiﬁc Research
+(NWO) under project DIRKA (NWO-Vidi), no. 639.022.809.
+Authors’ address: A. S. Tigelaar (corresponding author), D. Hiemstra, and D. Trieschnigg, Database Group,
+Faculty of Electrical Engineering and Computer Science, University of Twente, The Netherlands; email:
+fa.s.tigelaar, d.hiemstra, d.trieschnigg g@utwente.nl.
+Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted
+without fee provided that copies are not made or distributed for proﬁt or commercial advantage and that
+copies show this notice on the ﬁrst page or initial screen of a display along with the full citation. Copyrights
+for components of this work owned by others than ACM must be honored. Abstracting with credit is per-
+mitted. To copy otherwise, to republish, to post on servers, to redistribute to lists, or to use any component
+of this work in other works requires prior speciﬁc permission and/or a fee. Permissions may be requested
+from Publications Dept., ACM, Inc., 2 Penn Plaza, Suite 701, New York, NY 10121-0701, USA, fax +1 (212)
+869-0481, or permissions@acm.org.
+c°2012 ACM 1046-8188/2012/05-ART9 $10.00
+DOI 10.1145/2180868.2180871 http://doi.acm.org/10.1145/2180868.2180871
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:2 A. S.Tigelaar et al.
+would restore their control over what information they wish to share as well as how
+they share it. Importantly: no single party would dominate in such a system elim-
+inating the ethical drawbacks of centralized search. Additionally, this enables han-
+dling dynamic content and provides scalability, removing the technical weaknesses of
+centralized systems. Unfortunately, no mature solution for this exists. However, peer-
+to-peer information retrieval could form the foundation for such a collective search
+platform.
+Peer-to-peer architectures provide an alternative to the client-server paradigm that
+permeates many Internet applications like email, Web browsing, and newsgroups.
+Peers typically have a high degree of both autonomy and volatility. This provides a
+natural way to distribute processing load and network bandwidth among the partic-
+ipating peers. A peer that joins the network does not only use resources, but also
+contributes resources back. Hence, a peer-to-peer network can potentially scale be-
+yond what is possible in client-server setups. However, the price to pay for this is
+higher algorithmic complexity, security problems, and vulnerability to abuse [Aberer
+and Hauswirth 2002]. Despite this, peer-to-peer networks are widely used for large-
+scale data sharing, content distribution, and application-level multicast [Lua et al.
+2005]. In this article we focus speciﬁcally on using peer-to-peer networks for the pur-
+pose of information retrieval providing an overview of the work done so far as well as
+identifying the key challenges in the ﬁeld.
+The rest of this article is organized as follows: in Section 2 we deﬁne what a
+peer-to-peer system is; provide an overview of commonly used architectures and their
+characteristics; and identify challenges for peer-to-peer systems. In Section 3 we high-
+light both the differences and similarities between the most successful application of
+peer-to-peer technology to date: ﬁle sharing, the application that is the subject of this
+article, information retrieval, and the closely related ﬁeld of federated information
+retrieval. In Section 4 we provide an overview of commonly used optimization tech-
+niques in peer-to-peer information retrieval, and Section 5 contains descriptions of a
+selection of existing systems. We discuss challenges and key focus areas for future re-
+search which will enable better peer-to-peer information retrieval solutions in Section
+6. Finally, Section 7 closes the article.
+2. PEER-TO-PEERNETWORKS
+2.1. Introduction
+A node is a computer connected to a network. This network facilitates communication
+between the connected nodes through various protocols enabling many distributed ap-
+plications. The Internet is the largest contemporary computer network with a proliﬁc
+ecosystem of network applications. Communication occurs at various levels called lay-
+ers. The lowest layers are close to the physical hardware, whereas the highest layers
+are close to the software. The top layer is the application layer in which communication
+commonly takes place according to the client-server paradigm :server nodes provide a
+resource, while client nodes use this resource. An extension to this is the peer-to-peer
+paradigm : here each node is equal and therefore called a peer. Each peer could be said
+to be a client and a server at the same time and thus can both supply and consume
+resources. In this paradigm, peers need to cooperate with each other, balancing their
+mutual resources in order to complete application-speciﬁc tasks . For communication
+with each other, during task execution, the peers temporarily form overlay networks :
+smaller networks within the much larger network that they are part of. Each peer
+is connected to a limited number of other peers: its neighbors . Peers conventionally
+transmit data by forwarding from one peer to the next or by directly contacting other,
+nonneighboring, peers using routing tables. The architecture of a peer-to-peer network
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:3
+is determined by the shape of its overlay network(s), the placement and scope of
+indices, and the protocols used for communication. The choice of architecture in-
+ﬂuences how the network can be utilized for various tasks such as searching and
+downloading.
+In practice the machines that participate in peer-to-peer networks are predomi-
+nantly found at the edge of the network, meaning they are not machines in the big
+server farms, but computers in people’s homes [Kurose and Ross 2003]. Because of
+this, a peer-to-peer network typically consists of thousands of low-cost machines all
+with different processing and storage capacities as well as different link speeds. Such
+a network can provide many interesting applications, like: ﬁle sharing, streaming me-
+dia, and distributed search. Peer-to-peer networks have several properties that make
+them attractive for these tasks. They usually have no centralized directory or con-
+trol point and thus also no central point of failure . This makes them self-organizing ,
+meaning that they automatically adapt when peers join the network, depart from it, or
+fail. The communication between peers uses a common language and is symmetric as
+is the provision of services. This symmetry makes a peer-to-peer network self-scaling :
+each peer that joins the network adds to the available total capacity [Bawa et al. 2003;
+Risson and Moors 2006].
+In the following sections we will ﬁrst discuss some common applications of peer-to-
+peer networks, the challenges for such networks, followed by an in-depth overview of
+commonly used peer-to-peer network architectures.
+2.2. Applications
+Many applications use peer-to-peer technology. What follows is a short listing with
+some concrete examples.
+—Content Distribution : Usenet, Akamai, Steam.
+—File Sharing : Napster, Kazaa, Gnutella, BitTorrent.
+—Information Retrieval : Sixearch, YaCy.
+—Instant Messaging : ICQ, MSN.
+—Streaming Media : Tribler, Spotify.
+—Telephony : Skype, SIP.
+Signiﬁcant differences exist among these applications. One can roughly distinguish
+between applications with mostly private data : instant messaging, and telephony; and
+public data : content distribution, ﬁle sharing, information retrieval, and streaming
+media. The term peer-to-peer is conventionally used for this latter category of applica-
+tions where the sharing of public data is the goal which is also the focus of this article.
+The interesting characteristic of public data is that there are initially only a few peers
+that supply the data and there are many peers that demand a copy of it. This asym-
+metry can be exploited to widely replicate data and provide better servicing for future
+requests. Since ﬁle sharing networks are the most pervasive peer-to-peer application,
+we will frequently use it as an example and basis for comparison especially in this sec-
+tion which focuses on the common characteristics of peer-to-peer computing. However,
+in Section 3 we will shift focus to the differences and give a deﬁnition of peer-to-peer
+information retrieval and what sets it apart from other applications.
+The concepts query ,document , and index will often be used in this article. What
+is considered to be a query and a document, and what is stored in the index, depends
+on the application. For most content distribution, ﬁle sharing, and streaming media
+systems the documents can be ﬁles of all types. The index consists of metadata about
+those ﬁles and the queries are restricted to searching in this metadata space. Informa-
+tion retrieval usually involves a large collection of text documents of which the actual
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:4 A. S.Tigelaar et al.
+content is indexed and searchable by using free text queries. For searching in instant
+messaging networks, and telephony applications, the documents are user proﬁles of
+which some ﬁelds are used to form an index, the query is restricted to searching in one
+of these ﬁelds, for example: “nickname”.
+2.3. Challenges
+There are many important challenges speciﬁc to peer-to-peer networks [Daswani et al.
+2003; Triantaﬁllou et al. 2003].
+—How to make efﬁcient use of resources? Resources are bandwidth, processing power,
+and storage. The higher the efﬁciency, the more requests a system can handle and
+the lower the costs for handling each request. Peers may vary wildly in their avail-
+able resources. This heterogeneity raises unique challenges.
+—How to provide acceptable quality of service? Measurable important aspects are: low
+latency, and sufﬁcient, high-quality results.
+—How to guarantee robustness? Provide a stable service to peers and the ability to
+recover from data corruption and communication errors whatever the cause.
+—How to ensure data remains available? When a peer leaves the network its content
+is, temporarily, not accessible. Hence, a peer-to-peer network should engage in quick
+distribution of popular data to ensure it remains available for as long as there is
+demand for it.
+—How to provide anonymity? The owners and users of peers in the network should
+have at least some level of anonymity depending on the application. This enables
+censorship resistance, freedom of speech without the fear of persecution, and pri-
+vacy protection.
+Additionally, several behaviors of peers within a network must be handled.
+—Churn . The stress caused on a network by the constant joining and leaving of peers
+is termed churn. Most peers remain connected to the network only for a short time.
+Especially if the network needs to maintain global information, as in a network with
+a decentralized global index, this can lead to constant costly shifting and rebalanc-
+ing of data over the network. This behavior also reduces the availability of data.
+Peers may leave willingly, but they can also simply crash [Klampanos et al. 2005].
+A peer-to-peer network should minimize the communication needed when a peer
+leaves or joins the network [Stutzbach and Rejaie 2006].
+—Free riding . A peer-to-peer network is built around the assumption that all the peers
+in the network contribute a part of their processing power and available bandwidth.
+Unfortunately, most networks also contain peers that only use the resources of other
+peers without contributing anything back. These peers are said to engage in free
+riding. A peer-to-peer network should both discourage free riding and minimize the
+impact that free riders have on the performance of the network as a whole [Krishnan
+et al. 2002].
+—Malicious behavior . While free riding is just unfair consumption of resources, actual
+malicious behavior intends to actively frustrate the usage of resources, either by
+executing attacks or “poisoning” the network with fake or corrupted data. A peer-
+to-peer network should be resilient to such attacks and have mechanisms to detect
+and remove poisoned data [Kamvar et al. 2003].
+Finally, to this day it remains difﬁcult to evaluate and compare different peer-to-peer
+systems. For this we deﬁne the following research challenges.
+—Simulation . The vast majority of peer-to-peer papers use self-developed simulation
+frameworks. This may be surprising since several peer-to-peer simulators exist.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:5
+However, these have a number of problems like limited ways in which statistics can
+be obtained, poor documentation, and being generally hard to use [Naicken et al.
+2006, 2007]. Creating a framework that can actually be used to conduct experiments
+for a wide range of peer-to-peer applications is a challenge.
+—Standardized test sets . Simulations should use standardized test sets so that results
+of different approaches to peer-to-peer problems can be compared. For a ﬁle sharing
+network this could be a set of reference ﬁles of different types like text and video, for
+an information retrieval network a set of documents, queries, and relevance judge-
+ments. Creating such test collections is often difﬁcult and labor-intensive. However,
+they are indispensable for the scientiﬁc process.
+2.4. Tasks
+We distinguish three tasks that every peer-to-peer network performs.
+(1)Searching : Given a query, return some list of document references.
+(2)Locating : Resolve a document reference to concrete locations from which the full
+document can be obtained.
+(3)Transferring : Actually download the document.
+From a user perspective the ﬁrst step is about identifying what one wants, the second
+about working out where it is, and the third about obtaining it [Joseph 2002]. Peer-to-
+peer networks do not always decentralize all of these tasks and not every peer-to-peer
+architecture caters well to each task as we will see later. The key point to understand
+is that searching is different from locating. We will concretely illustrate this difference
+using three examples.
+Firstly, in an instant messaging application searching would be looking for users
+that have a certain ﬁrst name or that live in a speciﬁc city, for example, for all people
+named Zefram Cochrane in Bozeman, Montana. This search would yield a list with
+various properties of matching users, including a unique identiﬁer, from which the
+searcher picks one, for example, the one with identiﬁer “Z2032”. The instant messag-
+ing application can use this to locate that particular user: resolving the identiﬁer to
+a speciﬁc machine address he is currently using, for example, 5.4.20.63. Finally, the
+transfer step would be sending an instant message to that machine.
+Secondly, in information retrieval the search step would be looking for documents
+that contain a particular phrase, for example “pizza baking robots”. This would yield
+a list of documents that either contain the exact phrase or parts thereof. The searcher
+then selects a document of interest with a unique identiﬁer. Locating would involve
+ﬁnding all peers that share the document with that identiﬁer and ﬁnally downloading
+the document from one of these.
+As a ﬁnal example let us consider the ﬁrst two tasks in ﬁle sharing networks. First,
+searching : given a query ﬁnd some possible ﬁles to download. This step yields unique
+ﬁle identiﬁers necessary for the next step, commonly a hash derived from the ﬁle con-
+tent. Second, locating : given a speciﬁc ﬁle identiﬁer ﬁnd me other peers that offer
+exactly that ﬁle. What distinguishes these is that in the ﬁrst one still has to choose
+what one wants to download from the search results, whereas in the second one knows
+exactly what one wants already and one is simply looking for replicas. These two tasks
+are cleanly split in, for example, BitTorrent [Cohen 2003]. A free text search yields a
+list of possible torrent ﬁles: small metadata ﬁles that each describe the real down-
+loadable ﬁle by using hash values for blocks of the ﬁle. This is followed by locating
+peers that offer parts of this real ﬁle using a centralized machine called the tracker.
+Finally, the download proceeds by obtaining parts of the ﬁle from different peers. Bit-
+Torrent thus only decentralizes the transfer task, and uses centralized indices for both
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:6 A. S.Tigelaar et al.
+searching and locating. However, both BitTorrent extensions and many other ﬁle shar-
+ing networks increasingly perform locating within the peer-to-peer network using a
+distributed global index. A distributed global index can also be used for the search
+task. Networks that use aggregated local indices, like Gnutella2, often integrate the
+search and locate tasks: a free-text search directly yields search results with, for each
+ﬁle, a list of peers from which it can be obtained.
+2.5. Architectures
+There are multiple possible architectures for a peer-to-peer network. The choice for one
+of these affects how the network can be searched. To be able to search, one requires
+an index and a way to match queries against entries in this index. Although we will
+use a number of examples, it is important to realize that what the index is used for is
+application-speciﬁc. This could be mapping ﬁlenames to concrete locations in the case
+of ﬁle sharing, user identiﬁers to machine addresses for instant messaging networks,
+or terms to documents in the case of information retrieval. In all cases the crucial
+challenge is that of keeping the latency low whilst retaining the beneﬁcial properties of
+peer-to-peer networks like self-organization and load balancing [Daswani et al. 2003].
+Based on this there are a number of subtasks for searching that all affect the latency.
+—Indexing: Who constructs and updates the index? Where is it stored and what are
+the costs of mutating it? The peers involved in data placement have more processing
+overhead than others. There can be one big global index, or each peer can index its
+own content. Peers can specialize in only providing storage space or only ﬁlling the
+index, or they can do both. Where the index is stored also affects query routing.
+—Querying Routing: Along what path is a query sent from an issuing peer to a peer
+that is capable of answering the query via its index? Long paths are expensive in
+terms of latency, and slow network links and machines worsen this. The topology of
+the overlay network restricts the possible paths.
+—Query Processing: Which peer performs the actual query processing (generating re-
+sults for a speciﬁc query based on an index)? Having more peers involved in query
+processing increases the latency and makes fusing the results more difﬁcult. How-
+ever, if less peers are involved it is likely that relevant results will be missed.
+These search subtasks are relevant to tasks performed in all peer-to-peer networks. In
+the following paragraphs we discuss how these subtasks are performed in four com-
+monly used peer-to-peer architectures using ﬁle sharing as example, since many tech-
+niques used in peer-to-peer information retrieval are adapted from innovations seen
+in ﬁle sharing networks.
+2.5.1. CentralizedGlobalIndex. Early ﬁle sharing systems used a centralized global in-
+dexlocated at a dedicated party, usually a server farm, which kept track of what ﬁle
+was located at which peer in the network. When peers joined the network they sent
+a list of metadata on ﬁles they wanted to share containing, for example, ﬁlenames,
+to the central party which would then include them in its central index. All queries
+that originated from the peers were directly routed to and processed by that central
+party. Hence, indexing and searching itself was completely centralized and followed
+the client-server paradigm. Actually obtaining ﬁles, or parts of ﬁles, was decentralized
+by downloading from peers directly. This is sometimes referred to as a brokered archi-
+tecture, since the central party acts as a mediator between peers. The most famous
+example of this type of network is Napster. This approach avoids many problems of
+other peer-to-peer systems regarding query routing and index placement. However, it
+has at least two signiﬁcant drawbacks. Firstly, a central party limits the scalability of
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:7
+the system. Secondly, and more importantly, this central party forms a single point of
+technical, and legal, failure [Aberer and Hauswirth 2002; Risson and Moors 2006].
+2.5.2. Distributed Global Index. Later systems used a distributed global index by parti-
+tioning the index over the peers: both the index and the data are distributed in such
+networks. These indices conventionally take the form of a large key-value store: a
+distributed hash table [Stoica et al. 2001]. When a peer joins the network it puts
+the names of the ﬁles it wants to share as keys in the global index, and adds its own
+address as value for these ﬁlenames. Other peers looking for a speciﬁc ﬁle can then ob-
+tain a list of peers that offer that ﬁle by consulting the global distributed index. Each
+peer stores some part of this index. The key space is typically divided in some fashion
+over peers making each peer responsible for keys within a certain range. This also
+determines the position of a peer in the overlay network. For example: if all peers are
+arranged in a ring, newly joining peers would bootstrap themselves in between two
+existing peers and take over responsibility for a part of the key space of the two peers.
+Given a key, the peer-to-peer network can quickly determine what peer in the network
+stores the associated value. This key-based routing has its origins in the academic
+world and was ﬁrst pioneered in Freenet [Clarke et al. 2001]. There are many ways
+in which a hash table can topologically be distributed over the peers. However, all
+of these approaches have a similar complexity for lookups: typically O/parenleftbig
+logn/parenrightbig
+, where
+nis the total number of peers in the network. A notable exception to this are hash
+tables that replicate all the globally known key-value mappings on each peer. These
+single-hop distributed hash tables have a complexity of O(1)[Monnerat and Amorim
+2009]. The primary difference between hash table architectures is the way in which
+they adapt when peers join or leave the network and in how they offer reliability and
+load balancing. A complete discussion of this is beyond the scope of this article, but can
+be found in Lua et al. [2005]. A global index can also be implemented using gossip to
+replicate the full index for the entire network at each peer, as done by Cuenca-Acuna
+et al. [2003]. However, this approach is not often used and conceptually quite different
+from hash tables. A key difference is that each peer may have a slightly different view
+of what the global index contains at a given point in time, since it takes a while for
+gossip to propagate. In that way it is also close to aggregation. We propose to use the
+term replicated global index to distinguish this approach.
+2.5.3. Strict Local Indices. An alternative is to use strict local indices . Peers join the
+network by contacting bootstrap peers and connecting directly to them or to peers sug-
+gested by those bootstrap peers until reaching some neighbor connectivity threshold.
+A peer simply indexes its local ﬁles and waits for queries to arrive from neighboring
+peers. An example of this type of network is the ﬁrst version of Gnutella [Aberer and
+Hauswirth 2002]. This network performs search by propagating a query from its orig-
+inating peer via the neighbors until reaching a ﬁxed number of hops, a ﬁxed time-to-
+live, or after obtaining a minimum number of search results [Kurose and Ross 2003]:
+query ﬂooding. One can imagine this as a ripple that originates from the peer that
+issued the query: a breadth-ﬁrst search [Zeinalipour-Yazti et al. 2004]. Unfortunately,
+this approach scales poorly as a single query generates massive amounts of trafﬁc even
+in a moderate size peer-to-peer network [Risson and Moors 2006]. Thus, there have
+been many attempts to improve this basic ﬂooding approach. For example: by forward-
+ing queries to a limited set of neighbors, resulting in a random walk [Lv et al. 2002], by
+directing the search [Adamic et al. 2001; Zeinalipour-Yazti et al. 2004], or by clustering
+peers by content [Crespo and Garcia-Molina 2004] or interest [Sripanidkulchai et al.
+2003]. An important advantage of this type of network is that no index information
+ever needs to be exchanged or synchronized. Thus, index mutations are inexpensive,
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:8 A. S.Tigelaar et al.
+and all query processing is local and can thus employ advanced techniques that may
+be collection-speciﬁc, but query routing is more costly than in any other architecture
+discussed as it involves contacting a large subset of peers. While the impact of churn
+on these networks is lower than for global indices, poorly replicated, unpopular data
+may become unavailable due to the practical limit on the search horizon. Also, peers
+with low bandwidth or processing capacity can become a serious bottleneck in these
+networks [Lu 2007].
+2.5.4. AggregatedLocalIndices. A variation, or rather optimization, on the usage of lo-
+cal indices are aggregated local indices . Networks that use this approach have at least
+two, and sometimes more, classes of peers: those with high bandwidth and processing
+capacity are designated as super peers , the remaining “leaf” peers are each assigned
+to one or more super peers when they join the network. A super peer holds the index
+of both its own content as well as an aggregation of the indices of all its leafs. This
+architecture introduces a hierarchy among peers and by doing so takes advantage
+of their inherent heterogeneity. It was used by FastTrack and in recent versions of
+Gnutella. Searching proceeds in the same way as when using strict local indices. How-
+ever, only the super peers participate in routing queries. Since these peers are faster
+and well connected, this yields better performance compared to local indices, lower
+susceptibility to bottlenecks, and similar resilience to churn. However, this comes at
+the cost of more overhead for exchanging index information between leaf peers and
+super peers [Lu and Callan 2006; Yang et al. 2006]. The distinction between leaf and
+super peers need not be binary, but can instead be gradual based on, for example, node
+uptime. Usually leaf peers generate the actual search results for queries using their
+local index. However, it is possible to omit this and delegate even that task to the
+super peer. The leafs then only transmit index information to the super peer and pose
+queries.
+2.5.5. Discussion. Figure 1 depicts the formed overlay networks for the described
+peer-to-peer architectures. These graphs serve only to get a general impression of
+what form the overlay networks can take. The number of participating peers in a real
+network is typically much higher. Figure 1(a) shows a centralized global index: all
+peers have to contact one dedicated machine, or group thereof, for lookups. Figure 1(b)
+shows one possible instantiation of a distributed global index shaped like a ring [Stoica
+et al. 2001]. There are many other possible topological arrangements for a distributed
+global index overlay, the choice of which only mildly inﬂuences the typical performance
+of the network as a whole [Lua et al. 2005]. These arrangements all share the property
+that they form regular graphs : there are no loops, all paths are of equal length, and
+all nodes have the same degree. This contrasts with the topology for aggregated local
+indices shown in Figure 1(c), which ideally takes the form of a small world graph : this
+has loops, random path lengths, and variable degrees which result in the forming of
+clusters. Small world graphs exhibit a short global separation in terms of hops be-
+tween peers. This desirable property enables decentralized algorithms which use only
+local information for ﬁnding short paths. Finally, strict local indices, Figure 1(d), ei-
+ther take the form of a small world graph or a random graph depending on whether
+they include some type of node clustering. A random graph can have loops and both
+random path lengths and node degrees [Aberer and Hauswirth 2002; Girdzijauskas
+et al. 2011; Kleinberg 2006]. Besides the overall shape of the graph, the path lengths
+between peers are also of interest. Networks with interest-based locality have a short
+path length between each peer and peers with content similar to its interests. Keep-
+ing data closer to peers more likely to request them reduces the latency and overall
+network load. Content-based locality makes ﬁnding the majority of relevant contents
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:9
+central
+Fig. 1 . Overview of peer-to-peer index and search overlays. Each circle represents a peer in the network.
+Peers with double borders are involved in storing index information and processing queries. A Gsymbol
+indicates a peer stores a part of a global index, whereas an Lsymbol indicates a local index. The arrows
+indicate the origin of queries and the directions in which these queries ﬂow through the system.
+efﬁcient since they are mostly near to one another: clustering peers with similar con-
+tent [Lu 2007].
+Table I shows characteristics of the discussed peer-to-peer architectures and
+Table II shows an architectural classiﬁcation for the search task in several existing
+popular peer-to-peer ﬁle sharing networks. We distinguish several groups and types of
+peers. First, the central peer indicates the machine(s) that store the index in a central-
+ized global index. Second, the super peers function as mediators in some architectures.
+Third, there are all the peers in the network as a whole and on an individual basis.
+These distinctions are important since in most architectures the peers involved in con-
+structing the index are not the same as those involved in storage leading to differences
+in mutation costs. The peer from which a query originates rarely also provides results
+for that query. Hence, the network needs to route queries from the origin peer to result
+bearing peers. Queries can be routed either via forwarding between peers or by directly
+contacting a peer capable of providing results. Even the discussed distributed hash ta-
+bles use forwarding between peers to “hop” the query message through intermediate
+peers in the topology and close in on the peer that holds the value for a particular key.
+For all architectures the costs of routing a query are a function of the size of the net-
+work. However, the number of peers that perform actual processing of the query, and
+generate search results, varies from a single peer, in the centralized case, to a large
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:10 A. S.Tigelaar et al.
+TableI. Characteristics of Classes of Peer-to-PeerNetworks
+Global Index Local Indices
+Centralised Distributed Aggregated Strict
+Index
+- Construction Central Peer All Peers All Peers All Peers
+- Storage Central Peer All Peers (Shared) Super Peers All Peers (Indiv.)
+- Mutation Cost?Low High Low None
+Query Routing
+- Method Direct Forwarding Forwarding Forwarding
+- Parties Central Peer Intermediate Peers Super Peers Neighbour Peers
+- Complexity O(1) O/parenleftbig
+logN/parenrightbigyO(Ns 1)zO(N 1)
+Query Processing
+- Peer Subset Central Only Small Medium Large
+- Latency Low Medium Medium High
+- Result Set Unit Query Term Query Query
+- Result Fusion – Intersect Merge Merge
+- Exhaustive Yes Yes NoNo
+This list is not exhaustive, but highlights latency aspects of these general architectures important
+for information retrieval.
+?In terms of network latency and bandwidth usage from Yang et al. [2006].
+yO(1)distributed hash tables also exist [Monnerat and Amorim 2009; Risson and Moors 2006].
+zApplies to the number of super peers Ns.
+Searches are restricted to a subset of peers and thus to a subset of the index.
+TableII. Classiﬁcation of FreeText SearchinPeer-to-PeerFile
+Sharing Networks
+Global Index Local Indices
+Centralised Distributed Aggregated Strict
+BitTorrent ¥
+FastTrack ¥
+FreeNet ¥
+Gnutella ¥
+Gnutella2 ¥
+Kad ¥
+Napster ¥
+subset of peers when using strict local indices. Lower latency can be achieved by in-
+volving fewer peers in query processing. For information retrieval networks returned
+results typically apply to a whole query, except for the distributed global index, that
+commonly stores results using individual terms as keys. It is necessary to somehow
+fuse results obtained from different peers except when using a central global index.
+A distributed global index must intersect the lists of results for each term, whereas
+local indices can typically merge incoming results with the list of results obtained
+so far. The simplest form of merging is appending the results of each peer to one
+large list.
+The discussed approaches have different characteristics regarding locating suitable
+results for a query. The approaches that use a global index can search exhaustively.
+Therefore, it is easy to locate results for rare queries in the network: every result can
+always be found. In contrast, the approaches that use local indices can ﬂood their mes-
+sages to only a limited number of peers. Hence, they may miss important results and
+are slow to retrieve rare results. However, obtaining popular, well-replicated results
+from the network incurs signiﬁcantly less overhead. Additionally, they are also more
+resilient to churn, since there is no global data to rebalance when peers join or leave
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:11
+the system [Lua et al. 2005]. Local indices give the peers a higher degree of auton-
+omy, particularly in the way in which they may shape the overlay network [Daswani
+et al. 2003]. Advanced processing of queries, such as stemming, decompounding, and
+query expansion, can be done at each peer in the network when using local indices as
+each peer receives the original query. When using a global index these operations all
+have to be done by the querying peer, which results in that peer executing multiple
+queries derived from the original query, thereby imposing extra load on the network.
+Furthermore, one should realize that an index is only part of an information retrieval
+solution and cannot solve the relevance problem by itself [Zeinalipour-Yazti et al.
+2004].
+Solutions from different related ﬁelds apply to different architectures. Architectures
+using a global index have more resemblance to cluster and grid computing, whereas
+those using a local index have most in common with federated information retrieval.
+Speciﬁcally, usage of local indices gives rise to the same challenges as in federated in-
+formation retrieval: resource description, collection selection, and search result merg-
+ing, as we will discuss later in Section 3.3 [Callan 2000].
+An index usually consists of either one or two layers: a one-step index or a two-step
+index . In both cases the keys in the index are terms. However, in a one-step index
+the values are direct references to document identiﬁers, whereas in a two-step index
+the values are peer identiﬁers. Hence, a one-step index requires only one lookup to
+retrieve all the applicable documents for a particular term. Strict local indices are
+always one-step. In a two-step index the ﬁrst lookup yields a list of peers. The second
+step is contacting one, or more, peers to obtain the actual document identiﬁers. A one-
+step index is a straight document index , whereas a two-step index actually consists of
+two layers: a peer index and a document index per peer. A network with aggregated
+local indices is two-step when the leaf peers are involved in generating search results
+and the aggregated indices contain leaf peer identiﬁers. Two-step indices are most
+commonly used in combination with a distributed global index: the global index maps
+terms to peers that have suitable results for those terms. Note that a distributed global
+index requires contacting other peers most of the time for index lookups: even if we
+would store terms as keys and document identiﬁers as values, to perform a lookup one
+still needs to hop through the distributed hash table to ﬁnd the associated value for
+a key. However, this is conceptually still a one-step index, since the distributed hash
+table forms one index layer. Note that some clustering approaches use a third indexing
+layer intended to map queries to topical clusters.
+Peer-to-peer networks are conventionally classiﬁed as either structured or unstruc-
+tured. The approach with strict local indices is classiﬁed as unstructured and the
+approach that uses a distributed global index as structured. However, we agree with
+Risson and Moors [2006] that this distinction has lost its value. This is because most
+modern peer-to-peer networks assume some type of structure: the strict local indices
+approach is rarely applied. The two approaches are sometimes misrepresented as com-
+peting alternatives [Suel et al. 2003], whereas their paradigms really augment each
+other. Hence, some systems combine some properties of both [Rosenfeld et al. 2009].
+The centralized global index is structured because the central party can be seen as
+one very powerful peer. However, the overlay networks that form at transfer time are
+unstructured. Similarly, the aggregated indices approach is sometimes referred to as
+semistructured since it ﬁts neither the structured nor the unstructured deﬁnition. We
+believe it is more useful to describe peer-to-peer networks in terms of their speciﬁc
+structure and application and the implications this has for real-world performance.
+Hence, we will not further use the structured versus unstructured distinction in this
+article. Rather, we will focus on our primary application: searching in peer-to-peer
+networks, speciﬁcally in the information retrieval context.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:12 A. S.Tigelaar et al.
+3. PEER-TO-PEERINFORMATIONRETRIEVALNETWORKS
+3.1. Introduction
+In an information retrieval peer-to-peer network the central task is searching : given
+a query return some list of document references: the search results . A query can orig-
+inate from any peer in the network, and has to be routed to one or more other peers
+that can provide search results based on an index. The peers thus supply and consume
+results. A search result is a compact representation of a document. A document can
+contain text, image, audio, video, or a mixture of these [Zeinalipour-Yazti et al. 2004].
+A search result is sometimes called a snippet and at least includes a pointer to the
+full document and commonly additional metadata like a title, a summary, the size of
+the document, etc. A concrete example: search results as displayed by modern search
+engines. Each displayed result links to the associated full document. The compact
+representation provides a ﬁrst ﬁltering opportunity for users enabling them to choose
+what links they want to follow.
+Peer-to-peer information retrieval networks can be divided into two classes based on
+the location of the documents pointed to: ﬁrst, those with internal document references
+where the documents have to be downloaded from other peers within the network, for
+example, digital libraries [Di Buccio et al. 2009; Lu and Callan 2006], and second, those
+with external document references where obtaining the actual documents, locating and
+transferring, is outside of the scope of the peer-to-peer network, for example, a peer-
+to-peer Web search engine [Bender et al. 2005b].
+In the next sections we compare peer-to-peer information retrieval networks with
+other applications and paradigms.
+3.2. Comparison with File Sharing Networks
+File sharing networks are used to search for, locate, and download ﬁles that users of
+the peer-to-peer network share. The searching in such networks is similar to peer-to-
+peer information retrieval. A free text query is entered after which a list of ﬁles is
+returned. After searching the user selects a ﬁle of interest to download which usually
+has some type of globally unique identiﬁer, like a content-based hash. The next step
+islocating peers that have a copy of the ﬁle. It may then be either transferred from
+one speciﬁc peer, or from several peers simultaneously in which case speciﬁc parts of
+the ﬁle are requested from each peer and stitched back together after the downloads
+complete.
+The tasks of locating peers and especially transferring content are the primary
+application of ﬁle sharing networks and the focus area of research and performance
+improvements. Searches in such networks are usually for known items, whereas in
+information retrieval networks the intent is more varied [Lu 2007]. While some in-
+formation retrieval networks also provide locating and downloading operations, they
+typically focus on optimizations for the search task. Besides this general difference in
+focus, there are at least three concrete differences as well.
+First, the search index for ﬁle sharing is usually based only on the names of the
+ﬁles available on the network and not on their content as is the case for information
+retrieval. Such a name index is smaller than a full document index [Suel et al. 2003].
+Hence, there are also fewer postings for each term which makes it less costly to per-
+form intersections of posting lists, an operation common in a distributed global index
+[Reynolds and Vahdat 2003]. Because of their small size a centralized index scales
+well for these name-based indices [Lu 2007]. However, centrally searched networks
+have become unpopular largely because of legal reasons.
+Second, when a ﬁle is added to a ﬁle sharing index it does not change. If an ad-
+justed version is needed, it is simply added as a new ﬁle. Hence, index updates are not
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:13
+TableIII. DifferencesbetweenLocating forFile Sharing and Searching in
+Information RetrievalUsing a Two-StepIndex
+File Sharing Information Retrieval
+Application Locating Searching
+Index
+– Content File identiﬁers Document content
+– Size Small Large
+– Dominant Operation Append Update
+– Document Location Internal External
+– First Step Mapping fileid!fpeerg term!fpeerg
+– Second Step Mapping fileid!file term!fdocumentg
+– Mapping Type Exact Lookup Relevance Ranking
+– Result Fusion Trivial Difﬁcult
+Dominant Data Exchange
+– Unit Files Search results
+– Size Megabytes+ (large) Kilobytes (small)
+– Emphasis High throughput Low latency
+required. In contrast in an information retrieval network when the underlying doc-
+ument changes, the associated search results generated from that document have to
+change as well. Hence, the index needs to be updated so that the search results reﬂect
+the changes to the document pointed to.
+Third, since the emphasis in a ﬁle sharing network is on downloading ﬁles as fast as
+possible it is important to have a high throughput. In contrast, in information retrieval
+the search task dominates in which low latency is the most important [Reynolds and
+Vahdat 2003]. More concretely: it is acceptable if the network takes half a minute
+to locate the fastest peers for a download, whereas taking that long is not acceptable
+for obtaining quality search results. Table III summarizes the differences assuming
+a two-step index and a peer-to-peer Web search engine for information retrieval. For
+ﬁle sharing the index shown is the one used for locating a speciﬁc ﬁle, whereas for
+information retrieval it is for searching. The ﬁrst-step mapping is always made at the
+level of the whole network, whereas the second-step mapping is made at a speciﬁc peer.
+3.3. Comparison with Federated InformationRetrieval
+In federated information retrieval1there are three parties as depicted in Figure 2:
+clients that pose queries, one mediator , and a set of search servers that each discloses
+a collection of documents: resembling strict local indices. The search process begins
+when a client issues a query to the mediator. The mediator has knowledge of a large
+number of search servers and contacts an appropriate subset of these for answering
+the query. Each search server then returns a set of search results for the query. The
+mediator merges these results into one list and returns this to the client [Callan 2000].
+Similarities. There are three challenges that form the pillars of federated information
+retrieval which it has in common with peer-to-peer information retrieval [Callan 2000].
+First, there is the resource description problem : the mediator either needs to receive
+from each search server an indication of the queries it can handle [Gravano et al. 1997],
+in the case of cooperative servers, or the mediator needs to ﬁnd this out by probing
+the search servers if they are uncooperative [Du and Callan 1998; Shokouhi and Zobel
+2007]. In either case the end result is a resource description of the search server. These
+descriptions are typically kept small for efﬁciency reasons, as even large collections
+1This is also referred to as distributed information retrieval. However, “distributed” can be confused with
+general distributed systems such as server farms and grids. Hence, we stick to the now more popular term
+federated information retrieval.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:14 A. S.Tigelaar et al.
+Fig.2 . Schematic depiction of federated information retrieval. Each circle represents a peer in the network,
+those at the left are clients. Peers with double borders, at the right, are servers that maintain local indices
+marked with L. In between is the mediator node denoted with an M. The arrows indicate the origin of
+queries and the direction in which these ﬂow through the system.
+can be described with a relatively small amount of data [Tigelaar and Hiemstra 2010].
+The description can consist of, for example, summary statistics, collection size esti-
+mates, and/or a representative document sample. In a peer-to-peer information re-
+trieval network the peers need to know to what other peers they can send a query.
+Hence, resource descriptions are also needed. The advantage of peer-to-peer networks
+is that peers are cooperative and speak a designed and agreed upon protocol, mak-
+ing exchange of resource descriptions easier. However, peers may have an incentive
+to cheat about their content, which creates unique challenges speciﬁc to peer-to-peer
+networks.
+Second, there is the collection selection problem : after acquiring resource descrip-
+tions the next step is selecting a subset of search servers that can handle the query.
+When the mediator receives a new query from a client it can quickly score it locally
+against the acquired resource descriptions to determine the servers most likely to
+yield relevant search results for the query. The algorithms for determining the best
+servers in federated information retrieval can be divided in two groups: ﬁrst, those
+that treat resource descriptions as big documents without considering individual doc-
+uments within each resource: CORI, CVV and KL-Divergence based [Callan et al.
+1995; Xu and Croft 1999; Yuwono and Lee 1997], and second, those that do consider
+the individual documents within each resource: GlOSS, DTF, ReDDE [Gravano et al.
+1999; Nottelmann and Fuhr 2007; Si and Callan 2003a]. Although considering in-
+dividual documents gives better results, it also increases the complexity of resource
+descriptions and the communication costs. Additionally, most existing resource selec-
+tion algorithms are designed for use by a single mediator party making them difﬁcult
+to apply in a network with, for example, aggregated local indices. Resource selection
+according to the unique characteristics of peer-to-peer networks requires development
+of new algorithms [Lu 2007].
+Third, there is the result merging problem : once the mediator has acquired re-
+sults from several search servers these need to be merged into one coherent list. If
+all servers would use the same algorithm to rank their results this would be easy.
+However, this is rarely the case and exact ranking scores are commonly not included.
+The ﬁrst step in merging is to normalize the scores globally, so that they are resource
+independent. In federated information retrieval CORI or the SemiSupervised Learn-
+ing (SSL) merging algorithm can be used for this [Si and Callan 2003b]. However,
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:15
+in peer-to-peer environments the indexed document collections often vary widely in
+their sizes which makes CORI unlikely to work well. SSL requires a sample database
+which makes it undesirable in peer-to-peer networks cautious about bandwidth usage.
+An alternative approach is to recalculate document scores at the mediator as done
+by Kirsch’s algorithm [Kirsch 1997] which is quite accurate and has low communi-
+cation costs by only requiring each resource to provide summary statistics. However,
+this also requires knowledge of global corpus statistics which is costly to obtain in
+peer-to-peer networks with local indices. Result merging in peer-to-peer informa-
+tion retrieval networks requires an algorithm that can work effectively with minimal
+additional training data and communication costs, for which none of the existing al-
+gorithms directly qualiﬁes. Result merging in existing networks has so far relied on
+simple frequency-based methods, and has not provided any solution to relevance-based
+result integration [Lu 2007].
+Differences. The ﬁrst noticeable difference with peer-to-peer information retrieval is
+the strict specialization of the various parties. The clients only issue queries whereas
+the search servers only serve search results. This also determines the shape of the
+rigid overlay network that forms: a bipartite graph with clients on one side, servers on
+the other side, and the mediator in the middle. Indeed, federated information retrieval
+is much closer to the conventional client-server paradigm and commonly involves
+machines that already “know” each other. This contrasts with peer-to-peer networks
+where peers take on these roles as needed and frequently interact loosely with “anony-
+mous” other machines. Additionally, a peer-to-peer network is subject to signiﬁcant
+churn, availability, and heterogeneity problems which only mildly affect federated
+information retrieval networks due to the strict separation of concerns [Lu 2007].
+A second difference is the presence of the mediator party. To the clients the me-
+diator appears as one entry point and forms a fac ¸ade: clients are never aware that
+multiple search servers exist at all. This has the implication that all communication
+is routed through the mediator which makes it a single point of failure. In practice a
+mediator can be a server farm to mitigate this. However, it still remains a single point
+of control, similar to completely centralized search systems, which can create legal
+and ethical difﬁculties. A peer-to-peer network with one central “mediator” point for
+routing queries is conceptually close to a federated information retrieval network [Lu
+2007]. However, most peer-to-peer networks lean towards distributing this mediation
+task, mapping queries to peers that can provide relevant search results, over multiple
+peers.
+4. EXISTING RESEARCH
+4.1. Introduction
+Peer-to-peer information retrieval has been an active research area for about a decade.
+In this section we ﬁrst reveal the main focus of peer-to-peer information retrieval,
+followed by an in-depth overview of optimization techniques developed over the years.
+A practical view on the goal of peer-to-peer information retrieval is minimizing
+the number of messages sent per query while maintaining high recall and precision
+[Zeinalipour-Yazti et al. 2004]. There are several approaches to this which represent
+trade-offs. Let us start with the two common strategies to partition indices over mul-
+tiple machines: partition-by-document and partition-by-keyword [Li et al. 2003]. In
+partition-by-document each peer is responsible for maintaining a local index over a
+speciﬁc set of documents: the postings for all terms of a particular document are lo-
+cated at one speciﬁc peer. In some cases the documents themselves are also stored at
+that peer, but they need not be. The strict and aggregated local indices architectures
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:16 A. S.Tigelaar et al.
+are commonly used in peer-to-peer networks that use this partitioning. In contrast, in
+partition-by-keyword each peer is responsible for storing the postings for some speciﬁc
+keywords in the index. A natural architecture for this is the distributed global index.
+An early investigation into the feasibility of a peer-to-peer Web search network was
+done by Li et al. [2003]. They view partition-by-document as a more tractable starting
+point, but show that partition-by-keyword can get within range of the performance of
+partition-by-document by applying various optimizations to a distributed global index.
+In contrast Suel et al. [2003] conclude that partition-by-document approaches scale
+poorly, because document collections do not “naturally” cluster in a way that allows
+query routing to a small fraction of peers and thus each query requires contacting
+nearly all peers in the system. Perhaps due to this article much of the research in peer-
+to-peer information retrieval has focused on partition-by-keyword using a distributed
+global index [Klampanos and Jose 2004].
+Unfortunately, a distributed global index is not without drawbacks since it is in-
+tended for performing efﬁcient lookups, not for efﬁcient search [Bawa et al. 2003].
+First, a hash table provides load balancing rather naively, by resorting to the unifor-
+mity of the hash function used [Triantaﬁllou et al. 2003]. As term posting lists differ
+in size this can cause hotspots to emerge for popular terms which debalances the load.
+Second, the intersection of term posting lists used in distributed global indices ignores
+the correlations between terms which can lead to unsatisfactory search accuracy [Lu
+2007]. Third, the communication cost for an intersection grows proportionally with
+the number of query terms and the length of the inverted lists. Several optimizations
+have been proposed such as storing multiterm query results for a particular term lo-
+cally to avoid intersections and requiring each peer to store additional information
+for terms strongly correlated with the terms it already stores. The choice of resource
+descriptions in a distributed global index is thus limited by the high communication
+costs of index updates: full text representations are unlikely to work well due to the
+massive network trafﬁc that this requires. Fourth, skewed corpus statistics as a result
+of term partitioning may lead to globally incomparable ranking scores. Finally, dis-
+tributed hash tables are vulnerable to a variety of network attacks that compromise
+the security and privacy of users [Steiner et al. 2007].
+Many authors fail to see a number of beneﬁts unique to partition-by-document local
+indices, such as the low costs for ﬁnding popular items, advanced query processing,
+inexpensive index updates, and high churn resilience. Admittedly, the primary chal-
+lenge for such indices is routing the query to suitable peers. Our stance is that both
+approaches have their merit and complement each other. Recent research indeed con-
+ﬁrms the effectiveness of using local indices for popular query terms and a global index
+for rare query terms [Rosenfeld et al. 2009].
+Li et al. [2003] conclude that Web-scale search is not possible with peer-to-peer tech-
+nology. The overhead introduced by communication between peers is too large to offer
+reasonable query response times given the capacity of the Internet. However, much
+work, discussed in the next section, has been done since their paper and the nature
+and capacity of the Internet has changed signiﬁcantly in the intervening time.
+Yang et al. [2006] compare the performance of several peer-to-peer architectures
+for information retrieval combined with common optimizations. They test three ap-
+proaches: a distributed global index augmented with Bloom ﬁlters and caching; aggre-
+gated local indices with query ﬂooding; and strict local indices using random walks.
+All of these are one-step term-document indices. Interestingly, they all consume ap-
+proximately the same amount of bandwidth during query processing, although the
+aggregated local indices are the most efﬁcient. However, the distributed global index
+offers the lowest latency of these three approaches, closely followed by aggregated local
+indices and strict local indices being orders of magnitude slower. For all approaches
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:17
+the forwarding of queries in the network introduces the most latency, while answering
+queries is relatively inexpensive. Even though the distributed global index is really
+fast its major drawback rears its ugly head at indexing and publishing time. When
+new documents are added to the network this uses six times as much bandwidth and
+nearly three times as much time compared to the aggregated local indices for updat-
+ing the posting lists. Strict local indices resolve all this locally and incur no costs in
+terms of time or bandwidth for publishing documents. This study clearly shows that an
+architecture should achieve a balance between retrieval speed and update frequency.
+4.2. Optimization Techniques
+In this section we discuss several optimization approaches. There are two reasons
+to use these techniques. One is to reduce bandwidth usage and latency, the other is
+to improve the quality and quantity of the search results returned. Most techniques
+discussed inﬂuence both of these aspects and offer trade-offs, for example, one could
+compromise on quantity to save bandwidth and on quality to reduce latency.
+4.2.1.ApproximateIntersectionofPostingListswithBloomFiltersandMin-WiseIndependentPer-
+mutations [Cuenca-Acuna et al. 2003; Michel et al. 2005a, 2006; Reynolds and Vahdat
+2003; Suel et al. 2003; Zhang and Suel 2005].
+When using a distributed global index a multiterm query requires multiple lookups
+in the distributed hash table. The posting list for each term needs to be intersected
+to ﬁnd the documents that contain all query terms. Exchanging posting lists can be
+costly in terms of bandwidth, particularly for popular terms with many postings, thus
+smaller Bloom ﬁlters derived from these lists can be transferred instead. Bloom ﬁlters
+were ﬁrst used in peer-to-peer information retrieval by Reynolds and Vahdat [2003].
+A Bloom ﬁlter is an array of bits. Each bit is initially set to zero. Two operations
+can be carried out on a Bloom ﬁlter: inserting a new value and testing whether an
+existing value is already in the ﬁlter. In both cases khash functions are ﬁrst applied
+to the value. An insert operation, based on the outcome, sets kpositions of the Bloom
+ﬁlter to one. Membership tests read the kpositions from the Bloom ﬁlter. If all of
+them equal one the value might be in the dataset. However, if one of the kpositions
+equals zero the value is certainly not in the dataset. Hence, false positives are possible,
+but false negatives never occur [Bloom 1970; van Heerde 2010, p. 82]. Bloom ﬁlters
+are an attractive approach for distributed environments because they achieve smaller
+messages which leads to huge savings in network I/O [Zeinalipour-Yazti et al. 2004].
+Consider an example in the peer-to-peer information retrieval context: peer Q poses
+a query qconsisting of terms aandb. We assume that term ahas the longest posting
+list. Peer A holds the postings P(a)for term a, derives a Bloom ﬁlter F(a)from this,
+and sends it to peer B that contains the postings P(b)for term b. Peer B can now test
+the membership of each document in P(b)against the Bloom ﬁlter F(a)and send back
+the intersected list P(b)\F(a)to peer Q as ﬁnal result. Since this can still contain false
+positives, the intersection can instead by sent back to peer A, which can remove false
+positives since it has the full postings P(a), the result is then P(a)\(P(b)\F(a)): the
+true intersection for terms aandb, which can be sent as result to peer Q. Bandwidth
+savings occur when sending the small F(a)instead of the large P(a)from peer A to
+B. However, this approach requires an extra step if one wants to remove the false
+positives [Reynolds and Vahdat 2003].
+False positives are the biggest drawback of Bloom ﬁlters: the fewer bits used, the
+higher the probability a false positive occurs. Large collections require more bits to
+be represented than smaller ones. Unfortunately, Bloom ﬁlters need to have the same
+size for intersection and union operations. This makes them unsuitable for networks in
+which the peers have collections that vary widely in the number of stored documents.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:18 A. S.Tigelaar et al.
+Bloom ﬁlters can be used to perform approximate intersection of posting lists. How-
+ever, as a step prior to that it is also interesting to estimate what an additional posting
+list would do in terms of intersection to the lists already obtained. This task only re-
+quires cardinality estimates and not the actual result of an intersection. While Bloom
+ﬁlters can be used for this, several alternatives are explored by Michel et al. [2006].
+The most promising is Min-Wise Independent Permutations (MIPs). This requires a
+list of numeric document identiﬁers as input values. First, this method applies klin-
+ear hash functions, with a random component, to the values each yielding a new list of
+values. Second, the resulting klists are all sorted, yielding kpermuted lists, and the
+minimum value of each of these lists is taken and added to a new list: the MIP vector
+of size k. The fundamental insight is that each element has the same probability of
+becoming the minimum element under a random permutation. The method estimates
+the intersection between two MIP vectors by taking the maximum of each position in
+the two vectors. The number of distinct values in the resulting vector divided by the
+size of that vector forms an estimate of the overlap between them. The advantage is
+that even if the input vectors are of unequal length, it is still possible to use only the
+ﬁrst few positions to get a (less accurate) approximation. Michel et al. [2006] show
+that MIPs are much more accurate than Bloom ﬁlters for this type of estimation.
+4.2.2. Reducing the Length of Posting Lists with Highly Discriminative Keys [Luu et al. 2006;
+Skobeltsyn et al. 2009].
+An alternative way of reducing the costs of posting list intersection for a distributed
+global index is by making the lists themselves shorter. To achieve this instead of build-
+ing an index over single terms, one can build one over entire multiterm queries. This
+is the idea behind highly discriminative keys. No longer are all terms posted in a
+global distributed index, but instead multiterm queries are generated from a docu-
+ment’s content that discriminate that document well from others in the collection. The
+result: more postings in the index, but shorter posting lists. This offers a solution
+to one of the main drawbacks of using distributed hash tables: intersection of large
+posting lists.
+4.2.3. Limiting the Number of Results to Process with Top kApproaches. Processing only a
+subset of items during the search process can yield performance beneﬁts: less data
+processing and lower latency. Various algorithms, discussed shortly, can be used to
+retrieve the top items for a particular query without having to calculate the scores for
+all the items. Retrieving top items makes sense as it has been shown that users of
+Web search engines prefer quality over quantity with respect to search results: more
+precision and less recall [Oulasvirta et al. 2009]. Top kapproaches have been applied
+to various architectures and at various stages in peer-to-peer information retrieval.
+—Topkresults requesting [Cuenca-Acuna et al. 2003]. A simple way to optimize the
+system is to only request the top results. Approaches that use local indices always
+apply a variable form of limited result requesting implicitly by bounding the num-
+ber of hops made when ﬂooding or by performing a random walk that terminates.
+However, that number can also be explicitly set to a constant by the requester as is
+done for the globally replicated index used by Cuenca-Acuna et al. [2003]. They ﬁrst
+obtain a list of ksearch results and keep contacting nodes as long as the chance of
+them contributing to this top kremains high. The top results stabilize after a few
+rounds.
+—Top k query processing [Balke et al. 2005; Michel et al. 2005a; Suel et al. 2003; Zhang
+and Suel 2005]. This approach has its roots in the database community, particularly
+in the work of Fagin et al. [2001]. Several variations exist, all with the same basic
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:19
+idea: we can determine the top kdocuments given several input lists without hav-
+ing to examine these lists completely and while not adversely affecting performance.
+This is often used in cases where a distributed global index is used and posting lists
+have to be intersected. The threshold algorithm is the most popular [Michel et al.
+2005a; Suel et al. 2003]. This algorithm maintains two data structures: a queue
+with peers to contact for obtaining search results and a list with the current top k
+results. Peers in the queue are processed one by one, each returning a limited set
+ofksearch results of the form (document;score )sorted by score in descending order.
+For a distributed global index these are the top items in the posting list for a par-
+ticular term. The algorithm tracks two scores for each unique document: worst and
+best. The worst score is the sum of the scores for a document dfound in all result
+lists in which dappeared. The best score is the worst score plus the lowest score
+(of some other document) encountered in the result lists in which ddid not appear.
+Since all the result lists are truncated, this last score forms an upper bound of the
+best possible score that would be achievable for document d. The current top kis
+formed by the highest scoring documents seen so far based on their worst score. If
+the best score of a document is lower than the threshold, which is the worst score of
+the document at position kin the current top kresults, it need not be considered for
+the top k. The algorithm thus bases the ﬁnal intersection on only the top kresults
+from each peer, which provably yields performance equivalent to “sequentially” in-
+tersecting the entire lists. This thus saves both bandwidth and computational costs
+without negatively affecting result quality. A drawback is that looking up document
+scores requires random access to the result lists [Suel et al. 2003]. Zhang and Suel
+[2005] later investigated the combination of top kquery processing with several
+optimization techniques. They draw the important conclusion that different opti-
+mizations may be appropriate for queries of different lengths. Balke et al. [2005]
+show that top kquery processing can also be effective in peer-to-peer networks with
+aggregated local indices.
+—Top k result storing [Skobeltsyn and Aberer 2006; Skobeltsyn et al. 2007, 2009; Tang
+and Dwarkadas 2004; Tang et al. 2002]. One step further is only storing the top k
+results for a query, or term, in the index. Skobeltsyn and Aberer [2006] take this
+approach as a means to further reduce trafﬁc consumption. Related to this is the
+approach of Tang and Dwarkadas [2004] that store postings only for the top terms
+in a document. They state that while indexing only these top terms might degrade
+the quality of search results, it likely does not matter since such documents would
+not rank high for queries for the other nontop terms they contain anyway.
+4.2.4. Reducing the Number of Peers Involved in Index Lookups by Global Index Replication
+[Cuenca-Acuna et al. 2003; Galanis et al. 2003]. Lookups to map queries to peers
+are expensive when they involve contacting other peers regardless of the architecture
+used. What if a peer can do all lookups locally? The authors of the PlanetP system
+explore this novel approach. They essentially replicate a full global index at each peer:
+a list of all peers, their IP addresses, current network status, and their Bloom ﬁlters
+for terms. This information is spread through the network using gossip. If something
+changes at a peer it gossips the change randomly to each of its neighbors until enough
+neighboring peers indicate that they already know about the rumor. Each peer that
+receives rumors also spreads it in the same way. There is the possibility that a peer
+misses out on a gossip; to cope with this the authors periodically let peers exchange
+their full directory and they also piggyback information about past rumors on top of
+new ones. Whilst this is an interesting way to propagate indexing information, it is
+unfortunately also slow: it takes in the order of hundreds of seconds for a network
+of several thousand peers to replicate the full index information at each peer. This
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:20 A. S.Tigelaar et al.
+approach has not seen widespread adoption and is perhaps best suited to networks
+with a small number of peers due to scalability issues [Zeinalipour-Yazti et al. 2004].
+Although we prefer to label this approach as a global index, it can also be viewed as a
+very extreme form of aggregation where each peer holds aggregate data on every other
+peer in the network. Note that this approach differs from a single-hop distributed hash
+table, since it uses no hashing and no distributed keyspace. Hence, the topology of the
+network is not determined by a keyspace.
+4.2.5. Reducing Processing Load by Search Result Caching [Reynolds and Vahdat 2003;
+Skobeltsyn and Aberer 2006; Skobeltsyn et al. 2007, 2009; Tigelaar and Hiemstra
+2011; Tigelaar et al. 2011; Zimmer et al. 2008]. It makes little sense to reconstruct the
+search result set for the same query over and over again if it does not really change.
+Performance can be increased signiﬁcantly by caching search results. Skobeltsyn and
+Aberer [2006] use a distributed hash table to keep track of peers that have cached
+relevant search results for speciﬁc terms. Initially this table is empty, and each (multi-
+term) query is ﬁrst broadcast through the entire peer-to-peer network, using a shower
+broadcast with costs O(n)for a network of npeers. After this step the peer that
+obtained the search results registers itself as caching in the distributed hash table
+for each term in the query. This allows for query subsumption: returning search
+results for subsets of the query terms in the absence of a full match. The authors
+base the content of the index on the queries posed within the network, an approach
+they term query-driven indexing . This signiﬁcantly reduces network trafﬁc for popular
+queries while maintaining a global result cache that adapts in real time to submitted
+queries.
+4.2.6. Reducing the Number of Peers Involved in Query Processing by Clustering [Akavipat
+et al. 2006; Bawa et al. 2003; Crespo and Garcia-Molina 2004; Klampanos and Jose
+2004, 2007; Lele et al. 2009; Lu and Callan 2007; Sripanidkulchai et al. 2003; Tirado
+et al. 2010]. When using local indices, keeping peers with similar content close to each
+other can make query processing more efﬁcient. Instead of sending a query to all peers
+it can be sent to a cluster of peers that covers the query’s topic. This reduces the to-
+tal number of peers that need to be contacted for a particular query. Unfortunately,
+content-based clustering does not occur naturally in peer-to-peer networks [Suel et al.
+2003]. Hence, Bawa et al. [2003] organize peer-to-peer networks by using topic seg-
+mentation. They arrange the peers in the network in such a way that only a small
+subset of peers, that contain matching relevant documents, need to be consulted for a
+given query. Clustering peers is performed based on either document vectors or full
+collection vectors. They then use a two-step process to route queries based on the
+topic they match. They ﬁrst ﬁnd the cluster of peers responsible for a speciﬁc topic and
+forward the query there. After this the query is ﬂooded within the topical cluster to ob-
+tain matches. They conclude that their architecture provides good performance, both
+in terms of retrieval quality and in terms of latency and bandwidth. Unfortunately,
+their system requires a central directory for initially ﬁnding a good topic cluster for
+query routing. Akavipat et al. [2006] show how to do clustering without such a central
+directory.
+Klampanos and Jose [2007] evaluate cluster-based architectures for large-scale
+peer-to-peer information retrieval focusing on single-pass clustering with both a vari-
+able and ﬁxed number of clusters. They ﬁnd that the predominantly small size of Web
+documents makes them hard to relate to other documents thereby leading to poor
+clustering. Clustering mechanisms fail to discover the structure of the underlying doc-
+ument distribution leading to the situation where not enough relevant sources can
+be contacted to route a query to. This is due to the loss of information inherent in
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:21
+the creation of cluster centroids. They propose two solutions: ﬁrst, replicating doc-
+uments part of popular clusters on multiple peers, leading to a signiﬁcant improve-
+ment in effectiveness. Although this does not solve the problem for unpopular topics,
+it could work sufﬁciently well for most users. Second, assuming a relevance feed-
+back mechanism exists and using this to alter the centroids of the global topic clus-
+ters. The weight of each term in a cluster is then determined by the relevance of
+that cluster to the query based on the feedback. They show the usefulness of both
+replication and relevance feedback which lead to better query routing and higher
+precision, further emphasizing relevance feedback as a promising and natural evo-
+lution of current peer-to-peer information retrieval technologies.
+Interest-based clustering works either by shortening the path lengths between
+peers with similar interest, meaning: peers which pose similar queries, or by bringing
+peers with a particular interest closer to peers with matching content. Although not
+exactly the same, both aim to reduce the number of hops needed for obtaining relevant
+content, in the ﬁrst case by leveraging cached information present at peers with sim-
+ilar interests, that is, caches at other consuming peers, while the second case brings
+one closer to the origin of information: providing peers that contain original content
+[Akavipat et al. 2006; Sripanidkulchai et al. 2003].
+The two clustering approaches, by content and by interest, can also be combined.
+4.2.7. Reducing Latency and Improving Recall using Random Walks [Lv et al. 2002; Yang
+et al. 2006]. Peer-to-peer systems with local indices are conventionally searched with
+query ﬂooding. That approach is theoretically exhaustive, but because of tractabil-
+ity it is applied in a nonexhaustive way by bounding the number of hops. Lv et al.
+[2002] propose an alternative to this by using random walks. Instead of searching in
+a breadth-ﬁrst manner by forwarding the queries to all neighbors, we search depth-
+ﬁrst by forwarding the query only to one neighbor. Such a walk originates from the
+querying peer, and randomly steps forward through the network. Peers that have rele-
+vant results send these back directly to the originating peer. Peers participating in the
+walk ocassionally check the satisﬁcation the originating peer has with respect to the
+number of results obtained so far and terminate the walk based on this. Yang et al.
+[2006] ﬁnd that this approach is slow, but multiple walks can be started in parallel
+to decrease the latency. Similar to random walks, Kalogeraki et al. [2002] propose to
+forward query messages to a randomly selected fraction of neighboring peers. How-
+ever, this still increases messaging costs exponentially when increasing the fraction
+whereas for random walkers this remains linear.
+4.2.8. Reducing Latency and Improving Recall Using Directed Walks [Adamic et al. 2001;
+Joseph 2002; Kalogeraki et al. 2002; Li et al. 2009; Song et al. 2010; Tsoumakos
+and Roussopoulos 2003; Yang and Garcia-Molina 2002; Zeinalipour-Yazti et al. 2004;
+Zhong et al. 2003]. Adamic et al. [2001] route query messages via high-degree nodes:
+those with high connectivity, and show that this both decreases search time and in-
+creases the network penetration. Yang and Garcia-Molina [2002] forward query mes-
+sages to peers that previously returned the most query results. In a similar vein,
+Tsoumakos and Roussopoulos [2003] introduce adaptive probabilistic search where
+each peer maintains a probabilistic routing table for each query that either originated
+from it or traveled through it. The initial peer that submits a query broadcasts it
+to all its neighbors, but from there on the query message is forwarded only to the
+neighbor that has the highest probability of obtaining results based on past feedback.
+Zeinalipour-Yazti et al. [2004] build upon this and propose a mechanism where peers
+actively build proﬁles of neighboring peers based on the most recent queries they
+responded to, similar to Joseph [2002]. A peer scores incoming queries against the
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:22 A. S.Tigelaar et al.
+TableIV.Selection of LiteratureRegarding SeveralPeer-to-PeerInformation RetrievalSystems
+Name References
+DCT / ALVIS [Luu et al. 2006; Skobeltsyn and Aberer 2006]
+[Skobeltsyn et al. 2007, 2009]
+DHI / SPINA [Di Buccio et al. 2009]
+DTF [Fuhr 1999; Nottelmann and Fuhr 2007]
+pSearch / eSearch [Tang and Dwarkadas 2004; Tang et al. 2002]
+MINERVA [Bender et al. 2005b, 2006; Chernov et al. 2005]
+[Bender et al. 2007; Michel et al. 2006]
+[Zimmer et al. 2008]
+NeuroGrid [Joseph 2002]
+ODISSEA [Suel et al. 2003; Zhang and Suel 2005]
+PHIRST [Rosenfeld et al. 2009]
+PlanetP [Cuenca-Acuna et al. 2003]
+SETS [Bawa et al. 2003]
+Sixearch [Akavipat et al. 2006; Lele et al. 2009; Menczer et al. 2008]
+proﬁles of its neighbors ranking them both qualitively, based on their cosine similar-
+ity, and quantitatively: the number of previously returned results. This outperforms
+basic ﬂooding, random forwarding [Kalogeraki et al. 2002], and pure quantitative di-
+rected routing [Yang and Garcia-Molina 2002].
+Zhong et al. [2003] consider an economic approach to query routing in mobile net-
+works using a simple, cheat-proof, credit-based system which relies on a central credit
+authority that charges peers for sending messages. Credit can be obtained with real
+money or by forwarding messages for other peers. Li et al. [2009] take this work as
+inspiration and apply it to peer-to-peer networks with local indices. When a peer issues
+a query it offers a reward for the results. Speciﬁcally, neighboring peers are promised
+this premium as payment when relevant search results are returned via them. Peers
+may choose to which other peers they forward a query and do so in return for a part
+of the premium offered to them. Finally, when the query routing process discovers a
+peer that has relevant search results, it passes these back along the path to the peer
+that initiated the query. Along the way each peer is given the promised reward. This
+reward currency can be used to issue new queries by each peer and thus encourages
+participation in routing. The authors show that their approach better utilizes the peer-
+to-peer network’s capacity than both query ﬂooding and random walks.
+5. EXISTING SYSTEMS
+Many peer-to-peer information retrieval systems have been developed for various ap-
+plications. These systems often borrow elements from ﬁle sharing networks and feder-
+ated information retrieval with various levels of success. Most research systems focus
+on either the domain of computing grids, digital libraries, or the Web.
+Table IV lists references to some of the literature that describes several major re-
+search systems developed. Figure 3 shows a classiﬁcation breakdown of each of these
+peer-to-peer information retrieval systems plus all other research systems discussed.
+5.1. Scientiﬁc Systems
+Although many research systems exist, we restrict ourselves to a subset of them in this
+section. We discuss systems that stand out because of either their pioneering nature
+or by their use of an interesting mix of techniques.
+Sixearch .One of the ﬁrst peer-to-peer information retrieval systems was the
+Infrasearch project, which later became JXTASearch [Klampanos and Jose 2004;
+Waterhouse et al. 2002] which is also the basis for Sixearch [Akavipat et al. 2006; Lele
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:23
+Fig.3 . Classiﬁcation of peer-to-peer information retrieval research systems. See Section 2.5 and Section 4.2
+for an explanation of the rectangular distinctions. Clustering in this diagram means explicit interest-based
+or content-based clustering and not the random clusters that can occur naturally when using aggregated
+local indices.
+et al. 2009]. Sixearch consists of several components: a topical crawler, a document in-
+dexing system, a retrieval engine, JXTA for peer-to-peer network communication, and
+a contextual learning system. They use an XML-based architecture and assume that
+the query consists of a structured customizable set of ﬁelds. A book collection could,
+for example, have the ﬁelds: title, author, etc. This approach is not geared too well to-
+wards full text retrieval since it is based on the structure of queries rather than that of
+the content shared [Klampanos and Jose 2004]. Supplier peers publish, for each query
+ﬁeld, a set of keywords for which they believe they can provide relevant results: their
+resource description. Consumer peers pose structured queries which are then routed
+to appropriate supplier peers using hubs. The query routing bases itself on content
+proﬁles of neighboring peers continually improved using reinforcement learning based
+on past interactions. Fusion of search results returned by multiple peers uses a simple
+voting algorithm. The authors want to improve their system by focusing on contextual
+learning and social collaboration. They intend to extend their system with a reputation
+system as a security component to distinguish spammers from honest peers [Menczer
+et al. 2008].
+ODISSEA .Suel et al. [2003] introduce the ODISSEA peer-to-peer architecture.
+Their system consists of two tiers. The lower tier consists of peers that maintain a
+distributed global index. The postings for a term are always located at a single peer.
+The upper tier consists of update peers that insert or update documents in the sys-
+tem, like a crawler or a Web server, and query peers that use the lower tier to answer
+queries. The novelty in their approach is both in the specialization of peers as well as
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:24 A. S.Tigelaar et al.
+in their usage of a distributed global term-document index. The specializations make
+that in their system the peers responsible for storing, constructing, and querying the
+index are in fact disjunct. This resembles the completely centralized approach com-
+monly used by modern search engines where some machines just store documents in
+the index, some crawl to keep the index fresh, and (external) others only query. In con-
+trast to those systems, ODISSEA offers an open indexing and searching infrastructure
+in which every machine that speaks the protocol can participate as peer.
+When handling multiterm queries, the posting list intersections are conducted in
+ascending order of term posting list size: from small to large, as this greatly reduces
+the amount of data that needs to be transferred. Furthermore, they apply top kquery
+processing to minimize bandwidth usage. The authors suggest optimization of query
+execution, compression, and pruning techniques as important future work. Further-
+more, they state that Web-scale information retrieval is a much more challenging ap-
+plication than ﬁle sharing.
+MINERVA .Bender et al. [2005b] assume that each peer performs its own crawls
+and builds a local index. A peer ﬁrst searches its own local index to ﬁnd relevant
+search results. If these results are unsatisfactory, the peer can consult a global dis-
+tributed index which contains for each term in the network a list of peers that have
+relevant documents: a two-step index. This global index also contains statistics re-
+garding the local indices maintained by each peer. The authors show that properly
+estimating the overlap between search results can reduce the number of peers that
+need to be contacted for complete recall by more than 60%. However, the lookups in
+a distributed hash table remain expensive. Bender et al. [2006] propose to use cor-
+relations among individual terms in a query to reduce the number of lookups: the
+peer that handles the ﬁrst term in the query also, adaptively, stores what peers to
+contact for the remaining query terms. This signiﬁcantly reduces the number of in-
+volved peers, while sustaining the same level of recall. Nevertheless, popular terms
+can cause severe load imbalances if a single peer bears responsibility for storing all
+postings for one term. Michel et al. [2005b] propose creating one-step term-document
+indices in MINERVA for popular terms to reduce response times. Since posting lists
+are usually scanned sequentially, from the best to worst scoring document for a par-
+ticular term, they use an order-preserving hash function2to store the postings for a
+term sorted by descending score over multiple peers. The authors apply top kquery
+processing to further reduce load. This can be further optimized by applying search
+result caching [Zimmer et al. 2008]: storing cached search results for each complete
+query on peers that store the postings for one of the query terms. These results contain
+meta-information that helps in judging whether they are still fresh enough and whom
+to contact for refreshed results. The authors show that cycling out the least frequently
+used item is the best cache management strategy for a bounded cache. They experi-
+ment with both exact caching: matching a multiterm query exactly, and approximate
+caching: matching term subsets of a multiterm query. They ﬁnd that both approaches
+save valuable network resources without compromising result quality.
+In later work Bender et al. [2005a] consider the novelty of additional resulting docu-
+ments in addition to the pure quality using a modiﬁed federated information retrieval
+collection selection algorithm. This also appears in Michel et al. [2006] where they fo-
+cus on further optimizing query routing. Furthermore, they experiment with Bloom ﬁl-
+ters and Min-Wise Independent Permutations, showing that the latter is better suited
+for obtaining result set size estimations.
+2Such a function guarantees that if a>b, then hash (a)>hash (b).
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:25
+ALVIS.Luu et al. [2006] introduce the ALVIS Peers system. This is a distributed
+global index approach, with several innovations. During ﬁnal result fusion each peer
+that generated an index entry is contacted and asked to recompute the document score
+based on global and local statistics, thereby generating globally comparable scores. In-
+stead of storing postings for individual terms, the authors use highly discriminative
+keys. This introduces the problem of having to store many more keys than in a con-
+ventional term-peer index. To mitigate this, in later work [Skobeltsyn et al. 2007,
+2009] they combine their approach with query-driven indexing storing only popular
+keys in the index and apply top kresult storing. While this has a penalty for less
+popular, long-tail queries, Shokouhi et al. [2007] already showed that query logs can
+be effectively used to prune irrelevant keys from an index without much performance
+loss.
+PHIRST .The differences between global and local indices give rise to a difﬁcult
+trade-off. We have to choose between fast, but costly and inﬂexible exact search or
+slow, but inexpensive and ﬂexible approximate search. Rosenfeld et al. [2009] present
+an approach to peer-to-peer full text search that combines global and local indices
+for different types of terms. They keep only the low-frequency terms in a hash ta-
+ble, while estimating the counts for common terms via limited query ﬂooding. Newly
+added documents likely contain more well-known highly frequent terms and less new
+low-frequency terms. Because of this effect they claim that their approach leads to a
+proportionally smaller index as the number of indexed documents and peers increases
+compared to a full index kept in a distributed hash table. Loo et al. [2004] and Huebsch
+et al. [2005] already showed that this hybrid approach improves recall and response
+times and incurs less bandwidth overhead for search in ﬁle sharing.
+Klampanos 2004 .Klampanos and Jose [2004] attempt to apply standard informa-
+tion retrieval approaches in a peer-to-peer environment. They combine aggregated
+local indices with content clustering. They assume that each peer indexes its own doc-
+uments and ﬁnds content clusters in its own collection. At the network level each peer
+joins one or more content-aware groups based on its local clusters. The content-aware
+groups are potentially overlapping clusters of peers. Each super peer stores the de-
+scriptors of each of these groups in the network and given a query can score it against
+them. A simpliﬁed version of Dempster-Shafer theory, a way to combine evidence from
+multiple sources into one common belief, is used to fuse the results given by multiple
+peers. This seems to perform well, while contacting a low number of peers: usually
+one or two, sometimes three and rarely six.
+NeuroGrid .Joseph [2002] introduces an adaptive decentralized search system
+called NeuroGrid which uses hybrid indexing: initially all the peers have their own
+local document index, but when they join the network they create a peer index of
+their neighboring peers. This closely resembles aggregated local indices, but with each
+peer functioning as a super peer. Initially a NeuroGrid network is a simple message
+ﬂooding network. The novelty in the approach is in the adaptive routing of queries.
+User responses to search results, the absence of positive feedback or explicit negative
+feedback, are recorded. When NeuroGrid has to select a subset of peers to forward
+a query to it tries to maximize the chance of receiving positive feedback for the re-
+turned results based on these previous experiences. In case of positive feedback the
+querying peer establishes a direct link to the responding peer in the overlay network.
+This type of clustering gradually increases connectivity and makes all peers become
+more knowledgeable concerning the content of their neighbors. This approach also re-
+duces the length of the path that queries need to travel over time. The system prefers
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:26 A. S.Tigelaar et al.
+reliable peers: those that respond to queries and supply on-topic results of interest to
+the user. Well-connected peers are more inﬂuential on the statistical learning process.
+Galanis 2003 .Galanis et al. [2003] propose organizing all the data sources on the
+Internet in a large peer-to-peer network where queries are answered by relevant sites.
+They assume that each peer is essentially an XML search engine that maintains a
+local index. When a peer joins the network it sends other peers a summary of its
+data: a small set of selected tags and keywords representative for its content. A join
+thus generates a wave of messages, making their approach geared towards networks
+with very low churn. Alternatively such information can also be piggybacked when
+sending queries as in Di Buccio et al. [2009]. Peers also acquire, initially from neigh-
+boring peers, content summaries of other peers in the system and maintain their own
+peer index. The authors experiment with replicating summaries to every peer and to
+peer subsets of various sizes. Their results suggest that using replication to every peer
+outperforms that of using subsets, although using large subsets can approach this per-
+formance. They compare full replication aggregated indices with a strict local indices
+approach and show aggregation increases query throughput with 2071% and offers 72
+times faster response times.
+Triantaﬁllou 2003 .Triantaﬁllou et al. [2003] focus on enforcing fair load distribu-
+tion among peers. They cluster documents into semantic categories and cluster peers
+based on the categories of documents they offer. The authors emphasize the need to
+impose some logical system structure to achieve high performance in a peer-to-peer
+information retrieval network. Peers maintain a document index that maps document
+identiﬁers to categories, a cluster index that maps categories to cluster identiﬁers, and
+a peer index that maps cluster identiﬁers to peers. The terms in a query are ﬁrst
+mapped to categories, then to clusters, and ﬁnally to a random peer within the rele-
+vant clusters. This random peer tries to satisfy the query with its own local results,
+but if too few are available it forwards the query to neighboring nodes in the same
+cluster. This repeats until there are sufﬁcient results. Since selection is random each
+peer in a cluster is equally likely to be picked which achieves load balancing among
+peers within the same cluster. Peers are assigned to clusters based on the categories
+of documents they share. For load balancing among clusters the authors introduce
+thefairness index and a greedy algorithm to maximize this called MaxFair which also
+compensates for peers with different processing power, content distribution, and stor-
+age capacities. The most powerful peer in each cluster is designated as leader which
+participates in the MaxFair algorithm. Categories may be dynamically reassigned to
+a different cluster to improve fairness based on the load of each cluster. They show
+that their approach is capable of maintaining fairness even when peers and document
+collections change.
+5.2. Nonscientiﬁc Systems
+Various developed systems exist that do not have direct scientiﬁc roots. In this section
+we list several of the better known systems. Although we attempt to give some details
+about the underlying technology used, it is often a bit harder to classify these systems
+as operational details are sometimes missing or not well documented.
+YaCy.www.yacy.net . In YaCy each peer crawls parts of the Web and builds a local
+index. When connected to the larger YaCy network the local index entries are injected
+into a distributed global index with a high level of redundancy to ensure continuous
+availability. YaCy uses no centralized servers, but relies on a select set of machines
+that maintain seed lists for bootstrapping peers into the network. To protect user
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:27
+privacy it does not index deep Web pages by default. However, parameters can be
+changed. YaCy is an open project with transparent protocols and positions itself as a
+counter-movement against the increasing inﬂuence of, and dependency on, proprietary
+search engines. As of July 2011 it consists of about 600 peers, which indexed 1.4 billion
+documents and serve about 130 000 queries daily.
+Seeks.www.seeks-project.info . This aims to design and develop an open peer-to-
+peer network that provides social search overlay: clustering users with similar queries
+so they can share both query results, similar to interest-based clustering, but also their
+experiences with those results: making it a social network. It aims to make real-time,
+decentralized Web search a reality. To protect the privacy of users the queries are
+hashed. Seeks performs no crawling, instead relying solely on users to push content
+into the network. Although it is initially populated with search results from major
+search engines, seeks uses a distributed global index and is useable and under active
+development as of 2012.
+Faroo.www.faroo.com . This is a proprietary peer-to-peer search engine that uses a
+distributed global index and aims to “democratize search”. They perform distributed
+crawling and ranking. Faroo encrypts queries and results for privacy protection. They
+claim to be the largest peer-to-peer search engine with as many as 2 million peers.
+6. THE FUTURE OF PEER-TO-PEERINFORMATIONRETRIEVAL
+6.1. Challenges
+We have already seen some challenges that apply to peer-to-peer networks in general.
+In this section we discuss a subset of these aspects more important to peer-to-peer
+information retrieval.
+Latency.In peer-to-peer information retrieval the latency that occurs when execut-
+ing searches is dominated by the number of peers involved in the routing and process-
+ing of queries. We have seen that local and global indices are suitable for different
+types of queries, and that there are many optimizations that can be applied to reduce
+the cost of storing and transmitting index information. Nevertheless, the challenge
+of optimally combining these techniques, and ﬁnding new ones, to keep the latency
+within acceptable bounds remains. The reason for this is primarily that there is no
+one good solution for all cases and that there is an increasing amount of information
+to index leading to greater latency problems. For any search system, it is important to
+serve search results quickly without compromising too much on the quality of the re-
+sults. The technical causes of delay are irrelevant to users. After entering a query, the
+results should appear in at most 2 seconds. However, ideally the results are perceived
+as appearing instantaneously to compete with centralized solutions, which means a
+delay of 0.1 seconds. Anything below that is unlikely to positively impact the user ex-
+perience [Nah 2004]. Most existing solutions rightly focus on reducing the number of
+hops and/or using parallelization to reduce latency. Efﬁcient query routing is a chal-
+lenge speciﬁc to peer-to-peer information retrieval and directly tied to latency. More
+research in temporal aspects of querying could lead to more optimal tailored solutions.
+Freshness .Keeping the index fresh is a challenge for every search engine. Solving
+this is largely the task of the Web crawling component of a search engine. The in-
+dex needs to be representative of the indexed Websites, without incurring too much
+load on those sites to detect changes. Some Web documents change quickly and some
+change rarely, and not every change that occurs is signiﬁcant enough to warrant an
+index update [Risvik and Michelsen 2002]. In the ideal situation Websites participate
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:28 A. S.Tigelaar et al.
+cooperatively in a peer-to-peer network and signal signiﬁcant changes to themselves
+to the network. This would remove the need for crawling. However, peer-to-peer Web
+search engines will initially have to cope with the existing situation. Having peers per-
+form their own crawl seems a realistic approach, but introduces the same problems as
+with conventional Web crawling. Since many updates can occur due to changing doc-
+uments it is important that whatever index is used has minimal mutation overhead.
+Separate indexing strategies could be used for fast and slow changing Web documents.
+A further challenge for freshness is the usage of distributed caching of postings lists
+or search results. These mechanisms decrease latency, but do so at the expense of
+freshness.
+Evaluation .Even though a simulation can ﬁx many of the free variables of a peer-
+to-peer network, for rigorous comparison the same data needs to be used. There is a
+need for a common collection, a way to distribute this collection over multiple peers
+and a query set. There have been at least two attempts at establishing such a bench-
+mark [Klampanos et al. 2005; Neumann et al. 2006], although they have not yet
+seen widespread adoption. Klampanos et al. [2005] state that evaluating peer-to-peer
+information retrieval systems is a demanding and neglected task. They establish a
+number of different document test beds for evaluating these systems. They state that
+evaluation of these networks is particularly hard for several reasons. First, they are
+assumed to be very large which makes simulation more difﬁcult. Second, they are
+subject to churn caused by normal peer on/off cycles and peers that crash or mal-
+function. Unfortunately, the impact of churn is not well investigated in peer-to-peer
+information retrieval experiments, as most assume an always-on environment
+[Zeinalipour-Yazti et al. 2004]. Third, documents are not likely to be randomly placed
+at peers, instead their distribution is inﬂuenced by previous location and retrieval,
+and replication. Lastly, simulating user behavior is complex, for example, realisti-
+cally simulating how both collections and query frequencies change over time. This
+is usually circumvented by reﬂecting behavior in the document distribution. However,
+it is difﬁcult to reﬂect the application scenario to an extent where the results can be
+conclusive.
+Different types of peer-to-peer information retrieval networks exist which have dif-
+ferent document distributions. Klampanos et al. [2005] present standardized distribu-
+tions for three of these derived from the TREC WT10g collection using approximately
+1.7 million documents: ﬁrst, the Web domain where the distribution of documents fol-
+lows a power-law; second, loosely controlled grid networks with a uniform distribution
+of documents that impose an equal load on each peer; third, digital libraries where the
+distribution also follows a power law, although less extreme than for the Web domain.
+Additionally, digital libraries are characterized by fewer peers which each share a sig-
+niﬁcantly larger amount of documents compared with the other cases. Replication is
+simulated in all domains by exploiting interdomain links. The Web and grid scenario’s
+consist of about 11,680 peers, whereas 1,500 are used for the digital library case. Lu
+[2007] also presents a test bed for digital libraries with 2500 peers.
+6.2. KeyFocus Areas
+We believe there are several key areas which are important to focus on today to be able
+to create the peer-to-peer information retrieval systems of tomorrow. The following list
+is based on existing research and our own insights.
+—We should combine the strengths of global and local indices and develop algorithms
+to easily shift appropriate content from one to the other based on term or query
+popularity. Existing systems do not scale well because they are solely based on
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval: An Overview 9:29
+either ﬂooding the network with queries or because they require some form of global
+knowledge [Zeinalipour-Yazti et al. 2004].
+—No architecture exists that offers the best solution for all peer-to-peer information
+retrieval problems; different architectures apply to different situations.
+—Although good scalability properties are inherent to the peer-to-peer paradigm, sys-
+tems that wish to support Web-scale search need to focus on effectively distribut-
+ing their load over a high number of peers: hundreds of thousands to millions
+[Triantaﬁllou et al. 2003]. An important reason for this is that peers are heteroge-
+neous in terms of capacity and connectivity and are not dedicated server machines:
+they have to perform many other tasks as well.
+—We should focus on search results instead of documents. This means shifting atten-
+tion to networks that provide access to external documents emphasizing the search
+task: the core of peer-to-peer information retrieval.
+—We should investigate and improve the performance of search result caches. It is im-
+portant to achieve a good balance between providing results which are sufﬁciently
+fresh, and not taxing the network for updating those results. This also should de-
+pend on the predicted mutation frequency of the resources pointed to.
+—We should improve handling of peer heterogeneity in Web search. A few peers have a
+lot of documents, whereas many peers have much smaller collections. These smaller
+collections are often specialized, making them appropriate for more speciﬁc queries.
+—We should apply clustering at various levels as it simpliﬁes both the construction
+of resource descriptions and query routing, resulting in reduced latency.
+—We should improve both topology and query routing, particularly for avoiding and
+routing around hotspots in networks. A good topology favors both effectiveness and
+efﬁciency, by making it possible for a query to reach a relevant target peer in few
+steps.
+—We should focus on precision over recall. Achieving 100% recall in peer-to-peer
+systems would involve searching in all indices and is far too costly [Klampanos
+et al. 2005]. It is also unnecessary if the quality of the returned results is high
+enough. Although this requires better result fusion techniques. One should realize
+that Web search users do not browse beyond the ﬁrst page, but instead engage in
+query reformulation.
+—We should develop real-time distributed relevance-feedback mechanisms
+[Klampanos and Jose 2007]. Ideally, search result quality continually improves
+based on user feedback as is common for centralized search engines. The emerging
+trend of coupling this to social networks could be further explored.
+—We should create a number of large standardized test collections which apply
+to different types of peer-to-peer information retrieval networks. The work of
+Klampanos et al. [2005] provides a good start, but is still somewhat conservative
+with respect to scale.
+—We should focus on tangible beneﬁts of peer-to-peer networks rather than ethics or
+“coolness”, giving users a proper incentive to search using such networks over other
+solutions. This is particularly important for peer-to-peer Web search engines.
+—We must realize that any Web search service is a form of adversarial information
+retrieval: companies and people, suppliers of information, have an incentive to
+appear high up in rankings [Craswell and Hawking 2009]. We can use this fact to
+improve the quality of service for the users.
+7. CONCLUSION
+In the peer-to-peer paradigm each node is equal and can both supply and consume
+resources. A peer-to-peer network typically consists of thousands of low-cost machines
+all with different processing and storage capacities as well as different link speeds.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:30 A. S.Tigelaar et al.
+The advantages of these networks are that they have no central point of failure, are
+self-organizing and self-scaling. In this article we have focused on information re-
+trieval networks used to exchange public data. We have identiﬁed a number of key
+challenges for peer-to-peer networks with respect to usage guarantees, behavior of
+peers, and evaluation. We presented the three main tasks that every peer-to-peer
+system performs: searching, locating, and transferring. Furthermore, we organized
+the main architectures around index placement: the centralized global index, the dis-
+tributed global index, strict local indices, and aggregated local indices. Each has differ-
+ent consequences for query routing and processing. We have also shown the difference
+between a one-step index, where keys map directly to documents, and a two-step index,
+where the keys map to peers and the peers themselves contain document mappings.
+In peer-to-peer information retrieval the central task is searching, in contrast with
+ﬁle sharing systems where the emphasis is on transferring. Many of the challenges in
+federated information retrieval signiﬁcantly overlap with those in peer-to-peer infor-
+mation retrieval: resource description, collection selection, and result merging. How-
+ever, in federated information retrieval the mediator party plays an important role,
+and additionally enforces a strict division between the consumers and providers of
+information.
+In existing peer-to-peer information retrieval research we ﬁnd both partition-by-
+document and partition-by-keyword indexing approaches. We have shown various op-
+timizations that can be applied to reduce bandwidth and latency and to improve the
+quality and quantity of the search results returned. Besides this we have given an
+overview and classiﬁcation of existing systems. Finally, we have discussed the future
+of peer-to-peer information retrieval indicating speciﬁc challenges and key areas to fo-
+cus on. The most important of these are: emphasizing precision over recall, focusing
+on search results instead of documents, combining the strengths of local and global
+indices, applying clustering, and using relevance feedback.
+While peer-to-peer technology has seen widespread adoption in ﬁle sharing, it is not
+often used for solving information retrieval problems. This is unfortunate as it has the
+potential to offer a robust solution to the ethical and technical problems that plague
+centralized solutions and thus deserves more attention. We believe one of the primary
+reasons for its unpopularity in science is because the ﬁeld lacks a clear deﬁnition that
+distinguishes it from related and overlapping ﬁelds like general peer-to-peer systems
+and federated information retrieval. Moreover, there was no overview of what has
+been done so far and what choices can be made when implementing a practical system.
+Both of these aspects are important for future research and development of real-world
+systems. This article provides a solid basis for this.
+REFERENCES
+ABERER , K. AND HAUSWIRTH , M. 2002. An overview on peer-to-peer information systems. In Proceedings
+of the Workshop on Distributed Data and Structures (WDAS’02) .
+ADAMIC , L. A. ,LUKOSE , R. M. ,PUNIYANI , A. R. ,AND HUBERMAN , B. A. 2001. Search in power-law
+networks. Phys. Rev. E64 , 4.
+AKAVIPAT , R.,WU, L.-S. ,MENCZER , F.,AND MAGUITMAN , A. G. 2006. Emerging semantic communities
+in peer Web search. In Proceedings of the Workshop on Information Retrieval in Peer-to-Peer Networks
+(P2PIR’06) . ACM Press, New York. 1–8.
+BALKE , W.-T. ,NEJDL , W.,SIBERSKI , W.,AND THADEN , U.2005. Progressive distributed top-k retrieval in
+peer-to-peer networks. In Proceedings of the International Conference on Data Engineering (ICDE’05) .
+IEEE Computer Society, Los Alamitos, CA, 174–185.
+BAWA, M.,MANKU , G. S. ,AND RAGHAVAN , P. 2003. Sets: Search enhanced by topic segmentation. In
+Proceedings of the ACM SIGIR Conference on Research and Development in Information Retrieval . ACM
+Press, New York, 306–313.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval:An Overview 9:31
+BENDER , M.,MICHEL , S.,TRIANTAFILLOU , P.,WEIKUM , G.,AND ZIMMER , C.2005a. Improving collection
+selection with overlap awareness in p2p search engines. In Proceedings of the ACM SIGIR Conference
+on Research and Development in Information Retrieval . ACM Press, New York, 67–74.
+BENDER , M.,MICHEL , S.,TRIANTAFILLOU , P.,WEIKUM , G.,AND ZIMMER , C.2005b. Minerva: Collabo-
+rative p2p search. In Proceedings of the International Conference on Very Large Databases (VLDB’05) .
+1263–1266.
+BENDER , M.,MICHEL , S.,TRIANTAFILLOU , P.,WEIKUM , G.,AND ZIMMER , C.2006. P2p content search:
+Give the Web back to the people. In Proceedings of the International Workshop on Peer-to-Peer Systems
+(IPTPS’06) .
+BENDER , M. ,MICHEL , S.,TRIANTAFILLOU , P.,AND WEIKUM , G. 2007. Design alternatives for large-
+scale Web search: Alexander was great, aeneas a pioneer, and anakin has the force. In Proceedings of
+LS-DIR’07 Workshop .
+BLOOM , B. H. 1970. Space/Time trade-offs in hash coding with allowable errors. Comm. ACM 13 , 7,
+422–426.
+CALLAN , J.2000. Distributed Information Retrieval . Advances in Information Retrieval. Kluwer Academic
+Publishers, Chapter 5.
+CALLAN , J.,LU, Z.,AND CROFT , W. B. 1995. Searching distributed collections with inference networks. In
+Proceedings of the ACM SIGIR Conference on Research and Development in Information Retrieval . ACM
+Press, New York, 21–28.
+CHERNOV , S.,SERDYUKOV , P.,BENDER , M.,MICHEL , S.,WEIKUM , G.,AND ZIMMER , C.2005. Database
+selection and result merging in p2p Web search. In Proceedings of International Workshop on Databases,
+Information Systems and Peer-to-Peer Computing (DBISP2P’05) . Springer, 26–37.
+CLARKE , I.,SANDBERG , O.,WILEY , B.,AND HONG, T.2001. Freenet: A distributed anonymous informa-
+tion storage and retrieval system. In Proceedings of the International Workshop on Privacy Enhancing
+Technologies (PET’01) . 46–66.
+COHEN , B.2003. Incentives build robustness in bittorrent. In Proceedings of the Workshop on Economics of
+Peer-to-Peer Systems (P2PEcon’03) .
+CRASWELL , N. AND HAWKING , D.2009. Web information retrieval. In Information Retrieval: Searching in
+the 21st Century . Wiley, UK, 85–101.
+CRESPO , A. AND GARCIA -MOLINA , H.2004. Semantic overlay networks for p2p systems. In Proceedings of
+the International Workshop on Agents and Peer-to-Peer Computing (AP2PC’04) . Springer, 1–13.
+CUENCA -ACUNA , F. M. ,MARTIN , R. P. ,AND NGUYEN , T. D. 2003. Planetp: Using gossiping to build content
+addressable peer-to-peer information sharing communities. In Proceedings of the International ACM
+Symposium on High-Performance Parallel and Distributed Computing (HPDC’03) .
+DASWANI , N.,GARCIA -MOLINA , H.,AND YANG, B.2003. Open problems in data-sharing peer-to-peer sys-
+tems. In Proceedings of the International Conference on Database Theory (ICDT’03) . Springer, 1–15.
+DIBUCCIO , E.,MASIERO , I.,AND MELUCCI , M. 2009. Improving information retrieval effectiveness in
+peer-to-peer networks through query piggybacking. In Proceedings of the European Conference on Digi-
+tal Libraries (ECDL’09) . 420–424.
+DU, A. AND CALLAN , J.1998. Probing a collection to discover its language model. Tech. rep. UM-CS-1998-
+029, University of Massachusetts, Amherst, MA.
+FAGIN , R.,LOTEM , A.,AND NAOR, M. 2001. Optimal aggregation algorithms for middleware. In Proceed-
+ings of the Symposium on Principles of Database Systems (PODS’01) . ACM, New York, 102–113.
+FUHR, N.1999. A decision-theoretic approach to database selection in networked ir. ACM Trans. Inf. Syst.
+17, 3, 229–249.
+GALANIS , L.,WANG, Y.,JEFFERY , S.,AND DEWITT, D. 2003. Processing queries in a large peer-to-peer
+system. In Proceedings of the Conference on Advanced Information Systems Engineering (CAiSE’03) .
+Springer, 273–288.
+GIRDZIJAUSKAS , S.,GALUBA , W.,DARLAGIANNIS , V.,DATTA , A.,AND ABERER , K. 2011. Fuzzynet:
+Ringless routing in a ring-like structured overlay. Peer-to-Peer Netw. Appl. 4 , 3, 259–273.
+GRAVANO , L.,CHANG , K. C.-C. ,GARCIA -MOLINA , H.,LAGOZE , C.,AND PAEPCKE , A. 1997. Stanford
+protocol proposal for internet retrieval and search. Tech. rep., Stanford University.
+GRAVANO , L.,GARCIA -MOLINA , H.,AND TOMASIC , A.1999. Gloss: Text-source discovery over the internet.
+ACM Trans. Datab. Syst. 24 , 2, 229–264.
+HUEBSCH , R.,CHUN, B.,HELLERSTEIN , J. M. ,LOO, B. T. ,MANIATIS , P.,ROSCOE , T.,SHENKER , S.,
+STOICA , I.,AND YUMEREFENDI , A. R. 2005. The architecture of pier: An internet-scale query processor.
+InProceedings of the Conference on Innovative Data Systems Research (CIDR’05) .
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:32 A. S.Tigelaar et al.
+JOSEPH , S.2002. Neurogrid: Semantically routing queries in peer-to-peer networks. In Proceedings of the
+Networking Workshops . 202–214.
+KALOGERAKI , V.,GUNOPULOS , D.,AND ZEINALIPOUR -YAZTI , D. 2002. A local search mechanism for
+peer-to-peer networks. In Proceedings of the Conference on Information and Knowledge Management
+(CIKM’02) . ACM Press, New York, 300–307.
+KAMVAR , S. D. ,SCHLOSSER , M. T. ,AND GARCIA -MOLINA , H. 2003. The eigentrust algorithm for reputa-
+tion management in p2p networks. In Proceedings of the International Conference on World Wide Web
+(WWW’03) .
+KIRSCH , S. T. 1997. Document retrieval over networks wherein ranking and relevance scores are computed
+at the client for multiple database documents. Patent 5659732.
+KLAMPANOS , I. A. AND JOSE, J. M. 2004. An architecture for information retrieval over semi-collaborating
+peer-to-peer networks. In Proceedings of the ACM Symposium on Applied Computing (SAC’04) . ACM
+Press, New York, 1078–1083.
+KLAMPANOS , I. A. AND JOSE, J. M. 2007. An evaluation of a cluster-based architecture for peer-to-peer
+information retrieval. In Proceedings of the International Conference on Database and Expert Systems
+(DEXA’07) . 380–391.
+KLAMPANOS , I. A. ,POZNA ´NSKI , V.,JOSE, J. M. ,AND DICKMAN , P.2005. A suite of testbeds for the real-
+istic evaluation of peer-to-peer ir systems. In Proceedings of the European Conference on IR Research
+(ECIR’05) . 38–51.
+KLEINBERG , J. M. 2006. Complex networks and decentralized search algorithms. In Proceedings of the
+International Congress of Mathematics (ICM’06) .
+KRISHNAN , R.,SMITH , M. D. ,TANG, Z.,AND TELANG , R. 2002. The virtual commons: Why free-riding
+can be tolerated in ﬁle sharing networks. In Proceedings of the International Conference on Information
+Systems (ICIS’02) .
+KUROSE , J. F. AND ROSS, K. W. 2003. Computer Networking: A Top-Down Approach Featuring the Internet ,
+2nd Ed. Addison-Wesley.
+LELE, N.,WU, L.-S. ,AKAVIPAT , R.,AND MENCZER , F.2009. Sixearch.org 2.0 peer application for collab-
+orative Web search. In Proceedings of the Heat Transfer Conference (HT’09) . ACM Press, New York,
+333–334.
+LI, C.,YU, B.,AND SYCARA , K.2009. An incentive mechanism for message relaying in unstructured peer-
+to-peer systems. Electron Commer. Res. Appl. 8 , 6, 315–326.
+LI, J.,LOO, B. T. ,JOSEPH , L.,HELLERSTEIN , J. M. ,KARGER , D. R. ,MORRIS , R.,AND KAASHOEK ,
+M. F. 2003. On the feasibility of peer-to-peer Web indexing and search. In Proceedings of International
+Workshop on Peer-to-Peer System (IPTPS’03) . Lecture Notes in Computer Science, vol. 2735, Springer,
+207–215.
+LOO, B. T. ,HUEBSCH , R.,STOICA , I.,AND HELLERSTEIN , J. M. 2004. The case for a hybrid p2p search
+infrastructure. In Proceedings of International Workshop on Peer-to-Peer System (IPTPS’04) . 141–150.
+LU, J.2007. Full-Text federated search in peer-to-peer networks. Ph.D. thesis, Carnegie Mellon University.
+LU, J. AND CALLAN , J. 2006. Full-Text federated search of text-based digital libraries in peer-to-peer
+networks. Information Retrieval 9, 4, 477–498.
+LU, J. AND CALLAN , J.2007. Content-Based peer-to-peer network overlay for full-text federated search. In
+Proceedings of the International Conference on Information Retrieval and Its Applications (RIAO’07) .
+LUA, E. K. ,CROWCROFT , J.,PIAS, M.,SHARMA , R.,AND LIM, S.2005. A survey and comparison of peer-
+to-peer overlay network schemes. Comm. Surv. Tutor. 7 , 2, 72–93.
+LUU, T.,KLEMM , F.,PODNAR , I.,RAJMAN , M.,AND ABERER , K.2006. Alvis peers: A scalable full-text peer-
+to-peer retrieval engine. In Proceedings of the ACM Workshop on Information Retrieval in Peer-to-Peer
+System (P2PIR’06) . ACM Press, New York, 41–48.
+LV, Q.,CAO, P.,COHEN , E.,LI, K.,AND SHENKER , S.2002. Search and replication in unstructured peer-to-
+peer networks. In Proceedings of the International Conference on SuperComputing (ICS’02) . ACM Press,
+New York, 84–95.
+MENCZER , F.,WU, L.-S. ,AND AKAVIPAT , R.2008. Intelligent peer networks for collaborative Web search.
+Artif. Intell. Mag. 29 , 3, 35–46.
+MICHEL , S.,TRIANTAFILLOU , P.,AND WEIKUM , G. 2005a. Klee: A framework for distributed top-k
+query algorithms. In Proceedings of the International Conference on Very Large Databases (VLDB’05) .
+637–648.
+MICHEL , S.,TRIANTAFILLOU , P.,AND WEIKUM , G.2005b. Minerva inﬁnity: A scalable efﬁcient peer-to-peer
+search engine. In Proceedings of Middleware’05 Conference . Springer, 60–81.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.Peer-to-PeerInformation Retrieval:An Overview 9:33
+MICHEL , S.,BENDER , M.,TRIANTAFILLOU , P.,AND WEIKUM , G. 2006. Iqn routing: Integrating quality
+and novelty in p2p querying and ranking. In Proceedings of the International Conference on Extending
+Database Technology (EDBT’06) . Lecture Notes in Computer Science, vol. 3896, Springer, 149–166.
+MONNERAT , L. AND AMORIM , C.2009. Peer-to-peer single hop distributed hash tables. In Proceedings of
+the GlobeCom Conference . 1–8.
+NAH, F. F.-H. 2004. A study on tolerable waiting time: How long are Web users willing to wait? Behav. Inf.
+Technol. 23 , 3, 153–163.
+NAICKEN , S.,BASU, A.,LIVINGSTON , B.,AND RODHETBHAI , S.2006. A survey of peer-to-peer network
+simulators. In Proceedings of the Annual Postgraduate Symposium on the Convergence of Telecommuni-
+cations, Networking and Broadcasting (PGNet’06) . EPSRC.
+NAICKEN , S.,LIVINGSTON , B.,BASU, A.,RODHETBHAI , S.,WAKEMAN , I.,AND CHALMERS , D.2007. The
+state of peer-to-peer simulators and simulations. SIGCOMM Comput. Comm. Rev. 37 , 2, 95–98.
+NEUMANN , T.,BENDER , M.,MICHEL , S.,WEIKUM , G.,BONNET , P.,AND MANOLESCU , I.2006. A repro-
+ducible benchmark for p2p retrieval. In Proceedings of EXPDB’06 Conference . ACM Press, New York.
+NOTTELMANN , H. AND FUHR, N.2007. A decision-theoretic model for decentralised query routing in hier-
+archical peer-to-peer networks. In Proceedings of the European Conference on IR Research (ECIR’07) .
+148–159.
+OULASVIRTA , A.,HUKKINEN , J. P. ,AND SCHWARTZ , B. 2009. When more is less: The paradox of choice
+in search engine use. In Proceedings of the ACM SIGIR Conference on Research and Development in
+Information Retrieval . ACM Press, New York, 516–523.
+REYNOLDS , P. AND VAHDAT , A. 2003. Efﬁcient peer-to-peer keyword searching. In Proceedings of
+Middleware’03 Conference . Lecture Notes in Computer Science, vol. 2672, Springer, 997–997.
+RISSON , J.AND MOORS , T.2006. Survey of research towards robust peer-to-peer networks: Search methods.
+Comput. Netw. 50 , 17, 3485–3521.
+RISVIK , K. M. AND MICHELSEN , R.2002. Search engines and Web dynamics. Comput. Netw. 39 , 3, 289–302.
+ROSENFELD , A.,GOLDMAN , C. V. ,KAMINKA , G. A. ,AND KRAUS , S.2009. Phirst: A distributed architecture
+for p2p information retrieval. Inf. Syst. 34 , 2, 290–303.
+SHOKOUHI , M. AND ZOBEL , J.2007. Federated text retrieval from uncooperative overlapped collections. In
+Proceedings of the ACM SIGIR Conference on Research and Development in Information Retrieval . ACM
+Press, New York, 495–502.
+SHOKOUHI , M.,ZOBEL , J.,TAHAGHOGHI , S. M. M. ,AND SCHOLER , F.2007. Using query logs to establish
+vocabularies in distributed information retrieval. Inf. Process. Manag. 43 , 1, 169–180.
+SI, L. AND CALLAN , J.2003a. Relevant document distribution estimation method for resource selection. In
+Proceedings of the ACM SIGIR Conference on Research and Development in Information Retrieval . ACM
+Press, New York, 298–305.
+SI, L. AND CALLAN , J.2003b. A semisupervised learning method to merge search engine results. ACM
+Trans. Inf. Syst. 21 , 4, 457–491.
+SKOBELTSYN , G. AND ABERER , K.2006. Distributed cache table: efﬁcient query-driven processing of multi-
+term queries in p2p networks. In Proceedings of the Workshop on Information Retrieval in Peer-to-Peer
+Networks (P2PIR’06) . 33–40.
+SKOBELTSYN , G.,LUU, T.,ABERER , K.,RAJMAN , M.,AND PODNAR ˇZARKO , I.2007. Query-driven index-
+ing for peer-to-peer text retrieval. In Proceedings of the International Conference on World Wide Web
+(WWW’07) . ACM Press, New York, 1185–1186.
+SKOBELTSYN , G.,LUU, T.,PODNAR ˇZARKO , I.,RAJMAN , M.,AND ABERER , K.2009. Query-driven indexing
+for scalable peer-to-peer text retrieval. Fut. Gen. Comput. Syst. 25 , 89–99.
+SONG, W.,ZENG, X.,HU, W.,CHEN, Y.,WANG, C.,AND CHENG , F.2010. Resource search in peer-to-peer
+network based on power law distribution. In Proceedings of the International Conference on Networks
+Security, Wireless Communications, and Trusted Computing (NSWCTC’10) . 53–56.
+SRIPANIDKULCHAI , K.,MAGGS , B. M. ,AND ZHANG , H. 2003. Efﬁcient content location using interest-
+based locality in peer-to-peer systems. In Proceedings of the IEEE International Conference on Computer
+Communications (InfoCom’03) .
+STEINER , M.,EN-NAJJARY , T.,AND BIERSACK , E. W. 2007. Exploiting kad: Possible uses and misuses.
+SIGCOMM Comput. Comm. Rev. 37 , 65–70.
+STOICA , I.,MORRIS , R.,KARGER , D. R. ,KAASHOEK , M. F. ,AND BALAKRISHNAN , H. 2001. Chord: A
+scalable peer-to-peer lookup service for internet applications. SIGCOMM Comput. Comm. Rev. 31 , 4,
+149–160.
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.9:34 A. S.Tigelaar et al.
+STUTZBACH , D. AND REJAIE , R.2006. Understanding churn in peer-to-peer networks. In Proceedings of the
+Internet Measurement Conference (IMC’06) . 189–202.
+SUEL, T. ,MATHUR , C. ,WU, J.- W.,ZHANG , J.,DELIS , A. ,KHARRAZI , M. ,LONG, X. ,AND
+SHANMUGASUNDARAM , K.2003. Odissea: A peer-to-peer architecture for scalable Web search and infor-
+mation retrieval. In Proceedings of the International Workshop on the Web and Databases (WebDB’03) .
+67–72.
+TANG, C. AND DWARKADAS , S. 2004. Hybrid global-local indexing for efﬁcient peer-to-peer information
+retrieval. In Proceedings of the USENIX Symposium on Networked Systems Design and Implementation
+(NSDI’04) .
+TANG, C.,XU, Z.,AND MAHALINGAM , M. 2002. Psearch: Information retrieval in structured overlays. In
+Proceedings of the Workshop on Hot Topics in Networks (HotNets-I’02) .
+TIGELAAR , A. S. AND HIEMSTRA , D. 2010. Query-Based sampling using snippets. In Proceedings of the
+Workshop on Large-Scale and Distributed Systems for Information Retrieval (LSDS-IR’10) .
+TIGELAAR , A. S. AND HIEMSTRA , D.2011. Query load balancing by caching search results in peer-to-peer
+information retrieval networks. In Proceedings of the Dutch-Belgian Information Retrieval Workshop
+(DIR’11) . 28–31.
+TIGELAAR , A. S. ,HIEMSTRA , D.,AND TRIESCHNIGG , D.2011. Search result caching in peer-to-peer infor-
+mation retrieval networks. In Proceedings of IRFC’11 Conference . Lecture Notes in Computer Science,
+vol. 6653, Springer, 134–138.
+TIRADO , J. M. ,HIGUERO , D.,ISAILA , F.,CARRETERO , J.,AND IAMNITCHI , A. 2010. Afﬁnity p2p: A
+self-organizing content-based locality-aware collaborative peer-to-peer network. Comput. Netw. 54 , 12,
+2056–2070.
+TRIANTAFILLOU , P.,XIRUHAKI , C.,KOUBARAKIS , M.,AND NTARMOS , N.2003. Towards high performance
+peer-to-peer content and resource sharing systems. In Proceedings of the Conference on Innovative Data
+Systems Research (CIDR’03) . 120–132.
+TSOUMAKOS , D. AND ROUSSOPOULOS , N. 2003. Adaptive probabilistic search for peer-to-peer networks.
+InProceedings of the International Conference on Peer-to-Peer Computing (P2P’03) . IEEE Computer
+Society, 102–110.
+VAN HEERDE , H. J. W. 2010. Privacy-aware data management by means of data degradation - Making
+private data less sensitive over time. Ph.D. thesis, University of Twente, Enschede.
+WATERHOUSE , S.,DOOLIN , D. M. ,KAN, G.,AND FAYBISHENKO , Y.2002. Distributed search in p2p net-
+works. IEEE Internet Comput. 6 , 1, 68–72.
+XU, J. AND CROFT , W. B. 1999. Cluster-based language models for distributed retrieval. In Proceedings of
+the ACM SIGIR Conference on Research and Development in Information Retrieval . ACM Press, New
+York, 254–261.
+YANG, B. AND GARCIA -MOLINA , H. 2002. Efﬁcient search in peer-to-peer networks. In Proceedings of the
+International Conference on Defects in Semiconductors (ICDS’02) .
+YANG, Y.,DUNLAP , R.,REXROAD , M.,AND COOPER , B. F. 2006. Performance of full text search in struc-
+tured and unstructured peer-to-peer systems. In Proceedings of the IEEE International Conference on
+Computer Communications (InfoCom’06) . 1–12.
+YUWONO , B. AND LEE, D. L. 1997. Server ranking for distributed text retrieval systems on the inter-
+net. In Proceedings of the International Conference on Database Systems for Advanced Applications
+(DASFAA’97) . World Scientiﬁc Press, 41–50.
+ZEINALIPOUR -YAZTI , D.,KALOGERAKI , V.,AND GUNOPULOS , D. 2004. Information retrieval techniques
+for peer-to-peer networks. Comput. Sci. Engin. 6 , 20–26.
+ZHANG , J. AND SUEL, T. 2005. Efﬁcient query evaluation on large textual collections in a peer-to-peer
+environment. In Proceedings of the IEEE International Conference on Peer-to-Peer Computing (P2P’05) .
+Los Alamitos, CA, 225–233.
+ZHONG , S.,CHEN, J.,AND YANG, Y. R. 2003. Sprite: A simple, cheat-proof, credit-based system for mobile
+ad-hoc networks. In Proceedings of the IEEE International Conference on Computer Communications
+(InfoCom’03) .
+ZIMMER , C.,BEDATHUR , S.,AND WEIKUM , G.2008. Flood little, cache more: Effective result-reuse in p2p ir
+systems. In Proceedings of the International Conference on Database Systems for Advanced Applications
+(DASFAA’08) . Springer, 235–250.
+ReceivedJuly2011; accepted December 2011
+ACM Transactions on Information Systems, Vol. 30, No. 2, Article 9, Publication date: May 2012.

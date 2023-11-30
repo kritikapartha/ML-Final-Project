@@ -1,0 +1,930 @@
+Toward Distributed Key Management for Offline Authentication
+Self-Sovereign Identity using Intermediate Certificates
+Gregory Linklater
+Rhodes University
+Grahamstown, South Africa
+g12l4025@campus.ru.ac.za
+greg@strangerlabs.ioChristian Smith
+Stranger Labs
+Cambridge, MA, USA
+christian@strangerlabs.io
+Alan Herbert
+Rhodes University
+Grahamstown, South Africa
+a.herbert@ru.ac.zaBarry Irwin
+Rhodes University
+Grahamstown, South Africa
+b.irwin@ru.ac.za
+ABSTRACT
+Self-sovereign identity promises prospective users greater control,
+security, privacy, portability and overall greater convenience; how-
+evertheimmaturityofcurrentdistributedkeymanagementsolu-
+tionsresults ingeneraldisregard ofsecurityadvisoriesinfavour
+of convenience and accessibility. This research proposes the use of
+intermediate certificates as a distributed key management solution.
+Intermediate certificates will be shown to allow multiple keys to
+authenticate to a single self-sovereign identity. Keys may be freely
+added to an identity without requiring a distributed ledger, any
+otherthird-partyserviceorsharingprivatekeysbetweendevices.
+This research will also show that key rotation is a superior alterna-
+tivetoexistingkeyrecoveryandescrowsystemsinhelpingusers
+recoverwhentheirkeysarelostorcompromised.Thesefeatures
+willallowremotecredentialstobeusedtoissuer,presentandap-
+praiseremoteattestations,withoutrelyingonaconstantInternet
+connection.
+CCS CONCEPTS
+•Securityandprivacy →Keymanagement ;Digitalsignatures ;
+Authentication; Distributed systems security;
+KEYWORDS
+Trust;Assertion;RemoteAttestation;CryptographicProtocols;Dis-
+tributed Key Management
+ACM Reference Format:
+GregoryLinklater,ChristianSmith,AlanHerbert,andBarryIrwin.2018.To-
+wardDistributedKeyManagementforOfflineAuthentication:Self-Sovereign
+IdentityusingIntermediateCertificates.In 2018AnnualConferenceofthe
+South African Institute of Computer Scientists and Information Technologists
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+forprofitorcommercialadvantageandthatcopiesbearthisnoticeandthefullcitation
+onthe firstpage.Copyrights forcomponentsof thisworkowned byothersthan the
+author(s)mustbehonored.Abstractingwithcreditispermitted.Tocopyotherwise,or
+republish,topostonserversortoredistributetolists,requirespriorspecificpermission
+and/or a fee. Request permissions from permissions@acm.org.
+SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa
+©2018 Copyright held by the owner/author(s). Publication rights licensed to the
+Association for Computing Machinery.
+ACM ISBN 978-1-4503-6647-2/18/09...$15.00
+https://doi.org/10.1145/3278681.3278683(SAICSIT’18),September26–28,2018,PortElizabeth,SouthAfrica. ACM,New
+York, NY, USA, 10 pages. https://doi.org/10.1145/3278681.3278683
+1 INTRODUCTION
+According to Allen [2], Self-Sovereign Identity (SSI) is the latest
+intheevolutionarychainofidentitytechniques.SSIpromisesan
+improvement on current infrastructure by prioritising user control,
+the convenienceof portability, and security.
+WhileSSIcouldofferasolutiontoanumberofproblemsrelated
+toprivacyandtrustaswellasageneralimprovementtothecurrent
+identityinfrastructureoftheInternet,SSIisnotpossiblewithout
+aviabledistributedkeymanagementsystem(DKMS).Currentat-
+temptsatcreatingapracticalimplementationofSSIfromSovrin
+[37], DigitalBazaar [ 11] anduPort [ 7] failto provide solutionsthat
+are truly self-sovereign. While these attempts have no single en-
+tity that has autonomous control, they still rely on a network of
+pseudonymouspeerstomaintainalogicallycentralized[ 8]registry
+for identities. Distributed ledgers are inefficient by design and the
+reliance on them, albeit distributed and resistant to individual con-
+trol, brings into question the decentralization and self-sovereignty
+of these solutions.
+Aself-sovereign identitymustnot relyon anythingotherthan
+the subject’s device in order to operate. Like current identification
+methods,suchasanationalIDordriver’slicense,theidentitymust
+be able to function and be validated using only what is present
+atthetimeofappraisal.Furthermore,thedigitalcredentialsmust
+work across all of the user’s devices. In a networked world, asking
+userstoonlyauthenticatefromoneoftheirdevices,ortoonlyhave
+accesstoasubsetoftheirattestationsandcapabilitiesonanyone
+device, is inconvenient and unreasonable.
+This research describes how intermediate certificates may be
+usedtoenablekeyrotationbehindaself-signedpersonalcertificate
+authority(CA)ordeclarationofself-sovereignty(DSS).Itwillbe
+shown that intermediate certificates allow multiple key pairs toauthenticate to a single identity. Keys may be freely added to an
+identity without requiring a centralized registry or anything more
+than what they have created themselves. This research will alsoshow that key rotation is a superior alternative to existing key
+recoveryandescrow systemsinhelpingusersrecoverwhentheir
+keys are lost or compromised.
+10SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa G. Linklater et al.
+Figure 1: Certificate Profile
+Theremainderofthisdocumentisstructuredinthefollowing
+manner:
+•Section 2 reviews considerations for the certificate profile
+used in this research.
+•Section 3 reviews existing key management systems such
+asDID, X.509,andthe federalPIVstandard aswell astheir
+importanceandcontributionto this research.
+•Section4detailstheprofileandoperationofthecertificate
+graphdatastructure.
+•Section5describesthescenarioandsetofassumptionsunder
+whichthe certificategraphdata structure is tested.
+•Section6discussestheresultsofthecertificategraphtesting
+and theimplicationsof its use.
+•Section 7discussesthe analysisof Section6 andenumerates
+conclusions that may be drawn from this research. This
+section also discusses potential future work arising from
+considerationsarementionedbutcouldnotbefullyexplored
+in this document.
+2 CREDENTIALS AND REMOTE
+ATTESTATION
+AccordingtoCokeretal .[10]aremoteattestationis “theactivityof
+making a claim about properties of a target [or subject] by supplying
+evidence to an appraiser over a network”. Although their discussion
+ofremoteattestationisdoneinthecontextofidentityproviders,
+such as SAML [ 16] and OpenID Connect [ 32], their principles still
+apply:
+(1)Fresh information Assertionsshouldreflect currentstate.
+Ifthetruthofanassertionchangesbeforeexpiry,thenthe
+assertionshould be revoked.
+(2)Comprehensiveinformation Comprehensiveinformation
+aboutthesubjectshouldbeavailabletobedisclosed,however
+each disclosure should be kept to the minimum necessary
+personal data.
+(3)Constraineddisclosure Thesubjectofattestationsshould
+have full governance over which measurements are sent to
+whichappraisers.
+(4)Semanticexplicitness Thecontentofattestationsshould
+explicitlybepresentedinalogicalformsoastobeusedas
+evidence to satisfy access control policies.(5)Trustworthymechanism Appraisers should be presented
+withevidenceofthetrustworthinessoftheattestationmech-
+anism.
+Asidefromtheseprinciples,Cokeretal .[10]alsosupplycompre-
+hensivedefinitionsfor: trust,rootoftrust(ortrustanchor),attestation,
+appraiser andmeasurement.
+The purpose of a certificate is to contain information that is
+beingattestedto.InthecaseofX.509(discussedfurtheraheadin
+Section3),theattestationisforthebindingbetweenapublickey
+and a subject identified by the FQDN. This research makes use of a
+genericcertificateprofileasavehicletoprotecttheintegrityand
+ensure the non-repudiation of attestations.
+The purpose of the certificate is to contain four classes of infor-
+mation: attestations, capabilities, metadata and policy. These are
+now described:
+•Attestationsarestatementsoffactthatarebeingassertedby
+theissuer of the certificate.
+•Capabilities are a kind of attestation that expresses the priv-
+ileges of the subject to execute a set of actions for a set of
+resources and are a form of discretionary access control. Ca-
+pabilitiesarebasedontheprinciplesofObjectCapabilities
+[28].
+•Metadata refers to other fields that are standard across all
+certificates.Everycertificatewillincludethefollowingmeta-
+data: references to both the issuer and the subject, a validityperiod, and a version number; some may also contain a pub-
+lic key associated with the subject and revocation status
+information.
+•Policyreferstoinformationthatdetailsthetermsofuseof
+attestations, restriction in their legal propagation and theconditions and limitations of the capabilities contained in
+thecertificate.
+The contents of a certificate arose from examining existing cer-
+tification methods (see [ 18,21–23,27,29]). The collection of the
+requirementsforthecontentofacertificateissummarisedinthe
+design of the certificate profile used for this research, which is
+shown in Figure 1.
+Attestationsmustnecessarilyconformtosomestandardschema
+toenabletheautomateddecisionmakingintheirvalidation.Alimi-tationofcurrentattribute-basedaccesscontrol(ABAC)mechanisms
+isthelackofavailabilityoftrustworthyattributesorattestations
+in a monolithic architecture. According to Hu et al . [19], ABAC
+rulesarefunctionallycompleteandthereforehavenoupperlimit
+totheircomplexity;anyhypotheticalaccesscontrolscenariomay
+bedescribedasarulesolongastherearetrustworthysourcesofat-
+tributesto supportthem [ 26].By makingthe formatofattestations
+predictable, it enables their use – from multiple sources – as input
+to ABAC rules. Attestation schema standardisation helps raise the
+upperlimitofcomplexityofABACrulesasmoreattestationsbe-
+comeavailable,howeverstandardisationisaslowprocessandmay
+also dampen progress and creativity in the use of attestations.
+As humans change, so will the nature of the facts that are at-
+testedto;therefore,itisnotpossibletopredictthedifferentkindsof
+attestations that will be made. To account for the rapid adaptation,
+while still maintaining some degree of standardisation across attes-
+tations,issuersmustprovidetheschematowhichtheirattestations
+11Toward Distributed Key Management for Offline Authentication SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa
+conform.Linklateretal .[26]recommendJSONSchemaasafunc-
+tionallycompleteschemadefinitionandvalidationlanguageforuse
+indefiningattestationschemas.Anyissuermaydefineandpublish
+their own attestation schemas, in-line with the attestation data, or
+they may reference schemas defined by others – ones that are pre-
+sumablymorestandardised.Asattestationschemasmaybedefined
+withindeterminatecomplexity,itisnolongernecessarytoattempt
+topredicttheattestationsofthefutureastheirevaluationwillbe
+supported. This will simultaneously enable rapid development and
+experimentation for small deployments, and global standardisation
+foruniversallyunderstood certification concepts.
+Thisresearchisfocusedprimarilyontheemergentproperties
+andapplicationofkeyrotationforauthentication.Whilethepur-
+poseofcertificatesisthetransportofattestedinformationinthis
+way, this research is specifically interested in the authentication
+of the certificate itself, rather than its contents. For this reason,
+theevaluationandappraisalofthecontentsofthecertificatenot
+relatedtoitsauthenticationarenotconsideredfurther–otherthan
+beingthereasonforthisresearch–andwillbebetterexploredina
+future work.
+3 DISTRIBUTED KEY MANAGEMENT
+SYSTEMS
+Authentication and identification of distinct users has been an
+area of constant investigation. Most recently, SSI has been the
+subject of discussion among the members of the W3C Credentials
+CommunityGroup(CCG)1andtheDigitalVerificationCommunity
+Group (DVCG)2, where there is a large overlap in membership.
+The current hindrance for SSI becoming widely adopted is the
+immaturityof DKMS.
+TheuseofPKIforidentificationinremoteattestationshashad
+somesuccessinencouragingthedecentralizationofauthentication.
+This can be seen in federated identity protocols, as used by univer-
+sities,andmorerecentlydiscussedinrelationtoSSI.PKIenables
+self-sovereignty in identification because anyone can generate anew key pair for themselves and authenticate directly to an ap-
+praiser as the controller of that key pair, without relying on any
+third party service. This feature of PKI, called non-repudiation, has
+been used in many distributed systems and peer-to-peer networks
+sinceits discovery.
+The most notable, recent use of the non-repudiation of PKI in a
+peer-to-peernetworkisindistributedledgertechnologies(DLT).
+Cryptocurrenciesbuilt usingDLTs withconsensusalgorithms for
+Byzantinefault-tolerance[ 24],suchasBitcoin,usePKItodistin-
+guishand control accounts on the ledger. Accounts are created by
+generating a new key where after the currency is transferred to an
+account,viatheledger,byreferencingthehashofthepublickey.
+No authorization is required to receive funds whereas all outgoing
+transactionsontheaccountmustbeauthorizedbythecontrollerof
+the corresponding private key. While the ledger and network itself
+become the centralized “registry” to which the user authenticates
+to validate transactions, the creation of the credentials themselves
+1https://www.w3.org/community/credentials/
+2https://www.w3.org/community/digital-verification/.TheDVCGhassincesuccess-
+fullyproposedtheirartifact[ 35]totheW3CforpromotiontoaWorkingGroupandis
+pending consensus for standardisation.is still “self-sovereign” and could be used for authentication and
+validationoutsideof the ledger.
+TheaboveillustratestheimportanceofPKIforSSI,howevereven
+in the relatively simple case of DLTs, there are many opportunities
+for failure due to the human element. The practice of network and
+information security3revolves around securing systems against
+knownattacks,detectingunusualbehaviorandmitigatingthedam-
+agewhenoneor more systems are compromised.
+Key management is not a new problem [ 4,33]. Losing access
+to– and control of– precious data when private keys are lost or
+compromised is a reality that has prompted much thought on how
+to mitigate it:
+(1) Never transmit a private key over a network.(2) Do not reuse the same keys for different applications.
+(3)
+Themoreakeyisused,thegreaterthechancethatitwillbe
+compromised.
+(4)The more a key is used, the greater the loss when it is com-
+promised.
+(5)The more a key is used, the greater the temptation for an
+attackerto spend the effort necessary to break it.
+(6)The more a key is used, the easier the encryption will be to
+break.
+(7)If a key is transmitted over a network (private or not), it
+must be assumed that the key may have been compromised;
+even if encrypted.
+(8)If it is suspected that a key may have been lost or compro-
+mised, then it must treated as if it has been compromised.
+(9)If a key is lost, it must be treated as if it has been compro-
+mised.
+(10)If a key is compromised, then it must be revoked as soon as
+possible.
+(11) Importantkeys must be backed up securely.
+These procedures and advice are not optimal, however they are
+currently the best possible ways to prevent loss arising from alost or compromised key. One solution to key loss is key escrow
+[33],howeverthisisshownbyAbelsonetal .[1]toproducemore
+problems than solutions. Keys are sensitive – private keys most of
+all – and should be protected above all else [33].
+Application of these are known to mitigate the risks of losing
+access to– or control of– key material [ 13], however all of them
+require key management that is difficult to understand for non-
+specialist users. Due to the impact it has on the availability of data,
+most are ignored. Users tend to want additional security measures,
+however most would rather go without if it compromises conve-
+nience[34].Betterkeymanagement,andthereforesecurity,forSSI
+can be achieved if DKMS are sufficiently automated to be easy and
+convenientenoughfor useby average users.
+DKMS are intended to make key management for individuals
+andotherentitiesviablewhilestillmaintainingthepropertiesofSSI
+described by Allen [2]. In particular, DKMS must not be controlled
+orcontrollablebyanyoneotherthantheownerandshouldnotrely
+on any services other than those installed on the owner’s devices.
+Fullutilitymustbemaintainedacrossalloftheowner’sdevices–of
+3Forthesakeofbrevity,thephysicalsecurityofhardwareagainstriskssuchasfire
+and natural disasters is not considered.
+12SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa G. Linklater et al.
+which there may be any number, and their connectivity cannot be
+guaranteed. Some proposed solutions to DKMS are now discussed.
+Decentralized Identifiers (DID) is a work-in-progress stan-
+dard being proposed by Reed et al . [29]of the W3C-CCG. The
+standard itself details the profile of a self-sovereign identity cer-
+tificate,calledaDIDDocument,theprimaryfunctionofwhichis
+to bind any number of credentials listed in the document to the
+DIDitself,whichisakindofURN[ 31].Theprimarybenefitthat
+applicationsoftheDIDstandardoffer,fromtheperspectiveofboth
+securityandconvenience,istheabilitytodokeyrotation.While
+not hierarchical like X.509, this form of binding a key pair to an
+identifier performs a similar function. With key rotation, keys may
+be freely added and removed from the DID Document without
+affectingtheuseoftheotherkeys.TheDIDownermaygenerate
+a new key pair for each of his devices. Once the public key has
+been recorded as a valid credential in the DID Document, the DID
+ownermayinteractwithothersusingthenewlygeneratedkeypairandbeauthenticatedastheowneroftheDID.ThisfeatureofDIDs
+means that private keys never need be transferred from one device
+to another and if the device is lost or destroyed the corresponding
+key can be removed from the DID document and subsequently
+replaced.
+DIDsworkwellintheory,howevertheyrelyonsomemechanism
+to resolve the DID URN for a DID Document to acquire service
+metadataandpublickeysforauthentication.Implementationsof
+DID methods such as the Sovrin [ 37] and Veres One [ 36] ledgers
+requireconnectivitytoanodeontheirnetworkswithafullcopyof
+the distributed ledger to do this resolution. This restricts their use
+tonetworkswherethereisarecentcopyoftheledgeravailable,and
+therefore brings into question these methods’ “self-sovereignty”.
+There are a number of privacy concerns related to DLTs in iden-
+tity applications. The wide publication of an identifier, even ifpseudonymous such as a DID, exposes the identifier to anyone
+who knows to look for it. Malicious appraisers could collude to
+build a detailed profile of the victim using information from all
+threebycorrelatingthedataontheidentifier.Pairwiseidentifiers
+do little to solve the problem if they are also published in a DID
+Document; if not the identifier then other credentialsshared with
+appraisersmay becorrelated. Eagleand Pentland [12]demonstrate
+that correlation of pseudonymous messages and their recipients
+can be used to reveal the identity of pseudonymous users, without
+revealing the contents of the message.
+Additionally,the GeneralDataProtectionRegulation (GDPR)of
+the EU enshrines the rights of rectification and erasure, among
+others[38].Therighttorectificationstatesthatindividualshave
+the right to have their personal data corrected, if incorrect. The
+righttoerasurestatesthatindividualsmayrequestthattheirper-
+sonaldatabedeletedfromthesystemsoftherecipient.DLTsare
+immutabledata structures;to maintainthe integrity ofthe ledger,
+no transactions may ever be deleted. While further transactions
+maybe published to correct data in thecurrent state of the ledger,
+the original incorrect information will always remain as part ofa previous state. This makes compliance to the right to erasure
+practicallyimpossible.
+DIDs were designed to assume the presence of some external
+system; whether that is a distributed ledger or a web service, their
+utility is limited by this assumption. Despite this, DID makes a
+Figure 2: X.509 Certificate Chain
+significant contribution to DKMS by proposing key rotation as an
+alternative to key recovery.
+X.509(formerly CCITT X.509) or ISO/IEC/ITU 9594-8 was first
+published ( v1) in 1988 as part of the X.500 Directory recommen-
+dationsanddefinesastandardcertificateformat[ 17].Forthelast
+30 years X.509 has been synonymous with the word certificate
+itself, and is used where ever there is a need to certify a public key.
+Their most prominent use is in web browsers with transport layer
+security (TLS) [ 30], where certificate authorities (CA) certify the
+observed key pair to belong to the domain that it claims to.
+X.509isahierarchicalcertificatestructurewhichisdemonstrated
+by Figure 2. The origin point for the authority associated with acertificate is the Root CA Certificate (bottom right). The root cer-
+tificate is a self-signed declaration of authority within the domain
+of the CA that individuals and browser certificate curators mustmake an active decision to trust. To prevent man-in-the-middle
+attacks,rootcertificatesmustbedistributedtoappraisersusinga
+differentcommunicationchannel;usuallythisispreemptivelydone
+by distributing CA certificates as part of browser applications or
+operating systems. Owing to the complexity and slow propagation
+times associated with replacing these certificates, it is necessaryfor root certificates distributed in this manner to be long-lived;
+however this must be balanced against the frequency of their use.
+The security provided by both PKI and encryption is ephemeral;
+the more a symmetric or asymmetric key is used, the more datais available to cryptanalysts [
+33]. Thus X.509 and TLS use root
+certificates to issue intermediate CA certificates that are muchshorter-lived, and therefore able to be more frequently used. In-
+termediatecertificatesmaybe created in a hierarchy with a depth
+ofoneormore,withaprogressivelyhigherfrequencyofuseand
+shorter validity period at each level. The certificate depicted in the
+center of Figure 2 is one such intermediate certificate. Many inter-
+mediatecertificatesmaybeissued,rotatedandrevokedoveralong
+period of time to distribute the frequency of use of each certificate;
+this satisfies the need to balance of length of the certificate validity
+period with the frequency of use.
+Whenthedomainowner’scertificateortheend-usercertificateis
+presentedtoanappraisertobeverifiedandvalidated,itispresented
+withtheentirecertificatechainleading backtothetrustanchor’s
+rootcertificateandmaybeappraisedwithoutanetworkconnection.
+13Toward Distributed Key Management for Offline Authentication SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa
+Thealgorithmusedtovalidateacertificatechainisreferredtointhe
+X.509 specifications as a certificate path validation algorithm [ 18].
+X.509[18]detailsanexampleofasimplecertificatepathvalidation
+algorithm that can be used to validate a particular certificate chain,
+whichdoesnotexplicitlyrequireanynetworkconnectivityormake
+anyout-of-bandrequests.TheX.509basicpathvalidationalgorithm
+requires the entire certificate path and reports it’s validity based
+on the assumption that the trust anchor’s certificate came froma trustworthy source (i.e. the OS). The only action that requires
+network connectivity is downloading and checking the certificate
+revocation list (CRL) for revocations made by the issuer or owner;
+all otheractionsare possible offline.
+Contrary to unsubstantiated reports that X.509 is “rapidly dy-
+ing”[6],X.509certificatesarestillinincreasinglywideuse.Core
+Internet technologies and protocols, such as TLS v1.3[30], are
+beingupdatedtostillinclude X.509certificates,withnosuccessor
+or replacement considered. Other recent uses of X.509 certificates
+includeIdPssuchasShibboleth,animplementationoftheSAML
+standard [ 16], where certificates are used for establishing trust
+relationships between federating identity providers.
+TLS,X.509,andthelargersystemthatsupportstheCAmodel
+of trust on the Internet is a decentralized system. While individual
+CAsthemselvesarecentralizedbusinessesandentities,thereare
+many available for individuals to choose from. There is no central
+repositoryorauthorityovereveryCAasidefromthelegalauthority
+wheretheCAoperates.WhenreferringtothewiderCAsystem,as
+opposed to an individual CA, they are not politically centralized.One CA need not regularly communicate with another in order
+to operate. Each CA operates freely from the others without over-
+lappingarchitectureorsystems.WhenreferringtothewiderCA
+system,theyarenot architecturallyorlogicallycentralized.X.509
+certificatesareonlycentralizedwhentheirapplicationinvolvesa
+central registry. CA’s are centralized when considered alone but
+demonstrate theirdecentralization whenconsidered as agroup of
+interoperable systems.
+AcommoncriticismofCAsisthattheyrepresentacentralization
+ofauthority[ 3].ThefearisthatCA’saremoreeasilycorruptible,
+being centralized organisations. The implications of just one CA
+certificatebeingcompromisedwouldhavedisastrouseffectsonthe
+Internet [ 33]. There is merit in the concern that CAs are more eas-
+ilycorruptibleindividuallywhencomparedto distributedledgers;
+however,proposalsbyAllenetal .[3]andFromknechtetal .[14]to
+replacetraditionalCA’swithdistributedledgersdosoatthecost
+of efficiency on the network.
+TherearestillproblemswithX.509andtheCAmodeloftrust.
+ASN.1[20],theschemadefinitionlanguageusedtoencodeX.509
+certificates, can be ambiguous. The basic identification fields ofan X.509 certificate, such as the subject name and FQDN, make
+assumptions about the purpose of the certificate and the owner of
+thecertificatewantingtobindanentitytothatcertificate.Riskof
+CA corruption may be mitigated by increasing the number of root
+CAs and therefore the distribution of certification; the less a key is
+used,thelessattractiveitistoattackers[ 33].CAsalsostilllacka
+moresophisticatedmethodofcommunicatingcertificaterevocationinformationthancertificaterevocationlists[
+18],howeverattempts
+toimproveareunderway[ 25].Althoughtheseproblemsexist,X.509has successfully been used for the last thirty years and contributes
+tothisresearchbyprovidingastartingpointforacertificateprofile.
+Personal Identity Verification (PIV) is the current standard
+for distributedidentification acrossthe federalgovernment of the
+USA[15].Thestandarddeclares anumberof processes,including
+the issuance and operation of the PIV cards. The PIV cards areprimarily a means of proving the identity and privileges of the
+subject, both in their own agencies and in others, without the need
+fortheircredentialstobeexplicitlyconfirmed.PIVdemonstrates
+howonemayuseahierarchicalcertificatestructuretocreatecre-
+dentials that may be automatically and deterministically appraised
+offline. The decision to trust the credentials is based on the output
+oftheirautomatedappraisalandtheconsciousdecisiontotrustthe
+presented trust anchor.
+PIVcards usea similarcertificatehierarchy asX.509,described
+above. A root certificate is created by a higher government author-
+ity and an intermediate certificate is created and signed for each
+agency. Theresponsibility tofollowthe procedureswhenissuing
+credentialstoindividualslieswitheachagency,astheyusetheir
+certificate to issue PIV cards to individuals. The subject of a PIVcard can authenticate themselves to members of other agencies
+owing to the shared root certificate. As their own credentials origi-
+natefromthesamecertificate,theyareabletoverifythepresentedcredentialswiththesamerootcertificateasthetrustanchor.While
+all authority of PIV cards originates from one point, the system
+itself and the appraisal of credentials is both logically and archi-
+tecturally decentralized because there is no reliance on a remote
+central registry.
+Summary These technologies, DID, X.509 and PIV, each con-
+tribute to the design and use of intermediate certificates that is
+described ahead in Section 4. DID, while flawedin its various exe-
+cutions, introduces the idea of key rotation as an alternative to key
+recovery. X.509 shows the decentralized capabilities of certificates
+anddemonstratestheutilityandpositivesecurityimplicationsofus-ingintermediatecertificatesforCAs.PIVprovidesfurtherevidence
+and support for certificates alone being sufficient for decentralized
+identity, without the need for a network connection. PIV is also
+anexampleoftheprincipleexaminedbythisresearchbeingsuc-
+cessfullyapplied.Thesetechnologiesprovideasolidfoundationoff
+whichto base further advancement.
+4 DATA STRUCTURE
+Section3describesanumberofproblemswithaverageusersusing
+PKI foridentityas well assome potential solutions. Thisresearch
+proposes the certificate graph as a data structure that will allow
+appraiserstovalidatethecompleteprovenanceofinformationlead-
+ing back to the trust anchor. The user experience problems with
+PKIanddisregardofstandardsecuritypracticesareaddressedby
+makingkeysreplaceableusingkeyrotationandimprovingthecon-
+venience of compliance to security directives. The design of the
+certificate graph that is discussed hereafter will satisfy the goals of
+this research that are described in Section 1.
+The certificate graph and its functions are described in three
+parts. The first is how a certificate may be used to create Decla-rations of Self-Sovereignty (DSS) and Declarations of Authority
+(DA).Thesecondisthebasicalgorithmfortheappraisalofthedata
+14SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa G. Linklater et al.
+Figure 3: Certificate Graph
+structure. Last is the hierarchical intermediate certificate structure
+and how it may be applied to preempt known security problems in
+DKMS.
+4.1 CertificateGraph
+While the data structure itself is a graph, the storage thereof is
+accomplishedthroughmoretraditionalmeans.Certificatesrefer-
+enceeachotherusingthehashoftheirsignatureinput,hereafter
+referredtoasa reference.Thegraphdatastructureisasimplearray
+ofcertificatesandisorderedbythereferenceforefficientlookup.
+The graph also records the reference of the head of the graph as
+the entry point for traversing the data structure. The certificate
+graph, the certificates contained within and all inputs to signature
+andhashingfunctionsareencodedwithCBOR[ 5].Toensurethe
+correctness of inputs to the signature and hashing functions, all
+properties are ordered lexicographically when CBOR encoded. The
+functionalityof certificate graphs is now described.
+4.2 Self-Sovereignty and Authority
+Key pairs may be freely generated, and can be used to authenticate
+oneself without relying on a third party [ 34]; it follows that this
+propertyofPKIenablesself-sovereignty.Thecertificationprofile
+described above is primarily a way to protect the integrity of meta-
+dataandassertionsassociatedwiththekeypair,suchasthevalidity
+period, and to provide a known value and signature to compare
+againstwhenauthenticating.Byself-signingacertificate,anyob-
+server of the certificate may independently verify that the data
+containedwithinthecertificateoriginatedfromthecontrollerof
+the correspondingprivatekey of the certificate.
+The DSS is a self-signed certificate that becomes the root CA
+and trust anchor for the new identity that may be authenticated by
+thepublickeycontainedwithin.LikeallCAs,therootcertificate
+must define the domain of their authority. For most individuals the
+domainthatwillbedefinedissimplyauthorityoverthecertificated
+identity.
+Other entities and organisations, such as a university, might
+additionally create further self-signed DA attestations declaring
+themselves an authority within a particular domain. Like a DSS, a
+DAisasimpleattestationthatmaybeincludedinacertificate.Asa
+DAisadeclaration,theyshouldonlybeincludedincertificatesthat
+areself-signed.CertificatescontainingaDAmayeitheralsocontaina DSS and a public key, or may reference another certificate that
+containsaDSSasthesubjectoftheofDAcertificate.Figure3shows
+a certificate graph that demonstrates the relationship between the
+DA, the DSS and the certificate path to the head certificate. The
+right-most green certificate (marked as b) shows Faythe’s DA over
+adomainthateventuallyallowsAlicetoissueFranktheattestation
+(marked as c). A DSS is similar to a DA in that it declares authority
+over only a single key pair. Any additional assertions may be made
+within a DA, such as a name, and additional capabilities, such as
+theabilitytoissuequalifications.Anyoneiscapableofcreatingandself-signingaDA;caremustbetakenbyappraiserstoevaluateand
+decide if the DA being presented is trustworthy.
+DSS’ created in this manner are a special case. As the subject
+has generated the key pair that is being declared self-sovereign
+and only the holder of the private key can authenticate to it, there
+is nobody more qualified to issue an identity certificate than thesubject themselves. All of the purple certificates in Figure 3 areDSS’, including that of the trust anchor’s (marked as
+a). There is
+noreasontodistrustaDSSthatwassuccessfullyauthenticated–
+unless there exists a public revocation of the identity – however,
+the samecannotbe said for other self-signed assertions.
+Itmustbenotedthatwhenanentitycreatesadditionalassertions
+in a DA, each individual appraiser must make an active decision
+to trust, or decline to trust, those assertions. Additionally, part
+of the decision to trust a trust anchor must be based on whetheror not the trust anchor can be held legally responsible for errors
+occurring within their domain. An exampleof this would be hold-
+ing the organisation accountable for the abuse of their powers
+thatwerelegitimatelygrantedtooneoftheiragents.Tothisend,
+caveats may be placed on the trust of a trust anchor in the form of
+policydocuments.Examplesofthiscouldincluderequiringproof
+of incorporation (for business entities), or proof of legal identityand citizenship (for individuals), so they may be held legally ac-
+countable if necessary. These precautions are often necessary to
+providereasonabledeterrentsforactingmaliciouslyoroutsideapredetermined set of rules. Each appraiser must decide what are
+acceptable accountability measures for their threat model and each
+subjectmustdecideiftheywishtocontinuethetransactionwith
+the appraiserunder thoseconditions.
+Aside from DSS’ and DA’s themselves, there are always two
+authoritiesinvolvedintheissuanceofacertificate.Thesearethe
+15Toward Distributed Key Management for Offline Authentication SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa
+domain authority, which terminates in a DA, and the issuer who is
+identifiedby–andterminatesin–aDSS.DA’sreferencethemselves
+as the issuing authority but still refer back to a DSSas the subject
+of the authority. DSS’ reference themselves as both the issuing au-
+thorityandsubjectoftheauthority.Whenissuinganewcertificate,
+both of these must be present and available for the certificate to
+bevalid.Thisrequirementisforthecompletionofthecertificate
+appraisalalgorithm,whichisrecursive andterminateswhenboth
+the issuerand authorityare self-referential.
+4.3 CertificateAppraisal
+The primary goal of the certificateappraisal algorithm is to verify
+thattheinformationcontainedintheheadcertificate(markedas
+con Figure3) originate fromthe trust anchorand the bindingof
+that information to the subject. The appraisal of certificate graphs
+in this manner requires obtaining all certificates that pertain to the
+head certificate that is the subject of the appraisal. To this end, the
+datastructure described above is one way of serializing and trans-
+portingthewholecertificategraph,howeverotherserializations
+performing the same functions may also be used.
+Foreachappraisalthereisagraphofcertificates α.Thetraversal
+ofαstartswiththeheadcertificate αhwherethecurrentcertificate
+under review is referred to as γ. Each certificate has a reference to
+the subject γs, the issuer’s credential γcandthe issuer’sauthority
+γa, each of which references to another certificate in the graph.
+References requiring the traversal of more than one edge of the
+grapharedenotedas γa→s,whichmeansthesubjectoftheauthority
+ofγ.Eachcertificateisvalidatedtosatisfythefollowingconditions:
+(1)γmust be signed using the private key corresponding to γc.
+(2)References γc→aandγa→smust be equal. If γsis a public
+key and not a reference, then γisγs.
+(3)Any attestation or capability presented in γmust adhere to
+the schemafor thattype.
+(4)Any attestations granted in γmust not be disallowed by the
+policy defined in γa.
+(5)Any capabilities granted in γmust not be disallowed by the
+policy defined in γa.
+(6)Anycapabilitiesgrantedin γmustbeasubsetofthosede-
+fined inγa.
+(7)Referenced certificates γs,γaandγcmust be valid at the
+timein question.
+Iftheseconditionsaresatisfiedforacertificategraph,andthe
+trustanchorisdeemedtrustworthybytheappraiser,thentheat-
+testationsofthecertificatescontainedmayalsobeassumedtobe
+trustworthy.
+4.4 Delegation of Authority and Intermediate
+Certificates
+As discussed in Section 3, PKI has many utilities, however there
+arealsomanyweaknesses.Thecertificategraphdiscussedabove
+and shown in Figure 3 shows how authority and attributes may be
+legitimatelypassed toanotherwhileensuring thattheissuer may
+be held accountable. While this basic case theoretically achieves
+manyofthegoalsdescribedinSection1,Schneier [34]speaksof
+the“humanelement”thatforcesconsiderationofmorethanjust
+theory.
+Figure 4: Intermediate Certificates for SSI
+Intheeventthattheownerofanidentityownsmultipledevices,
+they are likely to want to use their attestations and capabilities
+seamlesslyacrossmultipleorallofthosedevices.Inanetworked
+world, asking users to only authenticate from one of their devices,
+or to only have access to a subset of their attestations and capabil-
+ities on any one device, is unreasonable. This will result in users
+disregarding security in favour of better accessibility. Under the as-
+sumptionthatweareusingasinglekeypairtorepresentanidentity;
+theprivatekeyforthatidentitymustbepresentoneverydevice
+where the owner wants to use the identity. This is a major security
+risk. Without a solution to this problem, self-sovereign identity
+techniques and the use of the certificates described above could be
+more vulnerable than existing technologies and infrastructure.
+Thehierarchicalstructureof X.509and intermediatecertificate
+authoritiesmay be adapted to solve this problem. As an authority
+maydelegateprivilegesfromaDAusingcapabilitiesandattesta-
+tions, the same technique (and appraisal mechanism) may be used
+to to delegate the signing authority of a DSS. This enables subjects
+to generate fresh key pairs, one or more per device, which may be
+certificatedwithadelegationofsigningauthoritycapability.Asthe
+delegationofauthorityisacapabilitythatispartofacertificate,allotherfeaturesthatcertificatesarecapableof,suchaspoliciesandre-
+vocationstatusreferences,areavailable.Figure4showsanexample
+ofanintermediatecertificatebeingusedtoissuefurthercertificatesonbehalfoftherootcertificate.Thediagramisintentionallysimilar
+to that of Figure 2, as exploration of X.509 in Section 3 gave riseto this solution. Subjects using an intermediate authority, in lieu
+oftherootDSS,mustpresentthecertificatesleadingbackto,and
+including,the DSS whenbeing appraised.
+Theintroductionofintermediatecertificatesaddsfurthercompli-
+cationstotheappraisalprocess.Figure5showsthesamecertificategraph as Figure 3 but differs to include intermediate certificates for
+each of the users. The diagram shows that the attestation being
+issuedtoFrank,byAlice,isbeingsignedbyoneofAlice’skeysthat
+has delegated authority from Alice’s DSS. Whenever the certificate
+appraisal algorithm recurses to validate the issuer’s credential ( γc),
+it must recurse further to validate the entire path of the issuer’scredentialbacktotheissuer’sDSS.Afterthesub-graphbetween
+the issuer’s credential and the issuer’s DSS has been validated, the
+appraisal process may recurse onto the issuer’s authority ( γa). The
+16SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa G. Linklater et al.
+Figure 5: Certificate Graph with Intermediate Certificates
+Figure 6: Complex Scenario Certificate Graph
+onlydifferencetotheappraisalalgorithmasaresultoftheinter-
+mediate certificates is the inclusion of the additional sub-graphs
+fromeachissuer’sintermediatecertificates.Asthesearethemselves
+certificates,theprocessforappraisingthemindividuallyremains
+unchanged.
+5 APPLICATION SCENARIOS
+Thisresearchseekstoconfirmtheutilityofintermediatecertificates
+for use in SSI. To evaluate this, two scenarios were constructed:a simple test scenario and a complex test scenario where Frank
+seeksanattestationfromAlice,whoisalegitimateagentofFaythe.Figure6showsthecertificategraphforthecomplexscenario.These
+are designed to test and confirm the correct behaviour of all thepertinent capabilities of intermediate certificates. Particular details
+for each scenarioare now discussed.
+5.1 Simple Scenario
+Frank has five devices ( F1→F5). He issues himself a DSS and
+subsequently issues delegated authority certificates to each device
+and creates a secure backup of his DSS and its private key. He does
+not need to create a secure backup of his delegated authority keys
+because, if lost, they can be easily replaced. Frank continues toacquireanattestationfromFaythewhichhethenincludesinhis
+secure backup. If Frank simultaneously loses all five of his devices,
+hewillbeabletorecoverhisattestationandbackedupDSS,restore
+them to a new device ( F6) and still be able to use the attestation
+withoutfurtherinconvenience.
+5.2 Complex Scenario
+Alice – an agent of Faythe – is issuing an attestation to Frank.
+BeforeFrankmaybeissuedanattestationbyAlice,Alicemustfirst
+acquire the correct authority from Faythe, who is a well known
+andtrustworthyindividual.Faythedoesnotinheritherauthority
+from any other party, instead she declares her authority as anattestation. Faythe may now issue a certificate that grants Alicethe ability to exercise a portion of Faythe’s authority. As Faythe
+doesnothaveanyderivedkeypairsforheridentity,sheusesher
+DSS’privatekeytomakethecertificate.Inadditiontothenewly
+issued certificate, Faythe also provides Alice with a copy of herDA and DSS, as these are necessary for the appraisal process of
+Alice’scertificateandthereforeanyfurthercertificatesissuedby
+Alice. When Alice receives the certificate, she must confirm that
+the certificate validates correctly, has the correct information, and
+thatsheisabletoauthenticatetoit.AlicemustalsodecideifFaythe
+is trustworthy; if not, further use of these credentials is, at best,
+pointless and, at worst, dangerous.
+17Toward Distributed Key Management for Offline Authentication SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa
+Once Alice has her authority to issue certificates in Faythe’s
+name,shemaycontinueherinteractionwithFrank.Alicemaynow
+issue an attestation to Frank; while the exact contents of the attes-
+tation are irrelevant, they should be within Alice’s power to issue.
+Unlike Faythe, Alice operates from multiple devices and wishes to
+issuetheattestationfromherdevice A2.A2doesnotcontainAlice’s
+DSS’ private key but rather contains a certificate that delegates un-
+restricted signing authority on Alice’s DSS. The delegated signing
+authoritywasissuedonanotherofAlice’sdevices( A1)usingan-
+other certificate of delegated signing authority, which was in turn
+issuedbyAlice’sDSS.Aliceusesherkeypairon A2toissueFrank’s
+attestation. In addition to the attestation, Alice also provides Frank
+with the delegated signing authority certificates for A1 andA2,
+her DSS, authority, and Faythe’s certificates, as these will all be
+necessary to appraise Frank’s certificate. When Frank receives the
+certificate,hemustconfirmthatthecertificatevalidatescorrectly,
+hasthecorrectinformation,andthatheisabletoauthenticatetoit.
+LikeAlice,FrankmustalsodecidewhetherornottotrustFaythe;
+if he trusts Faythe, then he does not need to trust Alice personally
+as he can trust Faythe’s trust in Alice.
+Frank, like Alice, has many devices ( F1 andF2) that he would
+like to use his attestation from and has set up a similar chain of
+unrestricteddelegatedsigningauthoritytothatofAlice’s.Asthe
+attestation was issued with his DSS as the subject, he is able to use
+any device with a valid key to authenticate as the owner of the
+attestation,solongasheisabletoproduceavalidcertificategraph
+leading back to his DSS. When having the attestation appraised,
+he must present the attestation itself, it’s entire certificate graphleading back to Faythe’s DSS, a signed nonce, and the certificate
+graph leading back to his own DSS. If Frank is able to successfully
+authenticate to the attestation given to him by Alice, then the
+interactionis successful.
+Evaluation Thescenariosabove describe the expectedinterac-
+tionofthecertificatestobeconsideredsuccessfulfortheirintendedpurpose.Theyalsodescribethepointsofappraisalandthedecisions
+that need to be made by the appraiser that are outside the scope
+of this mechanism. The exact protocol for the different parties and
+their devices to interact is not yet specified and will be the subject
+of its own work. To accomplish this research in the absence of a
+defined protocol, the parties and their interactions described in the
+scenariowere modeled in software.
+6 RESULTS AND ANALYSIS
+ThescenariosdescribedinSection5wereeachmodeledinsoftware
+and an automated script was used to attempt authentication for
+eachcertificateofeachscenariousingeachoftheprivatekeysof
+thatscenario.Theresultsoftheseauthenticationattemptsforthe
+scenarios are visible in Table 1, where the marked cells show a
+successfulauthenticationaccordingtotheappraisalrulesdescribedinSection4.3.Attestationsissuedtoasubjectmaybeauthenticated
+by valid credentials for that subject – credentials that have been
+granted delegatedauthority –even when thecertificate hierarchy
+is multiple levels deep. Other credentials that do not present the
+correct proof of delegated authority fail to be authenticated.
+Existing key recovery mechanisms, such as social recovery or
+keyescrow[ 1],areflawedintheirassumptionsorlackabalanceTable 1: Certificate Authentication Matrix
+Certificates(Attestations)
+Simple Complex
+Frank FrankAliceFaytheCredentials
+SimpleFrankRoot /check
+F1/check
+F2/check
+F3/check
+F4/check
+F5/check
+F6/checkComplexFrankRoot /check
+F1 /check
+F2 /check
+AliceRoot /check
+A1 /check
+A2 /check
+Faythe Root /check
+betweenaccessibilityandsecurity.Withoutbeingabletorelyonkey
+recovery, the value of individual keys must be decreased; one way
+this is achieved is by making keys disposable. This is accomplishedbyCA’sandIdP’sthroughkeyrotation.Keyrotationdoesnotsolve
+the same problem as key recovery, rather it makes key recovery
+unnecessary because individual key pairs are replaceable. Reliance
+onasinglekeypairforday-to-dayoperationsintroducesasingle
+point of failure into applications. Intermediate certificates improve
+on the basic use of PKI by enabling key rotation within an SSI and
+makingthelackofviablekeyrecoverymechanismslessprominent.
+Despitearootauthorityintroducingasinglepointoffailure,itis
+shown to be better than traditional key recovery schemes and risk
+may be mitigated by a secure, offline backup scheme. As discussed
+inSection3,CA’suseasimilarsystemwherearootcertificateisonly used to issue intermediate certificates and is therefore used
+lessoften.Iftherootcertificateisonlyusedperiodicallythenthe
+securitymeasuresforgainingaccesstothatcertificatecanbemade
+more stringent, as the time between required accesses increases.
+For this reason, root certificates may be kept hidden, out of regular
+use and therefore may have a longer validity period.
+OneoftherequirementsofSSIdescribedbyAllen [2]ispersis-
+tence,whichstatesthatanSSImustbe“permanent”.Theimplica-
+tions of permanence on the privacy of the individual also bringinto question the desirability of true permanence. Clayton et al
+.
+[9]concludesthatnooperationconcerningapseudonymshould
+have an observable side-effect that could leak the identity of theuser controlling it. The corollary of this is that in a system thatrequires the “leaking” of a pseudonym’s true identity, even in acontrolled way, will eventually be susceptible to traffic analysis
+attacks.WhiletheproposalofusingbasicPKIforSSIdoesnotoffer
+true permanence, the authors assert that creating a long-lived DSS
+is sufficient to approximate permanence and does not carry the
+negative privacy implications of true permanence.
+18SAICSIT ’18, September 26–28, 2018, Port Elizabeth, South Africa G. Linklater et al.
+7 CONCLUSION
+ThisresearchsuccessfullydemonstratesaworkingDKMSthatdoes
+not rely on any third-party service, such as a distribute ledger,
+and does not require that keys be shared between devices usingthe same identity. Intermediate certificates are shown to serve
+theirpurposeinallowingmultiplekeystoauthenticatetothesameidentity.Theiremergentpropertyofenablingkeyrotationisshowntoallowidentityownerstorecovertheiridentitiesintheeventthey
+loseoneormoreoftheirdevices.Solongastheidentityowner’s
+rootprivatekey(oftheirDSS)hasnotbeenlostorcompromised,the
+identitymayberecoveredandtheassociatedattestationsmaybe
+used. The analysis of Section 6 shows that issuance, authentication
+and recovery of certificates operate as expected in a controlled
+environmentwhichtherefore renders this research a success.
+While intermediate certificates allow multiple keys to authen-
+ticatetothesameidentity,theydonothandlethecasewhenone
+wishes to remove or revoke keys from an identity. A current re-
+vocation technique: certificate revocation lists (CRL), rely on the
+appraiser of a certificate having access to the CRL – which is by
+definition a centralized registry. Revocation is still an outstanding
+problem and a potential barrier to SSI.
+For the sake of limiting the scope of this research, conditions of
+appraisal relating to policy constraints on attestations and capabili-
+tieswerenotconsideredandwillbeinvestigatedinaseparatework.
+Appraisals for this research were done assuming privileges passed
+fromanauthority(Faythe)tolegitimateagents(Alice),orfroma
+DSStocertificatesofdesignatedsigningauthority,areunrestricted.
+REFERENCES
+[1]HalAbelson,RossAnderson,StevenM.Bellovin,JoshBenaloh,MattBlaze,Whit-
+field Diffie, John Gilmore, Peter G. Neumann, Ronald L. Rivest, Jeffrey I. Schiller,
+and Bruce Schneier. 1997. The Risks of Key Recovery, Key Escrow, and Trusted
+Third-PartyEncryption. GroupReport.CenterforDemocracyandTechnology.
+https://cdt.org/files/pdfs/paper-key-escrow.pdf
+[2]Christopher Allen. 2016. The Path to Self-Sovereign Identity. (Apr 2016). http://
+www.lifewithalacrity.com/2016/04/the-path-to-self-soverereign-identity.html
+[3]Christopher Allen, Arthur Brock, Vitalik Buterin, Jon Callas, Duke Dorje, Chris-
+tian Lundkvist, Pavel Kravchenko, Jude Nelson, Drummond Reed, Markus
+Sabadello, Greg Slepak, Noah Thorp, and Harlan T. Wood. 2015. Decentral-
+izedPublicKeyInfrastructure. GroupReport.RebootingtheWebofTrust(RWoT).
+https://danubetech.com/download/dpki.pdf
+[4]Elaine Barker, Miles Smid, Dennis Branstad, and Santosh Chokhani. 2013. A
+Framework for Designing Cryptographic Key Management Systems. NIST Special
+Publication 800-130. National Institute of Science and Technology. https://
+nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-130.pdf
+[5]C.BormannandP.Hoffman.2013. RFC7049:ConciseBinaryObjectRepresentation.
+IETF RFC. Internet Engineering Task Force. https://tools.ietf.org/html/rfc7049
+[6]Pelle Braendgaard. 2018. Different Approaches to Ethereum Iden-tity Standards. Medium. (Jan 2018). https://medium.com/uport/
+different-approaches-to-ethereum-identity-standards-a09488347c87
+[7]PelleBraendgaard.2018. WhatisauPortidentity? Medium.(Jan2018). https:
+//medium.com/uport/what-is-a-uport-identity-b790b065809c
+[8]Vitalik Buterin. 2017. The Meaning of Decentralization. Available: https://
+medium.com/@VitalikButerin/the-meaning-of-decentralization-a0c92b76a274.
+(Feb 2017).
+[9]R. Clayton, G. Danezis, and M. Kuhn. 2001. Real World Patterns of Failure in
+Anonymity Systems. Lecture Notes in Computer Science. University of Cam-
+bridge,Cambridge,UnitedKingdom. http://www.cl.cam.ac.uk/~rnc1/Patterns_of_Failure.pdf
+[10]
+GeorgeCoker,JoshuaGuttman,PeterLoscocco,AmyHerzog,JonathanMillen,
+BrianO’Hanlon,JohnRamsdell,ArielSegall,JustinSheehy,andBrianSniffen.2011. Principles of Remote Attestation. International Journal of Information
+Security10,2 (Apr 2011), 63–81. https://link.springer.com/content/pdf/10.1007/
+s10207-011-0124-7.pdf
+[11] Digital Bazaar. 2018. Veres One. Website. (2018). https://veres.one/[12]NathanEagleandAlex“Sandy”Pentland.2006. RealityMining:SensingComplex
+Social Systems. Personal Ubiquitous Comput. 10, 4 (March 2006), 255–268. https:
+//doi.org/10.1007/s00779-005-0046-3
+[13]Niels Ferguson, Bruce Schneier, and Tadayoshi Kohno. 2010. Cryptography
+Engineering. Wiley.
+[14]Conner Fromknecht, Dragos Velicanu, and Sophia Yakoubov. 2014. A De-
+centralized Public Key Infrastructure with Identity Retention. IACR Cryp-
+tology ePrint Archive (2014), 803. https://allquantor.at/blockchainbib/pdf/
+fromknecht2014decentralized.pdf
+[15]Patrick D. Gallagher and Penny Pritzker. 2013. Personal Identity Verification (PIV)
+of Federal Employees and Contractors. Federal Information Processing Standards
+Publication (FIPS) 201-2. National Institute of Science and Technology.
+[16]Phillip Hallam-Baker. 2001. Security Assertions Markup Language. OASIS
+Standard 14 (2001), 1–24.
+[17]RussellHousley,W.Ford,W.Polk,andD.Solo.1999. RFC2459InternetX.509Public
+Key Infrastructure Certificate and CRL Profile. IETF RFC. Internet Engineering
+Task Force. https://tools.ietf.org/html/rfc2459
+[18]Russell Housley, W. Ford, W. Polk, and D. Solo. 2013. RFC6818 Updates to the
+InternetX.509PublicKey Infrastructure Certificate and Certificate Revocation List
+(CRL) Profile. IETF RFC. Internet Engineering Task Force. https://tools.ietf.org/
+html/rfc6818
+[19]Vincent C. Hu, David Ferraiolo, Rick Kuhn, Adam Schnitzer, Kenneth
+Sandlin, Robert Miller, and Karen Scarfone. 2014. Guide to Attribute
+Based Access Control (ABAC) Definition and Considerations. NIST Spe-
+cial Publication 800–162. National Institute of Science and Technology,
+https://nvlpubs.nist.gov/nistpubs/specialpublications/NIST.SP.800-162.pdf.
+[20]InternationalTelecommunicationsUnion.2002. X.609AbstractSyntaxNotation
+One(ASN.1)EncodingRules. ITURecommendation.InternationalTelecommu-
+nicationsUnion. https://www.itu.int/ITU-T/studygroups/com17/languages/X.
+690-0207.pdf
+[21]MichaelJones.2015. RFC7518JSONWebAlgorithms(JWA)Specification. IETF
+RFC. Internet Engineering Task Force. https://tools.ietf.org/html/rfc7518
+[22]Michael Jones, Paul Tarjan, J Bradley, Yaron Goland, Nat Sakimura, John Panzer,
+andDirk Balfanz.2011. RFC7515JSON WebSignature (JWS) Specification. IETF
+RFC. Internet Engineering Task Force. https://tools.ietf.org/html/rfc7515
+[23]Michael Jones, Paul Tarjan, J Bradley, Yaron Goland, Nat Sakimura, John Panzer,
+and Dirk Balfanz. 2012. RFC7519 JSON Web Token (JWT) Specification. IETF RFC.
+Internet Engineering Task Force. https://tools.ietf.org/html/rfc7519
+[24]Leslie Lamport, Robert Shostak, and Marshall Pease. 1892. The Byzantine Gener-
+alsProblem. ACMTransactionsonProgrammingLanguagesandSystems(TOPLAS)
+4,3(1892),382–401. https://www.microsoft.com/en-us/research/uploads/prod/
+2016/12/The-Byzantine-Generals-Problem.pdf
+[25]B.Laurie,A.Langley,andE.Kasper.2013. RFC6962CertificateTransparency. IETF
+RFC. Internet Engineering Task Force. https://tools.ietf.org/html/rfc6962
+[26]Gregory C. M. Linklater, Christian Smith, James Connan, and Alan Herbert.
+2017. JSONSchemaforAttribute-basedAccessControlforNetworkResource
+Security. In Proceedings of the 20th Southern Africa Telecommunication Networks
+and Applications Conference (SATNAC).
+[27]Dave Longley, Manu Sporny, Shane McCarron, and Christopher Allen. 2017.
+LinkedDataSignatures. W3CCommunityGroupDraftReportv1.0.W3CCre-
+dentials Community Group, https://w3c-dvcg.github.io/ld-signatures/.
+[28]Chip Morningstar. 2017. What are Capabilties? Blog. http://habitatchronicles.
+com/2017/05/what-are-capabilities/. (May 2017).
+[29]DrummondReed,ManuSporny,DaveLongley,ChristopherAllen,RyanGrant,
+and Markus Sabadello. 2018. Decentralized Identifiers (DIDs). W3C Commu-
+nity Group Draft Report v0.9. W3C Credentials Community Group, https://w3c-
+ccg.github.io/did-spec/.
+[30]E.Rescorla.2018. TheTransportLayerSecurity(TLS)ProtocolVersion1.3draft-
+ietf-tls-tls13-28. IETFInternetDraft28.InternetEngineering TaskForce. https:
+//tools.ietf.org/html/draft-ietf-tls-tls13-28
+[31]P.Saint-Andre.2017. RFC8141UniformResourceNames(URNs).IETFRFC.Internet
+Engineering Task Force. https://tools.ietf.org/html/rfc8141
+[32]Natsuhiko Sakimura, J Bradley, M Jones, B de Medeiros, and C Mortimore. 2014.
+OpenID Connect Core Specification. The OpenID Foundation (2014).
+[33] BruceSchneier. 1996. Applied Cryptography (2 ed.). Wiley.
+[34]Bruce Schneier. 2011. Secrets and Lies: Digital Security in a Networked World.
+Wiley.
+[35]Manu Sporny, Dave Longley, Daniel Burnett, and Gregg Kellogg. 2018. Verifiable
+Credentials Data Model. W3C Community Group Editor’s Draft v1.0. W3C
+Credentials Community Group, https://w3c.github.io/vc-data-model/.
+[36]Manu Sporny, Dave Longley, and Christopher Lemmer Webber. 2018. Veres One
+DID Method Specification 1.0. W3C Community Group Draft Report. Digital
+Bazaar. https://w3c-ccg.github.io/didm-veres-one/
+[37]The Sovrin Foundation. 2018. Sovrin: A Protocol and Token for Self-Sovereign
+Identity and Decentralized Trust. The Sovrin Foundation. https://sovrin.org/
+wp-content/uploads/2018/03/Sovrin-Protocol-and-Token-White-Paper.pdf
+[38]Paul Voigt and Axel von dem Bussche. 2017. The EU General Data Protection
+Regulation (GDPR): A Practical Guide (1st ed.). Springer.
+19

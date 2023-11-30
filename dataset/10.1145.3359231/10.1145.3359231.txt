@@ -1,0 +1,754 @@
+129
+Search Media and Elections: A Longitudinal Investigation
+of Political Search Results in the 2018 U.S. Elections
+DANAË METAXA, Computer Science Department, Stanford University, USA
+JOON SUNG PARK, Department of Computer Science, University of Illinois at Urbana-Champaign, USA
+JAMES A. LANDAY, Computer Science Department, Stanford University, USA
+JEFF HANCOCK, Department of Communication, Stanford University, USA
+Concern about algorithmically-curated content and its impact on democracy is reaching a fever pitch worldwide.
+But relative to the role of social media in electoral processes, the role of search results has received less public
+attention. We develop a theoretical conceptualization of search results as a form of media— search media —and
+analyze search media in the context of political partisanship in the six months leading up to the 2018 U.S. midterm
+elections.Ourempiricalanalysesuseatotalofover4millionURLs,scrapeddailyfromGooglesearchqueriesforall
+candidates running for federal office in the United States in 2018. In our first set of analyses we characterize the na-
+ture of search media from the data collected in terms of the types of URLs present and the stability of search results
+over time. In our second, we annotate URLs’ top-level domains with existing measures of political partisanship,
+examining trends by incumbency, election outcome, and other election characteristics. Among other findings, we
+note that partisanship trends in search media are largely similar for content about candidates from the two major
+political parties, whereas there are substantial differences in search media for incumbent versus challenger can-
+didates. This work suggests that longitudinal, systematic audits of search media can reflect real-world political
+trends. We conclude with implications for web search designers and consumers of political content online.
+CCS Concepts: •Information systems →Web and social media search ;Page and site ranking ;Content
+ranking ;•Social and professional topics →Political speech .
+Additional Key Words and Phrases: Search media; search engine results; political partisanship
+ACM Reference Format:
+Danaë Metaxa, Joon Sung Park, James A. Landay, and Jeff Hancock. 2019. Search Media and Elections: A Lon-
+gitudinal Investigation of Political Search Results in the 2018 U.S. Elections. Proc. ACM Hum.-Comput. Interact.
+3, CSCW, Article 129 (November 2019), 17 pages. https://doi.org/10.1145/3359231
+INTRODUCTION
+Algorithmically-curated media content—the core of Facebook’s Newsfeed, Google’s search engine,
+and Spotify’s Discover Weekly—makes up an ever-growing share of the information we consume
+online. While such content and the systems that deliver it have much to offer, public concern is
+mounting about their possible negative impacts on individuals and our society as a whole. Most
+of the focus thus far has been on social media; in a particularly striking instance this past April,
+Facebook CEO Mark Zuckerberg was called to testify before the United States Congress in the wake
+of revelations about possible misuse of sensitive Facebook data during the 2016 election cycle. The
+Authors’ addresses: Danaë Metaxa, metaxa@cs.stanford.edu, Computer Science Department, Stanford University, USA;
+Joon Sung Park, jp19@illinois.edu, Department of Computer Science, University of Illinois at Urbana-Champaign, USA;
+James A. Landay, landay@cs.stanford.edu, Computer Science Department, Stanford University, USA; Jeff Hancock,
+hancockj@stanford.edu, Department of Communication, Stanford University, USA.
+Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee
+provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the
+full citation on the first page. Copyrights for components of this work owned by others than the author(s) must be honored.
+Abstracting with credit is permitted. To copy otherwise, or republish, to post on servers or to redistribute to lists, requires
+prior specific permission and/or a fee. Request permissions from permissions@acm.org.
+©2019 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+2573-0142/2019/11-ART129 $15.00
+https://doi.org/10.1145/3359231
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:2 Danaë Metaxa et al.
+unprecedented ease and scale of exposing users to targeted media has implications for everything
+from consumer behaviors to democracy itself.
+Compared to social media, web search has received less public attention, though recent outcry in
+2018 from U.S. President Donald Trump that Google is “RIGGED” forecasts change. Search engines
+and search results, while generally not conceptualized as media, are an important source of infor-
+mation for web users. Recent studies have found web users are more likely to find and trust news
+through search than social media sites [ 28,30,31]. Web search is especially critical in the context of
+politics, where research has shown it to be among the most commonly-used technologies for finding
+political information [12].
+Search results appear to be particularly important in political contexts. Prior work has identified
+that differences in the way search results are presented, in particular their ordering, has substantial
+effects on user perceptions of content credibility and quality [ 34]. These effects may influence users’
+information-gathering and opinion-formation process substantially enough to impact the outcomes
+of close elections [ 13]. And in addition to their effects on users, search can reveal latent social or
+cultural trends; this has implications for improving ranking algorithms [ 41]. Given the way search
+results are consumed by political information-seeking users and the opaque nature of their produc-
+tion by search engines, we argue for conceiving of search results as a form of media, and studying
+them accordingly—systematically and longitudinally.
+Here we propose search results as a form of media— search media —and examine search media in
+the particularly high-stakes context of politics. In the first portion of this paper, we draw on media
+theorist Lev Manovich’s eight propositions on new media to conceptualize search results as a form
+of media, laying out the way search results function as media. Having conceived of search results
+as media, we lay out some of the questions that can be asked of these media, and how to study these
+cultural artifacts to reveal insights into the political world. We present two empirical analyses of data
+collected by scraping Google search results leading up to the 2018 U.S. federal midterm elections.
+We focus our study on Google as it almost completely dominates the U.S. web search market with
+a market share of over 90% [ 10]. Our data are comprised of the first page of search results returned
+by Google for the names of candidates running for office in that election cycle, collected daily for
+nearly six months prior to the elections. In the first study, we focus on characterizing search media to
+better understand what kinds of content comprises search media and how this content changes over
+time. In the second, we annotate the sources found in our data for political partisanship, and show
+that search media reflect important aspects of the U.S. media landscape and the political system.
+This paper makes three main contributions:
+(1)First, we conceptualize search results as a form of media, developing this definition through
+engagement with theoretical work on new media.
+(2)Next, we characterize political search media in the high-stakes context of U.S. politics and the
+2018 elections, describing the variety and stability of search media content in political searches.
+(3)Finally, we examine the partisanship of sources found in this search media data, showing
+that search media reflect important aspects of the real-world political landscape that have
+implications for electoral outcomes.
+SEARCH AS MEDIA
+We conceptualize search results as a form of new media to frame the study of web search results—in
+which we consider an entire page of results as a single, coherent artifact—in a manner analogous to
+the study of newspapers, television, and other media in the past. In particular, we argue that search
+media falls under the definition of new media—media forms native to digital technologies—laid out
+by notable media theorist Lev Manovich in his eight propositions on new media [24].
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:3
+Proposition Definition [24] Search results as new media
+Culture
+and computingNew media are “cultural objects enabled by
+network communication technologies”.Search results are enabled by the web,
+and are cultural in that their ordering
+criteria—relevance and authority—are
+subjective and culturally-defined.
+Distribution
+by digital
+technologyNew media objects use “computer technol-
+ogy for distribution and exhibition”.Search results are both created and
+distributed through the internet.
+Digital
+data controlled
+by softwareNew media are “digital data that can be
+manipulated by software as any other data”.Search results are essentially data structures
+containing ordered lists of links.
+Mixing cultural
+conventions
+and softwareNew media mix human and computational
+processes.Search results pages mix algorithmic
+processes (crawling, indexing, etc.) with
+cultural conventions about what constitutes
+quality.
+Ideological
+tropes of early
+technologiesNew media technologies are accompanied
+by tropes; e.g., “[it will] allow for ‘better
+democracy’” and “it will contribute to the
+erosion of moral values”.Current concern over algorithmic con-
+tent “undermin[ing] democracy” is very
+reminiscent of these tropes [19].
+Faster execution
+of the previously
+manualTechnology leads to an increase in speed and
+efficiency that “does not just leave things
+as they are... [it] leads to the emergence of
+qualitatively new phenomena.”Search results, previously compiled for
+information seekers by librarians, are now
+available to users instantly.
+Metamedia Many new media are created by remixing ex-
+isting media, “[using] old media as...primary
+material”.Search results collect and order exist-
+ing online content into a new page for
+consumption by users.
+Parallel artic-
+ulation of post-
+WWII ideasManovich sees parallels between new media
+of the late 20th century and envisionings of
+similar ideas in the 1940s-1960s.The ability to mechanically file and retrieve
+information from a massive body of human
+knowledge was first proposed in 1945, when
+Vannevar Bush imagined the “memex” [7].
+Table 1. Considering a page of search results as a technological object fits each of Manovich’s eight definitions
+of new media [24].
+New media emerged as a category with the advent of computing and the development of commu-
+nities of artists working with technology in the 1970s, and includes computer games, animation, and
+other art forms, as well as other technological artifacts including the internet itself [ 25]. Encompass-
+ing and unifying disparate ideas from technology and communication, new media can be defined
+and understood in several different ways, all of which contain a central idea: the intersection of
+computing with culture. In Table 1 we outline each of Manovich’s eight propositions for new media,
+and the way search results fit each.
+For example, Manovich characterizes new media as metamedia, “accessing and using in new
+ways previously accumulated media” [ 24]. Search results are an excellent example of metamedia;
+the results page is a single webpage constructed by remixing links to other pages. Its cyclic nature
+suggests analyzing search results pages as the sum of their component links. Another important
+proposition is that new media represents a faster execution of previously manual media functions,
+especially in the way this gain in efficiency changes media phenomena. For example, the current
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:4 Danaë Metaxa et al.
+concern over misinformation and the ability for rumors, hoaxes, and propaganda to spread rapidly
+is a direct result of the automation of media sharing on social media platforms, resulting in users’
+ability to access an unprecedented quantity of content regardless of quality (unfiltered except by
+the search engine, but not by any human professional) [40].
+As Table 1 shows, the search results page—algorithmically curated hyperlinks ordered by socio-
+cultural metrics into a single metamedium—satisfies each of Manovich’s propositions. This supports
+our conceptualization of search as media.
+Prior Work Studying Political Media
+Search media are an important gateway to news online; recent studies have found that web users are
+more likely to find news through search media than social media [ 30,31]. Other work studying users’
+web browsing histories found that users usually accessed news via a link from another site, and this
+referring site was an online search 20% of the time (more often than any other kind of referring site)
+[5]. This makes search media especially critical in the context of politics, where studies have shown
+that search media is among the most commonly used technologies for finding political information
+that can shape views and votes. Features as subtle as the ordering of search results can influence
+users, perhaps even enough to impact the outcomes of close elections [ 13]. Due to the importance
+of politics in the context of society and search, we focus here on political search media.
+Prior to the widespread use of web search, work in political science considered partisanship in
+the context of online media and electoral processes. For example, electoral participation, while
+determined by many factors, is significantly impacted by the mobilization efforts of campaigns and
+political parties [ 8]. These efforts can include activating supporters to vote, and negative advertising
+in an attempt to discourage out-party members from voting [8].
+One of the main mechanisms for spreading campaign messages is through targeting liberal and
+conservative leaning potential voters through online media, a process that may influence polariza-
+tion of the American public and election outcomes [ 1]. New media sources have been found to be
+increasingly polarized, having added more partisan messages to compete with the existing supply
+of centrist news [ 4,36]. One concern is that news consumers gravitate towards “echo chambers,”
+selectively exposing themselves to media supporting their prior beliefs, and the internet provides
+an unprecedented number of outlets from which to choose [ 6,23]. Electorate polarization has wide-
+spread implications for democracy—more partisan media has “lowered the share of less interested,
+less partisan voters and thereby made elections more partisan” [36].
+Work in the domain of web search has also touched on politics from several angles. Much of it
+focuses on the impact of search results on end users and the presence or absence of filter bubbles, the
+phenomenon in which algorithmic content only exposes users to information that reinforces their
+existing opinions. Results in this space are mixed; a study analyzing users’ web browsing history
+looking for exposure to different political perspectives found some evidence of such effects [ 16],
+while other research has not [ 12]. Recent work focusing on search personalization and politics has
+found little evidence of results being personalized in response to queries of a political nature [37].
+Challenges in Studying Search Media
+Two major challenges in studying search media are their ephemerality —they appear in real time
+in response to a search query, but are not persistent or archived for later review—and that they
+arereconstitutive —they are liable to change based on the media environment, in response to user
+feedback, or as a result of time or location, among other factors. One strategy used in prior literature
+to address these challenges and that we deploy in this work is the “algorithm audit” which, following
+the tradition of audit studies in social sciences, involves querying the search engine repeatedly and
+recording the results for the purposes of comparison [39].
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:5
+Algorithm auditing is a particularly important tactic for search media given the ephemerality
+of search results, which cannot otherwise be studied in retrospect. Prior work has used algorithm
+audits to study personalization, comparing search results done by different users (at a single point
+in time for each user) to each other [ 37]. Other work has used this method to study web spammers’
+behavior during the 2016 elections, collecting search results for the names of 340 candidates at forty
+data collection points [ 27]. Expanding on the scale of prior work, we argue here for the importance of
+systematic aggregate analysis, collecting data for queries using the names of all election candidates
+(over 3,000 of them) longitudinally (daily for nearly six months) and giving a unique perspective on
+search media stability and partisanship over time.
+The cyclical and constantly reconstituting nature of search results represents a different kind of
+challenge. The production of search media can be decomposed into two main dimensions: endogenous
+factors and exogenous ones. Endogenous factors are those internal to the algorithm itself, such as
+strategic policy decisions made by Google about what content to surface or bury, user behavior which
+may feed back into the algorithm, and technical limitations like the rate at which a search engine can
+crawl and update its indices. Exogenous factors are attributes of “the real world”; in the context of polit-
+ical search media, this includes the behavior of political candidates, changes in current events, and de-
+cisions by news media of what to cover and how. All these types of factors are closely intertwined, and
+it can be difficult to disentangle them. Recent work has attempted to separate user behavior (e.g., choos-
+ing input to a search engine) from algorithmic outputs (e.g., the engine’s ranking choices) [ 22]. Other
+work has collected specific segments of the results page that are heavily curated by the search engine,
+such as Google’s candidate issue guide and “in the news” panels, to study editorial choices made by
+Google [ 11]. In this work, we focus exclusively on the least common denominator of search results, the
+“blue links,” but this allows us to make comparisons and aggregate across many different query terms.
+RESEARCH QUESTIONS
+In this work, we argue for the importance of longitudinal and systematic analysis of political search
+media with an algorithm audit. While collecting data at a single time point has proved fruitful for
+comparing along other axes such as source sentiment towards politicians from different political
+groups (e.g., [ 11]), or different search engines (e.g., [ 22]), a wider time window of data collection
+can surface algorithmic changes as well as reflect current events in the offline world. To do so, data
+collection in this study spans nearly six months of an election cycle, though the method is extensible
+and will ideally span several election cycles in the future.
+Similarly, while prior work has collected search media data using as queries a wide range of terms
+related to politics and current events (e.g., [ 37]), or a subset of political candidates for office (i.e. [ 27]),
+the root queries can considerably impact the results, as other work has shown [ 22]. To make broader
+statements about the partisanship of sources present in search media and the real-world attributes of
+the political system, in this work we use as search terms the names of every candidate for U.S. federal
+office in 2018, analyzing the results in aggregate across this systematic and exhaustive data set.
+Our first research question and set of analyses is concerned with understanding the characteristics
+of political search media.
+RQ1: What are the properties and characteristics of search media related to political candidates in
+the 2018 U.S. Federal election, in particular with regard to types of content and stability of
+search media over time?
+In our second study, our research question revolves around the relationship of search media to
+the real-world media ecosystem and political landscape, such as incumbency and election. We study
+this through the lens of a salient dimension of U.S. politics: partisanship.
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:6 Danaë Metaxa et al.
+RQ2: Do search media reflect attributes of the 2018 elections such as distribution of partisan media
+sources and electoral dynamics?
+Having established the theoretical framing behind this work along with the goals of our analysis
+and the challenges involved in meeting them, we next describe the methodology we deploy.
+DATA COLLECTION
+Our data was collected following a similar method to that outlined in previous literature, wherein
+searches for the names of some election candidates were recorded at forty time points leading up
+to the election [ 27]. We significantly expand that methodology, collecting Google search results
+daily for every candidate running for federal congressional office during the 2018 election cycle and
+covering May 29, 2018 through the election on November 6, 2018 (163 days). We focus our study
+on Google as it dominates the U.S. web search market with over 90% market share (the next largest
+search engine, Bing, has around 3%) [10].
+Background on U.S. Elections
+This work focuses on the United States’ federal elections that took place on November 6, 2018. The U.S.
+federal legislature has two chambers: the House of Representatives and the Senate. Each of the 50 U.S.
+states elects two senators who serve six-year terms, and between one and 53 representatives (based
+on the state’s population), who serve two-year terms. Terms are staggered such that only a subset
+of seats in the Senate have elections in a given election cycle (every two years). There are two main
+political parties in the U.S.—the conservative, right-wing Republican party and the liberal, left-wing
+Democratic party. While third party candidates run in every election representing a range of other
+political viewpoints, it is rare for any of these candidates to win federal election. As many candidates
+from the same party may want to run for election in a given year, the major political parties in most
+states hold primary elections to choose which candidate to put on the ballot for the general election.
+Primary elections vary widely both in their timing (for the November 2018 elections, some primaries
+were held as early as March and some as late as the day of the general election) and logistics (whether
+primaries are open to any voters or only to registered party member voters, among many other
+differences). In this research, we collect data for over 3,000 candidates running for 225 seats in the 2018
+elections for U.S. House and Senate. Of these, 878 candidates were on the ballot in the general election.
+Choosing Search Queries
+In initial testing of our data collection pipeline, we observed that the use of name-only queries, as was
+done in prior work, resulted in many social media or Whitepages-style results for non-politicians with
+the same names, particularly in the case of lesser-known candidates. Such lesser-known candidates
+comprise the majority of our data, since we consider every candidate for office rather than a subset as
+has been done in prior work. As a result and after experimenting with various alternative queries, we
+chose to include the state abbreviation after the name (i.e., “Peter Yu CO”) to increase the relevance
+of results for lesser-known candidates.
+To examine whether adding state abbreviations improved results for lesser-known candidates
+while not affecting more well-known candidates we collected a day of search results using both
+methods. As a proxy for being relatively well-known we selected candidates reaching the general
+election, while for lesser-known candidates we selected candidates losing before the general election.
+For better-known candidates ( N=853), an average of 7.26domains (out of roughly 10 served by the
+search engine) were shared between name-only query results and state-included results, while only
+5.32were shared for lesser-known candidates ( N=2,417)—suggesting that using state abbreviations
+largely did not affect better-known candidates’ results.
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:7
+Next, to confirm that adding abbreviations improved lesser-known candidates’ results we selected
+a random sample of 10 such candidates and recruited three raters from Amazon Mechanical Turk to
+review each query result. URLs were rated on a Likert scale, with 3 indicating a URL was “extremely
+relevant” (“information specific to this candidate”), 2 indicating “moderate” relevance (“at least
+tangentially related to the candidate”), and 1 indicating no relevance (“i.e. content about someone else
+with the same name, or otherwise unrelated”). Omitting those shared between both sets of queries
+(which were rated most highly relevant, at 2.6), results from queries using state abbreviations were on
+average rated 2.0, and those from name-only queries an average of 1.47, a statistically significant dif-
+ference ( p<0.001). These results suggest that the use of state abbreviations in queries resulted in more
+relevant data for lesser-known candidates, who comprised the majority of candidates in our data set.
+Scraping Search Results
+We used five scrapers to collect the blue links on the first page of search results daily. Each scraper
+had its own IP address, instantiated using the Amazon Elastic Compute Cloud, and rotated through
+a list of user-agent strings such that each request appeared to come from a normal operating system
+and modern web browser. Each of the five scrapers collects using a script the first page of Google
+search results for a fifth of the 3,383 candidates daily. Between each query, the scrapers take a break
+for about a minute to avoid overloading Google’s servers with queries. This data collection process
+takes approximately 10 hours per day. (Given the volume of search queries sent to Google daily from
+users around the world, we believe it is highly unlikely that our queries have any impact on the
+search engine.) Recent work investigating personalization in political web search has found that
+personalization has “little impact” on such queries [ 37], but in order for our data to most closely
+reflect a generic user, we also add a depersonalization parameter (“pws=0”) to the end of each query
+URL to avoid any history-based personalization.
+STUDY 1 - CHARACTERIZING SEARCH MEDIA
+Revisiting our first research question, in the following analyses we seek to characterize search media
+related to political candidates in the 2018 U.S. elections. Specifically, we ask, what content comprises
+this search media and how stable is such content over time?
+Content Characteristics
+In total, we collected data for 3,383 candidates (2,976 running for the House, 407 for the Senate) who
+registered with the U.S. Federal Election Commission to appear on the ballot by May 15, 2018. Of
+these, 878 were on the ballot in the general election. Examining the most prevalent domains in our
+data, social media sources (e.g., facebook.com and twitter.com), as well as encyclopedic websites
+(e.g., wikipedia.com and ballotpedia.com) were most common. Also represented were other websites
+for political information, including votesmart.org, govtrack.us, and congress.gov. The only news
+media source to appear in the top ten sites by frequency was washingtonpost.com.
+Next, to get a better understanding of the types of domains in our data, we hired workers from
+Amazon Mechanical Turk to label each domain as one of the following categories (decided upon
+after manually annotating a subset): encyclopedia or knowledge database (e.g., wikipedia.com); news
+source; politician or campaign website; other political site (e.g., congress.gov, crowdpac.com); social
+media site; whitepages-style site (e.g., nuwber.com); other. The frequency of domains follows a power
+law distribution, such that the top 500 by number of non-unique appearances in our data comprise
+over 70% of sources. For all 534 domains appearing more than 500 times in our data, we hired three
+annotators, and considered a category label to be decided when two of the three agreed (this was the
+case for 89% of the domains). The results showed that most domains were judged to be news (47.3%)
+or campaign (38.5%) sites; the next most common category was other political sites at 6.7%.
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:8 Danaë Metaxa et al.
+Search Media Stability
+An important metric in previous studies of search results has been search result stability, in particular
+in the context of politics where different stakeholders may be motivated to game or rig search results
+[26], or where changes in search results may reflect important political events or other changes in
+the political landscape. In this work, we generalize a metric used in prior literature to study stability
+of search results for each query day by day in our data [3].
+Calculating Day-by-Day Similarity. For each query, we calculate the stability of search media through-
+out our data set using the Mmetric established in prior literature, which quantifies how similar two
+pages of search results are to one another, weighting changes among the top links more highly than
+the lower ones [ 3]. The metric first computes the difference between two pages, M′, as a sum of the
+change in position each URL from one page to the other. For URLs appearing on both pages, this
+is proportional to the difference in rank: |1
+rank 1(i)−1
+rank 2(i)|, for some URL i, where rank 1(i)is the
+URL’s rank on the first page, and rank 2(i)is its rank on the second. For URLs not appearing on both
+pages, the equation presumes such URLs moved from at least the second page of results (in [ 3], this
+is presumed to be at least the 11th position): |1
+rank 1(i)−1
+11|for results appearing on the first page but
+not the second, and |1
+rank 2(i)−1
+11|for those on the second but not the first. Altogether this equation
+for computing the difference of two pages, M′, given the URLs on both pages ( Z), those only on the
+first page ( S), and those only on the second page ( T) is:
+M′=Õ
+Z|1
+rank 1(i)−1
+rank 2(i)|+Õ
+S(|1
+rank 1(i)−1
+11|)+Õ
+T(|1
+rank 2(i)−1
+11|)
+This is then normalized by a constant, c=4.03976 , and converted into a similarity score, such that
+two pages with no URLs in common have M=0and two identical pages yield M=1:
+M=1−M′
+c
+These previously established equations assume two pages of results each with ten URLs. To
+compute stability in our search results, which are of variable length, we generalize the Mmetric by
+making two adjustments. First, we compute the movement of a URL appearing on one page but not
+the other as if it had come not from the 11th position, but from whichever rank would be at the top of
+the second page of results—the Npposition, where Nis the total number of search results on page p:
+M′=Õ
+Z|1
+rank 1(i)−1
+rank 2(i)|+Õ
+S(|1
+rank 1(i)−1
+N2+1|)+Õ
+T(|1
+rank 2(i)−1
+N1+1|)
+We also generalize the normalization factor Cfor two pages of any length:
+C=N1Õ
+i=1N1
+i(N1+1)+N2Õ
+i=1N2
+i(N2+1)
+M=1−1
+C
+Stability Over Time. To gain an intuition for the use of the page similarity metric in examining search
+stability, Figure 1 plots page similarity scores day by day for two candidates in our data set, Nancy
+Pelosi and Alexandria Ocasio-Cortez. Search media about Candidate Pelosi, an incumbent running for
+her seventeenth term in Congress, was very stable throughout the data collection; in contrast, search
+media for Ocasio-Cortez, a challenger candidate who won election to the House of Representatives
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:9
+in a surprising upset victory over the incumbent, shows more variation, especially in the first half
+of the data collection window.
+Having gained an intuition for search media on an individual-query basis, we next examine trends
+in search media stability in aggregate across all queries. For each date of data collection, we average
+the search media stability score across all candidates. Unlike in the individual case studies illustrated
+in Figure 1, which reflect considerable changes in search results day over day, stability averaged
+across all candidates evens out—with a few notable exceptions. As is visible in Figure 2, aggregating
+reveals periodic changes in search media every 35 to 40 days during the data collection process.
+Examining one of these dips in similarity score, we find that the amount search media change is
+minimal—from a median of 0.973on September 10 to 0.901on September 11 (see Figure 2). To the
+best of our knowledge, this trend has not been reported in prior literature, but its appearance at
+somewhat regular intervals and only in aggregate suggests it may reflect an endogenous feature
+underlying the production of search media, such as a monthly synchronization between the servers
+Google uses to continually re-crawl and re-index the web.
+Figure 2 also reflects that search media are similarly stable for candidates by type (comparing chal-
+lengers, incumbents, and those running for open seats), though the periodic perturbations are weakest
+for incumbent candidates. Similarly, comparing search media for candidates of different degrees of
+popularity, using as proxy the candidate’s success in the primary (with primary-only candidates likely
+less well-known and those reaching the general election better-known) we also find little difference in
+search media stability. Examining the standard deviations in addition to these averages (not pictured
+in Figure 2 for readability), we also find similar values across the different groups over time.
+STUDY 2 - PARTISANSHIP IN SEARCH MEDIA
+Having characterized the types of pages present in this data and the way they change over time, our
+next set of analyses revolved around the distribution of partisan viewpoints present in search media.
+We wish to see whether these viewpoints reflect something meaningful about the media ecosystem
+or political landscape; to do so we focus on partisanship, one of the most salient features of U.S.
+politics. We use existing metrics that match online sources with partisanship scores to automatically
+annotate as much of our data set as possible at scale; in doing so, we are able to annotate search
+media with a score that reflects its degree of partisanship, and to track fluctuations of partisanship
+in our search media data over time and for different types of candidates.
+Fig. 1. As examples, search media when querying for well-known incumbent Nancy Pelosi were relatively
+stable, while search media about challenger Alexandria Ocasio-Cortez were more dynamic.
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:10 Danaë Metaxa et al.
+Fig. 2. Aggregating stability over time across candidates by type (incumbents, challengers, and open seats) and
+by election phase (candidates who only appeared in primaries versus those appearing in the general), we see
+that search results are relatively stable over time, with small but regular changes, and similar across all groups.
+Assigning Partisan Intensity Scores
+To assign a score for the degree of partisanship associated with each top-level domain in our data
+set, we use the partisan attention scores for 5,798 media sources compiled by the Berkman Klein study
+as part of their 2017 report and provided to us by the authors upon request [ 15]. These scores, which
+are expressed on a−1.0to1.0scale with those close to −1.0representing extremely left-leaning sites
+like motherjones.com (-0.83) and those close to 1.0representing extremely right-leaning sites like
+breitbart.com (0.95), are generated based on each source’s Twitter shares among over 44,000 users
+labeled as being likely liberal or likely conservative. Users’ political leanings were inferred by iden-
+tifying users who had retweeted either of the two 2016 general election candidates (@donaldjtrump
+and @hillaryclinton), but very rarely retweeted both (only 297 users retweeted both candidates).
+This method follows that of Bakshy et al., who computed scores measuring sources’ partisan slants
+based on Facebook shares by users who had self-identified their political affiliation [ 2]. The scores in
+the Berkman Klein report correlate highly with those produced by Bakshy et al., providing evidence
+for the robustness of the scoring [15].
+We are predominantly interested in the degree of partisanship shown in the search media, regard-
+less of the specific party leaning. To express this party-agnostic partisanship, we compute the partisan
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:11
+intensity score of a media source by taking the absolute value of the source’s partisan attention score.
+Thus our partisan intensity score metric is expressed on a 0 to 1.0 scale, where a score of 1.0 means
+a source is extremely partisan (regardless of party) and a score close to 0.0 means a source is neutral.
+To calculate the overall partisan intensity score of a page of search media, we take the average
+overall partisan intensity score of all sources on the page. Reflecting prior insights from prior lit-
+erature that higher-ranked content is more highly visible and therefore salient to users, we take the
+ranked order of results into consideration as we did in our stability calculations above, weighting the
+partisan intensity score of each source on the page according to its rank in the ordered list of results.
+We exclude any URLs that originated from a media source not covered in the Berkman Klein study
+of media sources—we are able to categorize 35.2% of our URLs using this method. To better understand
+the excluded data, we hand-annotated the top 100 most frequently excluded sources. We chose this
+number because of the power law distribution of sources by frequency of appearance in our data; the
+top 100 sources accounted for 45.47% of the excluded data. The majority of these sources were social
+networking sites (including Facebook, Twitter, and LinkedIn), candidates’ personal campaign sites,
+and online shopping sites (such as Amazon). While the exclusion of so many sites is a limitation of this
+method, we were satisfied that the majority of excluded sites indeed could not be meaningfully labeled
+with a partisanship score. Following prior work we also removed en.wikipedia.org and ballotpedia.org
+from the analyses that follow, as these are the top two sites by frequency of appearance and assigning
+a fixed partisanship score to these encyclopedias misrepresents their breadth of content [38].
+Overall Source Polarization
+Having labeled these search media with partisan intensity scores, we first examine the distribution of
+partisanship in our data set. Figure 3 plots the frequency of unique sources by partisan attention score
+(0.1-sized buckets) as well as the frequency of sources weighted by their number of appearances in
+our data. In the histogram of unique sources we see a roughly normal distribution of centrist sources
+offset slightly center-left, and two large peaks of highly partisan sources on the left and, especially,
+the right. These trends mirror those reported in the Berkman Klein report, which focused on media
+sources attracting social media attention during the 2016 election season [ 15]. This suggests that the
+range of sources from which Google draws is reflective of the broader media landscape; we do not
+see evidence that sources on either side of the political spectrum are being systematically excluded
+from search media.
+Weighting URLs by their number of appearances in our data set, we see a prevalence of centrist
+sites, reflecting Google’s reliance on mainstream news media sources, which have more moderate
+partisanship scores. There is also a distinct lack of center-right sources (those with partisanship
+scores between 0.5 and 0.9) similar to that noted in the Berkman Klein report which describes, “a
+hollowing out of the center-right and its displacement by a new, more extreme form of right-wing
+politics” [ 15]. This trend could stem from the set of websites and assigned scores available from that
+prior work; however, we also observed this trend, albeit more weakly, when annotating sources
+using a different list (i.e., [38]) as a sanity-check.
+Political Affiliation
+Concern over partisanship in media coverage as it relates to the two main U.S. political parties has
+been widespread for decades. This issue is high-stakes; bias in search media has the potential to
+silently limit users exposure to other views and perspectives.
+Prior work suggests media are not biased against (or for) either party. One of the earliest examples of
+literature addressing bias by party found network television to cover both parties neutrally during the
+1972 U.S. presidential election [ 20]. Researchers asking similar questions through the 1980s and 1990s
+have continued to find little evidence of bias in coverage by party affiliation [ 17,21]. A meta-analysis
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:12 Danaë Metaxa et al.
+Fig. 3. Examining the distribution of partisan attention in our data reflects some of the same trends reported
+in prior work about the media ecosystem in social media. We see virtually no difference by party affiliation
+given queries for names of Democrats versus Republicans.
+in 2000 summarized 59 quantitative studies in this domain, and again found “no significant biases”
+[9]. Using the same standard as related work in this domain, we examine whether search media treat
+Republicans and Democrats comparably [ 33]. As reflected in Figure 3, distribution of partisanship
+in search media sources is very similar for queries for candidates of both major parties. In other
+words, Google does not point to more conservative sources given a more conservative query, nor
+more liberal sources given a query for a liberal candidate. This finding extends the previous literature
+finding relatively party-neutral coverage to the domain of search media. This could potentially reflect
+a conscious effort by Google to treat political queries comparably regardless of political leaning, or
+could be caused by the search engine’s domain-level assessment of source credibility and resulting
+tendency to highly-rank sources it has labeled as authoritative, regardless of query. It may also reflect
+the willingness of media sources from both sides of the political spectrum to cover candidates from
+their own party as frequently as from the other party.
+Incumbency Status and Election Outcomes
+Two other very important candidate attributes are highly correlated with each other—incumbency
+status, and election outcome. We find strong differences in search media partisanship attributes by
+both these features, but election outcome predictability disappears after controlling for incumbency.
+The political science literature predicts that incumbents should be more moderate and more
+centrist in their positions than challengers, in whose best interest it is to be more extreme to appeal to
+the base of the party, and that news media may therefore cover them accordingly [ 18]. We ask, then,
+whether search media also reflect this trend. As shown in Figure 4, this is confirmed: search media
+about incumbent candidates show strikingly lower levels of partisanship compared to challengers.
+We use an ANOVA on the output of a generalized linear model predicting binomial general election
+outcome from average partisanship throughout the data collection and incumbency; this shows
+incumbency has a large effect size that is statistically significant ( F(2,865)=376 .2,p<0.001) and
+average partisanship is significant as well ( F(1,865)=215.8,p<0.001).
+Open seats (races in which there is no incumbent candidate), are relatively rare, and existing theory
+does not predict what patterns their media might reflect. Interestingly, search media partisanship
+for open seat candidates in our data tracks with challengers, suggesting that the media coverage
+surrounding open seat candidates is similar to the uphill battle faced by lesser-known challengers.
+Breaking the data apart into open seat races versus races with incumbents, however, we find
+that average partisanship is only weakly predictive of outcome—in the case of open seat races
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:13
+Fig. 4. Search media about incumbent candidates and election winners had significantly lower partisanship
+throughout our data than challengers, open seat candidates, and election losers.
+(F(1,121)=2.973,p=0.08), as well as races with incumbents ( F(1,743)=3.04,p=0.08) though
+incumbency status is still highly significant in the latter ( F(1,743)=1175 .04,p<0.001).
+DISCUSSION
+We begin this work by defining search results as a form of media, comprised of algorithmically-
+curated content, and search engine users as media consumers. Given the importance of political
+information, we focus on political search media in the context of the 2018 U.S. midterm elections. This
+theoretical framing informs our choice to study search media systematically, collecting queries for
+all candidates in those elections, and longitudinally, for nearly six months leading up to the election.
+These two methodological choices allow us to begin to tease apart some of the endogenous and
+exogenous factors—those inherent to the search algorithm’s inner workings and those reflective of
+offline events or qualities—present in search media.
+In the first of our empirical studies, we set out to characterize this form of media in terms of the
+sources contained therein, and the way they change over time. We generalize similarity metrics from
+prior literature used for comparing pairs of search results pages, and track the stability of our queries
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:14 Danaë Metaxa et al.
+over time. We find that search media are relatively stable, though in aggregate they show a periodic
+disturbance that may reflect an aspect of the back-end implementation of Google’s search engine.
+Given the importance of partisanship as a central feature of U.S. democracy and traditional media,
+in our second study we label our data with partisanship scores and first examine the distribution of
+partisan sources in our data, finding trends, such as the inflation of far-right media sources, that echo
+recent literature on the changing social media landscape. We next connect partisanship in search
+media to incumbency and then to election outcome, both important real-world phenomena that
+search media reflect. Taken together, both studies reinforce the merit of our theoretical conceptu-
+alization of search as media. Search media function as a form of metamedia, selecting and remixing
+existing media sources into a new format that, analyzed in our audit-style aggregate method, display
+emergent trends that reveal the state of the media ecosystem [24].
+Our findings have design implications for technologists, and implications for citizens consuming
+online political content. The need to audit search engines in the first place reflects that these algo-
+rithms, despite their importance, are very opaque. Search results are presented to users as a curated
+document and consumed as if from a trusted media source; the risks are substantial. The method
+we present, combining a longitudinal algorithm audit with partisanship annotations, is one way of
+monitoring this risk that companies should make possible (many platforms are much harder to audit
+than Google’s search engine) or perhaps even conduct and publish their own audits regularly. In
+addition to monitoring, search engines could mitigate the misinformation risk by disrupting users’
+perceptions of search results as an authoritative media source. For instance, Google could explicitly
+annotate results pages to indicate geolocation, personalization, or other reasons each result appeared,
+to give users some insight into the machinations of the algorithm. Facebook’s introduction of the
+“Why Am I Seeing This?” feature provides one concrete example of this idea in practice—users can
+find an option in the drop down menu of each post and ad on their News Feed with a brief sentence
+explaining what past behavior or demographic targeting led to the post being surfaced [ 32]. Similarly,
+search engines could visually surface meta-information about the perspectives represented on a page
+of results in the form of a “nutrition label” or visual warning reflecting whether a results page show a
+breadth of political perspectives, as some prior research has proposed [ 14,29,35]. Such interventions
+could help users intuitively understand that search media are not authoritative media sources akin
+to other quality news media—rather, they are complex algorithmic byproducts.
+Limitations
+The method we propose and employ for studying search media in the context of elections is certainly
+not the only suitable method for such study; we find it valuable for categorizing and studying
+partisanship at scale in a large data set, but along with its benefits it has limitations. Notably, the
+data in this analysis is comprised solely of the main body of search results (the “blue links”) scraped
+from Google’s search engine. This is the lowest common denominator of search results—all our
+queries had this attribute. Searches for a subset of the higher-profile candidates, however, also contain
+features including panels of recent tweets, knowledge graph panels, and other attributes which we
+did not collect. Some prior work has studied such content (e.g., [ 11,38]) and we encourage future
+work to continue collecting and analyzing such data. Our choice of search engine also limits the
+generalizability of these findings—other search engines might behave differently. While Google’s
+enormous market share suggests that it is by far the most dominant search engine and therefore is most
+important to understand, we hope to expand this work to examine the behavior of other search engines.
+Another important limitation involves our reliance on partisanship scores in the second study.
+We are able to annotate a large but specific subset of sources—those shared widely on other forms of
+social media, as this widespread social sharing was a prerequisite for the Berkman Klein methodology
+that developed the scores. We were also able to replicate these trends with newer mappings of domain
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:15
+to partisanship generated with the slightly different method in [ 38]. However, the fact remains that
+these aggregate methods can only annotate a subset of all results with a relatively confident score.
+That our analyses reflect trends consistent with prior work and real-world phenomena suggests
+that this subset of sites is informative in understanding the media ecosystem behind search, but we
+cannot claim to understand the entirety of search media pages.
+A third major limitation of this work that we hope will lead to fruitful future research: we do not di-
+rectlystudythecomplexrelationshipbetweensearchandusers,includingwhatqueriesusersarelikely
+to make in the context of elections (though we choose queries consistent with prior literature). Closing
+the loop to study and possibly mitigate search media’s impact on users is an area for future work.
+Future Work
+This work focuses on search media relating to the 2018 U.S. federal elections, characterizing them by
+type and stability, and in relation to political polarization. The data analyzed here are rich; we hope to
+expand this work to examine other attributes of search media including sentiment of linked content
+and ads, and to further examine the attributes described here (for instance by studying stability and
+partisanship on a weekly or monthly, rather than daily, basis). Additionally, with continued data
+collection these findings can be expanded to include comparative studies of future elections and
+other bodies of online content (such as that shared on social media or across the entire web), to begin
+teasing apart the various exogenous and endogenous factors contributing to the patterns we observe.
+We also note that, while this work focuses on aggregate analyses of data from thousands of queries
+over hundreds of days, more fine-grained approaches have potential to more deeply explore the way
+specific political events influence search media about a specific candidate or race.
+The other main area for extension of this work goes beyond the composition of search media to its ef-
+fect on users. The search media pipeline starts with a search engine crawling and indexing the web, and
+ends with users issuing queries and receiving information; this work focuses on the first portion of that
+pipeline rather than the latter part, its consumption. Future work should help identify what queries
+users actually issue, and better understand the complex impact a page of results can have on users. Fi-
+nally,whilepoliticsisonehigh-stakesdomainforstudy,futureworkcanleveragetheframingofsearch
+as media and the analytical framework developed here to apply to other domains impacted by search.
+CONCLUSION
+Establishing search as media suggests research questions inspired by previous literature to examine
+the relationship of search media to politics using a systematic and longitudinal methodology. We
+queried the Google search engine daily leading up to an important political event, the 2018 U.S.
+midterm elections, using as queries the names of candidates running for office. In our first study we
+characterize this media for the type of content it contains and its stability over time, finding that
+search media is relative stable but has periodic shifts that likely reflect endogenous factors related to
+its production. In our second study, we see the impact of exogenous factors (real-world facts about the
+candidates in our data set and the political media landscape) on search media. In particular, we find
+that search media about candidates from different political parties nevertheless display similar trends
+in partisanship, and also find clear differences in search media partisanship between incumbents
+and non-incumbent candidates. This framework and these findings suggest the potential for future
+work studying the impact of search media on users over time.
+ACKNOWLEDGMENTS
+The authors acknowledge P. Takis Metaxas of Wellesley College and Nikki Bourassa of the Harvard
+University Berkman Klein Center for providing access to data collected in prior work, and Jennifer E.
+Cryer for providing political science context invaluable for the development of this work. Finally, the
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.129:16 Danaë Metaxa et al.
+authors thank the John S. and James L. Knight Foundation and the Stanford Project on Democracy
+and the Internet for their generous support of this work.
+REFERENCES
+[1]Stephen Ansolabehere and Shanto Iyengar. 1997. Going negative: How political advertisements shrink and polarize the
+electorate . The Free Press.
+[2]Eytan Bakshy, Solomon Messing, and Lada A. Adamic. 2015. Exposure to ideologically diverse news and opinion on
+Facebook. Science 348, 6239 (2015), 1130–1132.
+[3]Judit Bar-Ilan, Mazlita Mat-Hassan, and Mark Levene. 2006. Methods for comparing rankings of search engine results.
+Computer networks 50, 10 (2006), 1448–1463.
+[4]Matthew A. Baum and Tim Groeling. 2008. New Media and the Polarization of American Political Discourse. Political
+Communication 25, 4 (Nov. 2008), 345–365. https://doi.org/10.1080/10584600802426965
+[5]Frank Bentley, Katie Quehl, Jordan Wirfs-Brock, and Melissa Bica. 2019. Understanding Online News Behaviors. In
+Proceedings of the 2019 CHI Conference on Human Factors in Computing Systems (CHI ’19) . ACM, New York, NY, USA,
+Article 590, 11 pages. https://doi.org/10.1145/3290605.3300820
+[6]Dan Bernhardt, Stefan Krasa, and Mattias Polborn. 2008. Political polarization and the electoral effects of media bias.
+Journal of Public Economics 92, 5-6 (June 2008), 1092–1104. https://doi.org/10.1016/j.jpubeco.2008.01.006
+[7] Vannevar Bush. 1945. As We May Think. The Atlantic 176, 1 (1945).
+[8]Gregory A. Caldeira, Aage R. Clausen, and Samuel C. Patterson. 1990. Partisan mobilization and electoral participation.
+Electoral studies 9, 3 (1990), 191–204.
+[9] Dave D’Alessio and Mike Allen. 2000. Media bias in presidential elections: A meta-analysis. Journal of communication
+50, 4 (2000), 133–156.
+[10] Jeff Desjardins. 2018. How Google retains more than 90% of market share. https://www.businessinsider.com/
+how-google-retains-more-than-90-of-market-share-2018-4?r=UK&IR=T
+[11] Nicholas Diakopoulos, Daniel Trielli, Jennifer Stark, and Sean Mussenden. 2018. I Vote For—How Search Informs Our
+Choice of Candidate. Digital Dominance: The Power of Google, Amazon, Facebook, and Apple, M. Moore and D. Tambini
+(Eds.) 22 (2018).
+[12] William H. Dutton, Bianca Reisdorf, Elizabeth Dubois, and Grant Blank. 2017. Social Shaping of the Pol-
+itics of Internet Search and Networking: Moving Beyond Filter Bubbles, Echo Chambers, and Fake News.
+https://papers.ssrn.com/abstract=2944191
+[13] Robert Epstein and Ronald Robertson. 2015. The search engine manipulation effect (SEME) and its possible impact
+on the outcomes of elections. PNAS 112, 33 (Aug. 2015), E4512–E4521. https://doi.org/10.1073/pnas.1419828112
+[14] Robert Epstein, Ronald Robertson, David Lazer, and Christo Wilson. 2017. Suppressing the Search Engine Manipulation
+Effect (SEME). Proc. SIGCHI 1, CSCW (Dec. 2017), 1–22. https://doi.org/10.1145/3134677
+[15] Robert Faris, Hal Roberts, Bruce Etling, Nikki Bourassa, Ethan Zuckerman, and Yochai Benkler. 2017.
+Partisanship, Propaganda, and Disinformation: Online Media and the 2016 U.S. Presidential Election.
+https://papers.ssrn.com/abstract=3019414
+[16] Seth Flaxman, Sharad Goel, and Justin M Rao. 2016. Filter bubbles, echo chambers, and online news consumption. Public
+opinion quarterly 80, S1 (2016), 298–320.
+[17] Herbert J. Gans. 1985. Are US journalists dangerously liberal? Columbia Journalism Review 24, 4 (1985), 29.
+[18] Tim Groseclose. 2001. A Model of Candidate Location When One Candidate Has a Valence Advantage. American
+Journal of Political Science 45, 4 (2001), 862–886. https://doi.org/10.2307/2669329
+[19] Don Hazen. 2017. Google, Facebook, Amazon undermine democracy: They play a
+role in destroying privacy, producing inequality. https://www.salon.com/2017/04/23/
+google-facebook-amazon-undermine-democracy-they-play-a-role-in-destroying-privacy-producing-inequality_
+partner/
+[20] C. Richard Hofstetter. 1976. Bias in the news: Network television coverage of the 1972 election campaign . Ohio State
+University Press.
+[21] Shanto Iyengar and Richard Reeves. 1997. Do the media govern? Politicians, voters and reporters in America. Electoral
+Studies 3, 16 (1997), 429.
+[22] Juhi Kulshrestha, Motahhare Eslami, Johnnatan Messias, Muhammad Bilal Zafar, Saptarshi Ghosh, Krishna P Gummadi,
+and Karrie Karahalios. 2019. Search bias quantification: investigating political bias in social media and web search.
+Information Retrieval Journal 22, 1-2 (2019), 188–227.
+[23] Eric Lawrence, John Sides, and Henry Farrell. 2010. Self-segregation or deliberation? Blog readership, participation,
+and polarization in American politics. Perspectives on Politics 8, 1 (2010), 141–157.
+[24] Lev Manovich. 2003. New media from Borges to HTML. The new media reader 1 (2003), 13–25.
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.Search Media and Elections 129:17
+[25] Lev Manovich, Roger F Malina, and Sean Cubitt. 2001. The Language of New Media . MIT press.
+[26] Panagiotis Metaxas and Eni Mustafaraj. 2009. The battle for the 2008 US Congressional Elections on the Web. Proceedings
+of the Conference on Web Science (2009).
+[27] P Takis Metaxas and Yada Pruksachatkun. 2017. Manipulation of search engine results during the 2016 U.S. congressional
+elections.
+[28] Amy Mitchell and Mark Jurkowitz. 2014. Search, Social and Direct. http://www.journalism.org/2014/03/13/
+social-search-direct/
+[29] Sean A Munson, Stephanie Y Lee, and Paul Resnick. 2013. Encouraging reading of diverse political viewpoints with
+a browser widget. In Seventh International AAAI Conference on Weblogs and Social Media .
+[30] Nic Newman. 2016. Journalism, media and technology predictions 2016. http://reutersinstitute.politics.ox.ac.uk/
+our-research/journalism-media-and-technology-predictions-2016
+[31] Nic Newman. 2018. Journalism, Media, and Technology Trends and Predictions 2018. https://reutersinstitute.politics.
+ox.ac.uk/our-research/journalism-media-and-technology-trends-and-predictions-2018
+[32] Facebook Newsroom. 03-31-2019. Why Am I Seeing This? We Have An Answer For You. https:
+//newsroom.fb.com/news/2019/03/why-am-i-seeing-this/.
+[33] David Niven. 2003. Objective evidence on media bias: Newspaper coverage of congressional party switchers. Journalism
+& Mass Communication 80, 2 (2003), 311–326.
+[34] Bing Pan, Helene Hembrooke, Thorsten Joachims, Lori Lorigo, Geri Gay, and Laura Granka. 2007. In
+Google we trust: Users’ decisions on rank, position, and relevance. JCMC 12, 3 (April 2007), 801–823.
+https://doi.org/10.1111/j.1083-6101.2007.00351.x
+[35] Souneil Park, Seungwoo Kang, Sangyoung Chung, and Junehwa Song. 2009. NewsCube: delivering multiple aspects
+of news to mitigate media bias. In Proceedings of the SIGCHI Conference on Human Factors in Computing Systems . ACM,
+443–452.
+[36] Markus Prior. 2013. Media and Political Polarization. Annual Review of Political Science 16, 1 (May 2013), 101–127.
+https://doi.org/10.1146/annurev-polisci-100711-135242
+[37] Ronald Robertson, David Lazer, and Christo Wilson. 2018. Auditing the Personalization and Composition
+of Politically-Related Search Engine Results Pages. In Proc. WWW 2018 (WWW ’18) . Switzerland, 955–965.
+https://doi.org/10.1145/3178876.3186143
+[38] Ronald E Robertson, Shan Jiang, Kenneth Joseph, Lisa Friedland, David Lazer, and Christo Wilson. 2018. Auditing Partisan
+Audience Bias within Google Search. Proceedings of the ACM on Human-Computer Interaction 2, CSCW (2018), 148.
+[39] Christian Sandvig, Kevin Hamilton, Karrie Karahalios, and Cedric Langbort. 2014. An algorithm audit. , 6–10 pages.
+[40] Soroush Vosoughi, Deb Roy, and Sinan Aral. 2018. The spread of true and false news online. Science 359, 6380 (2018),
+1146–1151.
+[41] Ryen White. 2013. Beliefs and Biases in Web Search. In Proc. SIGIR (SIGIR ’13) . ACM, New York, NY, USA, 3–12.
+https://doi.org/10.1145/2484028.2484053
+Received April 2019; revised June 2019; accepted August 2019
+Proc. ACM Hum.-Comput. Interact., Vol. 3, No. CSCW, Article 129. Publication date: November 2019.

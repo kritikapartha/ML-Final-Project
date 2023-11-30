@@ -1,0 +1,733 @@
+HOBS: Head Orientation-Based Selection
+in Physical Spaces
+Ben Zhangy, Yu-Hsiang Cheny, Claire Tunay, Achal Davey,
+Yang Liz, Edward Leey, Bj¨orn Hartmanny
+y: UC Berkeley EECS & CITRIS Invention Lab z: Google Research
+fbenzh,clairetuna,achal,eal,bjoerng@berkeley.edu, sean.yhc@gmail.com, yangli@acm.org
+Figure 1. Left: Our head orientation-based selection techniques use an IR emitter – multiple targets may fall within its illumination area. Center: We
+offer two list-based reﬁnement techniques – Naive IR uses alphabetical ordering; Intensity IR orders targets by IR intensity. Right: Using Head-motion
+Reﬁnement technique, users can reﬁne their selection through head orientation reﬁnement in a quasi-mode when they hold the touchpad.
+ABSTRACT
+Emerging head-worn computing devices can enable interac-
+tions with smart objects in physical spaces. We present the it-
+erative design and evaluation of HOBS – a Head Orientation-
+Based Selection technique for interacting with these devices
+at a distance. We augment a commercial wearable device,
+Google Glass, with an infrared (IR) emitter to select targets
+equipped with IR receivers. Our ﬁrst design shows that a
+naive IR implementation can outperform list selection, but
+has poor performance when reﬁnement between multiple tar-
+gets is needed. A second design uses IR intensity measure-
+ment at targets to improve reﬁnement. To address the lack
+of natural mapping of on-screen target lists to spatial target
+location, our third design infers a spatial data structure of the
+targets enabling a natural head-motion based disambiguation.
+Finally, we demonstrate a universal remote control applica-
+tion using HOBS and report qualitative user impressions.
+Author Keywords
+Wearable Computing; Spatial Interaction; Selection; Glass
+ACM Classiﬁcation Keywords
+H.5.2. Information Interfaces and Presentation (e.g. HCI):
+Interaction styles
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for proﬁt or commercial advantage and that copies bear this notice and the full citation
+on the ﬁrst page. Copyrights for third-party components of this work must be honored.
+For all other uses, contact the Owner/Author.
+Copyright is held by the owner/author(s).
+SUI ’14, Oct 04-05 2014, Honolulu, HI, USA
+ACM 978-1-4503-2820-3/14/10.
+http://dx.doi.org/10.1145/2659766.2659773INTRODUCTION
+The number of smart objects in our environment with em-
+bedded computation and communication has grown rapidly.
+These objects are all potential targets for interaction. To initi-
+atespatial interactions, a user needs to ﬁrst acquire the target
+object – a fundamental task that has been extensively stud-
+ied in graphical user interfaces, but not yet well-explored in
+physical spaces.
+Today, companies like Samsung and Whirlpool are making
+smart appliances with companion applications that use smart-
+phones as universal remote controls. With these applications,
+the user can select a device from a list in order to control it
+with a device-speciﬁc user interface. However, this method
+faces naming issues (i.e. “what do we name the lamp on the
+left?”) and scaling issues as the number of controlled devices
+increases. These solutions also present a necessarily ﬂawed
+mapping from the positions of the appliances in the rich, 3-
+dimensional world to their place in a 1D or 2D list presented
+on the screen. Past research has used direct aiming at target
+devices in space with phones to overcome these problems [2,
+14]. Such techniques have a few drawbacks: the aiming de-
+vice ﬁrst has to be retrieved; the user’s hands have to be free
+for operation; and the user’s visual attention is split between
+looking down at a screen and out at targets in the world.
+Emerging head-worn computing devices do not require re-
+trieval since the devices are already worn; they may enable
+hands-free or uni-manual interactions; and they offer near-eye
+or see-through displays to present information in the wearer’s
+ﬁeld of view. We thus investigate how such computing de-
+vices may be used for the selection and control of devices in
+physical spaces. Head-worn devices can naturally exploit the
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+17user’s head orientation, an important (but imprecise) indica-
+tor of the user’s locus of attention [18]. It suggests the general
+direction, but not the particular point of focus. We draw an
+analogy to assistive area cursors and adapt area cursor tech-
+niques [7, 26, 5] for physical selection. Such techniques em-
+ploy a two-step selection process: a coarse selection of an
+area of interest, followed by a reﬁnement to select a target
+within that area.
+In this paper, we describe the iterative development and eval-
+uation of HOBS, an area-selection technique that can be read-
+ily implemented with small hardware changes to emerging
+head-worn devices. We augment Google Glass1to enable in-
+frared (IR) communication between Glass and target appli-
+ances. We contribute and evaluate new methods for address-
+ing selection ambiguity in this context. In all our techniques,
+the emitted IR beam provides an initial coarse selection area
+(illustrated in Figure 1 left). To reﬁne selection when multi-
+ple targets have received IR signals, we describe and evaluate
+three techniques:
+OurNaive IR technique shows an alphabetically ordered dis-
+ambiguation list on the near-eye display (Figure 1 center). A
+study with 14participants ﬁnds that target acquisition with
+naive IR targeting is preferred by users and is faster than pure
+list selection without IR, but reﬁnement is still time consum-
+ing.
+OurIntensity IR technique improves reﬁnement as target ob-
+jects compare IR received signal strength (RSS). This value
+allows the system to eliminate some peripheral targets and to
+re-order the reﬁnement interface’s list by their intensity val-
+ues. For example, in Figure 1 of Intensity IR technique, de-
+vice 5 is eliminated ﬁrst and the list is re-ordered based on
+the intensity readings. A second study with 10participants
+shows that Intensity IR successfully reduces both the proba-
+bility of needing to do reﬁnement as well as the time spent in
+list navigation when compared to Naive IR.
+Our ﬁnal Head-motion Reﬁnement addresses the lack of a nat-
+ural mapping when users select a target in the reﬁnement step
+using their device’s touchpad — the axes of motion do not
+map directly to the spatial layout of target devices in a room.
+We ﬁrst learn the relative spatial structure of the targets us-
+ing Glass’ orientation sensors. Users can then perform head
+movements to change selections to spatially adjacent targets
+(see the right of Figure 1). For example, nodding down to se-
+lect the target below current selection, or tilting right to select
+the next target on the right. We present preliminary feedback
+from participants on this technique.
+We also demonstrate an example application of our technique
+used as a remote control of smart appliances such as lighting
+and TV sets: a user looks at the appliance he wishes to con-
+trol and conﬁrms selection by tapping. An appliance-speciﬁc
+user interface is then shown on the user’s near-eye display for
+further interactions.
+1http://www.google.com/glass/start/BACKGROUND AND RELATED WORK
+Our approach is related to head- and eye-controlled inter-
+faces, area cursors, pointing in physical spaces and computer
+vision-based selections.
+Head and Gaze Input
+Head movement has long been used for virtual camera control
+in VR applications [15] and as an assistive input technology
+for cursor control of desktop applications [16]. However, it
+is notable that human neck muscles have a lower bandwidth
+than other muscle groups, e.g., the wrist [4]. Prior work of-
+ten focused on head orientation for controlling graphical in-
+terfaces; in contrast, we apply this modality to selection in
+physical spaces.
+Gaze can also be used to control graphical user interfaces [9].
+While there are wearable gaze trackers [3], turning informa-
+tion about a concrete point in space where a user is looking
+into a selection requires a map with known target locations.
+Our system works through point-to-point IR communication
+and does not require an a priori map or markers. Target ob-
+jects in the environment can also be equipped with individual
+cameras that watch the user [22, 23]. Such an approach can
+enable similar beneﬁts as our approach, but is computation-
+ally more expensive and may not work at greater distances
+or angles, because it relies on ﬁnding the user’s pupils in a
+camera image.
+Area Cursors
+In 2D area cursors for GUIs, the activation area of the cur-
+sor is enlarged, which facilitates acquiring smaller targets [7].
+We argue that head orientation pointing has analogous char-
+acteristics (limited pointing performance and accuracy). Area
+cursors are especially appropriate for individuals with motor
+control impairments or difﬁculties [26, 5]. Similar ideas have
+also been extended into 3D to provide selection with progres-
+sive reﬁnement in 3D scenes [1]. All area and space cur-
+sors necessitate disambiguation when there are multiple tar-
+gets and no clear winner. This paper describes the trade-offs
+between several disambiguation approaches.
+Pointing in Physical Spaces
+Rukzio et al. [20] studied alternative methods for selecting
+devices in physical spaces and found that users strongly pre-
+ferred either tapping target appliances with a mobile device
+or pointing at a distance to browsing a list. Several other ap-
+proaches to spatial selection with handheld devices [2, 14, 25,
+21, 8] or ﬁnger-worn devices [11] exist.
+In some techniques, users select objects of interest with laser
+pointers; however, the laser dot’s small target area makes it
+poorly matched to head orientation input. Other approaches
+rely on virtual room models in which a user’s location is es-
+timated using IMU-based orientation sensing [25, 10] – in
+contrast, our technique does not require a static map ahead of
+time. In the FreeMote system, [6] an IR camera in a handheld
+controller interprets readings from IR emitters on target appli-
+ances. In contrast, we explore a lower cost alternative, using
+only IR emitters and receivers. Our system tackles an unre-
+solved issue of prior approaches – navigating an area dense
+with potential targets and resolving selection ambiguity.
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+18Figure 2. Our Glass hardware: Google Glass augmented with a repo-
+sitionable IR holder, and an additional microcontroller that communi-cates with Google Glass and controls IR emitter.
+Vision- and Projection-Based Target Selection
+Many alternative solutions for detecting devices in contained
+spaces rely on computer-vision recognition of printed tags ondevices. Unfortunately, these methods either impose signiﬁ-cant constraints on the camera used for detection [12], requirelarge or obtrusive tags [13], or are designed to work specif-ically at short distances [19]. Passive markers also cannotshow visual feedback in the environment. Handheld projec-tors can both display a user interface in space and communi-cate control information optically, e.g., by encoding informa-tion temporally (using Gray codes in Picontrol [21] and RFIGLamps [17]) or spatially (using QR codes in the infrared spec-trum in SideBySide [24]). Our solution is similar in spirit butrequires only small, low-cost IR emitters and detectors.
+IR FOR HEAD ORIENTATION-BASED TARGETING
+In this section, we present our hardware platform (IR target-ing) and interaction model (head orientation-based) that wewill use throughout our iterative designs.
+Hardware
+We hypothesize that infrared (IR) emitters are a good tech-nology match for head orientation selection, since they emitlight within a given angle, resulting in a cone in front of theemitter where the light is visible. IR LEDs with many dif-ferent beam angles are commercially available. We augmentGoogle Glass with a 940nm 5mm IR emitter with 10
+◦beam
+angle (OSRAM SFH 4545). The emitter is controlled by anadditional microcontroller which communicates with GoogleGlass through Bluetooth radio, since Glass does not directlysupport hardware modiﬁcation (see Figure 2). Target devicesuse Vishay TSOP38238 IR receivers. Data is encoded usingstandard IR remote protocols at 38.0kHz.
+IR signals are used for initial line-of-sight targeting; subse-
+quently, we use bidirectional wireless communication to sendinformation such as target IDs and signal strength from tar-gets back to Glass. We have chosen the commercial off-the-shelf ZigBee implementation (XBee based on 802.15.4 radio)for this purpose (see Figure 3). This architecture was mostlychosen for reasons of expediency and we do not claim opti-mality for prototyping decisions. Future head-mounted de-vices could clearly integrate IR emitters; other wireless tech-niques (WiFi, Bluetooth) can also be used.
+Glass
+IR emitter
+XBee Radio
+Bluetooth
+XBee Radio
+802.15.4IR detectorinfrared
+ ATMega 
+Micro-
+controllerVisual Feedback LEDs
+ATMega 
+Micro-
+controllerBluetooth Radio
+Figure 3. Our System architecture diagram. The selection is initiated
+through infrared but conﬁrmed over 802.15.4.
+ScanMultiple 
+targets?Tap MultipleReﬁne Commit
+SingleSwipe Down
+Tap
+Figure 4. scan and reﬁne – two main stages during the interaction with
+HOBS. For completeness, we have also added the ﬁnal state of commit.
+Interaction Model
+From the user’s perspective, interaction with HOBS proceeds
+in two stages (Figure 4):
+Scan: The user ﬁrst scans the environment to locate the po-
+sition of the target. During this stage, Glass constantly sends
+out IR signals, and targets offer immediate visual feedbackwhen they receive a signal. The user conﬁrms his desire toconnect to a target by tapping on the Glass touchpad. Glasscollects the responses from targets that have received IR re-ception through the backchannel of XBee. If there is only onesingle target in IR range, it is automatically selected. How-ever, in a dense environment where multiple targets are withinrange, the user needs to reﬁne his selection.
+Reﬁne: When disambiguation is needed, the user must make
+an explicit selection among the targets within their view
+range. We have designed multiple reﬁnement mechanisms– all of which enable the user to select one from a subset oftargets. The user conﬁrms the current selection with a tap.Since the purpose of this stage is to disambiguate among po-tential targets, we will also use disambiguation to refer to this
+stage. Finally, a tap conﬁrms a decision.
+The overall target acquisition time thus depends on scan and
+reﬁne times, the probability that reﬁnement is needed, and thetime to commit an action (tap):
+t
+total =tscan+P(refine) ∗trefine +tcommit (1)
+In the following sections, we describe our iterative designand evaluation process to minimize the overall target selec-tion time.
+ITERATION 1: NAIVE IR
+Our initial research question is: Can IR-based targeting re-
+duce the selection time compared to the case where only UIlist navigation is used on a head-worn device?
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+19Figure 5. In the targeting study, participants were asked to ﬁnd and
+select one of 10 targets in the lab environment.
+Technique
+In our ﬁrst implementation, we use IR for scanning as de-
+scribed in the previous section. For the reﬁnement stage, wesimply show a list of the subset of targets that have receivedIR signals on the Glass display. Users swipe to select fromthat list and tap to conﬁrm the intended target.
+A natural point of comparison is an interface that does not use
+any head orientation information - it always shows a completelist of all targets. We implemented a list view where usersswiped forward and backward on the Glass touchpad to navi-gate incrementally through the list. To quantify the beneﬁt ofusing IR for the scanning step, we carried out a target acqui-sition study which compares the Naive IR selection andlist
+selection.
+Method
+We deployed 10 wireless nodes in an indoor environment(Figure 5), each with a number ID and a letter representingthe name. For the study, we recruited 16 participants fromour institution (9 males and 7 females) by email. Participantsincluded undergraduate and graduate students, as well as uni-versity staff. Their educational backgrounds included Infor-mation Science (6), Engineering (4), Math and Science (4),Design (1), Others(1). 14 had never used Google Glass be-fore, so we offered a tutorial before the experiment in orderto introduce the device. Four participants wore prescriptionglasses, which makes Glass more cumbersome to use and ad-just and may have affected their task performance. In thisstudy, the IR LED was ﬁxed and not repositionable as shownin Figure 2.
+In the within-subject study, half of the participants performed
+IR selection ﬁrst and the other half used list selection ﬁrst.
+For each selection condition, we conducted 15 target selec-tions by randomly choosing from all the targets. During thestudy, we measured the target acquisition time for each tar-
+get selection. At the beginning of each acquisition, partici-pants were asked to stand at a ﬁxed position approximately10-12 feet away from the nodes, looking down until a targetis announced. Participants were allowed to physically movetowards targets if they decided that this would help them withthe task. After each task, they were asked to move back tothe starting position. Afterwards, participants were asked tocomplete a survey of primarily open-ended questions abouttheir experience./uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+−−−−−−mean: 6.67
+median: 5.77mean: 8.86
+median: 7.96
+510152025
+IR List0.000.250.500.751.00
+0 5 10 15 20
+acquisition timecumulative distribution functionmode
+IR
+List
+Figure 6. Boxplot of target acquisition time for IR selection andlist selec-
+tion is shown on the left. The center is the median value, and the mean
+value is shown using white dashed lines. The cumulative distributions
+are on the right.
+/uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF/uni25CFmean: 9.16
+median: 7.67mean: 6.40
+median: 5.63
+−−−−−−
+510152025
+no refinement with refinement0.000.250.500.751.00
+0 5 10 15 20
+acquisition timecumulative distribution functiontype
+no refinement
+with refinement
+Figure 7. Boxplot and CDF of target acquisition time when reﬁnement
+is needed or not in IR selection.
+Results
+Our results indicate that IR selection outperforms list selec-
+tion. The average target acquisition time for IR selection
+is 6.67 seconds while list selection took 8.86 seconds (see
+Figure 6). A t-test shows a signiﬁcant difference (t(279) =
+−3.81,p< 0.001).
+To understand how scanning and reﬁnement contribute to to-tal selection time, we split the data from IR selection into
+two parts – trials that required reﬁnement and ones that didnot. It takes 6.40 seconds (on average) to complete a selec-tion without any reﬁnement, but 9.16 seconds with reﬁne-ment, indicating that an additional 2.76 seconds are neededfor disambiguation (see Figure 7). This difference is sig-niﬁcant (t(19) = −2.7827,p< 0.05).Because many targets
+were spaced far apart, reﬁnements were only necessary in10% of total IR selection trials in this study.
+To further generalize the results, in Figure 8, we show the ac-quisition time for each individual target in the list selection
+condition, ordered by their relative position in the list. Sincewith IR technique, the acquisition time is invariant from eachtarget’s order, we use solid lines to represent the average per-formance of IR selection. From this ﬁgure, we can see that
+once there are more than 6 targets, the average acquisitiontime will be larger than IR selection, even if disambiguationis needed.
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+20/uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF/uni25CF/uni25CF/uni25CF
+/uni25CF/uni25CF
+with refinement
+without
+ refinement
+2.55.07.510.012.5
+123456789 1 0
+order in listtime (seconds)
+Figure 8. Times taken to select a device vs. its order in the list selection.
+The dotted line is a linear ﬁt between the average time and target orders
+in the list. Two horizontal solid lines are the average target acquisitiontimes in Naive IR when reﬁnement is needed or not.
+In the elicited qualitative feedback, 11 out of 16 participants
+preferred IR selection over list mode (3 preferred list, 2 wereundecided). When asked: “When you have multiple candi-
+date targets within sight, which method for selecting betweenthem did you use?”, 81% chose adjust head so that only one
+candidate is signaled, 56% chose tap (to enter reﬁnement
+stage) and then choose between list, and 25% chose walk
+closer to the candidate for a better result (multiple choices
+were allowed). While we observed more participants walkingone or two steps during some tasks, this suggests that partic-ipants viewed their moving as a followed-through action ofadjusting their heads instead of an intentional to walk closerto the targets.
+While both interfaces were judged similarly on overall ease of
+connecting, IR selection was perceived to be more direct andpleasant. One user noted beneﬁt of IR selection “allowing
+users to focus on the targeted objects instead of the screen”.One subject called it “natural to interact with things just by
+looking at them”. Another mentioned that “it’s really conve-
+nient that what I’m looking at is what I’m targeting”.
+In summary, Naive IR can outperform linear list selection,
+and most users prefer this head orientation-based targeting.
+From our quantitative result, however, we found that the re-ﬁnement step detracts signiﬁcantly from the efﬁciency of thetechnique.
+ITERATION 2: INTENSITY IR
+Performance of the Naive IR technique will degrade as tar-
+get density in an environment increases, as increased densitywill require reﬁnement steps. We therefore ask a follow-upresearch question: How might we improve selection time in a
+dense environment?
+Technique
+Previously we only used IR reception as a binary signal foridentifying potential targets. We hypothesize that IR inten-sity at the receiver side can provide more information aboutthe likelihood that a user intended to select a particular target.Received IR intensity falls off with distance between IR emit-ter and receiver as well as with the angle between the emitter!!!!!!!!!
+!!!!!!!!!!!
+!!!!!!!!!!!!!
+!!!!!!!!!!!!!
+!!!!!!!!!!!!!
+!!!!!!!!!!!!!
+!!!!!!!!!!!!!
+!!!!!!!!!!!!!
+!!!!
+!
+!
+!
+!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!20020
+0 2 4 6 8
+distance (m) between IR and the receiverangle (degree) from the centerIR intensity distribution (measured)
+Figure 9. Empirical measurement of IR intensity at different positions.
+We measure the intensity on a horizontal plane at one-meter intervalsfrom the IR emitter. On that plane, a sample is taken every 5 centime-ters, and we stop when the intensity reading is around the level of am-bient noise. To match our assumption about the relationship betweenangles and intensities, the vertical axis shows the relative degree of theangle rather than the distance to the center of the plane. The size andcolor brightness represent the intensity of the readings for visualization.
+and receiver. To measure intensity, we add an IR light-to-
+voltage converter TSL267-LF by AMS-TAOS USA Inc.
+We have empirically measured the intensity distribution at the
+receiver for this conﬁguration in Figure 9. Our measurementsconﬁrm that angular difference has a large effect on the inten-sity readings, with rapid fall-off at increasing angles.
+The intensity information is used in two ways:
+1. When multiple targets have received IR signals and re-
+ported the intensity readings, we discard those whose in-
+tensities are signiﬁcantly lower than the largest reading
+2.
+Therefore, when there is only one target within the line ofsight, the IR intensity approach has the same behavior asthe previous iteration - no disambiguation is needed. Whenthe environment becomes more populated, the new designcan ﬁlter some peripheral targets out, reducing P(refine) ,
+the likelihood of entering the reﬁnement stage.
+2. When reﬁnement is still needed, meaning that multiple tar-
+gets have relatively close intensity values, the system sortsthe disambiguation list according to the IR intensity, fromstrongest to weakest. We hypothesize that this will reducet
+refine signiﬁcantly by minimizing extra navigation steps,
+as the ﬁrst list item will generally match the intended tar-get.
+Method
+To quantify the improvement in this design we performed asecond study to compare the Naive IR andIntensity IR ap-
+proaches. Because we were interested in discovering perfor-mance differences in denser environment, we re-positionedthe 10 nodes and set them up in a smaller area (see Figure 10).We recruited 10 participants for this study. Each user per-formed 30 target acquisition tasks for each approach. As inour ﬁrst within-subject study, half of them perform Naive IR
+ﬁrst and the other half Intensity IR ﬁrst.
+Results
+Intensity IR reduces the number of trials in which reﬁnement
+dialogs are needed from 225 of 300 in Naive IR to 167 of
+2In our current implementation, we empirically set it to be half of
+the ADC resolution, which is frequently used as it indicates a 3dB
+loss in the signal strength.
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+21   P
+   P
+Figure 10. The environment setup for our second study. In comparison
+to our ﬁrst study, we have deliberately increased the target density.
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF
+/uni25CF/uni25CF/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF
+/uni25CF/uni25CF
+/uni25CF
+/uni25CF/uni25CF
+/uni25CF/uni25CF
+/uni25CF
+−−− −−−mean: 3.64
+median: 2.96mean: 4.31
+median: 3.53
+5101520
+Intensity IR Naive IR0.000.250.500.751.00
+5 10 15
+acquisition timecumulative distribution functiontype
+Intensity IR
+Naive IR
+Figure 11. Boxplot and CDF of the target acquisition time in Naive IR
+andIntensity IR conditions.
+300 trials. A Chi-square test shows this difference is signif-
+icant (χ2(1) = 24.755, p<0. 001). This demonstrates that
+the new approach successfully reduces the probability that adisambiguation dialog is needed.
+In the cases where disambiguation is inevitable, Intensity IR
+sorts the list based on the intensity reading, while Naive IR
+sorts alphabetically. Intensity IR reduces the fraction of re-
+ﬁnement trails in which additional list navigation is necessary
+(i.e., the ﬁrst, already selected element is incorrect). Intensity
+IRsorted the desired target as the ﬁrst one in the list in 55%
+of cases (93 of 167). In comparison, for Naive IR, only 35%
+of trials sorted the desired target as the ﬁrst one in the list (80out of 225). A Chi-square test show that this difference issigniﬁcant (with χ
+2(1) = 15.758, p<0. 001).
+From Figure 11, we can see that the overall target acquisi-tion time has decreased from 4.31 seconds for Naive IR to
+3.64 second for Intensity IR. This difference is also signiﬁ-
+cant (t(555) = 3 .2945, p=0.001).
+One side effect that we have observed in this approach is thattheIntensity IR sometimes eliminates the desired target dur-
+ing the scanning stage. Out of 300 trials, the target was ac-
+cidentally eliminated in 13 (4.3%). This is higher than theerror rate for Naive IR (5 out of 300, 1.6%). Even though the
+higher error rate increases the chance of multiple attempts inTarget x!
+Acquired?Y
+Store <x, orientation>
+Target y has 
+highest IR?Y y is the current selection!
+orientation(y) as reference pointHead motion !
+detected?
+z is the next target!
+predicted using adjacency map<1, orientation>!
+<2, orientation>!
+…!
+Ylearning phase
+prediction & update phaseadjacency map
+use z as y
+Figure 12. Our third technique learned each target’s absolute orienta-tion and construct the adjacency map. During the reﬁnement stage, the
+prediction is based on relative changes to a reference point.
+Figure 13. This illustrates that the change of a user’s absolution positiondoesn’t change the relative relationship of physical targets.
+target selection, our analysis above illustrates that overall per-
+formance of Intensity IR is still better than Naive IR.
+ITERATION 3: HEAD MOTION REFINEMENT
+Both Naive IR andIntensity IR rely on list navigation on the
+near-eye display for the reﬁnement step. The list interfacehas a few clear shortcomings: navigation actions map poorlyto real world results, and users must switch their focus backand forth between the physical scene and the near-eye display.These problems motivated us to design an approach that har-nesses the head orientation during the reﬁnement stage.
+In our third iteration, we ask the research question – can we
+build a system purely using head orientation and visual feed-back from the environment for target selection?
+Technique
+We introduce a third technique that uses a combination of mo-tion sensors and IR to learn the relative orientations of targetsin a room and intelligently suggest targets during reﬁnement(see Figure 12).
+In the learning stage, as the user scans over targets in their
+normal use, the system attains the absolute orientation of eachdevice from IR and motion sensors. From this information itcan abstract out the relative positions of targets and constructanadjacency map. The absolute orientations in the map can-
+not be applied to all indoor environments, since the user’smovements through the space could change the relationshipsbetween targets. However, with the constraint that the targetsare spread around the periphery at similar distances, their rel-ative orientations are stable (see Figure 13). This learningprocess can be transparent to the user and the map can bebuilt without an explicit calibration phase.
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+22After the map is created, the user can enter a quasi-mode for
+reﬁnement by holding down on the touchpad. In this quasi-
+mode, a single selected device lights up at a time. When
+the user turns his head in the direction of another device,
+the selection (and indicator light) switches to that device.
+Therefore, the user can move between devices one at a time
+with slight head movements. This prediction is implemented
+by ﬁrst calculating the user’s direction of head motion, and
+searching through the adjacency map for the nearest device in
+that direction. To calculate the direction, we maintain a circu-
+lar buffer of the last 10 sensor measurements, passed through
+a low pass ﬁlter. The direction is then calculated as the differ-
+ence between the last sample and the ﬁrst sample. We use a
+hysteresis method to avoid spurrious selection changes — if
+the variance of the buffer is below a threshold, we assume no
+movement has occurred and do not select another device.
+Evaluation
+We evaluated the head motion reﬁnement method through an
+informal study and collected qualitative feedback from a sub-
+set of 4 users from the Iteration 2 study. In this evaluation,
+we asked users to cycle through multiple targets using the
+new quasi-mode.
+The users had strong preferences for the new method of re-
+ﬁnement. Our observations suggest that each trial became
+much easier than previous iterations. We conducted a sur-
+vey to collect qualitative feedback after the experiment. On a
+scale from 1-7, 1 being the least mental effort and 7 being the
+most mental effort users rated the old technique 4.25 and the
+new technique 2 on average. All users indicated a preference
+for head movement to list navigation. One user referenced the
+issue of naming targets that the list necessitates, preferring the
+experience of “matching visual cues rather than numbers”.
+Another participant remarked that it “just made more sense”
+and was a “more natural way for demonstrating intentional-
+ity”. The users preferred the new mapping in relation to the
+whole environment: “it leveraged the spatial sense that I al-
+ready had just by using the system”. They were also delighted
+to avoid list navigation, which they now called “difﬁcult” and
+“painful”.
+APPLICATIONS
+Head orientation targeting can enable a wide range of context-
+aware applications. We implement one particular demon-
+strative application: a universal smart appliance controller.
+Users select a smart device (e.g., light ﬁxture, TV , or home
+appliance) with Glass — upon conﬁrming the selection, an
+device-speciﬁc UI is shown on the user’s near-eye display,
+and they can control the application (without having to con-
+tinually look at it) through their device touchpad.
+Our prototype, includes three smart devices: a lamp and a fan
+that could be switched on and off; and a smart TV with play-
+back, volume and navigation controls (see Figure 14). The
+prototype used Naive IR, as the small number of target de-
+vices made selection without disambiguation possible. The
+appliances are switched with 120V AC relays. The smart TV
+is a 30” display connected to a laptop. User interfaces for
+each were pre-deﬁned in our application.
+Fan LampVideo Player
+Figure 14. In the smart home scenario, we have built three smart ap-
+pliances for a user experience study. The interface supports both simple
+on/off appliances (lamp or fan) and multi-functional appliances (TV , for
+example).
+We set the devices up in a simulated living room environment
+and invited 14 users to step through a predeﬁned set of tasks
+to control the appliances at a distance. The tasks included
+turning off a lamp, playing a movie and turning up the vol-
+ume.
+All participants successfully completed the list of tasks. They
+commented positively on the universal remote control func-
+tionality (e.g., “I didn’t have to search for different remote
+controllers for different appliances”) and stated it was easy
+to target and connect to appliances, in line with the ﬁndings
+of the previous studies. Participants saw potential beneﬁts
+of the device for families; one user remarked that he could
+imagine people using the system “while keeping an eye on
+their children at the same time”.
+While our system enables users to select and control the ex-
+ample devices successfully, work remains in devising appro-
+priate interfaces for complex devices. Users rated ease of use
+higher for the lamp and fan which had simple, discrete on/off
+actions, and lower for the TV control, which had more op-
+tions. Multiple participants remarked that the difﬁculty was
+based on the affordances of Glass: “most of the difﬁculty I
+had with Glass came from having to navigate the interface
+on the tiny screen with the touch pad”. We leave addressing
+this fundamental usability challenge of wearable devices with
+near-eye displays to future work.
+DISCUSSION
+The rapid development of sensing technologies has created
+many opportunities for new ways to interact with smart ob-
+jects. In our exploration of the design space of HOBS, we
+carefully selected sensing techniques that are readily avail-
+able and easy to deploy; and we added complexity to our sys-
+tem only when necessary.
+Interpretation of results
+A primary goal of this paper was to provide an effective and
+efﬁcient method for target selections in physical spaces. Tar-
+geting is a fundamental building block across many interac-
+tion tasks – it has a signiﬁcant impact on user experiences
+collectively and can provide seamless interaction when de-
+signed well.
+We formalized a scan andreﬁne model of head orientation-
+based selection (Equation 1). We ﬁrst introduced head ori-
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+23entation as an alternative to list selection and showed that
+scanning can outperform list selection. Our redesigns then
+focused on the case where reﬁnement is needed. The two
+ways to reduce reﬁnement time are 1) to reduce P(refine ),
+the probability that a manual reﬁnement is necessary; and 2)
+to reducetrefine , the time required to perform the reﬁnement
+interaction itself. Using IR intensity readings addresses both
+these terms, as it can be used to both avoid showing reﬁne-
+ment dialogs, and to optimize their display when they are
+needed.
+Our ﬁnal head orientation-based technique improves the na-
+ture of the mapping between items in the reﬁnement dialog
+and the layout of targets in space. Informal testing suggests
+that users prefer using this spatial mapping.
+Limitations
+Our system faces a few limitations. First, IR intensity mea-
+surements only work within the dynamic range of our sensor.
+Additional strong IR sources like direct sunlight may saturate
+the sensor and make discrimination impossible. Second, our
+adjacency map is built assuming stable relative target loca-
+tions. If targets move, the map will have to be recalculated.
+This may be done incrementally during everyday interactions,
+but we have not yet tackled this challenge.
+We also acknowledge several limitations of our study design:
+we have not yet systematically studied target density varia-
+tion; our study was performed in a lab environment; and only
+measured ﬁrst use. Future work should study how the tech-
+nique applies in realistic settings over longer periods of time.
+CONCLUSION
+In this paper, by presenting our iterative design process in
+head orientation-based targeting, we have learned that IR
+alone can help reduce the overall acquisition time by reduc-
+ing the chances when we need to perform reﬁnement. With
+IR intensity added, the targeting can work better in a rela-
+tive dense environment. However, a more natural approach
+is to combine IR with head motion. Through our preliminary
+user studies, we learned that this is a more intuitive way of
+performing reﬁnement in comparison to the menu-based se-
+lections. We leave a more comprehensive technical solution
+of using motion sensors and its evaluation as the future work.
+ACKNOWLEDGMENTS
+This work was supported in part by the TerraSwarm Research
+Center, one of six centers supported by the STARnet phase of
+the Focus Center Research Program (FCRP) a Semiconductor
+Research Corporation program sponsored by MARCO and
+DARPA. Additional support was provided by a Sloan Foun-
+dation Fellowship and a Google Research Award.
+REFERENCES
+1. Bacim, F., Kopper, R., and Bowman, D. A. Design and
+evaluation of 3d selection techniques based on
+progressive reﬁnement. International Journal of
+Human-Computer Studies 71, 7 (2013), 785–802.
+2. Beigl, M. Point & click-interaction in smart
+environments. In Handheld and Ubiquitous Computing,H.-W. Gellersen, Ed., no. 1707 in Lecture Notes in
+Computer Science. Springer Berlin Heidelberg, Jan.
+1999, 311–313.
+3. Bulling, A., Roggen, D., and Tr ¨oster, G. Wearable eog
+goggles: Seamless sensing and context-awareness in
+everyday environments. Journal of Ambient Intelligence
+and Smart Environments 1, 2 (2009), 157–171.
+4. Card, S. K., Mackinlay, J. D., and Robertson, G. G. A
+morphological analysis of the design space of input
+devices. ACM Trans. Inf. Syst. 9, 2 (Apr. 1991), 99–122.
+5. Findlater, L., Jansen, A., Shinohara, K., Dixon, M.,
+Kamb, P., Rakita, J., and Wobbrock, J. O. Enhanced area
+cursors: reducing ﬁne pointing demands for people with
+motor impairments. In Proceedings of the 23nd annual
+ACM symposium on User interface software and
+technology, ACM (2010), 153–162.
+6. Hipp, M., Mahler, T. D., Spika, C., and Weber, M.
+Universal device access with freemote. In Intelligent
+Environments (2009), 311–318.
+7. Kabbash, P., and Buxton, W. A. The prince technique:
+Fitts’ law and selection using area cursors. In
+Proceedings of the SIGCHI conference on Human
+factors in computing systems, ACM
+Press/Addison-Wesley Publishing Co. (1995), 273–279.
+8. Kemp, C. C., Anderson, C. D., Nguyen, H., Trevor,
+A. J., and Xu, Z. A point-and-click interface for the real
+world: laser designation of objects for mobile
+manipulation. In Proceedings of the 3rd ACM/IEEE
+international conference on Human robot interaction,
+HRI ’08, ACM (New York, NY, USA, 2008), 241–248.
+9. Kumar, M., Paepcke, A., and Winograd, T. Eyepoint:
+practical pointing and selection using gaze and
+keyboard. In Proceedings of the SIGCHI conference on
+Human factors in computing systems, ACM (2007),
+421–430.
+10. Lifton, J., Mittal, M., Lapinski, M., and Paradiso, J. A.
+Tricorder: A mobile sensor network browser. In
+Proceedings of the ACM CHI 2007 Conference-Mobile
+Spatial Interaction Workshop (2007).
+11. Merrill, D., and Maes, P. Augmenting looking, pointing
+and reaching gestures to enhance the searching and
+browsing of physical objects. In Pervasive Computing.
+Springer, 2007, 1–18.
+12. Mohan, A., Woo, G., Hiura, S., Smithwick, Q., and
+Raskar, R. Bokode: Imperceptible visual tags for camera
+based interaction from a distance. In ACM SIGGRAPH
+2009 Papers, SIGGRAPH ’09, ACM (New York, NY ,
+USA, 2009), 98:1–98:8.
+13. Moran, T. P., Saund, E., Van Melle, W., Gujar, A. U.,
+Fishkin, K. P., and Harrison, B. L. Design and
+technology for collaborage: Collaborative collages of
+information on physical walls. In Proceedings of ACM
+UIST, ACM (New York, NY , USA, 1999), 197–206.
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+2414. Patel, S. N., and Abowd, G. D. A 2-way laser-assisted
+selection scheme for handhelds in a physical
+environment. In UbiComp 2003: Ubiquitous
+Computing, Springer (2003), 200–207.
+15. Pausch, R., Shackelford, M. A., and Profﬁtt, D. A user
+study comparing head-mounted and stationary displays.
+InVirtual Reality, 1993. Proceedings., IEEE 1993
+Symposium on Research Frontiers in (1993), 41–45.
+16. Radwin, R. G., Vanderheiden, G. C., and Lin, M.-L. A
+method for evaluating head-controlled computer input
+devices using ﬁtts’ law. Human Factors: The Journal of
+the Human Factors and Ergonomics Society 32, 4
+(1990), 423–438.
+17. Raskar, R., Beardsley, P., van Baar, J., Wang, Y ., Dietz,
+P., Lee, J., Leigh, D., and Willwacher, T. RFIG lamps:
+interacting with a self-describing world via
+photosensing wireless tags and projectors. In ACM
+SIGGRAPH 2004 Papers, SIGGRAPH ’04, ACM (New
+York, NY, USA, 2004), 406–415.
+18. Raskin, J. The Humane Interface: New Directions for
+Designing Interactive Systems. ACM
+Press/Addison-Wesley Publishing Co., New York, NY ,
+USA, 2000.
+19. Rekimoto, J., and Ayatsuka, Y . Cybercode: Designing
+augmented reality environments with visual tags. In
+Proceedings of DARE 2000 on Designing Augmented
+Reality Environments, DARE ’00, ACM (New York, NY ,
+USA, 2000), 1–10.
+20. Rukzio, E., Leichtenstern, K., Callaghan, V ., Holleis, P.,
+Schmidt, A., and Chin, J. An experimental comparison
+of physical mobile interaction techniques: Touching,
+pointing and scanning. In UbiComp 2006: Ubiquitous
+Computing. Springer, 2006, 87–104.21. Schmidt, D., Molyneaux, D., and Cao, X. PICOntrol:
+using a handheld projector for direct control of physical
+devices through visible light. In Proceedings of the 25th
+annual ACM symposium on User interface software and
+technology, UIST ’12, ACM (New York, NY, USA,
+2012), 379–388.
+22. Smith, B. A., Yin, Q., Feiner, S. K., and Nayar, S. K.
+Gaze locking: passive eye contact detection for
+human-object interaction. In Proceedings of the 26th
+annual ACM symposium on User interface software and
+technology, ACM (2013), 271–280.
+23. Vertegaal, R., Mamuji, A., Sohn, C., and Cheng, D.
+Media eyepliances: using eye tracking for remote
+control focus selection of appliances. In CHI’05
+Extended Abstracts on Human Factors in Computing
+Systems, ACM (2005), 1861–1864.
+24. Willis, K. D., Poupyrev, I., Hudson, S. E., and Mahler,
+M. SideBySide: ad-hoc multi-user interaction with
+handheld projectors. In Proceedings of the 24th annual
+ACM symposium on User interface software and
+technology, UIST ’11, ACM (New York, NY, USA,
+2011), 431–440.
+25. Wilson, A., and Shafer, S. XWand: UI for intelligent
+spaces. In Proceedings of the SIGCHI Conference on
+Human Factors in Computing Systems, CHI ’03, ACM
+(New York, NY, USA, 2003), 545–552.
+26. Worden, A., Walker, N., Bharat, K., and Hudson, S.
+Making computers easier for older adults to use: area
+cursors and sticky icons. In Proceedings of the ACM
+SIGCHI Conference on Human factors in computing
+systems, ACM (1997), 266–271.
+Flat Surfaces in 3D Space
+SUI’14, October 4-5, 2014, Honolulu, HI, USA
+25

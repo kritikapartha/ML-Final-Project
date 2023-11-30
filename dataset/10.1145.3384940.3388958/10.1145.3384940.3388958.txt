@@ -1,0 +1,923 @@
+Cryptanalysis of GiophantusTMSchemes against Hybrid Attack
+Yuntao Wang
+Graduate School of Information Science and Technology,
+The University of Tokyo; Japan Society for the Promotion
+of Science
+y-wang@jaist.ac.jpYasuhiko Ikematsu
+Institute of Mathematics for Industry, Kyushu University
+ikematsu@imi.kyushu-u.ac.jp
+Koichiro Akiyama
+Toshiba Corporation R&D Center
+koichiro.akiyama@toshiba.co.jpTsuyoshi Takagi
+Graduate School of Information Science and Technology,
+The University of Tokyo
+takagi@mist.i.u-tokyo.ac.jp
+ABSTRACT
+The hybrid attack was proposed by Howgrave-Graham in CRYPTO2007,
+which was originally designed for the cryptanalysis of NTRU cryp-
+tosystems. In this paper, based on Howgrave-Graham’s attack model,
+we propose a simulator of hybrid attack to evaluate the hardness of
+the unique shortest vector problem. By a dynamical computation,
+our algorithm can trade off the cost between reduction and MitM,
+while both of them run in exponential time. Further, we adapt our
+simulator to Giophantus.., Giophantus+and Giophantus−cryp-
+tosystems, proposed by Akiyama et al. in SAC2017, SCIS2019 and
+SCIS2020, respectively. Our analysis shows that by the hybrid attack,
+the security levels can be reduced by at most 19 bits for Giophantus’
+parameters proposed in NIST Post Quantum Cryptography (PQC)
+standardization 1st round submission. Meanwhile, the parameter
+sets of Giophantus+and Giophantus−are secure against the hybrid
+attack.
+CCS CONCEPTS
+•Security and privacy →Cryptanalysis and other attacks .
+KEYWORDS
+lattice; cryptanalysis; hybrid attack simulator; unique shortest
+vector problem; Giophantus.
+ACM Reference Format:
+Yuntao Wang, Yasuhiko Ikematsu, Koichiro Akiyama, and Tsuyoshi Takagi.
+2020. Cryptanalysis of GiophantusTMSchemes against Hybrid Attack. In
+Proceedings of the 7th ACM ASIA Public-Key Cryptography Workshop (APKC
+’20), October 6, 2020, Taipei, Taiwan. ACM, New York, NY, USA, 8 pages.
+https://doi.org/10.1145/3384940.3388958
+1 INTRODUCTION
+Under the threat of Shor’s quantum algorithm to current public key
+cryptoschemes (e.g. RSA, ECC, DH, etc.), the development of post-
+quantum cryptography (PQC) is undoubtedly trending research
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than ACM
+must be honored. Abstracting with credit is permitted. To copy otherwise, or republish,
+to post on servers or to redistribute to lists, requires prior specific permission and/or a
+fee. Request permissions from permissions@acm.org.
+APKC ’20, October 6, 2020, Taipei, Taiwan
+©2020 Association for Computing Machinery.
+ACM ISBN 978-1-4503-7607-5/20/10. . . $15.00
+https://doi.org/10.1145/3384940.3388958topic in the crypto world. NIST takes the lead of standardization
+for PQC in 2017, and many proposals are under evaluation [ 1].
+Thereinto, the lattice-based cryptoschemes are considered to be the
+most compelling candidates due to their elegant designs and flex-
+ible parameter settings. Most of the mathematical hard problems
+underlying these lattice-based cryptoschemes are the well-known
+learning with errors (LWE) problem, the ring learning with er-
+rors (RLWE) and their variants [ 17,18]. Practical and theoretical
+cryptanalysis are required for evaluating the parameter sets there.
+Howgrave-Graham [ 14] proposed the hybrid attack to re-estimate
+the security of NTRU cryptoscheme in 2007. It hybridizes a lat-
+tice reduction algorithm and the Meet-in-the-Middle (MitM) attack
+and outperforms either of the two attacks separately. Therefore,
+a number of lattice-based cryptoschemes use the hybrid attack
+when evaluating their parameters. Since then, the hybrid attack is
+considered to be one of the most efficient attacks to lattice-based
+cryptoschemes. However, since there are many parameters in the
+hybrid attack and it is not easy to evaluate an optimal setting for
+the hybrid attack, most of the cryptoschemes such as the NIST PQC
+proposals [ 1] just mention the existence of this attack by a couple of
+words or only give a rough estimation lacking any lucid simulator
+(or say, an estimator).
+In this work, we study the hybrid attack and propose its simu-
+lator to evaluate the hardness of the unique shortest vector prob-
+lem which generally can be reduced from the LWE problem, the
+RLWE problem, NTRU, etc. Our simulator is based on the geometric
+series assumption [ 19], the property of unchangeable lattice vol-
+ume, and the so-called 2016 estimate [ 6]. As an example, we apply
+our simulator to the lattice-based cryptoscheme Giophantus [ 3]
+and its variants. The Giophantus schemes proposed to the first
+round of NIST PQC standardization project, and the later versions
+Giophantus+, Giophantus−are NTRU-like post-quantum cryptosys-
+tems whose security depend on the problem of solving the indeter-
+minate equations. The schemes have the potential to combine the
+high encryption/decryption speed of lattice-based schemes with
+the nonlinearity of multivariate schemes; nevertheless, the NIST
+proposed version Giophantus are depending on the problem of
+solving linear indeterminate equations. In practice, these schemes
+reduce the probability of decoding failure to zero. As a result, the
+key recovery problem is equivalent to a unique shortest vector prob-
+lem that can be applied to the hybrid lattice attack due to finding
+small solutions compared with the large modulus 𝑞.
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+281.1 Related Works
+In 2007, Howgrave-Graham [ 14] proposed the idea of a hybrid at-
+tack and showed its threat to NTRU schemes. Some subsequent
+works are trying to improve the hybrid attack applicable to the
+learning with errors (LWE) variants, or extending the distribution
+of target vector rather than binary, etc. A theoretical analysis of
+the hybrid attack was given in [ 12]. Furthermore, an application
+of the hybrid attack to binary LWE was analyzed in [ 8]. About the
+success probability, theoretical analysis with additional assumption
+is given in [ 12] and [ 8] but lack of experimental verification. In ad-
+dition, Wunderer [ 22] pointed out the overestimate of lattice-based
+cryptosystems derived from the flawed analysis due to roughly
+simplifying the assumptions in the hybrid attack. In that work, he
+proposed a generalized model of hybrid attack on the bounded
+distance decoding (BDD) problem. He also applied the algorithm
+in cryptanalysis using two formulas of over- and underestimation
+of the hybrid attack’s complexity. Moreover, he gave a method to
+construct lattice bases for trinary NTRU and various cases to be
+used in the hybrid attack. A quantum version of the hybrid attack
+was proposed in [ 11], where the MitM part is sped up by using a
+generalization of Grover’s quantum search algorithm. However,
+the hybrid attack seems not considered or just roughly referred
+among most candidates of the NIST Post Quantum Cryptography
+(PQC) standardization project. To give a concrete evaluation for the
+proposals, we need a feasible hybrid attack simulator.
+1.2 Our Contribution
+In this work, based on the Howgrave-Graham’s attack model in [ 14],
+we propose a hybrid attack simulator on the unique Shortest Vector
+Problem (uSVP). By a dynamical computation in the simulator, we
+take account of the trade-off between the cost of lattice reduction
+part and the cost of MitM, since both of them are exponential-time
+algorithms with respect to the corresponding dimensions. Further,
+we adapt our simulator on Giophantus [ 3], Giophantus+[16] and
+Giophantus−[4] cryptoschemes, which are proposed by Akiyama
+et al. The security of Giophantus, Giophantus+and Giophantus−
+can be reduced to the hardness of the unique shortest vector prob-
+lem by the key recovery attack. Using our proposed simulator of
+hybrid attack, it shows that the security levels are reduced by at
+most 19 bits for Giophantus’ parameters proposed in NIST PQC
+standardization 1st round submission. Meanwhile, the parameter
+sets of Giophantus+and Giophantus−are secure against the hybrid
+attack.
+1.3 Roadmap
+Section 2 covers notations and background. We recall the MitM
+attack and the hybrid attack in Section 3. In Section 4 we propose
+our simulator of the hybrid attack on uSVP. As an example, we
+show the cryptanalysis results on Giophantus, Giophantus+and
+Giophantus−. Finally, the conclusion is given in Section 5.
+2 PRELIMINARIES
+Notation. Let𝑞be a large prime number and 𝑙,𝑛be two positive
+integers.𝑙≪𝑞is set in Giophantus schemes. Define the quotientring
+𝑅−
+𝑞,𝑛:=Z𝑞[𝑡]/(𝑡𝑛−1)
+for Giophantus and Giophantus−; define
+𝑅+
+𝑞,𝑛:=Z𝑞[𝑡]/(𝑡𝑛+1)
+for Giophantus+. The elements in Z𝑞are from⌊−𝑞/2⌋+1to⌊𝑞/2⌋.
+For the sake of convenience, we simply represent the quotient ring
+by𝑅𝑞,𝑛, unless it is necessary to distinguish in the context. We take
+a full set of representatives of 𝑅𝑞,𝑛inZ[𝑡]as follows:
+R𝑞,𝑛:=(𝑛−1Õ
+𝑘=0𝑎𝑘𝑡𝑘𝑎𝑘∈Z𝑞)
+,
+and define
+R𝑞,𝑛[𝑥,𝑦]:= 
+Õ
+𝑖,𝑗(𝑛−1Õ
+𝑘=0𝑎𝑖,𝑗,𝑘𝑡𝑘)𝑥𝑖𝑦𝑗𝑎𝑖,𝑗,𝑘∈Z𝑞 
+,
+which is a full set of representatives of 𝑅𝑞,𝑛[𝑥,𝑦]inZ[𝑡,𝑥,𝑦]. Simi-
+larly, defineR𝑙,𝑛andR𝑙,𝑛[𝑥,𝑦]. For an element 𝑓inR𝑞,𝑛[𝑥,𝑦], we
+denote by deg𝑡𝑓the degree of 𝑓with respect to 𝑡. Also deg𝑥,𝑦𝑓
+means the total degree of 𝑓with respect to 𝑥,𝑦. We denote a column
+vector in bold lower case letters, e.g. vand represent a matrix of
+column vectors in bold caps, e.g. B. Specifically, we represent the
+coefficients of a polynomial by a vector type thereof. We sometimes
+also combine two vectors by a space or return, e.g. combine vand
+wby(vTwT)orv
+w
+.
+2.1 Lattice
+Alattice𝐿⊂R𝑚is generated by a set of linearly independent
+vectors b1,..., b𝑛inR𝑚:𝐿(b1,..., b𝑛)={Í𝑛
+𝑖=1𝑥𝑖b𝑖|𝑥𝑖∈Z}.
+B=(b1,..., b𝑛)forms a basis of𝐿. The integers 𝑛and𝑚are called
+therank and the dimension of𝐿respectively. It is called a full-
+rank lattice if𝑛=𝑚. We denote by 𝜆𝑖(𝐿)the length of 𝑖-th linear
+independent shortest vector for 𝑖=1,...,𝑛 in a non-trivial lattice
+𝐿, e.g.𝑠ℎ𝑜𝑟𝑡𝑒𝑠𝑡 𝑣𝑒𝑐𝑡𝑜𝑟 of𝐿is one of the 𝜆1(𝐿)-length vectors.
+Gram-Schmidt Orthogonalization (GSO) . We denote by B∗=
+(b∗
+1,..., b∗𝑛)the associated Gram-Schmidt orthogonal basis of the
+given lattice basis B=(b1,..., b𝑛). The GSO components can be
+computed by b∗
+1=b1,b∗
+𝑖=b𝑖−Í𝑖−1
+𝑗=1𝜇𝑖𝑗b∗
+𝑗for2≤𝑖≤𝑛where
+𝜇𝑖𝑗=⟨b𝑖,b∗
+𝑗⟩
+∥b∗
+𝑗∥2,1≤𝑗<𝑖≤𝑛. Define the orthogonal projection
+𝜋𝑖:R𝑛→𝑠𝑝𝑎𝑛(b1,..., b𝑖−1)⊥. Thus, we have 𝜋𝑖(b𝑘)=b𝑘−Í𝑖−1
+𝑗=1𝜇𝑖𝑗b∗
+𝑗,1≤𝑗<𝑖≤𝑘≤𝑛. Furthermore, denote by 𝜋𝑖(𝐿)a
+lattice generated by the basis (𝜋𝑖(b𝑖),𝜋𝑖(b𝑖+1),...,𝜋𝑖(b𝑛)).
+The fundamental domain of𝐿corresponding to Bis the set
+F(b1,..., b𝑛)={𝑡1b1+𝑡2b2+···+𝑡𝑛b𝑛: 0≤𝑡𝑖<1}. The
+volume (ordeterminant) of a lattice 𝐿is the volume ofF(B), which
+is denoted by vol( 𝐿) (or det(𝐿)) and can be calculated by det(𝐿)=p
+det(B⊤B)=Î𝑛
+𝑖=1∥b∗
+𝑖∥. Note that all the bases of 𝐿have the same
+number𝑛of elements, and all their fundamental domains have the
+same volume.
+𝑞-ary Lattice. A lattice𝐿⊂Z𝑚is called a𝑞-ary lattice if 𝑞Z𝑚⊂𝐿
+for an integer 𝑞. Let A∈Z𝑛×𝑚𝑞(𝑚≥𝑛)be a matrix, we define the
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+29𝑚-dimensional 𝑞-ary lattice as
+𝐿⊥
+(A,𝑞)={x∈Z𝑚|Ax≡0(mod𝑞)}.
+It is clearly generated by the kernel 𝐾𝑒𝑟(A)ofAmod𝑞with
+vol(𝐿⊥
+(A,𝑞))=𝑞𝑛.
+Gaussian Heuristic . The Gaussian Heuristic can estimate the num-
+ber of points in 𝑆∩𝐿approximately vol( 𝑆)/vol(𝐿), for a given lattice
+𝐿and a continuous subset 𝑆⊂R𝑛.
+In particular, if 𝑆is a origin-centred ball of radius 𝑅, the number
+of joint lattice points is 𝑉𝑛(𝑅)/vol(𝐿). Thus the length 𝜆1of the
+shortest vector can be estimated by:
+𝜆1(𝐿)≈(Γ(𝑛/2+1)vol(𝐿))1/𝑛
+√𝜋,
+where the gamma function 𝛤(𝑠)is defined for 𝑠>0by the integral
+𝛤(𝑠)=∫∞
+0𝑡𝑠−1·𝑒−𝑡𝑑𝑡.
+2.2 Lattice Problems
+Shortest Vector Problem (SVP) . Given a lattice basis B, the short-
+est vector problem (SVP) is to find one shortest non-zero vector of
+𝐿(B).
+Unique Shortest Vector Problem (uSVP) .Unique SVP problem is
+for a given lattice 𝐿with promise of 𝜆1(𝐿)≪𝜆2(𝐿), find a shortest
+vector in𝐿.
+Closest Vector Problem (CVP) . Given a basis Bof a lattice𝐿and
+a target vector t, the closest vector problem asks to find a closest
+vector b∈𝐿(B), s.t.∥t−b∥≤∥ t−v∥for∀v∈𝐿(B). We denote it
+by CVP(t,B) in this paper.
+Bounded Distance Decoding (BDD) . The definition of BDD( t,B)
+is analogous but looser than CVP( t,B): with an additional condition
+that there is bounded distance of length 𝑑from tto𝐿(B), BDD asks
+to find a lattice vector bs.t.∥t−b∥≤𝑑.
+Learning With Errors (LWE) Problem [18] . Let𝐷𝜎denote a
+bounded distribution with standard deviation 𝜎. Sample a matrix
+A∈Z𝑚×𝑛𝑞(𝑚,𝑛∈Z)uniformly at random; and randomly sample
+relatively small secret vector s∈𝐷𝑛𝜎ande∈𝐷𝑚𝜎. The pairs of
+(A,b≡As+e(mod𝑞))∈Z𝑚×𝑛𝑞×Z𝑚𝑞are called as LWE samples.
+TheLWE problem is for a given LWE sample (A,b), to compute the
+pair(s,e).
+Ring LWE (RLWE) Problem [17] . For ramdomly sampled poly-
+nomials𝑎∈𝑅𝑞,𝑛,𝑠∈𝑅𝑞,𝑛, and𝑒where𝑒’s coeffients are sampled
+from𝐷𝜎,(𝑎,𝑏=𝑎·𝑠+𝑒∈𝑅𝑞,𝑛)is called as a RLWE sample. The
+RLWE problem is that given 𝑝𝑜𝑙𝑦(𝑛)number of RLWE samples of
+(𝑎,𝑏), to find𝑠(and𝑒simultaneously).
+2.3 Lattice Algorithms
+Typically the above-introduced lattice problems can be reduced to
+the SVP or uSVP. Namely, in some sense, doing cryptanalysis on the
+lattice-based cryptoschemes is equivalent to analyzing the hardness
+of reduced SVP or uSVP. One of the best-known lattice algorithms
+isBKZ algorithm [20], which processes the given basis until being
+almost𝛽-reduced. In other words, the projected lengths of each
+basis vectors are the shortest ones in the relative 𝛽-dimensional
+sub-lattice. BKZ costs exponentially in the blocksize 𝛽.In 2001, Ajtai et al. proposed a sieving algorithm to solve SVP [ 2].
+It requires a runtime of 20.52𝑛+𝑜(𝑛)in dimension 𝑛and requires
+exponential storage of 20.2𝑛+𝑜(𝑛)as well. For a 𝛽-dimensional sub-
+lattice the cost of sieving algorithm can be estimated in 20.292𝛽+𝑜(𝛽)
+operations. If we take sieving as a subroutine in the 𝛽-dimensional
+sub-lattices inside of an 𝑛-dimensional lattice, the total BKZ- 𝛽cost
+can be estimated by 8𝑛·20.292𝛽+12.31operations [ 5]. We recall the
+following two definitions to evaluate the performance of lattice
+algorithms.
+Geometric Series Assumption (GSA) [19]. The geometric se-
+ries assumption says that the norms of GSO vectors ∥b∗
+𝑖∥in the
+reduced basis decline geometrically with quotient 𝐹𝐺𝑆𝐴 such as
+∥b∗
+𝑖∥2/∥b∗
+𝑖−1∥2=𝐹𝐺𝑆𝐴 for𝑖=1,...,𝑛 and𝐹𝐺𝑆𝐴∈[3/4,1). Here
+𝐹𝐺𝑆𝐴 is called the GSA constant, whose size depends on the reduc-
+tion algorithm and the corresponding parameter setting.
+Root Hermite Factor (rHF) [10]. The root Hermite factor is de-
+fined as:
+𝛿=rHF(b1,..., b𝑛)=(∥b1∥/Vol(𝐿)1/𝑛)1/𝑛.
+The rHF of a BKZ- 𝛽reduced basis Bof𝑑-dimensional lattice 𝐿(B)
+can be evaluated by
+𝛿=(((𝜋𝛽)1/𝛽𝛽)/(2𝜋𝑒))1
+2(𝛽−1). (1)
+This is proposed and practically verified by Chen in [9].
+Generally, the quality of a lattice basis can be evaluated by ei-
+ther the GSA constant 𝐹𝐺𝑆𝐴 or the rHF 𝛿. Further, by a simple
+computation, we can get 𝐹𝐺𝑆𝐴≈𝛿−4when𝑛is large.
+2016 Estimate [6]. The 2016 estimate for estimating the hardness
+of LWE samples(A,b≡As+e(mod𝑞))∈Z𝑚×𝑛𝑞×Z𝑚𝑞states that
+if the Gaussian heuristic and the GSA hold for BKZ- 𝛽reduced basis
+andp
+𝛽/𝑑·∥(e|1)∥≈p
+𝛽𝜎≤𝛿2𝛽−𝑑·Vol(𝐿(A,𝑞))1/𝑑, (2)
+then error ecan be found by BKZ- 𝛽reduction algorithm. It has
+been widely used in the cryptanalysis [ 21] for lattice-based cryp-
+toschemes: given the dimension 𝑑, the modular 𝑞and the standard
+deviation𝜎ofe𝑖’s distribution, the 2016 estimate can output the
+optimal blocksize 𝛽in the attack, by using equations (1) and (2).
+Algorithm 1 The nearest plane algorithm NP (t,B)to solve
+CVP(t,B) [7].
+Input: a basis Bof𝑛-dimensional lattice 𝐿(𝐵), the target vector t;
+Output: a vector b∈𝐿(B)closest to t.
+1:apply reduction algorithm to B;
+2:compute the GSO basis B∗=(b∗
+1,..., b∗𝑛) ofB;
+3:b←t;
+4:for𝑖=𝑛,..., 1do
+5:𝑢𝑖=⌈⟨b,b∗
+𝑖⟩/⟨b∗
+𝑖,b∗
+𝑖⟩⌋;
+6: b←b−𝑢𝑖b𝑖;
+7:end for
+8:return b.
+2.3.1 Nearest Plane Algorithm [ 7].We show the nearest plane al-
+gorithm in Algorithm 1, which was proposed by Babai [ 7] to solve
+the CVP( t,B) or BDD( t,B). The closest vector b=t−ein𝐿(B)can
+be successfully recovered if the entries of e=(𝑒1,...,𝑒𝑛)satisfy
+−∥b∗
+𝑖∥/2<𝑒𝑖≤∥b∗
+𝑖∥/2, (3)
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+30for1≤𝑖≤𝑛. For the sake of convenience, we denote the nearest
+plane algorithm by NP (t,B). It runs in polynomial time in the input
+size.
+2.4 Key Construction of Giophantus Schemes
+Now we review the construction of public and private keys in
+Giophantus schemes. First, two polynomials 𝑢𝑥(𝑡),𝑢𝑦(𝑡)inR𝑙,𝑛
+are randomly chosen. Then an irreducible bivariate polynomial
+𝑋(𝑡,𝑥,𝑦)inR𝑞,𝑛[𝑥,𝑦]is sampled that it satisfies 𝑋(𝑡,𝑢𝑥,𝑢𝑦)=0
+in𝑅𝑞,𝑛. The public key and the private key are given as follows:
+Public Key : 𝑞,𝑙,𝑛,𝑋(𝑡,𝑥,𝑦);
+Private Key : 𝑢𝑥(𝑡),𝑢𝑦(𝑡).
+𝑟(𝑡,𝑥,𝑦)∈R𝑞,𝑛[𝑥,𝑦]and𝑒(𝑡,𝑥,𝑦)∈R𝑙,𝑛[𝑥,𝑦]are two perturba-
+tions in encryption procedure. See [ 3] for the encryption/decreption
+details of Giophantus schemes.
+To make sure the decryption definitely succeed, 𝑞is set as
+𝑞>𝑙−1+𝑙𝑑𝑒𝑔𝑥,𝑦𝑋+𝑑𝑒𝑔𝑥,𝑦𝑟Õ
+𝑘=0(𝑘+1)𝑛𝑘(𝑙−1)(𝑘+1)
+in Giophantus,
+𝑞>2(⌈(𝑙−1)/2⌉+𝑙𝑑𝑒𝑔𝑥,𝑦𝑋+𝑑𝑒𝑔𝑥,𝑦𝑟Õ
+𝑘=0(𝑘+1)𝑛𝑘⌈(𝑙−1)/2⌉(𝑘+1))
+in Giophantus−, and
+𝑞>2(⌈𝑙/2⌉+𝑙𝑑𝑒𝑔𝑥,𝑦𝑋+𝑑𝑒𝑔𝑥,𝑦𝑟Õ
+𝑘=0(𝑘+1)𝑛𝑘⌈𝑙/2⌉𝑘+1)
+in Giophantus+, respectively. The large gap of 𝑞>25bits and
+𝑙<4bits in practical settings result in uSVP instances in the
+cryptanalysis of Giophantus cryptoschemes.
+2.5 Key Recovery Attack on Giophantus
+Akiyama et al. proposed two attacks in [ 3], the linear algebraic
+attack (LAA) and the key recovery attack (KRA), by using the
+lattice structure associated with Giophantus. Intuitively, in KRA the
+public key𝑋(𝑡,𝑥,𝑦)is reduced to an RLWE sample where the secret
+information and the perturbation are small. Giophantus schemes of
+NIST PQC proposal and its variants adopt deg𝑥,𝑦𝑋=1, thus we can
+write𝑋(𝑡,𝑥,𝑦)=𝑎(𝑡)𝑥+𝑏(𝑡)𝑦+𝑐(𝑡). The coefficients 𝑎(𝑡)𝑏(𝑡)𝑐(𝑡)
+of𝑋are all in𝑅𝑞,𝑛. Since gcd(𝑛,𝑞)=1, the polynomials 𝑡𝑛−1and
+𝑡𝑛+1are square-free in 𝑅𝑞,𝑛. With a high probability, there exists
+an inverse element in the ring 𝑅𝑞,𝑛. We suppose the inverse element
+of𝑎(𝑡)exists and multiply 𝑎(𝑡)−1to𝑋. We can get 𝑋′(𝑡,𝑥,𝑦)=𝑥+
+𝑏′(𝑡)𝑦+𝑐′(𝑡), while the solution of 𝑋′(𝑡,𝑥,𝑦)=0is still(𝑢𝑥,𝑢𝑦)∈
+𝑅𝑙,𝑛×𝑅𝑙,𝑛with small coefficients. This is substantially an RLWE
+sample of(𝑏′(𝑡),−𝑐′(𝑡)=𝑏′(𝑡)𝑦+𝑥)∈𝑅𝑞,𝑛×𝑅𝑞,𝑛.
+Next, we expand the available polynomials in RLWE sample to
+vectors and matrix in LWE sample by the rotating operation, i.e. we
+transform(𝑏′(𝑡),−𝑐′(𝑡)=𝑏′(𝑡)𝑦+𝑥)∈𝑅𝑞,𝑛×𝑅𝑞,𝑛to(B′,c′=
+B′y+x)∈Z𝑛×𝑛𝑞×Z𝑛𝑞. Particularly, B′is a square matrix because
+only one RLWE sample is available in the attack to Giophantus
+schemes. The latter LWE sample is related to a 𝑞-ary lattice:
+𝐿⊥
+((I𝑛B′−c′),𝑞)={b∈Z𝑚|(I𝑛B′−c′)b≡0(mod𝑞)}.A basis Bof𝐿⊥can be presented by
+B=©­
+«𝑞I𝑛−B′c′
+0 I𝑛 0
+0 0 1ª®
+¬, (4)
+since B(−k yT1)𝑇=(x𝑇y𝑇1)𝑇for some vector k∈Z𝑛𝑞.
+Consequently, we can recover the small solution of (𝑥,𝑦)=
+(𝑢𝑥,𝑢𝑦)by solving the uSVP in the 𝑞-ary lattice𝐿(B)of dimension
+2𝑛+1, namely finding the shortest vector (x𝑇y𝑇1)which is esti-
+mated much shorter than the second shortest vector by Gaussian
+heuristic.
+3 ORIGINAL HYBRID ATTACK
+In this section, we first review Odlyzko’s Meet-in-the-Middle (MitM)
+attack on binary uSVP instances. Then we recall Howgrave-Graham’s
+hybrid attack [ 14] which combines MitM and lattice algorithms:
+lattice reduction algorithm and the nearest plane algorithm.
+3.1 Meet-in-the-Middle Attack
+Odlyzko’s Meet-in-the-Middle attack on binary NTRU scheme [ 13]
+is discussed in [15]. In NTRU’s parameter settings, binary polyno-
+mials𝑔,𝑓of degree𝑛−1are two private keys including 𝑑𝑔and
+𝑑𝑓ones respectively, and polynomial ℎ=𝑔/𝑓∈𝑅−𝑞,𝑛(𝑞∈Z)is
+the public key. The security of NTRU is based on the uSVP in the
+2𝑛-dimensional lattice 𝐿constructed by a basis B=𝑞I𝑛H
+0 I𝑛
+, since
+for some integer vectork
+f
+, we have
+𝑞I𝑛H
+0 I𝑛 k
+f
+=g
+f
+,
+where His a circulant matrix generated from ℎ, i.e.H𝑖,𝑗=ℎ𝑖+𝑗mod𝑛.
+The basis Bis called as an NTRU basis in the literature. Due to the
+property such as(𝑓𝑥𝑖)ℎ=𝑔𝑥𝑖in the ring 𝑅−𝑞,𝑛,(gT,fT)and its
+rotations(g(𝑖)T,f(𝑖)T)are all the solutions, where g(𝑖)andf(𝑖)are
+vectors of coefficients in 𝑔𝑥𝑖and𝑓𝑥𝑖respectively. The determinant
+det(𝐿(B))=𝑞𝑛and the norm of solutions isq
+𝑑𝑓+𝑑𝑔; therefore,
+(gT,fT)and its rotations are expected to be the shortest vector,
+which are much shorter than other vectors, in 𝐿(B)by the Gaussian
+heuristic. Namely, to recover the binary private key of NTRU is
+equivalent to solve the uSVP in 𝐿(B).
+Assume that 𝑑𝑓is even. In the MitM attack, we divide the secret
+polynomial 𝑓by𝑓=𝑓1+𝑓2, with𝑑𝑓/2ones in𝑓1’s coefficients.
+Then the coefficients of 𝑦1=𝑓1ℎand𝑦2=𝑓2ℎdiffer only by 0or1
+because𝑦1+𝑦2=𝑔. The attacker randomly sample 𝑓1and compute
+𝑦1=𝑓1ℎ. The polynomial 𝑓1is then stored into boxes addressed by
+1○binary strings 𝑎𝑖=𝛽1:𝛽2:···:𝛽𝑛, where𝛽𝑗=𝛽𝑗(𝑦1)=1if
+(𝑦1)𝑗>0and0otherwise; 2○binary strings ¯𝑎𝑖=¯𝛽1:¯𝛽2:···:¯𝛽𝑛
+where ¯𝛽𝑗=1−𝛽𝑗. Because𝑦1=−𝑦2+𝑔and𝑔is binary, with high
+probability we can get 𝛽𝑗(𝑦1)=𝛽𝑗(−𝑦2+𝑔)=1−𝛽𝑗(𝑦2), if𝑔does
+not change the sign. Thus one pair of (𝑓1,𝑓2)of the solution 𝑓are
+expected to be in the same box addressed by 𝑎1and ¯𝑎2. Here we
+can store𝑓1into more boxes for the cases that 𝑔changes the sign of
+𝛽(−𝑦2+𝑔). Accordingly, if there are already polynomial 𝑓2inside
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+31Figure 1: GSA observation. Given a 250-dimensional NTRU
+basis B, we apply the BKZ-20 reduction algorithm to 190-
+dimensional (blue line) and 170-dimensional (red line) sub-
+lattice of𝐿(B), respectively.
+of the corresponding box, then after sampling 𝑓1the attacker check
+if(𝑓1+𝑓2)ℎis binary (correct solution) or not.
+The expected number of loops of MitM attack on binary NTRU
+is1√𝑛𝑛
+𝑑𝑓/2 𝑑𝑓
+𝑑𝑓/2−1/2
+. Simultaneously, the storage requirement
+for the above boxes is exponentially large.
+3.2 Hybrid Attack
+Assume that we are given an 𝑁-dimensional NTRU basis Brepre-
+sented in subsection 3.1 ( 𝑁=2𝑛). By applying the BKZ- 𝛽reduction
+algorithm to a sub-lattice of 𝐿(B), we get a reduced basis of
+D=BU=©­
+«𝑞I𝑟∗ ∗
+0 D′∗
+0 0 I 𝑟′ª®
+¬∈Z𝑁×𝑁,
+where Uis a unimodular matrix, 𝑚+𝑟′=𝑁andD′∈Z(𝑚−𝑟)×(𝑚−𝑟).
+Here in Figure 1, we show an experimental result that the distribu-
+tion of D’s GSO vectors obeys GSA in subsection 2.3 very well.
+In addition, we take QR-decomposition on Dand get
+©­
+«I𝑟0 0
+0 Y′0
+0 0 I𝑟′ª®
+¬D=©­
+«𝑞I𝑟∗ ∗
+0 T′∗
+0 0 I 𝑟′ª®
+¬(5)
+which is denoted by YD=T, where
+Y′=(d′∗
+1/∥d′∗
+1∥,..., d′∗
+𝑚−𝑟/∥d′∗
+𝑚−𝑟∥)
+and
+T′=©­­­­
+«∥d′∗
+1∥𝜇2,1∥d′∗
+1∥ ···𝜇𝑚−𝑟,1∥d′∗
+1∥
+0∥d′∗
+2∥ ···𝜇𝑚−𝑟,2∥d′∗
+2∥
+............
+0 0··· ∥ d′∗
+𝑚−𝑟∥ª®®®®
+¬.Algorithm 2 Original Hybrid Attack on uSVP with Binary Solu-
+tion [14]
+Input: a basis Bof𝑁-dimensional q-ary lattice 𝐿(𝐵),𝑚∈N;
+Output: a binary vector b∈𝐿(B)with𝑐ones and𝑁−𝑐zeros in
+b;
+1:while truedo
+2: apply reduction algorithm to the first 𝑚vectors in Band get
+Tby QR-decomposition;
+3: guess a binary vector v1of length𝑟′=𝑁−𝑚with⌈𝑟′·𝑐/𝑁⌋
+ones;
+4: calculatex1
+0
+=NP
+T0
+v1
+−0
+v1
+,T
+;
+5: store v1in all the boxes addressed by A(𝑟)
+x1∪A(𝑟)
+−x1;
+6: forallv2≠v1in the above boxes do
+7: letv=v1+v2and calculatex
+0
+=NP
+T0
+b
+−0
+b
+,T
+;
+8: ifb=Y−1x
+v
+is binary then
+9: return b;
+10: end if
+11: end for
+12:end while
+Denote by da shortest binary vector in 𝐿(D)=𝐿(BU)=𝐿(B).
+We separate the vectors as
+Yd=s
+v
+=Tu
+v
+(6)
+where u,sandvare of lengths 𝑚and𝑟′=𝑁−𝑚, respectively. The
+hybrid attack works on the righthand of equation (6) to get the
+solution d.
+Lemma 1 ([ 14], lemma 2). The vector T0
+v
+−0
+v
+is close to a
+lattice point in 𝐿(T)with a distance of∥s∥.
+Proof.
+T0
+v
+−0
+v
+=Tu
+v
+−Tu
+0
+−0
+v
+=s
+0
+−Tu
+0
+.
+□
+The vectors
+0
+can be found successfully by Algorithm 1 if it
+satisfies the condition of (3).
+A part v1ofv=v1+v2is expected to be guessed in the hybrid
+attack. v1is called𝑠-admissible if
+T0
+v1
+−0
+v1
+=x1
+0
+−Tu1
+0
+T0
+v1
+−s
+v1
+=x1−s
+0
+−Tu1
+0 (7)
+where x1andu1are computed via Algorithm 1.
+Namely,s
+0
+is small enough that it can not affect the output of
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+32NP
+T0
+v1
+−0
+v1
+,𝐿(T)
+. In particular, if v1is𝑠-admissable, then
+v2is also𝑠-admissable (refer to lemma 5 and its proof in [ 14]). To
+store the sampled vector v1, the binary-addressed boxes associated
+with x1are defined as follows. We note that by abuse of notation,
+in the following two definitions, we denote by a𝑖(and x𝑖) the𝑖-th
+element of the vector a(and x, respectively).
+Definition 2 ([ 14], definition 2). For𝑟∈Nand any vector
+x∈Z𝑚𝑞, we define a setA(𝑟)
+xof𝑟-bit integer addresses:
+A(𝑟)
+x=
+a∈{0,1}𝑟a𝑖=1 ifx𝑖>1
+a𝑖=0 ifx𝑖≤0for𝑖∈[1,𝑟]
+.
+Furthermore, the following defined boxes can handle arbitrary
+vectors v1rather than binary.
+Definition 3 ([ 22], definition 1). Let𝑦=∥v∥∞and all other
+parameters are the same as which in Definition 2. The extended boxes
+A(𝑟)
+xis defined as:
+A(𝑟)
+x=
+a∈{0,1}𝑟a𝑖=1 ifx𝑖>⌈𝑦
+2−1⌉
+a𝑖=0 ifx𝑖<−⌊𝑦
+2⌋for𝑖∈[1,𝑟]
+.
+We show the hybrid attack in Algorithm 2. The success proba-
+bility of the hybrid attack depends on two aspects:
+(i) The probability 𝑝𝑠that the sampled vector v1is𝑠-admissible.
+(ii) The probability 𝑝ℎthat the sampled v1is definitely part of the
+correct solution, i.e. v1=v−v2for some vector v2.
+We will discuss the calculation of these two probability in section 4.
+Let𝑉denote the set of 𝑠-admissible vectors v1. A collision of
+the same address is expected to occur after around |𝑉|1/2samples.
+Consequently, the loop of Algorithm 2 is
+𝐿#:=(𝑝𝑠·𝑝ℎ)−1|𝑉|1/2. (8)
+This hybrid attack requires storage complexity of 𝑂(𝐿#). To esti-
+mate the cost of an optimal hybrid attack, it is important to evaluate
+the parameters so as to handle the trade-off between reduction al-
+gorithm and MitM attack. In the next section, we propose such a
+simulator for the hybrid attack.
+4 OUR PROPOSED SIMULATOR
+In this section, we propose a feasible simulator that can dynam-
+ically estimate the cost of a hybrid attack, taking into account
+trade-off between the cost of exponential lattice reduction and
+exponential MitM attack. We then apply the simulator to Giophan-
+tus, Giophantus+and Giophantus−, by reducing their underlying
+Diophantine equation to the unique shortest vector problem.
+4.1 A Simulator of Hybrid Attack
+We show our simulator in Algorithm 3 and explain how it works.
+The goal of this simulator is to estimate the minimal practical cost
+of hybrid attack on the uSVP in a 𝑞-ary lattice 𝐿(B). Assume the
+shortest vector is b=(b1,..., b𝑁), where𝑁is the dimension of
+𝐿(B). Denote by 𝜎the standard deviation of b𝑖’s distribution 𝐷𝑁𝜎.
+By a simple computation using Gaussian heuristic, finding bin𝐿(B)
+is certainly a uSVP instance when given 𝜎is small and 𝑁is large.
+The inputs for our simulator are (𝑁,𝑞,𝜎)and a bound[𝑚1,𝑚2]
+for the dimension of the sub-lattice in the reduction part, where
+⌈𝑁/2⌋<𝑚1<𝑚2<𝑁.Algorithm 3 Simulator to estimate the optimal hybrid attack cost.
+Input: dimension𝑁of𝐿(B), modulus𝑞, standard deviation 𝜎,
+and bound of dimension of sublattice 𝑚∈[𝑚1,𝑚2];
+Output: minimum total cost 𝐶and the corresponding optimal 𝑟′,
+𝛽in the hybrid attack on 𝐿(B).
+1:𝛽=𝛽1←2016 estimate using 𝑁,𝑞,𝜎 ;
+2:while𝛽1−100<𝛽<𝛽1do
+3:𝑚=𝑚2,𝑖=1,𝐶=∞;
+4: while𝑚>𝑚1do
+5:𝛿←equation (1);
+6:(𝑟,𝛼)← equations (9) and (10);
+7: if𝛼≤0then
+8: move to step 21;
+9: end if
+10:𝐶BKZ−𝛽=8(𝑚−𝑟)·20.292𝛽+12.31;
+11:𝐶𝑀𝑖𝑡𝑀←equation (11);
+12:𝐶𝑡𝑚𝑝=𝐶BKZ−𝛽+𝐶𝑀𝑖𝑡𝑀 ;
+13: if𝐶>𝐶𝑡𝑚𝑝then
+14:𝐶=𝐶𝑡𝑚𝑝,𝑖=1;
+15: else
+16:𝑖=𝑖+1;
+17: end if
+18: if𝑖>40then
+19: move to step 23; //terminate heuristically
+20: end if
+21:𝑚=𝑚−1;
+22: end while
+23:𝛽=𝛽−1;
+24:end while
+25:return𝐶,𝑟′,𝛽.
+First, we generate an upper bound 𝛽1by the 2016 estimate, for
+the required blocksize when applying the BKZ reduction to the full
+basis B. Note that we heuristically test from 𝛽1−100to𝛽1(step 2)
+in our simulator, which experientially cover the possible optimal 𝛽.
+We assume that Bis reduced to a new basis Dby BKZ-𝛽algorithm.
+The QR-decomposition of Dis the same as equation (5), where the
+first𝑟′vectors are of norm 𝑞, the last𝑟vectors are of norm 1, and
+there are𝑟𝑌:=𝑁−𝑟−𝑟′vectors at the rest middle part. Denote
+by𝑚=𝑟′+𝑟𝑌the dimension of the sub-lattice being reduced. For
+the sake of convenience, we show the hybrid model in Figure 2.
+In our simulator, we use the assumption of GSA and the property
+that the volume of lattice does not change during the reduction, i.e.
+log𝑞T2
+𝑚,𝑚−log𝑞𝑞2=log𝑞𝐹𝑚−𝑟
+𝐺𝑆𝐴
+and
+𝑞𝑟𝑚Ö
+𝑖=𝑟+1𝑞𝑒𝑖=𝑞𝑛,
+respectively. Set 𝛼=log𝑞T𝑚,𝑚 and substitute 𝐹𝐺𝑆𝐴=𝛿−4into
+above equations, we have
+𝑟=𝑚−&s
+(𝑚−𝑛)
+log𝑞𝛿%
+(9)
+𝛼=1+2∗(𝑟−𝑚)·log𝑞𝛿. (10)
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+33Figure 2: A model of hybrid attack.
+Then the cost 𝐶BKZ-𝛽of the BKZ reduction part can be computed
+easily at step 10. To evaluate the cost 𝐶MitM of the MitM, we should
+carefully calculate the two probability introduced in subsection 3.2:
+𝑝𝑠of sampling v1a𝑠-admissible vector; and 𝑝ℎthatv1is part of
+the correct solution.
+To compute the former 𝑝𝑠, we refer to the methodology used
+in [14]. Namely, we reduce the problem of estimating 𝑝𝑠to the
+problem of evaluating the probability distribution of coordinates
+𝛾𝑖ofs′=Y′g′where Y′∈R(𝑚−𝑟)×(𝑚−𝑟)is orthonormal matrix as
+defined in subsection 3.2, and separate the solution as (g𝑇f𝑇)=
+(g𝑇𝑟g′𝑇f′𝑇). We assume the expected norm of g′is𝑑, thus∥g′∥∞≤
+𝑑, i.e.|𝛾𝑖| ≤𝑑for𝑟+1≤𝑖≤𝑚−𝑟. Denote by 𝑝𝑑(𝜃,𝜃′)the
+probability that 𝜃≤|𝛾𝑖|<𝜃′and we divide the interval [0,𝑑]into
+𝐾sections as 0=𝜃1<𝜃2<···<𝜃𝐾=𝑑. Then we have
+𝑝𝑠>
+1−1
+𝑞𝑟/2𝑚Ö
+𝑖=𝑟+1 𝐾−1Õ
+𝑘=1
+1−𝜃𝑘+1
+𝑞𝑒𝑖
+𝑝𝑑(𝜃𝑘,𝜃𝑘+1)!
+𝑝𝑠<
+1−1
+𝑞𝑟/2𝑚Ö
+𝑖=𝑟+1 𝐾Õ
+𝑘=1
+1−𝜃𝑘
+𝑞𝑒𝑖
+𝑝𝑑(𝜃𝑘,𝜃𝑘+1)!
+Here𝑒𝑖=((𝛼−1)𝑖+(𝑚−𝛼𝑟))/(𝑚−𝑟)is calculated by GSA.
+Meanwhile, depending on different distributions of the solution, 𝑝ℎ
+should be calculated case by case. We show how to compute 𝑝ℎin
+the analysis of Giophantus cryptoschemes in subsection 4.2.
+If the solution in Algorithm 3 is an arbitrary vector binstead of
+the binary one, it is suggested to sample the elements of v1from
+[−𝑘,𝑘]where𝑘=∥b∥∞[22]. However, due to the computation
+result in Table 1, sampling v1from[−⌈𝑘/2⌋,⌈𝑘/2⌋]seems more
+practical according to a calculation for Giophantus key recovery
+attack.
+Moreover, the orthonormal matrix Y′can be generated from a
+random matrix Bby QR-decomposition. We test how the different
+types of B∈Z(𝑚−𝑟)×(𝑚−𝑟)
+𝑞 can affect on the results of 𝑝𝑠: using the
+original sampled basis BinZ100×100𝑞 by modulus 𝑞=761, applying
+LLL and BKZ reduction algorithms to B, and sampling Bby larger
+modulus𝑞=695069. For each case, we repeat 1000 times and takev1∈{−1,0,1,2}v1∈{−1,0,1}
+#Loops(𝑟′=120)·√𝑝𝑠 130.6 121.5
+#Loops(𝑟′=200)·√𝑝𝑠 221.4 206.7
+Table 1: Analyze the pattern to sample v1for hybrid attack
+on Giophantus. Sampling v1from[−⌈𝑘/2⌋,⌈𝑘/2⌋]makes the
+attack more efficient.
+the average value. The experimental results in Figure 3 show that
+𝑝𝑑(𝜃,𝜃′)are close to each other. For this reason, we can generate
+Y′from a random B∈Z(𝑚−𝑟)×(𝑚−𝑟)
+𝑞 with a small 𝑞.
+Figure 3: Test 𝑝𝑠with respect to different types of bases in
+Z100×100𝑞 used in the simulator. The size of modulus 𝑞and
+the type of bases almost do not affect evaluating 𝑝𝑠.
+After preparing the above two probability, we can compute the
+number of loops 𝐿#for the guessing part by equation (8). Further-
+more, in each loop, the candidates in the boxes are checked by
+multiplying Y−1. Hence we estimate the total cost for the part of
+MitM attack by
+𝐶𝑀𝑖𝑡𝑀 =𝑚2𝐿#. (11)
+Note that this estimation is conservative. Consequently, we can
+test the total cost 𝐶of the hybrid attack dynamically for each
+𝛽1−100<𝛽<𝛽1and𝑚1<𝑚<𝑚2. Incidentally, we terminate
+the loop heuristically at step 19 when there is no smaller cost arises
+after 40 iterations.
+4.2 Cryptanalysis on Giophantus and its
+Variants
+As we introduced in subsection 2.5, one can recover the private key
+(𝑢𝑥,𝑢𝑦)∈R𝑙,𝑛×R𝑙,𝑛of Giophantus cryptoschemes via solving
+a uSVP in Giophantus matrix (4) in Z(2𝑛+1)×( 2𝑛+1)
+𝑞 because𝑙=4
+and𝑞≫𝑙are used in the proposals. We apply our hybrid attack
+simulator to analyze the parameters proposed in Giophantus [ 3],
+Giophantus+[16] and Giophantus−[4], respectively. Although the
+coefficients of the secret polynomial are in the set of {−1,0,1,2},
+we sample the coordinates of v1in{−1,0,1}due to the analysis in
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+34schemes (𝑛,𝑞)claimed security parameters in hybrid attack
+levels (bits) 𝑟𝑟𝑌𝑟′𝛽𝛼 log2(𝐿𝑀)log2(𝐶𝑀)log2(𝐶𝐵𝐾𝑍)log2(𝐶𝐻)
+Giophantus(1201, 467424413) 143 51 2296 56 352 0.002 104.1 126.5 129.3 129
+(1733, 973190461) 207 82 3301 84 560 0.0004 156.1 190.5 179.6 191
+(2267, 1665292879) 272 121 4286 128 774 0.0015 219.3 243.5 253.4 253
+Giophantus+ (2048, 805445633) 207 132 3831 134 696 0.0005 226.6 250.5 230.4 251
+(4096, 3221544961) 272 *
+Giophantus−(1297, 323067169) 143 56 2481 58 404 0.0004 117.6 140.3 144.6 145
+(1847, 655108841) 207 100 3491 104 622 0.0011 181.4 205 208.7 209
+(2357, 1066797089) 272 136 4441 138 834 0.0004 243.9 268.2 271 272
+Table 2: Results of cryptanalysis against hybrid attack. The hybrid attack can reduce the security of Giophantus proposed
+parameters, while the parameters of Giphantus+and Giophantus−are secure.
+Table 1. Besides,
+𝑝ℎ=12𝑟′/4𝑟′
+𝑝1𝑟′ 𝑟′−𝑝1𝑟′
+𝑝2𝑟′ 𝑟′−𝑝1𝑟′−𝑝2𝑟′
+𝑝3𝑟′−1
+,
+for𝑝1=5/24,𝑝2=1/3,𝑝3=11/24.
+We show the simulation results in Table 2. It is known in all the
+cases that𝑁=2𝑛+1and the standard deviation of the solution
+is𝜎=1.12.(𝑛,𝑞)are the proposed parameter sets. The “claimed
+security levels”correspond to the security categories of NIST PQC
+standardization project, e.g. breaking the AES-128 security requires
+attackers’ efforts of 143 bits operations at least. We also show the
+optimal parameters and the costs for each part in the hybrid attack.
+In particular, the final total cost of 𝐶𝐻indicates that the security
+levels of Giophantus are expected to be reduced by at most 19 bits
+using the hybrid attack. Simultaneously, the claimed security levels
+for Giophantus+and Giophantus−are ensured against the hybrid
+attack.
+5 CONCLUSION
+In this paper, we proposed a hybrid attack simulator against the
+unique Shortest Vector Problem (uSVP). Our algorithm can trade
+off the cost between the lattice reduction part and the guessing
+part of MitM attack. Our simulation results for the cryptoschemes
+Giophantus [ 3], Giophantus+[16] and Giophantus−[4] show that
+by the hybrid attack, the security level is reduced by at most 19
+bits for Giophantus’ parameters proposed in NIST Post Quantum
+Cryptography (PQC) standardization 1st round submission, and the
+parameter sets of Giophantus+and Giophantus−are secure against
+the hybrid attack.
+ACKNOWLEDGMENTS
+This work was supported by JSPS KAKENHI Grant Number 19F19378,
+19K20266, JST CREST Grant Number JPMJCR14D6, Japan.
+REFERENCES
+[1]US Department of Commerce, National Institute of Standards and Technology.
+Post-Quantum Cryptography, 2019. https://csrc.nist.gov/projects/post-quantum-
+cryptography/.
+[2]M. Ajtai, R. Kumar, and D. Sivakumar. A sieve algorithm for the shortest lattice
+vector problem. In Proceedings of the Thirty-third Annual ACM Symposium on
+Theory of Computing, pages 601–610, 2001.
+[3]K. Akiyama, Y. Goto, S. Okumura, T. Takagi, K. Nuida, and G. Hanaoka. A public-
+key encryption scheme based on non-linear indeterminate equations. In Selected
+Areas in Cryptography - SAC 2017 - 24th International Conference, Revised Selected
+Papers, pages 215–234, 2017.[4]K. Akiyama, Y. Wang, Y. Ikematsu, and T. Takagi. A study on a variant of
+indeterminate equation public-key cryptosystems assuming one-wayness. In
+SCIS 2020, 2020.
+[5]M. R. Albrecht, R. Player, and S. Scott. On the concrete hardness of learning with
+errors. Journal of Mathematical Cryptology, 9(3):169–203, 2015.
+[6]E. Alkim, L. Ducas, T. Pöppelmann, and P. Schwabe. Post-quantum key exchange-
+a new hope. In USENIX Security Symposium, pages 327–343, 2016.
+[7]L. Babai. On lovász’ lattice reduction and the nearest lattice point problem (short-
+ened version). In STACS 85, 2nd Symposium of Theoretical Aspects of Computer
+Science, Proceedings, pages 13–20, 1985.
+[8]J. A. Buchmann, F. Göpfert, R. Player, and T. Wunderer. On the hardness of
+LWE with binary error: Revisiting the hybrid lattice-reduction and meet-in-the-
+middle attack. In Progress in Cryptology - AFRICACRYPT 2016 - 8th International
+Conference on Cryptology in Africa, Proceedings, pages 24–43, 2016.
+[9]Y. Chen. Lattice reduction and concrete security of fully homomorphic encryption.
+Dept. Informatique, ENS, Paris, France, PhD thesis, 2013.
+[10] N. Gama and P. Q. Nguyen. Predicting lattice reduction. In Advances in Cryptology
+- EUROCRYPT 2008, 27th Annual International Conference on the Theory and
+Applications of Cryptographic Techniques, Proceedings, pages 31–51, 2008.
+[11] F. Göpfert, C. van Vredendaal, and T. Wunderer. A hybrid lattice basis reduc-
+tion and quantum search attack on LWE. In Post-Quantum Cryptography - 8th
+International Workshop, PQCrypto 2017, Proceedings, pages 184–202, 2017.
+[12] P. S. Hirschhorn, J. Hoffstein, N. Howgrave-Graham, and W. Whyte. Choos-
+ing ntruencrypt parameters in light of combined lattice reduction and MITM
+approaches. In Applied Cryptography and Network Security, 7th International
+Conference, ACNS 2009, Proceedings, pages 437–455, 2009.
+[13] J. Hoffstein, J. Pipher, and J. H. Silverman. NTRU: A ring-based public key
+cryptosystem. In Algorithmic Number Theory, Third International Symposium,
+ANTS-III, Proceedings, pages 267–288, 1998.
+[14] N. Howgrave-Graham. A hybrid lattice-reduction and meet-in-the-middle at-
+tack against NTRU. In Advances in Cryptology - CRYPTO 2007, 27th Annual
+International Cryptology Conference, Proceedings, pages 150–169, 2007.
+[15] N. Howgrave-Graham, J. Silverman, and W. Whyte. A meet-in-the-middle at-
+tack on an ntru private key. 2003. Available at https://www.researchgate.net/
+publication/2906622.
+[16] Y. Ikematsu, Y. Wang, K. Akiyama, and T. Takagi. Experimental analysis for linear
+algebraic attack on a variant of indeterminate equation public-key cryptosystems.
+InSCIS 2019, 2019.
+[17] V. Lyubashevsky, C. Peikert, and O. Regev. On ideal lattices and learning with
+errors over rings. In Advances in Cryptology - EUROCRYPT 2010, 29th Annual In-
+ternational Conference on the Theory and Applications of Cryptographic Techniques,
+Proceedings, pages 1–23, 2010.
+[18] O. Regev. On lattices, learning with errors, random linear codes, and cryptography.
+J. ACM, 56(6):34:1–34:40, 2009.
+[19] C. Schnorr. Lattice reduction by random sampling and birthday methods. In
+STACS 2003, 20th Annual Symposium on Theoretical Aspects of Computer Science,
+Proceedings, pages 145–156, 2003.
+[20] C. Schnorr and M. Euchner. Lattice basis reduction: Improved practical algorithms
+and solving subset sum problems. Math. Program., 66:181–199, 1994.
+[21] Y. Wang, Y. Aono, and T. Takagi. An experimental study of kannan’s embedding
+technique for the search LWE problem. In Information and Communications
+Security - 19th International Conference, ICICS 2017, Proceedings, pages 541–553,
+2017.
+[22] T. Wunderer. Revisiting the hybrid attack: Improved analysis and refined security
+estimates. IACR Cryptology ePrint Archive, 2016:733, 2016.
+Session 2
+ 
+APKC '20, October 6, 2020, Taipei, Taiwan
+35

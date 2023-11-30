@@ -1,0 +1,832 @@
+RPM: Additive Stream Ciphers for
+Lightweight Communication Security
+Giovanni Di Crescenzo
+gdicrescenzo@perspectalabs.com
+Perspecta Labs Inc.
+Basking Ridge, NJ, USAGlenn O. Veach
+Work done while at
+Relevant Security Corp.
+Denver, CO, USA
+ABSTRACT
+As research of lightweight cryptographic primitives keeps widen-
+ing, so does the need for different approaches towards rigorous
+analysis of their properties. In this paper we investigate the use
+of suitable variations of the ideal cipher analysis methodology to
+a class of lightweight stream ciphers. Our case study is a suite of
+lightweight cryptographic techniques proposed in the industry do-
+main to efficiently target communication security while meeting
+use cases such as interconnected devices working in Low Power
+Wide Area networks. First of all, we isolate these lightweight tech-
+niques as non-linear, additive, stream ciphers. Then, we describe
+theoretical analysis to support some evidence of plausible security:
+(a) high-period stream ciphers rule out certain classes of attacks;
+(b) idealized versions of the analyzed lightweight stream ciphers
+have high period. Finally, we show empirical performance results,
+demonstrating effective cipher methods that easily fit into the lim-
+ited resources of constrained environments, while outperforming
+state-of-the-art methods in unconstrained environments (e.g., the
+AES block cipher) by almost one order of magnitude.
+CCS CONCEPTS
+•Theory of computation →Cryptographic primitives ;Cryp-
+tographic protocols .
+KEYWORDS
+Lightweight Encryption / Lightweight Stream Ciphers / Crypto-
+graphic Analysis
+ACM Reference Format:
+Giovanni Di Crescenzo and Glenn O. Veach. 2020. RPM: Additive Stream
+Ciphers for Lightweight Communication Security . In 13th International
+Conference on Security of Information and Networks (SIN 2020), November
+4–7, 2020, Merkez, Turkey. ACM, New York, NY, USA, 8 pages. https://doi.
+org/10.1145/3433174.3433177
+1 INTRODUCTION
+In today’s interconnected world (e.g., the Internet of Things), many
+sufficiently constrained environments exist such that the traditional
+NIST-approved cryptographic algorithms (e.g., standardized block
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for third-party components of this work must be honored.
+For all other uses, contact the owner/author(s).
+SIN 2020, November 4–7, 2020, Merkez, Turkey
+©2020 Copyright held by the owner/author(s).
+ACM ISBN 978-1-4503-8751-4/20/09.
+https://doi.org/10.1145/3433174.3433177ciphers, hash functions) do not perform to the operation require-
+ments. Lightweight cryptographic primitives, although possibly not
+as secure as the most widely used cryptographic primitives, may be
+efficient enough to enable applications over such constrained envi-
+ronments. In the case of cryptographic primitives designed for the
+most traditional computing devices (e.g., servers, desktop/laptop
+computers), several years of modern cryptography research were
+needed to find widely agreed upon security requirements. Such
+requirements entail formal definitions where researchers can rig-
+orously state their security properties under carefully formulated
+participant, algorithm, interaction, and adversary models and prob-
+lem intractability assumptions. For lightweight cryptography, such
+a process has barely started. On one hand, much progress has been
+made on the design of lightweight cryptographic constructions (see,
+e.g., [ 13,20]), and on the standardization processes for lightweight
+cryptographic primitives (see, e.g., [ 8]). On the other hand, based
+on the current state of the art in lightweight cryptography, giving
+evidence that any level (even though smaller) of security is achiev-
+able, while guaranteeing the desired higher performance, is already
+a non-trivial challenge. In this paper, we attempt a few steps to-
+wards addressing such challenges by using suitable variants of the
+random-oracle and ideal-cipher methodologies for the analysis of
+idealized versions of lightweight cryptographic primitives. Our case
+study is a suite of lightweight cryptographic solutions proposed
+within the industry domain, deployed for certain application use
+cases in a class of resource-constrained networks.
+Our contribution. In this paper we analyze a suite of lightweight
+cryptographic solutions, called RPM [ 15–18],1that are being used
+in the industry domain to achieve communication security among
+interconnected devices working in Low Power Wide Area (LPWA)
+networks. These techniques were designed to take into consider-
+ation various constraining factors including lightweight comput-
+ing of sensors, power requirements, data rates and bandwidth in
+conjunction with Quality of Service (QoS) requirements that are
+Medium QoS such as from residential smart meters or HVAC, as
+well as High QoS such as from heart monitors or power utility
+smart grid.
+Our technical contribution starts by showing quantitative as-
+pects of the following known relationships between stream ciphers
+with long period and secure symmetric encryption schemes: (1)
+stream ciphers generating a pseudo-random sequence of values
+can be turned into secure symmetric encryption schemes; and (2)
+the period of stream ciphers directly bounds the time window of
+security for the associated symmetric encryption scheme. These
+suggest that proving high period of a stream cipher under rigorous
+1RPM is covered by a number of patents, including [11, 12].SIN 2020, November 4–7, 2020, Merkez, Turkey Giovanni Di Crescenzo and Glenn O. Veach
+assumptions as one way of providing partial evidence of potential
+security of the cipher.
+We then consider the RPM constructions and isolate the un-
+derlying lightweight cryptographic primitives as two additive and
+non-linear stream ciphers. In RPM, these are used in combination
+with conventional cryptographic techniques and modes of oper-
+ation to provide lightweight constructions that very efficiently
+target a number of interesting communication security properties,
+including first of all confidentiality via encryption, but also, in more
+advanced versions not studied here, implicit mutual and constant
+authentication, and continuous key management by key re-freshing.
+We were informed by RPM designers that the RPM stream ciphers
+pass the NIST statistical tests and that they believe no correlation
+attacks are possible.
+On a more practical side, we report performance results, show-
+ing that symmetric encryption based on the two lightweight RPM
+stream ciphers is faster by almost one order of magnitude than
+AES-based symmetric encryption, when used on about 1M blocks.
+On a more theoretical side, we analyze the security of encryp-
+tion schemes based on the two lightweight RPM stream ciphers.
+Specifically, we show that idealized versions of them have a long
+period. As perhaps of independent interest, the analysis is based
+on estimating the number of collisions in lightweight functions,
+and establishing linear independence and/or ranks of matrices of a
+specific structure. Our analysis methodology is based on carefully
+deriving idealized version of each specific lightweight construction,
+and obtaining a proof that the idealized version has large period
+to potentially infer some confidence of security against some class
+of attacks (i.e., attacks based on low stream cipher periods) for the
+original, non-idealized, version. The idealization is usually obtained
+by abstracting construction components whose output is intended
+to exhibit random-looking behavior, into random functions.
+On one hand, this idealization is desirable in that it makes the
+analysis more tractable, it provides analysis related to construc-
+tions for which no analysis exists, and it sheds light on potential
+construction properties. On the other hand, we caution the reader
+that formal statements proved for an idealized version may not
+translate to the non-idealized version. This fact is not new: as an ex-
+ample, as part of an active cryptography research area, researchers
+often consider idealized versions of cryptographic constructions
+and prove them to be secure under the existence of a random oracle.
+Indeed, the random oracle methodology, first suggested in [ 6], and
+the ideal cipher methodology, first used in [ 10], are being often used,
+in many variants, to give some informative evidence of security
+in schemes for which a proof is otherwise unavailable or hard to
+obtain. However, caution is often advocated by researchers in ex-
+trapolating these results, as several examples of schemes have been
+constructed in the research literature, where an idealized variant is
+secure but the non-idealized is insecure (starting with [7]).
+Organization of the paper. In Section 2 we detail basic defini-
+tions and relationships between symmetric encryption schemes
+and stream ciphers. In Section 3 and 4 we present the two stream
+ciphers underlying the RPM lightweight communication security
+solutions. In Section 5 we analyze the period of idealized versions
+of the described stream ciphers. We conclude with performance
+results in Section 6.2 DEFINITIONS, BACKGROUND AND
+PRELIMINARIES
+In this section we give some basic definitions, including pseudo-
+random generators, random functions, symmetric encryption schemes
+and stream ciphers. We then recall some known facts relating prop-
+erties like pseudo-randomness and period of stream ciphers to the
+security of encryption schemes.
+Basic definitions and primitives. We say that two distributions
+D0andD1are(t,ϵ)-indistinguishable if for any algorithm Arunning
+in time t, it holds that
+Prob
+x←D0:A(x)=1
+−Prob
+x←D1:A(x)=1≤ϵ
+(i.e., no algorithm running in time tcan distinguish with probability
+≥ϵif a random sample came from one distribution or the other).
+A function{Gn,m:n∈N,m≥n+1}, with Gn,m:{0,1}n→
+{0,1}m, is a(t,ϵ)-pseudo-random generator (family) if the distri-
+bution{x←{ 0,1}n:Gn,m(x)}is(t,ϵ)-indistinguishable from
+the uniform distribution over {0,1}m. A function{Rn:n∈N}„
+with Rn:{0,1}n→{0,1}nis arandom function if the function Rn
+is chosen with distribution uniform across all possible functions
+with n-bit inputs and outputs. A random permutation is a random
+function such that Rnis also a permutation from the input domain
+to the output domain.
+Symmetric Encryption. We will define (conventional) symmetric
+encryption schemes, as well as a stateful version of them. Except
+for specifically treated cases, definitions are applicable to both.
+LetKbe a key space, Mbe a message space, and Cbe a ciphertext
+space. A (stateless) encryption scheme ES=(E,D)and a stateful
+encryption scheme sES=(sE,sD)are each specified by a pair of
+algorithms, with the following syntax and properties.
+Syntax. The encryption algorithm Eis a probabilistic algorithm
+that, on input a key k∈Kand a plaintext m∈M, returns a
+ciphertext c∈C. The decryption algorithm Dis a probabilistic
+algorithm that, on input a key k∈Kand a ciphertext c∈C, returns
+either a plaintext m′∈Mor a special symbol ⊥indicating that the
+ciphertext is invalid.
+The stateful encryption algorithm sEis a probabilistic algorithm
+that, on input a key k∈K, a current state esi, for an integer i≥0,
+and a plaintext m∈M, returns a ciphertext c∈Cand an updated
+state esi+1. The stateful decryption algorithm sDis a probabilistic
+algorithm that, on input a key k∈K, a current state dsi, for an
+integer i≥0, and a ciphertext c∈C, returns an updated state dsi+1,
+and either a plaintext m′∈Mor a special symbol ⊥indicating that
+the ciphertext is invalid.
+Properties: Decryption Correctness. The decryption correctness prop-
+erty of an encryption scheme states that the decryption algorithm
+(almost) always returns the same plaintext used to compute the
+ciphertext using the encryption algorithm. Here, we formally define
+this property for stateless encryption scheme, but the definition
+naturally extends to stateful schemes. Formally, we say that scheme
+ESsatisfies decryption correctness if for any m∈M, it holds that
+the following probability is negligible:
+Prob
+k←K;c←E(k,m);m′←D(k,c):m′,m
+.
+Properties: Security. Several formalizations for the security notion
+of symmetric encryption schemes have been considered in theRPM: Additive Stream Ciphers for
+Lightweight Communication Security SIN 2020, November 4–7, 2020, Merkez, Turkey
+literature, under different adversary models. Here, we consider
+the (most typically used) adversary model where the adversary
+is allowed to: (1) eavesdrop the communication between sender
+and receiver; (2) perform a chosen-message attack. A number of
+security definitions in this adversary model have been proposed in
+the literature (see, for instance, [ 5] for comparison among many
+of these notions). Here, we use a notion that was called “real-or-
+random” security.
+Informally speaking, real-or-random security says that an adver-
+sary would be unable to tell apart encryptions of known data from
+encryptions of random data. Formally, let Abe an adversary with
+access to an oracle O; that is, Acan repeatedly ask a query to O
+and obtain an associated reply. Consider Oas either (1) the encryp-
+tion algorithm E(k,·)that, on input a query qbyA, returns E(k,q),
+where kis random element from Kand unknown to A, or (2) the
+encryption algorithm rE(k,·), that, on input a query qbyA, returns
+E(k,r), for a random element rfrom M, and a random element k
+from K, both randkbeing unknown to A. We say that scheme ES
+satisfies(t,q,ϵ)-“real-or-random” security if for any m∈M, and any
+adversary running in time at most t, and making at most qoracle
+queries, it holds that:
+Prh
+AE(k,·)=1i
+−Prh
+Ar E(k,·)=1i≤ϵ.
+Remarks. The main goal in the design of symmetric encryption
+schemes consists of designing a scheme that satisfies t,q,ϵ, fort,q
+polynomial and ϵnegligible in the security parameter or, more
+concretely, for ‘large enough’ t,qand ‘small enough’ ϵ. We also
+note that by the transitive property, the inability to distinguish
+an encryption of any message from an encryption of a random
+message, implies the inability to distinguish encryptions of any two
+messages. Finally, we note that the formalization of this property
+for stateful encryption schemes is similar.
+Examples. We recall the “one-time pad” encryption scheme, as its
+properties will be implicitly used in the rest of the paper. It is defined
+as follows. The key space K, the message space Mand the ciphertext
+space Care defined to be{0,1}ℓ, for the same positive integer ℓ.
+On input k∈Kandm∈M, the encryption algorithm returns
+c=m⊕k. On input k∈Kandc∈C, the decryption algorithm
+returns m′=c⊕k. This scheme satisfies decryption correctness
+and(t,q,ϵ)-“real-or-random” security, for unbounded tandϵ=0,
+but this level of security does require |K|≥|M|.
+For block ciphers like AES, when combined with block cipher
+modes of operation, like CBC or Counter Mode, one can obtain |K|
+constant with respect to |M|and prove that they satisfy (t,q,ϵ)-
+“real-or-random” security, for ‘large enough’ t,qand ‘small enough’
+ϵ, assuming the underlying block cipher is ‘sufficiently close’ to a
+random permutation with the same input and output lengths.
+Stream ciphers. Informally, a stream cipher can be considered as
+a method to generate a pseudo-random sequence of keys, along
+with some state information.
+LetKbe a key space, Sbe a state space, Akbe a key alpha-
+bet,Ambe a plaintext alphabet, Acbe a ciphertext alphabet, and
+M=A∗m(resp., C=A∗c) be a message space (resp., ciphertext
+space) formed by an indefinite cartesian product of the plaintext
+alphabet (resp., ciphertext alphabet). A (synchronous) stream cipherSC=(F,G,H,H−1)is specified by a tuple of algorithms, with the
+following syntax and properties.
+Syntax. Lets0be the initial state. The next state algorithm Fis
+a deterministic algorithm that, on input a (master) key k∈K,
+and a current state si∈S, returns a next state si+1∈S, for any
+index integer i≥0. The next key algorithm Gis a deterministic
+algorithm that, on input a (master) key k∈K, and a current state
+si∈S, returns a next key ki∈Ak, for any index integer i≥0. The
+character encryption algorithm His a deterministic algorithm that,
+on input a current key ki∈Akand a plaintext character mi∈Am,
+returns a ciphertext character ci∈Ac. The character decryption
+algorithm H−1is a deterministic algorithm that, on input a current
+keyki∈Akand a ciphertext character ci∈Ac, returns a plaintext
+character mi∈Am.
+Other Properties of stream ciphers. Letn=|Ak|, and define function
+prGn,q·nas the function that, for any index integer i>0, returns
+(ki+1, . . . , ki+q·n), where si+1=F(k,si)andki=G(k,si), for i=
+1, . . . , q. We say that the stream cipher SC=(F,G,H,H−1)returns
+a(t,ϵ)-pseudo-random sequence of qkeys if the function prGn,q·n
+is a(t,ϵ)-pseudo-random generator.
+We say that the stream cipher SC=(F,G,H,H−1)isadditive if
+H(ki,mi)=ki⊕miandH−1(ki,ci)=ki⊕ci, for all integers i≥0.
+A sequence s=(s0,s1, . . .)is called periodic if there are integers
+i0,t>0such that si+t=sifor and all i≥i0. The least positive
+integer tsatisfying this property is called the period of sequence
+s. The period of the sequence of keys returned by algorithm Gof
+stream cipher SCis called the period of stream cipher SC.
+Relationships between stream ciphers and symmetric encryp-
+tion. We formulate two known results on using stream ciphers for
+stateful symmetric encryption. (The qualitative results are known,
+but we have never seen such results stated with quantitative details.)
+First, we note that given an additive stream cipher SC=(F,G,H,
+H−1), one can define an associated stateful symmetric encryption
+scheme SC-ES =(sE,sD), where, for all i≥1:
+•sE(k,mi,si)setski=G(k,si),ci=H(ki,si),si+1=F(k,si);
+•sD(k,ci,si)setsmi=H−1(ki,ci)andsi+1=F(k,si).
+Then, we state a first proposition, saying that any additive stream
+cipher returning a pseudo-random sequence of keys can directly
+be used to produce a secure encryption scheme.
+Proposition 2.1. LetSCbe an additive stream cipher. If SC
+returns a(t,ϵ)-pseudo-random sequence of qkeys, then SC-ESis
+a stateful symmetric encryption scheme that satisfies decryption
+correctness and(t′,q′,ϵ′)-real-or-random security, for t′=t−O(q)
+andϵ′=ϵ.
+The next proposition shows a relationship between the period of
+an additive stream cipher and the cipher’s security. Specifically,
+the period of an additive stream cipher implies an upper bound on
+the number of messages that might be securely encrypted using a
+scheme based on that stream cipher.
+Proposition 2.2. LetSCbe an additive stream cipher with pe-
+riodp. Also, let SC-ESbe a stateful symmetric encryption scheme
+that satisfies decryption correctness. For any ϵ>0,SC-ESdoes not
+satisfy(t,q,ϵ)-real-or-random security, for t=O(p)andq≥p.SIN 2020, November 4–7, 2020, Merkez, Turkey Giovanni Di Crescenzo and Glenn O. Veach
+Remarks. Proposition 2.1 suggests a way to build efficient encryp-
+tion schemes based on stream ciphers that produce pseudo-random
+sequences of keys. The best known approaches to design stream
+ciphers that are conjectured to have this property are based on
+block ciphers or cryptographic hash functions, which we try to out-
+perform in lightweight cryptography constructions. Thus, Propo-
+sition 2.1 can also be interpreted as setting a goal when design-
+ing lightweight stream ciphers: trying to approximate the pseudo-
+randomness property using more efficient constructs than block
+ciphers. This is one rationale behind the design of the constructions
+in Section 3 and 4.
+Proposition 2.2 suggests a way to limit a class of natural attacks
+when building efficient encryption schemes based on lightweight
+stream ciphers: design a stream cipher with a high period. This is
+another rationale behind the design of the constructions in Section 3
+and 4.
+3 A FIRST RPM STREAM CIPHER
+In this section we describe the first RPM cipher. We first present its
+two primitive functions, and then define the stream cipher based
+on these two functions.
+3.1 A Primitive Function: PDAF
+The first primitive function is called Position Digit Algebra Function
+(briefly, PDAF). It takes as input two n-element lists xandyof
+numbers from a set of size rand returns as output an n-element list
+zof numbers from a set of size r. Each component of the output
+list is computed as the sum (modulo r) of two elements from list x,
+where the index of the second element within the list is selected
+according to an element of list y. We now give a more formal
+description.
+Parameters for PDAF: positive numbers n,r, where nis even.
+Input to PDAF: listsx=(x[0], . . . , x[n−1])andy=(y[0], . . . ,y[n−
+1]), where x[i],y[i]∈{ 0, . . . , r−1}, fori=0, . . . , n−1.
+Instructions for PDAF:
+(1) For i=0, . . . , n−1,
+setj(i)=(i+y(i))mod n
+setz[i]=(x[i]+x[j(i)])mod r
+(2) Return: z=(z[0], . . . , z[n−1]).
+Example. Assume n=6andr=16. Ifx=(3,8,7,11,1,15)and
+y=(2,11,5,8,8,6)then z=(10,11,15,10,4,14).
+3.2 A Primitive Function: OWC
+The second primitive function is called One-Way Cut (briefly, OWC).
+It takes as input an n-element list xof numbers from a set of size
+rand returns as output an n/2-element list zof numbers from a
+set of size r. We describe the most basic variant, where the output
+list is computed by summing modulo rtwo of the elements from
+the input list, one from each of two input sublists. In another vari-
+ant, not described here, the function uses a parameter svfrom set
+{1, . . . , n/2}, called a separation number, and used to partition list
+xinto equal-length lists. As the additions do not require a carry,
+the entire OWC function can be executed in parallel. We now give
+a more formal description.
+Parameters for OWC: positive numbers n,r, where nis even.
+Figure 1: Next state function F and current key function G
+for stream cipher rpmSC1
+Input to OWC: listx=(x[0], . . . , x[n−1]), where x[i]∈{ 0, . . . , r−
+1}, fori=0, . . . , n−1.
+Instructions for OWC:
+(1) For i=0, . . . , n/2−1,
+setz[i]=(x[2i]+x[2i+1])mod r
+(2) Return: z=(z[0], . . . , z[n/2−1]).
+Example. Assume n=6andr=16. Ifx=(15,4,2,12,8,11)then
+z=(3,14,3).
+3.3 The Stream Cipher rpmSC1
+The additive stream cipher rpmSC1= (F,G)is built using primitives
+PDAF and OWC. Specifically, the next state algorithm Fuses PDAF
+and the next key algorithm Guses OWC. We now give a more
+formal description (see Figure 1 for a pictorial description).
+Parameters for rpmSC1: positive numbers n,r, where nis even.
+Input to rpmSC1: the initial state(s−1,s0), where s0is chosen as
+a random number from {0, . . . , r−1}n, and s−1is the shared key
+k, also a random number from {0, . . . , r−1}n.
+Next state algorithm F: On input the current state (si−1,si), algo-
+rithm Freturns the next state (a,b), where a=si−1,b=PDAF
+(si,si−1), and then sets si=aandsi+1=b. Here, all values
+si−1,si,si+1are numbers in{0, . . . , r−1}n, for any i≥1.
+Next key algorithm G: On input the current state (si−1,si), algo-
+rithm Greturns the next key ki=OWC(si), where value siis a num-
+ber in{0, . . . , r−1}n, and value kiis a number in{0, . . . , r−1}n/2
+for any i≥1.
+4 A SECOND RPM STREAM CIPHER
+In this section we describe the second RPM cipher. We first present
+its two primitive functions, and then define the stream cipher based
+on these two functions.
+4.1 A Primitive Function: CMBN
+The first primitive function is called Combine (briefly, CMBN). It
+takes as input two n-element lists xandyof numbers from a set
+of size rand returns as output an n-element list zof numbers
+from a set of size r. Each component of the output is computed
+as the sum (modulo r) of one element chosen from list xand one
+element chosen from list y. For each of these two elements, the
+index choosing the element from its list is computed according
+to a recurrence relation involving the next value from the other
+input list. As the additions do not require a carry, the entire CMBN
+function can be executed in parallel. We now give a more formal
+description.
+Parameters for CMBN: positive numbers n,r, where nis even.RPM: Additive Stream Ciphers for
+Lightweight Communication Security SIN 2020, November 4–7, 2020, Merkez, Turkey
+Input to CMBN: listsx=(x[0], . . . , x[n−1])andy=(y[0], . . . ,y[n−
+1]), where x[h],y[h]∈{ 0, . . . , r−1}, forh=0, . . . , n−1.
+Instructions for CMBN:
+(1) Set i−1=j−1=−1
+(2) For h=0, . . . , n−1,
+setih=(ih−1+1+x[h])mod n
+setjh=(jh−1+1+y[h])mod n
+setz[h]=(x[jh]+y[ih])mod r
+(3) Return: z=(z[0], . . . , z[n−1]).
+Example. Assume n=6andr=16.
+Ifx=(3,13,8,6,1,7)andy=(13,9,14,15,10,2), then z=
+(15,9,6,3,9,11).
+4.2 A Primitive Function: EXTC
+The second primitive function is called Extract (briefly, EXTC). It
+takes as input two n-element lists xandyof numbers from a set of
+sizerand returns as output an n-element list zfrom a set of size
+r. Each element of the output list is equal to one element chosen
+from list x, where the index choosing the element is computed
+according to a recurrence relation involving the next value from
+the input list y. In a variant, the output is computed by summing
+similarly chosen elements from both input lists. As the additions
+do not require a carry, the entire EXTC function can be executed
+in parallel. We now give a more formal description.
+Parameters for EXTC: positive numbers n,r, where nis even.
+Input to EXTC: listsx=(x[0], . . . , x[n−1])andy=(y[0], . . . ,y[n−
+1]), where x[h],y[h]∈{ 0, . . . , r−1}, forh=0, . . . , n−1.
+Instructions for EXTC:
+(1) Set i−1=−1
+(2) For h=0, . . . , n−1,
+setih=(ih−1+1)+y[h]mod n
+setz[h]=x[ih]mod r(variant : z[h]=x[ih]+y[ih]
+mod r)
+(3) Return: z=(z[0], . . . , z[n−1]).
+Example. Assume n=6andr=16.
+Ifx=(0,2,11,1,6,5)andy=(1,2,12,6,5,15), then z=(2,6,5,0,0,6).
+4.3 The Stream Cipher rpmSC2
+The additive stream cipher rpmSC2= (F,G)is built using primitives
+CMBN and EXTC. Specifically, both the next state algorithm Fand
+the next key algorithm Guse CMBN and EXTC. We now give a
+more formal description (see Figure 2 for a pictorial description).
+Parameters for rpmSC2: positive numbers n,r, where nis even.
+Input to rpmSC2: the initial state s0, the (master) keys mk0,mk1,
+where s0,mk0,mk1are random numbers from {0, . . . , r−1}n.
+Next key function G: On input the current state si, and keys
+mk0,mk1, function Gdoes the following
+(1) setv[h]=si[h]+mk0[h]mod r, forh=0, . . . , n−1;
+(2) setv=(v[1], . . . ,v[n]);
+(3) set a=CMBN(mk1,v);
+(4) set z=EXTC(a,mk1);
+(5) return: z=(z[0], . . . , z[n−1]).
+Figure 2: Next state function F and current key function G
+for stream cipher rpmSC2
+Next state function F: On input the current state si, and keys
+mk0,mk1, function Fdoes the following
+(1) run steps 1-4 in the computation of function G;
+(2) set si+1(h)=z[h]+v(h)mod r, forh=0, . . . , n−1;
+(3) return: si+1=(si+1[1], . . . , si+1[n]).
+5 SECURITY ANALYSIS
+In this section we provide some considerations on the period of
+the two described stream ciphers. Specifically, we define idealized
+variants of the two described stream ciphers, obtained by replacing
+or augmenting the stream ciphers with a random function, and we
+analyze the expected period of these two idealized variants. As the
+determined periods are large, this suggests that so might be the
+periods for the described stream ciphers, under suitable idealized
+behavior assumptions (but see the discussion in the introduction
+for a cautious interpretation of these results).
+5.1 On the Period of rpmSC1
+We define an idealized version of rpmSC1, denoted as rpmSC1 r, by
+first defining a slightly modified next state function F′and next key
+function G′, and then plugging these functions into rpmSC1.
+Next state algorithm F′:LetRbe a random function. On input the
+current state(si−1,si), algorithm F′returns the next state (si,si+1),
+obtained by computing ui+1=PDAF(si,si−1)and(si,si+1)=
+R(ui+1), where all values si−1,si,si+1,ui+1are numbers in{0, . . . , r−
+1}n, for any i≥1.
+Next key algorithm G′:On input the current state (si−1,si), al-
+gorithm G′returns the next key ki∈{0, . . . , r−1}n/2for any
+i≥1, computed as follows. First, G′obtains a list uiofnvalues
+(ui[0], . . . , ui[n−1]), where ui[2j]=si−1[j]andui[2j+1]=si[j],
+forj=0, . . . , n/2−1. Then G′computes ki=OWC(ui), where
+value siis a number in{0, . . . , r−1}n, and value kiis a number in
+{0, . . . , r−1}n/2for any i≥1.
+The rpmSC1 rstream cipher. Formally, cipher rpmSC1 ris de-
+fined starting from rpmSC1, and replacing the next state algorithm
+F and the next key algorithm G, as described in Section 3, with the
+previously defined algorithms F′and G′, respectively. Intuitively,
+this idealized stream cipher is defined so to satisfy the following
+properties: (a) input to the PDAF primitive can be considered ran-
+dom and independent strings; and (b) the current key is derived as
+a direct OWC computation on input the current state. (See Figure 3
+for a pictorial description.)
+We obtain the following
+Theorem 5.1. The expected value of the period of rpmSC1 ris
+≥rn/2−0.85 log2n−1.SIN 2020, November 4–7, 2020, Merkez, Turkey Giovanni Di Crescenzo and Glenn O. Veach
+Figure 3: Next state function F′and current key function G′
+for rpmSC1 r
+The rest of this subsection is dedicated to the proof of Theorem 5.1.
+For every x,y∈{0, . . . , r−1}n, aleft(y,PDAF)- collision ofxis
+a value x′∈{0, . . . , r−1}nsuch that PDAF(x,y)= PDAF(x′,y).
+Our estimate of the period of rpmSC1 rwill be directly related to
+the total number of possible states and the expected number of left
+(y,PDAF)-collisions. Thus, in what follows, our main goal becomes
+to estimate the number of left collisions. The rest of the proof can
+be summarized in the following high-level steps. First, we define a
+notion ofy-matrix and observe three of its properties, including the
+fact that a PDAF computation can be seen as a y-matrix product.
+Second, we define notions of q-cycles for an input y, and expected
+number of cycles, and relate these three notions by observing five
+facts. Among other things, in these facts, we relate the expected
+period of rpmSC1 rto the number of left ( y,PDAF)-collisions, and
+we bound the number of such collisions.
+Definition and properties of y-matrices. Letxbe a list in{0, . . . , r−
+1}n. For each list yin{0, . . . , r−1}n, define the y-matrix as the
+n×nmatrix M(y)obtained by sequentially setting its elements as
+in the following 3 steps:
+(1)M(y)(i,j)=0for all i,j=1, . . . , n;
+(2)M(y)(i,i)=1for all i=1, . . . , n;
+(3)M(y)(i,j)=M(y)(i,j)+1fori=1, . . . , nandj=(i+y[i])
+mod n.
+For every x,y∈{0, . . . , r−1}n, a(y,M)-collision ofxis a value x′∈
+{0, . . . , r−1}nsuch that M(y)(x)=M(y)(x′). As a consequence of
+the above definitions of y-matrix,(y,M)-collision and left ( y,PDAF)-
+collision, we observe the following three properties:
+(1)each row of M(y)has 1 or 2 nonzero entries, one being on
+the diagonal, and either both nonzero entries are = 1 or the
+one nonzero entry is = 2;
+(2)the computation z=PDAF(x,y)can be written as a matrix
+product z=M(y)(x); and
+(3) a(y,M)-collision of xis a left (y,PDAF)-collision of x.
+Definition and properties of q-cycles. Letqbe a non-negative integer.
+We say that the qdistinct indices(i1, . . . , iq)∈{ 1, . . . , n}are a
+q-cycle for input list y∈{0, . . . , r−1}qif the following holds:
+(1)ih=ih−1+y[h]for all h=2, . . . , q
+(2)i1=iq+y[q].
+We say that the qdistinct indices(i1, . . . , iq)∈{ 1, . . . , n}are a
+minimal q-cycle foryif no sublist of(i1, . . . , iq)is aq′-cycle, for
+q′<q. We say that a tuple of indices is a (minimal) cycle foryif
+it is a (minimal) q-cycle fory, for some q∈{1, . . . , n}. Two cycles
+aredisjoint if all indices in{1, . . . , n}in one cycle are different
+from all indices in {1, . . . , n}in the other cycle. If yis uniformly
+chosen from{0, . . . , r−1}n, the number of q-cycles for yand the
+number of cycles of yare random variables, with a well-definedexpectation. We finally observe the following five facts relating the
+above notions of cycles, collisions and period:
+(1) if(i1, . . . , iq)is aq-cycle fory, the matrix entries
+M(y)(i1,i2), . . . , M(y)(iq−1,iq),M(y)(iq,i1)
+are,0
+(2)if(i1, . . . , iq)is a minimal q-cycle fory, the rank of the q×n
+submatrix S(y),qcontaining the qrows indexed as i1, . . . , iq
+inM(y)is=q−1;
+(3)for any t≥1, if there are tdisjoint cycles for y, then for each
+x∈{0, . . . , r−1}n, there exist rtleft (y,PDAF)-collisions of
+x;
+(4)the expected number of cycles for a uniformly chosen y∈
+{0, . . . , r−1}nis≤1.7 log2n+2;
+(5)if the expected number of cycles for a uniformly chosen
+y∈{0, . . . , r−1}nis≤tthen the expected value of the
+period of stream cipher rpmSC1 is ≥rn−t.
+Note that Theorem 5.1 directly follows from above Facts 4 and 5,
+which, in turn, are established using Facts 1-3. Therefore, to end
+the proof of Theorem 5.1, it suffices to prove all of the above Facts
+1-5.
+Proof of Fact 1. The fact directly follows by the definition of q-cycle,
+implying that all entries (i1,i2), . . . ,(iq−1,iq),(iq,i1)ofy-matrix
+M(y)are either set to 1 in step 2 or incremented by 1 in step 3.
+Proof of Fact 2. If(i1, . . . , iq)is a minimal q-cycle fory, by definition
+ofq-cycle, all indices i1, . . . , iqare distinct. Therefore, by definition
+ofy-matrix, the qrows indexed as i1, . . . , iqinM(y)contain 2
+entries = 1, one such entry being on the matrix diagonal. By Fact 1,
+we have that the sum of all qrows is the all-zero row, and thus the
+rank of the y-matrix is≤q−1. Because of the cycle’s minimality,
+anyq−1among these qrows are linearly independent and thus
+the rank of the y-matrix is =q−1.
+Proof of Fact 3. By property 2 of y-matrices, a PDAF computation can
+be written as z=M(y)x, where z,xaren-component vectors with
+elements in{0, . . . , r−1}, and M(y)is an×nmatrix with elements
+in{0,1,2}. Then, every disjoint cycle for yintroduces a new linear
+dependency between a different subset of rows in M(y). Thus, t
+disjoint cycles for yimply that M(y)has rank n−t. This implies, by
+Fact 2 and linear independence, that for each z, there are rtvectors
+xsuch that z=M(y)(x). Therefore, every xhasrt(y,M)-collisions,
+and, by property 3 of y-matrices, rtleft (y,PDAF)-collisions.
+Proof of Fact 4. Letpt,q,ndenote the probability of having tdisjoint
+q-cycles in a uniformly chosen, n-element, input list y, and let M(y)
+be the associated y-matrix. We obtain that
+p1,q,n= n
+q(q−1)!
+nq
+and, for t>1,
+pt,q,n= n
+tq(q−1)!t
+ntq≤ntq(q−1)!t
+(tq)!ntq≤1
+qtq,
+where the inequalities follows by known bounds on the involved
+binomial coefficient and factorials.RPM: Additive Stream Ciphers for
+Lightweight Communication Security SIN 2020, November 4–7, 2020, Merkez, Turkey
+Figure 4: Next state function F′and current key function G′
+for rpmSC2 r
+We then obtain that the expected number of cycles in a uniformly
+chosen, n-element, input list y, is
+nÕ
+q=1n/qÕ
+t=11
+qtq=nÕ
+q=11
+qn/qÕ
+t=11
+tq
+≤lnn+1+nÕ
+q=21
+qn/qÕ
+t=11
+tq
+≤lnn+1+1.44 ln n+1
+=1.7 log2n+2,
+where the first inequality follows from known results on Harmonic
+series and the second inequality follows from known bounds on
+the Riemann’s zeta function on inputs >1(see, e.g., [2]).
+Proof of Fact 5. This follows by combining Fact 3-4 with the obser-
+vation that the sequence of keys repeats at every iteration where
+the random oracle Rreturns a state that results in a left ( y,PDAF)-
+collision of x, for any of the previous xinput to PDAF.
+5.2 On the Period of rpmSC2
+We define an idealized version of rpmSC2, denoted as rpmSC2 r,
+by replacing the CMBN primitive function in the rpmSC2 stream
+cipher with a random permutation, so that the inputs to the EXTC
+primitive function can be considered random and independent
+strings.
+The rpmSC2 rstream cipher. LetRdenote a random permutation.
+Formally, cipher rpmSC2 ris defined starting from rpmSC2, and
+replacing step 3 of its next key function G, as described in Section 4,
+there reading as “ a=CMBN(mk1,v)”, with the step “ a=R(v)”.
+(See Figure 4 for a pictorial description.)
+We obtain the following
+Theorem 5.2. The expected value of the period of rpmSC2 ris
+≥r0.316n.
+Proof. Since Ris a random permutation, the output of R, on
+input the current state si, has no collisions. Then, to estimate the
+period of rpmSC2 r, we observe that the next key output by rpmSC2 r
+cycles whenever the output zat the i-th execution of EXTC is equal
+to the output zat the j-th execution of EXTC, for some j<i.
+We note that in these two executions of EXTC, the second input
+is the same value mk1, but the first input differs and is based on
+different states si,sj, respectively. We then define the notion of
+left collision in the output of EXTC; that is, two values a,a′such
+that EXTC(a,k)=EXTC(a′,k), for any random (master) key k. Our
+estimate of the period of rpmSC2 rwill be directly related to the
+total number of possible states and the number of left collisions inEXTC. Thus, in what follows, our main goal becomes to estimate
+the number of left collisions.
+We start by observing that, by the definition of EXTC, the output
+zreturned by EXTC satisfies z[h]=a[ih], for h=0, . . . , n−1.
+Furthermore, we observe that
+•i0=mk1[0];
+•i1=1+mk1[0]+mk1[1];
+•i2=2+mk1[0]+mk1[1]+mk1[2];. . .
+•ih=h+mk1[0]+. . .+mk1[h];. . .
+•in−1=n−1+mk1[0]+. . .+mk1[n−1].
+In matrix notation, we have that In=bn+Tn×nkn, where Inis the
+index vector(i0, . . . , in−1)T,bnis the constant vector (0,1, . . . , n−
+1)T,knis the key vector(mk1[0], . . . , mk1[n−1])T, and Tn×nis a
+lower left triangular matrix with all 1’s in the lower left triangle.
+Because Tn×nis a full-rank matrix, and knis a vector with ran-
+dom and independent components, by linear independence prop-
+erties, we obtain that Inis a vector with random and independent
+components. This implies that the output zreturned by EXTC is the
+concatenation of randomly chosen entries of the input array a; that
+is,a[i0], . . . , a[in−1]for random i0, . . . , in−1. This fact allows us to
+find all left collisions in EXTC as the pairs of strings a,a′that only
+differ in the positions (if any) in L={0, . . . , n−1}\{i0, . . . , in−1}.
+Estimating the number of such pairs is a variation of the follow-
+ing balls-into-bins occupancy problem that is well studied in the
+algorithms literature: imagine throwing nballs into nbins; what is
+the expected number of empty bins? Each bin remains empty with
+probability peb=(1−1/n)n, which is≤1/efor any n≥1, where
+e=2.718. . .is Neper’s constant. Thus, by linearity of expectation,
+the expected number of empty bins is =npeb≤n/e, which implies
+that the expected cardinality of set Lis=npeb≤n/e. This, in
+turn, implies that the expected number of strings a′that creates
+a left collision together with a fixed string ais≤rn/e. Finally, by
+a birthday-type probability argument (similarly as in the proof of
+Theorem 5.1), we obtain that the expected value of the period of
+rpmSC2 ris≥rn(1/2−1/2e)≥r0.316n. □
+Remark. We observe that the above technique to find left collisions
+continues to work, with a few minor changes, for the variant of
+EXTC where the output vector zis computed as the sum modulo
+rof an element of the input xand an element of the other input
+y, as described in Section 4.2. This follows from the fact that this
+different computation of vector zdoes not modify the definition
+of left collisions for EXTC, or the definitions of set Land quantity
+peb.
+6 PERFORMANCE ANALYSIS
+Two sets of performance tests have been performed on the tech-
+niques presented in Section 3, 4 and the associated symmetric en-
+cryption schemes.
+A first set was performed with the following machine specifica-
+tions: HP Pavilion with Intel Core Duo running XP 32-bit, with 1GB
+RAM running CentOS. These tests were performed for the stream
+cipher rpmSC2. The result was a performance of 5.2 seconds for
+1,000,000iterations, each processing 1056 bits.
+A second set was performed with the following machine specifi-
+cations: Intel Core i3-2330M 2.2 GHz with 4GB RAM. These testsSIN 2020, November 4–7, 2020, Merkez, Turkey Giovanni Di Crescenzo and Glenn O. Veach
+0.060.31 0.551.353.42
+0.32.735.4914.4328.05
+051015202530
+0 200000 400000 600000 800000 1000000 1200000Seconds
+IterationsEncryption without AES Encryption with AES
+Figure 5: Performance comparison between encryption
+without AES and with AES (in Counter Mode) of 1056 bits
+per iteration.
+were performed for symmetric encryption based on the additive
+stream cipher rpmSC2, in two cases: (1) encryption is performed
+using modular sum between the stream cipher’s next key and the
+message block; and (2) encryption is performed using the AES block
+cipher in counter mode, whose input key was the stream cipher’s
+next key. As seen in Figure 5, the performance of encryption with-
+out AES is almost one order or magnitude faster when encrypting
+about 1M blocks.
+Empirically, it has been observed that rpmSC1 has similar per-
+formance as rpmSC2, even though it is somewhat slower.
+7 CONCLUSIONS
+Lightweight cryptographic functions are proposed in RPM for con-
+strained environments like LPWA sensor networks, to efficiently
+target important security properties, including: confidentiality via
+encryption, implicit mutual and constant authentication, and contin-
+uous key management by key refreshing. We reported performance
+results showing that encryption based on some RPM stream ciphers
+is almost 1 order of magnitude faster than AES-based encryption.
+We also studied RPM primitives to prove security of idealized ver-
+sions of associated stream ciphers against a certain class of attacks
+(i.e., attacks based on low period). With respect to the RPM stream
+ciphers, it remains of interest to reduce the idealization in the primi-
+tive analysis done in this paper or obtain similar results with respect
+to other classes of attacks, as well as finding any successful attacks.
+With respect to both the RPM and the idealized RPM stream ci-
+phers, it remains of interest to find attacks on the produced outputs.
+Finally, with respect to provable security for lightweight cryptog-
+raphy constructions, it remains of interest to study what classes
+of attacks can be provably shown to be ineffective under suitable
+assumptions.
+ACKNOWLEDGMENTS
+This publication is dedicated to the memory of Glenn, who proved
+to be a visionary researcher in understanding the importance of
+lightweight cryptography years ahead most of us.
+Many thanks go to Greg Byles for funding the project and to Paul
+McGough and again Greg Byles for pleasant technical discussions.REFERENCES
+[1]William Aiello, Mihir Bellare, Giovanni Di Crescenzo, and Ramarathnam
+Venkatesan, Security Amplification by Composition: The Case of Doubly-Iterated,
+Ideal Ciphers , in Proc. of CRYPTO 1998: 390-407
+[2]Milton Abramowitz, Irene A. Stegun, eds., Handbook of Mathematical Functions
+with Formulas, Graphs, and Mathematical Tables, New York: Dover Publications,
+ISBN 978-0-486-61272-0, 1972
+[3]Jamison M. Adcock, David M. Balenson, David W. Carman, Michael Heyman,
+and Alan T. Sherman, Trading off strength and performance in network authen-
+tication: Experience with the ACSA Project , in Proc. of the DARPA Information
+Survivability Conference &Exposition (DISCEX 00), IEEE Computer Society
+(Jan. 25-27, 2000), pp. 127-139.
+[4]AEgis Systems Limited and Machina Research, M2M application characteristics
+and their implications for spectrum , (Surrey, United Kingdom, 13 May 2014)
+[5]Mihir Bellare, Anand Desai, Eron Jokipii, and Phillip Rogaway, A Concrete
+Security Treatment of Symmetric Encryption , in Proc. of 38th Annual Symposium
+on Foundations of Computer Science, FOCS ’97, 1997.
+[6]Mihir Bellare and Phillip Rogaway, Random Oracles are Practical, A Paradigm
+for Designing Efficient Protocols , in Proc. of ACM Conference on Computer and
+Communications Security 1993: pp. 62-73
+[7]Ran Canetti, Oded Goldreich, and Shai Halevi, The random oracle methodology,
+revisited , in J. ACM 51(4): 557-594 (2004), also in Proc. of ACM STOC 1998.
+[8] https://competitions.cr.yp.to/caesar.html
+[9]Giovanni Di Crescenzo and Aggelos Kiayias, Asynchronous Perfectly Secure
+Communication over One-Time Pads , in Proc. of ICALP 2005: 216-227
+[10] Joe Kilian and Phillip Rogaway, How to Protect DES Against Exhaustive Key
+Search (an Analysis of DESX) . J. Cryptology 14(1): 17-35 (2001). Also in Proc. of
+CRYPTO 1996.
+[11] Paul McGough, Method and system for performing secure electronic messaging ,
+U.S. Patent 6,002,769, (December 14, 1999).
+[12] Paul McGough, Method and system for establishing real-time authenticated and
+secured communications channels in a public network , U.S. Patent 8,144,875,
+(March 27, 2012).
+[13] Charalampos Manifavas, George Hatzivasilis, Konstantinos Fysarakis, and Yan-
+nis Papaefstathiou, A survey of lightweight stream ciphers for embedded systems ,
+in Security and Communication Networks 9(10): 1226-1246 (2016)
+[14] Jim Morrish, The Emergence of M2M/IoT Application Platforms , Machina Research,
+(London, September 2013).
+[15] Relevant Security Corp., Real Privacy Management (RPM) Cryptographic De-
+scription, Version 3.3, (Denver, Colorado, 2014).
+[16] Relevant Security Corp., Real Privacy Management (RPM) RPM Properties
+Description for Analysis, Version 2.2, (Denver, Colorado, 2014).
+[17] Relevant Security Corp., Real Privacy Management (RPM) Recommendations,
+Considerations and Architectures for Initial Key Establishment (IKE), Version
+2.4, (Denver, Colorado, 2014).
+[18] Relevant Security Corp., Real Privacy Management (RPM) Reference Guide,
+Version 3.2, (Denver, Colorado, 2014).
+[19] Ronald L. Rivest and Alan T. Sherman, Randomized encryption techniques , in
+Proc. of Crypto 82, pp. 145 - 163.
+[20] Ankit Shah, A Survey of Lightweight Cryptographic Algorithms for IoT-Based
+Applications , in ‘Smart Innovations in Communication and Computational Sci-
+ences’, part of Advances in Intelligent Systems and Computing book series
+(AISC, volume 851), Springer, Nov 2018, pp 283-293
+[21] Alan T. Sherman and David A. McGrew, Key establishment in large dynamic
+groups using one-way function trees , in IEEE Transactions on Software Engineer-
+ing, vol. 29, no. 5, pp. 444-458, May 2003
+[22] Erik Splinter and Guido van Alphen, Accellus Communication Networks - Low
+Power Wide Area Network Technology Provider , (Zwolle, the Netherlands, 10
+December 2014)
+[23] Tanaka, Hatsukazu, Security-function integrated simple cipher communication
+system , in Proc. of 2006 Symposium on Cryptography and Information Security
+(SCIS 2006), IEICE, Jan 2006.
+[24] Tanaka, Hatsukazu, Generation of cryptographic random sequences and its appli-
+cation to secure enciphering , in Proc. of 2007 Symposium on Cryptography and
+Information Security (SCIS 2007), IEICE, Jan 2007.
+[25] Tanaka, Hatsukazu, Informationally Secure Secret-Key Sharing Scheme Using the
+Singularity of Source Coding , in Proc. of 2010 Symposium on Cryptography and
+Information Security (SCIS 2010), IEICE, Jan. 2010.

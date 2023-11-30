@@ -1,0 +1,444 @@
+Heterogeneous Graph-based Video Search Reranking
+using Web Knowledge via Social Media Network
+Soh Yoshida, Takahiro Ogawa and Miki Haseyama
+Graduate School of Information Science and Technology, Hokkaido University
+{yoshida,ogawa}@lmd.ist.hokudai.ac.jp, miki@ist.hokudai.ac.jp
+ABSTRACT
+Graph-based reranking is eﬀective for reﬁning text-based video
+search results by making use of the social network structure. Un-
+like previous works which only focus on an individual video graph,the proposed method leverages the mutual reinforcement of het-
+erogeneous graphs, such as videos and their associated tags ob-
+tained by social inﬂuence mining. Speciﬁcally, propagation of in-formation relevancy across di ﬀerent modalities is performed by ex-
+changing information of inter- and intra-relations among hetero-geneous graphs. The proposed method then formulates the videosearch reranking as an optimization problem from the perspective
+of Bayesian framework. Furthermore, in order to model the consis-
+tency over the modiﬁed video graph topology, a local learning reg-ularization with a social community detection scheme is introduced
+to the framework. Since videos within the same social community
+have strong semantic correlation, the consistency score estimationbecomes feasible. Experimental results obtained by applying theproposed method to a real-world video collection show its eﬀec-
+tiveness.
+Categories and Subject Descriptors
+H.3.3 [Information Search and Retrieval ]: Retrieval models
+General Terms
+Algorithms; Performance
+Keywords
+Video search reranking; Social multimedia; Heterogeneous graph
+1. INTRODUCTION
+With the explosive growth of social media, massive numbers of
+videos are created and shared online everyday. For example, one ofthe most popular video sharing sites, YouTube, streams more than
+one billion videos a day
+1. Many techniques have been developed
+1http:// www.youtube.com/ yt/press/en/statistics.html
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for proﬁt or commercial advantage and that copies bear this notice and the full cita-tion on the ﬁrst page. Copyrights for components of this work owned by others thanACM must be honored. Abstracting with credit is permitted. To copy otherwise, or re-
+publish, to post on servers or to redistribute to lists, requires prior speciﬁc permission
+and/or a fee. Request permissions from Permissions@acm.org.MM’15, October 26–30, 2015, Brisbane, Australia.
+c/circlecopyrt2015 ACM. ISBN 978-1-4503-3459-4/15/10 ...$15.00.
+DOI: http://dx.doi.org/10.1145/2733373.2806352.for multimedia search, and due to the success of information re-
+trieval business, such as Google and Yahoo!, most search engines
+employ text-based search techniques. However, since textual infor-
+mation is sometimes noisy or unavailable, it cannot always describethe media content accurately.
+To improve the text-based search performance, multimedia search
+reranking has attracted extensive attention [9]. It is an integratedframework that aims to obtain eﬀective search results. A list of
+text-based search results is ﬁrst returned by using textual informa-
+tion. Then visual information is applied to reorder the initial search
+result for reﬁnement. In recent years, many methods have been pro-posed for graph-based multimedia search reranking targeting so-
+cial media content [6, 12]. Although previous studies have shown
+promising performance, evaluations of the relative importance ofmultimedia contents have been carried out independently across
+diﬀerent modalities. Thus, due to the complexity of real-world
+video contents, video search reranking using only visual informa-tion does not guarantee its accuracy. On the other hand, because
+of the various social activities, the video contains rich social me-
+dia information such as tags, related videos, and social community,etc., which can provide meaningful contextual cues to understandits content. We call these cues Web knowledge. However, since the
+relations between videos and other information are not fully lever-
+aged, the reinforcing dependency between them, which is beneﬁ-cial to further improve reranking results, is not considered. There-
+fore, it is desirable to develop a novel algorithm that optimizes
+these heterogeneous contexts for better video search reranking.
+In this paper, we propose a heterogeneous graph-based video
+search reranking method using Web knowledge obtained from so-cial information. We adopt the following two procedures: (A)exploration of the mutual reinforcement between video and tag
+graphs through their combined graph, and (B) modeling graph-
+based reranking with a social community detection scheme usingthe modiﬁed video graph obtained in (A).
+First, in (A), we explore the mutual reinforcement between videos
+and their associated tags by constructing three graphs: a videograph, a tag graph, and a bridging graph that combines the twographs. Then, we adopt circular propagation [15] to the combined
+heterogeneous graph. This propagation iteratively reﬁnes the inter-
+and intra-relations of each heterogeneous graph through exchang-ing information across diﬀerent graphs in a cyclic manner. From
+this procedure, we can obtain the modiﬁed video graph whose intra-
+relations are reinforced by information of a tag graph. Therefore,in (B), we model reranking using a graph. The basic assumption
+behind graph-based reranking methods is that neighboring nodes
+should have similar ranking scores, i.e., the ranking score is con-sistent over the graph topology. By modeling this assumption ex-
+plicitly, the video search reranking is formulated from the proba-
+bilistic perspective in a Bayesian framework [12]. This reranking
+871method maximizes the ranking score consistency while minimizing
+the ranking distance, which represents the disagreement between
+the reranking result and the initial text-based ranking result. Fur-thermore, motivated by the work of community in network anal-
+ysis structure [10], we derive a new local learning regularization
+with a community detection scheme to e ﬀectively model consis-
+tency over the graph. A community consists of a group of nodes
+that are densely connected to one another but sparsely connected
+to other dense groups. Since a community structure in networksusually reveals the common topic or interest, the consistency over
+a local area within a same community means that each sample has
+strong correlation with its neighbor. In our regularization, a localmodel is ﬁrst trained for each sample with its neighbors to utilizecommunity information by using the result of community detec-
+tion scheme [3]. This model is then used to predict its consistent
+ranking score. Finally, by minimizing the di ﬀerence between the
+objective ranking score and this locally predicted score, the desired
+consistency over the graph is guaranteed.
+2. GRAPH CONSTRUCTION
+This section explains how to construct heterogeneous graphs.
+We construct three types of graphs: a video graph, a tag graph, and
+a combined graph. Let Gk(k={M,T}) denote the video graph and
+the tag graph, respectively, which is represented by Gk=(Vk,Ek),
+where VkandEkare sets of nodes and edges. Speciﬁcally, Vk=
+{vk
+1,vk2,..., vk
+Nk},w h e r e Nkis the number of nodes in Vk, and each
+edge in Ekconnects two nodes with weight function wk. For in-
+stance, the weight function wk(i,j) measures the weight of the edge
+between vk
+iandvk
+j. W ed e ﬁ n et h ea ﬃnity matrix Wkby taking
+wk(i,j) as its (i, j)-th element.
+2.1 Video Graph Construction
+The proposed method constructs the video graph GMby follow-
+ing social links, i.e. related video network, in the social media net-
+work. Speciﬁcally, our method is implemented by crawling videosfrom YouTube. First, for the video graph construction, we col-
+lect video sets V
+M={vM
+1,vM
+2,...,vM
+NM}by adopting top- NMvideos,
+which are obtained by keyword search, as seeds of the related video
+search, and simply connect edges between the seed video and itsrelated videos. Second, to model the relationship between the two
+videos, we extract low-level video features from these videos. Fi-
+nally, we deﬁne the weight function w
+Mby calculating the video
+similarity between vM
+iandvM
+j.
+2.1.1 Low-level feature extraction
+In order to deﬁne the weight function of the video graph, we
+ﬁrst extract low-level features. Let si={s1
+i,s2i,..., smi
+i}denote
+the shots in a video vM
+iby adopting the state-of-the-art shot seg-
+mentation technique [1], where miis the number of shots. Then
+the proposed method extracts three types of features from each
+shot sh
+i, including 1000-dimensional BOW [13] as object features,
+and 1600-dimensional HSV color histogram as color features, and
+39-dimensional MFCC [5] as audio features, respectively. Notethat we extract visual features from keyframes, and then, obtain
+keyframes among a shot by extracting top-three intermediate frames
+which are given as shot boundary candidates in [1].
+2.1.2 Weight function calculation
+The video weight function wMin the video graph GMbetween
+vM
+iandvM
+jis deﬁned as follows:
+wM(i,j)=/summationdisplay
+l∈Lαlexp⎧⎪⎪⎨⎪⎪⎩−minu∈si,v∈s jED(fl
+u,fl
+v)
+2σ2
+l⎫⎪⎪⎬⎪⎪⎭, (1)whereL={BOW,HSV,MFCC}is a set of features, fl
+uis a feature
+vector extracted from a shot su
+i,E D (·,·) denotes the Euclidean dis-
+tance,αlis a weight parameter to combine diﬀerent features, and
+σlis the positive radius parameter estimated by the median value
+of all the Euclidean distances.
+2.2 Tag Graph Construction
+Tags, supplied by users, describe the content of videos while pro-
+viding additional contextual modalities about the videos. First, we
+collect NTtags VT={vT
+1,vT2,...,vT
+NT}, which are associated with
+videos in the video graph GM. As a preprocessing procedure, the
+standard stemming algorithm implemented by NLTK [2] and stop
+words2removal are applied. Then, since user-contributed tags are
+usually noisy and limited in terms of completeness, we adopt tag
+reﬁnement algorithm in [7]. Second, in order to model the rela-
+tions between tags, we assume there is a semantic relationship be-tween two tags which are assigned to the same video, and then
+connect them with an edge. We calculate the tag distance using the
+concurrence similarity between tags based on their co-occurrence.Speciﬁcally, analogous to the principle of the Normalized Google
+distance (NGD) [4], we calculate NGD(v
+T
+i,vT
+j) between tags vTiand
+vT
+jas follows:
+NGD(vTi,vT
+j)=max{log g(vTi),logg(vT
+j)}−log g(vTi,vT
+j)
+logNg−min{log g(vTi),logg(vT
+j)},(2)
+where Ngis the total number of pages on Google and g(vTi),g(vT
+j),
+andg(vTi,vT
+j) denote the number of hit counts for tag vTi,vT
+j,a n d
+vTi+vT
+jon Google, respectively. The weight function wTin the tag
+graph GTbetween tag vTiandvT
+jis calculated by
+wT(i,j)=exp⎧⎪⎪⎨⎪⎪⎩−NGD(v T
+i,vT
+j)
+2σ2TA G⎫⎪⎪⎬⎪⎪⎭, (3)
+whereσ
+TA Gis the positive radius parameter, and it is also estimated
+by the median value of all the tag distances.
+2.3 The Combined Heterogeneous Graph
+To leverage mutual reinforcement between heterogeneous graphs,
+i.e., the video graph and the tag graph, we apply circular propaga-
+tion [15] to the combined heterogeneous graph. This procedure
+can iteratively reﬁne the inter- and intra-relations of each heteroge-neous graph through exchanging information across these graphs
+in a cyclic manner. Let G
+MTdenote the combined heterogeneous
+graph, which is represented by GMT={VMT,EMT}. Speciﬁcally,
+VMT={VM∪VT}andEMTdenote the set of inter-edges which
+consists of edges connecting the two graphs ( GMandGT) mutu-
+ally. We link inter-edges between the video and its associated tags,
+and then we deﬁne inter-edge strength πMT(i,j) between video vM
+i
+andvT
+jas follows:
+πMT(i,j)=⎧⎪⎪⎨⎪⎪⎩exp/braceleftbigg
+−score(vT
+j,vM
+i)
+2σ2
+MT/bracerightbigg
+ifvT
+j∈ST(vM
+i)
+0 otherwise, (4)
+whereσMTis also the positive radius parameter, ST(vM
+i) denotes the
+subset of tags which are associated with video vM
+i, and we deﬁne the
+matrixΠMTby takingπMT(i,j) as its (i, j)-th element. The function
+score(vT
+j,vM
+i) computes a relevance score between the video vM
+iand
+the tag vT
+j. We adopt tagRelevance in [7] as an implementation of
+2[Online]. Available: http: //bit.ly/ 8vBrVF
+872score function. Thus, we perform circular propagation as follows:
+⎧⎪⎪⎨⎪⎪⎩WT
+(t)=θTΠMT/primeWM
+(t−1)ΠMT+(1−θT)WT(0)
+WM
+(t)=θMΠMTWT(t−1)ΠMT/prime+(1−θM)WM
+(0), (5)
+whereΠMT/primerepresents the transposed matrix of ΠMT, the subscript
+(t) denotes the iteration, the subscript (0) represents the initial state
+of iteration, and the trade-oﬀ parameterθM,θT(0≤θM,θT≤1)
+weights the importance of the propagated and initial intra-relation
+of each heterogeneous graph. In this circular propagation, each row
+ofΠMTis normalized to 1 and we repeat the calculation C-times
+until the two aﬃnity matrices converge as ( WM
+(C+1)−WM
+(C))=0.
+Therefore, for the proposed video retrieval, we adopt this well-
+propagated weight matrix WM
+(C)as an aﬃnity matrix of the modiﬁed
+video graph. In the following section, we explain the details of the
+proposed video reranking by using this video graph.
+3. HETEROGENEOUS GRAPH-BASED
+VIDEO SEARCH FRAMEWORK
+As a result of the aforementioned procedure, we obtain the mod-
+iﬁed video graph which is mutually reinforced by the tag graph.This section explains a heterogeneous graph-based video searchframework. In the proposed method, we introduce a Bayesian vi-
+sual reranking framework to implement video search reranking based
+on this modiﬁed video graph. In other words, our method is an ex-tension to the reranking method in [12]. Let ¯r=[¯r
+1,¯r2,..., ¯rNM]/prime
+andr=[r1,r2,..., rNM]/primedenote the initial ranking score list and
+the reranking score list, respectively, where ¯ riandri(0≤¯ri,ri≤1)
+are the relevance scores with respect to the query.
+3.1 Reranking score list estimation
+In this subsection, we explain the estimation of reranking score
+list. The problem of reranking in [12] is to model the textual andvisual information from a probabilistic perspective. Supposing ris
+a random variable, reranking can be regarded as a process to de-
+rive the most probable score list given the initial one and the video
+content. Then this method formulates reranking as the followingoptimization problem:
+r
+∗=1
+2(R+ρLA)−1˜ρ, (6)
+whereρis a trade-oﬀparameter, LAis a Laplacian regulariza-
+tion matrix deﬁned over the graph GAwhich has the same struc-
+ture of GMwith the weight between nodes viandvjis|αij|.T h e
+˜ρ=2ρ(Ae), where eis a vector with all elements equal to 1 and
+A=[αij]NM×NMis an anti-symmetric matrix with αij=1/(¯ri−¯rj).
+Note that the set of pairs (i, j) satisﬁes ¯ ri>¯rj. Furthermore, Ris
+deﬁned as the local learning regularization matrix, which balances
+the video graph consistency. We explain the details of this regular-
+ization matrix in the following subsection.
+3.2 Local learning regularization
+In graph-based video search reranking, visually similar videos
+among the local area are excepted to have close reranking scores.
+With this visual consistency assumption, we introduce the local
+learning regularization. First, by using the community detectionmethod proposed in [3], we detect social communities among the
+video graph G
+M. Next, for each node vi, we extract its neighboring
+node setN(vi)={(v(i)
+h,r(i)
+h)}ni
+h=1based on the shortest path distance
+in the graph, where v(i)
+his the h-th nearest neighbor of viwithin
+the same community, r(i)
+his its score, and niis the total number
+of its neighbors. By using its neighboring node set N(vi), the lo-
+cal learning regularization matrix in Eq.(6) is calculated as follows:Table 1: 10 Event Queries.
+Query
+FIFA WorldCup 2014 highlights
+Sochi 2014 Winter Olympics opening ceremony
+NBA Finals 2014 highlights
+New York Fashion Week 2014
+Speech at Apec China 2014
+2014 Hong Kong protests
+2014 Israel Gaza Conﬂict air strikes
+Malaysia Airlines Flight 17 crash moment
+Flood in Indonesia 2014
+Calbuco V olcano Eruption in Chile
+R=(I−B)/prime(I−B), where B=[bij]NM×NMandbijequals to the
+corresponding element of βiifxj∈N(xi), otherwise, bij=0. Note
+that,β/prime
+i=k/prime(λI+K)−1,w h e r eλis a parameter and kis a vector with
+kh=k(xi,x(i)
+h). Furthermore, Kis a matrix with kmn=k(x(i)
+m,x(i)
+n),
+where xiis a feature vector extracted from vi,a n d k(·,·)i sak e r n e l
+function. As for the kernel function, we implement the edge-weight
+function based on the Gaussian kernel in Eq.(1), and then use theshortest path weight between each pair of nodes, which is normal-
+ized by its path length, for the value of k(·,·).
+4. EXPERIMENTAL RESULTS
+In this section, we verify the e ﬀectiveness of our proposed method.
+We ﬁrst describe the datasets collected from YouTube3and mea-
+surement of experiments. We then analyze the performance of our
+method on video search reranking.
+4.1 Experimental Setup and Datasets
+The used videos were crawled from YouTube by using event type
+of queries as shown in Table 1. These queries cover current top-
+ics of news from events, which were selected by reference to the
+categories “Categories:2014 or 2015” from Wikipedia4. For each
+query, we obtained max top-500 videos, and analyzed the related
+videos of each video by using YouTube API5. Furthermore, the as-
+sociated contextual information such as tags, titles and descriptions
+were also crawled together with videos. By using these videos and
+tags, we constructed the initial video graph GM, the tag graph GT,
+and the combined heterogeneous graph GMT, respectively.
+The performance was measured by the widely used average pre-
+cision (AP ) which averages the precision obtained when each rele-
+vant video occurs. We average the APs over all queries to get mean
+AP (MAP) for an overall performance measurement. Then, to mea-sure Web video search performance, the normalized discounted cu-
+mulative gain (NDCG) [8], which is a common measure used in
+information retrieval when relevance levels are more than two, isadopted. For a given query, the NDCG score at position din the
+ranking list is calculated as follows;
+NDCG@d=Z
+dd/summationdisplay
+j=12tj−1
+log(1+j), (7)
+where tjis the degree of the j-th video in the ranking list and Zdis
+a normalization constant which is chosen to guarantee that the per-fect ranking’s NDCG@d is 1. For each video, in this experiments,
+the relevance degree t
+jwas manually judged on three scales: “0:Ir-
+relevant", “1:Fair", and “2:Relevant". To evaluate the overall per-
+3http:// www.youtube.com
+4http:// en.wikipedia.org/wiki/ Category:2014 or 2015
+5https:// developers.google.com/ youtube/ v3/
+8730.400.450.500.550.600.650.700.75VisualRank [6]BM25 [11]InitialLocal [12]Ours
+MNDCG@10 MNDCG@20 MNDCG@30 MNDCG@40 MNDCG@50 MNDCG@60 MNDCG@70 MNDCG@80 MNDCG@90 MNDCG@100
+Figure 1: MNDCG Comparison of the Video Search Perfor-
+mance.
+formance, we averaged the NDCGs over all queries to obtain the
+mean NDCG ( MNDCG).
+In the experimental settings, the parameters were empirically set
+as follows:αlfor multimodal feature fusion so that all weights are
+equal,θM=θT=0.2,ρ=0.5, andλ=0.01. For the local
+learning regularization, the number of nearest neighbors was set
+to 20. Furthermore, for calculating initial ranking score, we adopt
+the rank method [8], which is widely used to estimate the samples’relevance probability. This method assigns the initial score ¯ r
+i=
+N−ˆri,w h e r eˆ riis the rank of video vireturned by the search engine
+andNis the number of videos to rerank.
+4.2 Reranking Results
+To evaluate the performance of the proposed regularization, we
+ﬁrst compare the four methods derived under the Bayesian visualreranking framework. Table 2 shows the following results: Lapla-cian regularization (Lap), normalized Laplacian regularization (N-
+Lap) [14], local learning regularization ( Local) [12], and local
+learning regularization with a community detection scheme (Ours ).
+For comparison, we also showed the three results: the text-based
+search baseline based on BM25 formula (BM25) [11] using the as-
+sociated contextual information of each video, the VisualRank [6],
+and the initial ranking score list ( Initial). Note that, for VisualRank
+implementation, we used the same video graph and its aﬃnity ma-trix as the proposed method. We can see that the use of the pro-posed regularization gives better performance than the other ones.
+Next, in order to conﬁrm the improvement by the mutual re-
+inforcement between the two heterogeneous graphs, Table 2 alsoshows the two types of reranking results obtained by using the orig-inal video graph (VG ) and the modiﬁed video graph (MVG), re-
+spectively. As shown in Table 2, we applied the proposed methodto each regularization based reranking method. From the results,we can also see that the proposed method always gives a better per-
+formance.
+Finally, we show the Web video retrieval results obtained by us-
+ing the proposed method and other retrieval methods. Figure 1shows the retrieval results in terms of MNDCG at each position.
+It can be also seen that the performance improvement is realized byintroducing our method into visual reranking methods.
+From the above results, we can verify the e ﬀectiveness of the
+proposed method. Therefore, the proposed method improve theperformance of graph-based reranking for video search.
+5. CONCLUSIONS
+This paper has presented a method to improve performance of
+heterogeneous graph-based video search reranking. The proposedmethod is composed of two procedures. It ﬁrst constructs the re-Table 2: MAP Comparison of each Regularization.
+Method MAP
+VG MVG
+Ours 0.236 0.239
+Local [12] 0.223 0.227
+N-Lap [14] 0.206 0.215
+Lap 0.202 0.211
+Initial 0.196
+BM25 [11] 0.186
+VisualRank [6] 0.201
+inforced heterogeneous graphs, which are obtained by exchang-
+ing the information of inter and intra-relations among heteroge-
+neous graphs. Second, by considering this graph consistency, videosearch reranking is formulated as an optimization problem. By us-
+ing these procedures, we can obtain reinforced video graph and
+estimate the accurate renraking score list by the modiﬁed videograph. Consequently, the improvement of our method over the ex-
+isting methods can be conﬁrmed.
+6. ACKNOWLEDGMENTS
+This work was partly supported by Grant-in-Aid for Scientiﬁc
+Research (B) 25280036, Japan Society for the Promotion of Sci-ence (JSPS).
+7. REFERENCES
+[1] E. Apostolidis and V . Mezaris. Fast Shot Segmentation Combining
+Global and Local Visual Descriptors. In Proc. Int’l Conf. Acoust.,
+Speech., Signal Process., pages 6583–6587, 2014.
+[2] S. Bird, E. Klein, and E. Loper. Natural language processing with
+Python. O’Reilly, 2009.
+[3] V . Blondel, J. Guillaume, R. Lambiotte, and E. Mech. Fast Unfolding
+of Communities in Large Networks. J. Stat. Mech , page P10008,
+2008.
+[4] R. Cilibrasi and P. Vitanyi. The Google Similarity Distance. IEEE
+Trans. Knowledge and Data Engineering, 19(3):370–383, 2007.
+[5] N. Inoue and K. Shinoda. A Fast and Accurate Video
+Semantic-Indexing System Using Fast MAP Adaptation and GMM
+Supervectors. IEEE Trans. Multimedia , 14(4):1196–1205, 2012.
+[6] Y . Jing and S. Baluja. VisualRank: Applying PageRank to
+Large-Scale Image Search. IEEE Trans. Pattern Analysis and
+Machine Intelligence , 30(11):1877–1890, 2008.
+[7] X. Li, C. Snoek, and M. Worring. Learning social tag relevance by
+neighbor voting. IEEE Trans. Multimedia , 11(7):1310–1322, 2009.
+[8] C. D. Manning, P. Raghavan, and H. Schütze. Introduction to
+Information Retrieval. Cambridge University Press, New York, NY ,
+USA, 2008.
+[9] T. Mei, Y . Rui, S. Li, and Q. Tian. Multimedia Search Reranking: A
+Literature Survey. ACM Comput. Surv., 46(3):38:1–38:38, 2014.
+[10] M. A. Porter, J.-P. Onnela, and P. J. Mucha. Communities in
+Networks. Notices of the AMS , 56(9):1082–1097, 2009.
+[11] S. Robertson and H. Zaragoza. The Probabilistic Relevance
+Framework: BM25 and Beyond. Found. Trends Inf. Retr. ,
+3(4):333–389, 2009.
+[12] X. Tian, Y . Yang, J. Wang, X. Wu, and X. S. Hua. Bayesian Visual
+Reranking. IEEE Trans. Multimedia , 13(4):639–652, 2011.
+[13] J. Wang, J. Yang, K. Yu, F. Lv, T. Huang, and Y . Gong.
+Locality-constrained Linear Coding for Image Classiﬁcation. InProc. IEEE Int’l Conf. Computer Vision and Pattern Recognition ,
+pages 3360–3367, 2010.
+[14] M. Wu and B. Schölkopf. Transductive Classiﬁcation via Local
+Learning Regularization. In Proc. Int’l Conf. Artiﬁcial Intelligence
+and Statistics, pages 628–635, 2007.
+[15] T. Yao, C. W. Ngo, and T. Mei. Circular Reranking for Visual Search.
+IEEE Trans. Image Processing, 22(4):1644–1655, 2013.
+874

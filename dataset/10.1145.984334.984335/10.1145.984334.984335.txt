@@ -1,0 +1,727 @@
+Veriﬁable Encryption of Digital Signatures
+and Applications
+GIUSEPPE ATENIESE
+The Johns Hopkins University
+This paper presents a new simple schemes for veriﬁable encryption of digital signatures. We make
+use of a trusted third party (TTP) but in an optimistic sense, that is, the TTP takes part in the
+protocol only if one user cheats or simply crashes. Our schemes can be used as primitives to buildefﬁcient fair exchange and certiﬁed e-mail protocols.
+Categories and Subject Descriptors: H.4.0 [ Information Systems Applications ]: General
+Additional Key Words and Phrases: Certiﬁed e-mail, contract signing, digital signatures, fair ex-
+change, public-key cryptography, proof of knowledge
+1. INTRODUCTION
+Whenever a message is sent over the Internet, there is no assurance that it
+will be delivered to the intended recipient. Even if the message has been deliv-ered, the recipient may claim otherwise. This may be unpleasant particularlyin today’s society where networked computers are increasingly being used toexchange items between distrusted parties.
+In the real world, some form of simultaneity can be achieved thanks to the
+physical proximity of the parties involved with an exchange. For instance, twoparties can sign a contract simultaneously by holding the contract itself: One
+party will continue to hold the contract until the other party has signed. Simi-larly, when we buy an item from a store, the merchant could hold the item untilwe have provided the right amount of cash.
+Unfortunately, physical proximity cannot be exploited in the digital world
+and exchanging items over the Internet is considered a difﬁcult problem, calledthefair exchange problem .
+There have been several approaches to solve the fair exchange problem
+which are based on different deﬁnitions of fairness. Fairness is interpretedasequal computational effort in Even et al. [1985]. That is, it is assumed
+Parts of this paper appeared in the 6st ACM Conference on Computer and Communication Security
+[Ateniese 1999] and in RSA 2002 Conference [Ateniese and Nita-Rotaru 2002]. In particular, ver-iﬁable encryption schemes appeared in [Ateniese 1999] and the certiﬁed email protocol appearedin [Ateniese and Nita-Rotaru 2002] (coauthored with Cristina Nita-Rotaru).Author’s address: Department of Computer Science, The John Hopkins University, 3400 NorthCharles Street, Baltimore, MD 21218; e-mail: ateniese@cs.jhu.edu.Permission to make digital/hard copy of all or part of this material without fee for personal orclassroom use provided that the copies are not made or distributed for proﬁt or commercial advan-tage, the ACM copyright/server notice, the title of the publication, and its date appear, and noticeis given that copying is by permission of the ACM, Inc. To copy otherwise, to republish, to post onservers, or to redistribute to lists requires prior speciﬁc permission and/or a fee.
+C°2004 ACM 1094-9224/04/0200-0001 $5.00
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004, Pages 1–20.2†G. Ateniese
+that two parties, Alice andBob, have equal computational power and they
+exchange their items bit-by-bit and by taking turns. This approach does notrequire the intervention of a trusted third party but it involves many rounds ofinteractions.
+A probabilistic approach is adopted in Ben-Or et al. [1990], that is, the prob-
+ability of successfully completing the protocol is gradually increased after everyround of interaction.
+Asokan et al. [1997] introduce the optimistic approach. It relies on the ex-
+istence of a trusted third party which is invoked only in case of an exception.As long as the two parties follow the exchange protocol, there is no need forthe trusted party’s intervention, but if one deviates from the protocol then thetrusted party can easily restore fairness. This approach results in particularlyefﬁcient fair exchange protocols for generic items [Asokan et al. 1997, 1998a].
+Asokan et al. [1998b] and Bao et al. [1998] show how to build fair exchange
+protocols by means of veriﬁable encryption of digital signatures (i.e., a way of
+encrypting a signature under a designated public key and subsequently provethat the resulting ciphertext indeed contains such a signature). Camenisch andDamgard [2000] generalize the schemes in Asokan et al. [1998b] so to achievemore efﬁcient schemes that can be proved secure without relying on randomoracles.
+Solutions to the fair exchange problem can be employed to solve a related
+problem: The certiﬁed e-mail problem. In this case, an email message is to beexchanged with a receipt, that is, an incontestable proof that the email messagewas delivered to the intended recipient. In the real world, a letter can be sentthrough the postal service along with a request for a receipt. However, if thecontent of the letter is to be kept conﬁdential from the postal service providerthen the receipt can only state that an “envelope” was delivered and nothingcan be certiﬁed about the content of the envelope. In the digital world, instead, areceipt can be built so that it can be shown as evidence that the actual message(and not just an “envelope”) was delivered to the intended recipient and thiscan be done while assuring that the message is known only to the two partiesinvolved, the sender and the recipient.
+Several protocols provide valid solutions to the certiﬁed-email problem (see
+for instance [Asokan et al. 1998b; Ateniese et al. 2001; Bahreman and Tygar1994; Bao et al. 1998; Deng et al. 1996; Micali 1997; Riordan and Schneier1998; Zhou and Gollmann 1996]). They can be categorized based on the roleof a trusted third party (TTP), which is responsible for restoring the protocolfairness. In particular, the protocols in Asokan et al. [1998b] and Micali [1997]provide very innovative solutions by allowing the trusted party to be ofﬂine andbe invoked only in exceptional circumstances.
+In this paper, we emphasize that the certiﬁed e-mail problem is, in several
+aspects, different from other similar problems, such as fair exchange or con-tract signing. Our intent is to relax some assumptions so to ﬁnd valid solutionswith improved efﬁciency. We also introduce new protocols for veriﬁable encryp-tion of digital signatures that can be employed as primitives when designinga large class of protocols such as certiﬁed email, fair exchange, and contractsigning.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †3
+2. CRYPTOGRAPHIC TOOLS
+In this section, we present signature schemes that allow a prover to convince a
+veriﬁer of the equality of discrete logarithms (even when working in differentgroups). In short, the problem is, given g
+x
+1,gx
+2, and a message m, generating
+a signature on mand, at the same time, showing that D logg1gx
+1DD logg2gx
+2
+without revealing any information other than gx
+1and gx
+2.
+We will denote an instance of this signature technique by EQDLOG (m;gx
+1,
+gx
+2;g1,g2).
+We make use of so-called “proof-of-knowledge” systems that allow demon-
+strating knowledge of a secret such that no useful information is revealed inthe process. Namely, we deﬁne Schnorr-like signature schemes [Schnoor 1991]in order to show knowledge of relations among secrets. Substantially, these aresignature schemes based on proofs of knowledge performed noninteractivelymaking use of an ideal hash function H(¢)(`al aFiat and Shamir [1987]).
+LetG
+qdenote the unique subgroup of ZZ⁄
+pof order q. The parameters p,qare
+primes such that qdivides p¡1, for instance pD2qC1.
+Letg,h2Gqbe publicly known bases. The prover selects a secret xmod q
+and computes y1Dgxand y2Dhx. The prover must convince the veriﬁer that:
+D loggy1DD loghy2:
+The protocol, described by Chaum and Pedersen [1992], is as follows:
+(1) The prover randomly chooses t2ZZqand sends ( a,b)D(gt,ht) to the veri-
+ﬁer.
+(2) The veriﬁer chooses a random challenge c2ZZqand sends it to the prover.
+(3) The prover, then, sends sDt¡cxmod qto the veriﬁer.
+(4) The veriﬁer accepts the proof if:
+aDgsyc
+1and bDhsyc
+2:
+To turn the protocol above into a signature on an arbitrary message m, the
+signer can compute the pair ( c,s) as:
+cDH(mky1ky2kgkhkgtkht), sDt¡cx,
+whereH(¢) is a suitable hash function. To verify the signature ( c,s)o nm,i ti s
+sufﬁcient to check whether c0Dc, where
+c0DH(mky1ky2kgkhkgsyc
+1khsyc
+2):
+This signature scheme works properly also into an accurately chosen sub-
+group ofZZ⁄
+n, where nis an RSA-like composite. In particular, in this paper, we
+work into the subgroup of all quadratic residues modulo n, denoted by Qn. Ex-
+plicitly, Qn‰ZZ⁄
+nis the set of elements a2ZZ⁄
+nsuch that there exists an x2ZZ⁄
+n
+with x2·amod n. We select nas product of two safe primes pandq, that is,
+such that pD2p0C1 and qD2q0C1 with p0,q0primes. Thus, notice that Qn
+is a cyclic group of order p0q0.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.4†G. Ateniese
+2.1 Equality of Discrete Logarithms in a Group of Unknown Order
+The signature scheme above works properly even when the signer is working
+over a cyclic subgroup of ZZ⁄
+n,GDhgi, whose order # GDp0q0is unknown, but
+its bit-length ‘G(i.e., the integer ‘Gs.t. 2‘G¡1•#G<2‘G) is publicly known.
+We, now, show how the signer can generate a signature on a message
+m2f0, 1g⁄working with elements in Gand, at the same time, showing knowl-
+edge of the discrete logarithm with respect to bases gandhsatisfying y1Dgx
+and y2Dhx. We make use of a hash function H:f0, 1g⁄!f0, 1gk, which maps
+a binary string of arbitrary length to a k-bit hash value. We also assume a secu-
+rity parameter †>1. The signer computes a pair ( c,s)2f0, 1gk£§f0, 1g†(‘GCk)C1
+such that cDH(mky1ky2kgkhkgsyc
+1khsyc
+2).1This shows that the discrete log-
+arithms of y1Dgx, with regard to base g, and y2Dhx, with respect to base h,
+are equal.
+The signer, in possession of the secret x, is able to compute the signature ( c,s),
+provided that xDD loggy1DD loghy2, by choosing a random t2§f0, 1g†(‘GCk)
+and then computing candsas
+cDH(mky1ky2kgkhkgtkht),sDt¡cx (inZZ):
+2.2 Equality of Discrete Logarithms from Different Groups
+Suppose now that gandhhave different orders, q1andq2, respectively. Thus,
+given two elements y1Dgxand y2Dhxofdifferent groups G1Dhgi,G2Dhhi,
+the veriﬁer can only conclude that the signer knows a value xsuch that xmod
+q1DD loggy1and xmod q2DD loghy2. However, it is possible to prove that
+a secret xlies in a speciﬁc interval, more precisely given gxwith¡2‘<x<2‘
+for an integer ‘, it is possible to prove that xlies in the extended interval
+]¡2†(‘Ck),2†(‘Ck)[. Hence, we can build a signature scheme for showing that
+D loggy1DD loghy2inZZby combining the scheme for showing knowledge of a
+value xwith xmod q1DD loggy1andxmod q2DD loghy2, and the scheme for
+showing that¡2†(‘Ck)<x<2†(‘Ck). Clearly, this can be done only if the length
+‘can be chosen such that 2†(‘Ck)C1<minfq1,q2g, where q1,q2are the orders of
+gandh, respectively. Notice that this proof only works if one of G1orG2is an
+auxiliary group that is not ﬁxed.
+This idea is formalized by Camenisch and Michels [1999b]. They present
+a concrete protocol for proving equality of discrete logarithms from differentgroups based on a technique developed by Fujisaki and Okamoto [1997].
+To provide a viable example of how it is possible to show that xlies in the
+extended interval ] ¡2
+†(‘Ck),2†(‘Ck)[, we present a signature scheme derived from
+a protocol due to Chan et al. [1998], and Camenisch and Michels [1998a]. Thescheme can be extended to the more general interval ] X¡2
+†(‘Ck),XC2†(‘Ck)[, for
+a given integer X, as shown in Camenisch and Michels [1998a]. The signature
+on a message m2f0, 1g⁄, is the pair ( c,s)2f0, 1gk£§f 0, 1g†(‘Ck)C1such that
+cDH(mkykgkgsyc). This shows knowledge of the discrete logarithm of yDgx
+with respect to base gand that this logarithm lies in [ ¡2†(‘Ck),2†(‘Ck)].
+1The (abused) notation s2§f0, 1g†(‘GCk)C1denotesjsj<2†(‘GCk)C1.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †5
+To produce ( c,s), the signer in possession of the secret xDD loggy2]¡2‘,2‘[
+chooses a random t2§f0, 1g†(‘Ck)and then computes candsas
+cDH(mkykgkgt),sDt¡cx (inZZ):
+The underlying interactive protocol is proved to be a proof of knowledge
+(statistical honest-veriﬁer zero knowledge), under the strong RSA assumption,in Camenisch and Michels [1998b].
+3. EFFICIENT VERIFIABLE ENCRYPTIONS
+Suppose that Alice andBob have agreed on a common message m.Alice gen-
+erates her signature on m,S
+A(m), and sends it to Bob “encrypted” under the
+public key of a TTP, T.
+The problem, now, is that Alice must prove to Bobthat the signature is valid,
+even though it is encrypted, and that Tis able to extract SA(m) from the en-
+cryption that she has sent.
+In general, given an instance sof a digital signature scheme on an arbitrary
+message, we make a T-veriﬁable encryption c(s)o fsif such an encryption can
+be veriﬁed to contain sin a way that ensures that Tis allowed to recover sfrom
+c(s) while no useful information is revealed to others about sitself.
+In most of our protocols, the encryption function c(¢) will be implemented
+via the ElGamal encryption scheme. That is, given a secret key xand a cor-
+responding public key gx, a message mis encrypted by generating a random
+rand computing K1Dmgxr,K2Dgr.T og e t mfrom K1, it is sufﬁcient to
+compute mDK1=(K2)x.
+3.1 RSA Signatures
+LetnDpq, with pD2p0C1 and qD2q0C1, where p0,q0are primes . Let ( e,n)
+beAlice ’s public key with prime e>2 and dthe corresponding secret key, that
+is,ed·1 mod 2 p0q0. To sign a message m, it is sufﬁcient to compute CDH(m)d
+mod nwhereH(¢) is a hash function deﬁned as H:f0, 1g⁄¡!ZZn[Rivest et al.
+1978].2The signature is accepted only if Cemod nmatchesH(m). In order to
+make efﬁcient the veriﬁable encryption of RSA signatures, we will make useof an initialization phase by which the user and the TTP Tagree on common
+parameters.
+LetQ
+nbe the subgroup of squares in ZZ⁄
+n. During the initialization phase,
+Alice sends ( e,n)t oT(along with a certiﬁcate CERT A).Tveriﬁes that ( e,n)i s
+the public key of Alice and randomly selects a ¯ g2ZZ⁄
+n. Then,Tsets gD¯g2mod
+n, signs and sends back ( gmod n,yDgxmod n), where xis a secret random
+element.3The details are shown in Figure 1, where all the operations are taken
+2For the sake of simplicity, we employ the hash-and-sign paradigm but, in practice, H(¢) is rather
+a redundancy function as deﬁned in PKCS#1, ISO/IEC 9796 and so on (see Menezes et al. 1996a,p. 442).
+3By deﬁnition g2Qnand with overwhelming probability the order of gisp0q0(nevertheless
+paranoids may test whether gcd( g§1,n)D1).
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.6†G. Ateniese
+Fig. 1. Initialization phase.
+Fig. 2. Veriﬁable encryption of an RSA signature.
+modulo nand “ A” is a string of data identifying Alice . This phase is done only
+once andTdoes not need to know the factors of n.4
+Given the message m,Alice computesH(m)2and then signs it by computing
+H(m)2dmod n. Then,Alice encrypts the RSA signature via the ElGamal en-
+cryption scheme with the public key yDgx, that is, by selecting a random r
+and computing K1DH(m)2dyrand K2Dgr. To prove that she has correctly
+generated aT-veriﬁable encryption, Alice releases an evidence showing that
+D logye(yer)DD logg(gr) (via EQDLOG (¢)). The resulting message has four
+components as shown in Figure 2.
+After receiving the message from Alice ,Bob must verify that it is a T-
+veriﬁable encryption of Alice ’s signature on m. Hence, he computes H(m)2and
+then veriﬁes EQDLOG (m;Ke
+1=H(m)2,K2;ye,g), where the bases yDgx
+and gare taken from CERTT:A. Since nis a product of safeprimes, g,gx, and
+gxegenerate the same group, Qn, with overwhelming probability. If Bobneeds
+to know that he is working with quadratic residues modulo n(as required by
+a proof of soundness), he can just square all the parameters (even the bases)before performing any modular operations with them.
+4However, we assume that Alice provides a proof of nbeing a product of safe primes during either
+the public-key certiﬁcation process (executed with a Certiﬁcation Authority) or the initializationphase (withTitself) (see Camenisch and Michels 1999a).
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †7
+The hash on the message is squared by Alice in order to achieve semantic
+security5(notice that dis odd since eis prime). If the message space is the
+same as the group generated by g, that is, QnDhgi, then it is well-known that
+DDH6implies the semantic security of the ElGamal encryption scheme modulo
+a composite. Notice that the mapping into Qndoes not affect the recovery al-
+gorithm: In case of dispute, Tmay getH(m)dfromﬁDH(m)2dby simply using
+the Euclidean algorithm. Namely, since ﬁeDH(m)2and gcd( e,2 )D1, there
+exist two integers a1anda2such thatH(m)dDﬁa1H(m)a2.
+Embedding our scheme in a fair exchange protocol needs more careful
+thoughts which also apply to other schemes in this paper. First of all, Tmay
+avoid to store secret values per capita. In our example, Thas to store xfor
+Alice . This can be avoided by simply inserting a symmetric encryption of x
+into CERTT:Aduring the initialization phase. Thus, Tneeds to store only the
+symmetric encryption key.
+Second,Alice should sign the message sent to Bob. This message should
+include the veriﬁable encryption of Alice ’s signature and a label describing what
+Alice expects from Bob. This would guarantee the correctness of the recovery
+phase performed by Tin case of dispute.
+3.2 Gennaro–Halevi–Rabin Signatures
+Letnbe the product of two safe primes pD2p0C1 and qD2q0C1.Alice ’s
+certiﬁed public-key is ( n,s), where sis randomly chosen in ZZ⁄
+n. In order to sign a
+message m,Alice computes eDH(m) and¾Ds1=emod n. To verify the signature,
+Bob computes eDH(m) and checks whether ¾eDsmod n. The Gennaro–
+Halevi–Rabin signature scheme [Gennaro et al. 1999] has been proved to beresistant against adaptive chosen message attack (i.e., where the attacker candynamically ask the signer to sign any message, using him as an oracle), inthe random oracle model [Bellare and Rogaway 1993], under the strong RSAassumption.
+7Gennaro et al. [1999] provide other constructions eliminating the
+need for the random oracle model.
+To make aT-veriﬁable encryption of the signature ¾,Alice performs the
+initialization phase described earlier for the RSA scheme. Thus, Alice gets the
+certiﬁcate CERTT:ADST(g,yDgx,A,(n,s)) fromT, with gof order p0q0,
+generator of Qn. The resulting protocol is shown in Figure 3 (all the operations
+are made modulo n).
+As described in Gennaro et al. [1999], the output length of the hash function
+H(¢) should bejnj-bit long.
+5Intuitively, a cryptosystem is semantically secure if, a passive attacker, who knows that one of
+just two possible messages has been encrypted, cannot yield any information about which of thetwo was actually encrypted by simply analyzing the ciphertext.
+6Roughly said, given GDhgi, the Decisional Difﬁe-Hellman assumption (DDH) states that no
+efﬁcient algorithm can distinguish between the two distributions hga,gb,gabiandhga,gb,gci,
+where, a,b,care random elements in [1, jGj]. The DDH is believed to be intractable in Qn(see
+Boneh 1998).
+7The strong RSA assumption states that given a random z2ZZ⁄
+nwith nan RSA modulus, ﬁnding
+a pair ( u,e)2ZZ⁄
+n£ZZsuch that e>1 and ueDzis hard to solve.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.8†G. Ateniese
+Fig. 3. Veriﬁable encryption of a Gennaro–Halevi–Rabin signature.
+Fig. 4. Veriﬁable encryption of a Cramer–Shoup signature.
+To achieve semantic security, it is sufﬁcient to square ¾(notice that, since
+(¾2)H(m)Ds2and gcd(H(m), 2)D1, it is easy to recover ¾) or, alternatively, to
+select a priori the parameter sas a quadratic residue.
+3.3 Cramer–Shoup Signatures
+Letjandzbe two security parameters such that jC1<z. Let nDpq, where
+pandqarez-bit safe primes, that is, pD2p0C1 and qD2q0C1 with both p0
+andq0.Alice ’s public-key is ( n,b,x,e0), where b,xare randomly chosen in the
+subgroup of quadratic residues modulo n,Qn, and e0is a random ( jC1)-bit
+prime. To generate a Cramer–Shoup signature [Cramer and Shoup 1999] ona message m,Alice randomly selects a ( jC1)-bit prime e6De
+0and u02Qn.
+Then, she computes x0D(u0)e0b¡H(m)and, ﬁnally, uD(xbH(x0))1=e.8The resulting
+signature on mis (e,u,u0). To verify it, Bobchecks that eis a ( jC1)-bit number
+different from e0and computes x0D(u0)e0b¡H(m). Then,Bob checks whether
+xDueb¡H(x0). The Cramer–Shoup signature is quite efﬁcient and provably
+secure (in the standard model) against the adaptive chosen message attackunder the strong RSA assumption.
+To make aT-veriﬁable encryption of the signature ( e,u,u
+0),Alice performs
+an initialization phase (the one described for the RSA scheme). Thus, Alice gets
+the certiﬁcate CERTT:ADST(g,yDgx,A,(n,b,x,e0)) fromT, with gof order
+p0q0. Then,Alice releases ( e,u0) along with the veriﬁable encryption of u. The
+details are shown in Figure 4.
+In the matter of semantic security, it should be noted that u2Qn, hence
+K1Duyris already a quadratic residue.
+8H(¢) is a hash function H:f0, 1g¡!f 0, 1gj.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †9
+3.4 Guillou–Quisquater Signatures
+A TTP generates common parameters v,nDpqand, for each user, a secret
+key Band an ID-based public-key Jsuch that BvJ·1 mod n. Only the
+TTP knows the order of ZZ⁄
+n. The Guillou–Quisquater signature [Guillou and
+Quisquater 1988] on a message mis computed as follows: randomly choose
+r2ZZ⁄
+nand compute TDrvmod n,dDH(mkT), and DDrBdmod n, whereH(¢)
+is a suitable hash function. The resulting signature is the pair ( d,D). The
+TTP, which has generated the system parameters, may cease to exist after theinitialization phase.
+To verify the signature, it is sufﬁcient to check whether dDH(mkD
+vJd), in
+fact notice that DvJd·(rBd)vJd·rv(BvJ)d·rvmod n.
+To make a veriﬁable encryption of a Guillou–Quisquater signature ( d,D),
+we slightly modify the idea proposed in Bao et al. [1998]. Basically, the mod-ulus nis generated as product of two safe primes, that is, nDpqwith
+pD2p
+0C1 and qD2q0C1, and an element g2Qnof order p0q0is se-
+lected. The public-key of TisyDgxmod n. To generate aT-veriﬁable en-
+cryption of ( d,D),Alice sends the ElGamal encryption of D, that is, K1DDyr,
+K2Dgr, along with VDDv,ditself and a signature showing knowledge of two
+equal discrete logarithms, EQDLOG (m;yvr,gr;yv,g) (notice that Alice does
+not know the order of g). The signature is veriﬁed by checking the correctness
+ofEQDLOG (m;Kv
+1=V,K2;yv,g) and testing whether dDH(mkVJd).
+3.5 Discrete Logarithms
+In this section, we show a simple method of veriﬁably encrypting discrete loga-
+rithms, which can be used to make veriﬁable encryptions of digital signatureslike DSA, ElGamal, and Schnorr.
+The problem we want to solve is the following: Alice andBob agree on a
+common value ﬁ
+xandAlice wants to generate a T-veriﬁable encryption of x,
+givenﬁx. Clearly, we are assuming that ﬁnding the discrete logarithm xfrom
+ﬁxis hard.
+Suppose thatTcould select a group Gof order nin which computing the
+discrete logarithm is an easy task, that is, given an element g2Gand gxmod
+n, getting xis trivial. Therefore, Alice could make a veriﬁable encryption of x
+by just sending ﬁxand gxmod n, and then proving that D logﬁﬁxDD logggx.
+Obviously, onlyTshould be able to compute discrete logarithms with respect to
+base g, that is, g, and a description of the group Gshould be publicly available
+and constitute a trap-door function of some sort. Two possible suitable trap-doorfunctions are those deﬁned in the Naccache–Stern and the Okamoto–Uchiyamapublic-key cryptosystems [Naccache and Stern 1998; Okamoto and Uchiyama1998].
+For the sake of simplicity, we focus on the Naccache–Stern cryptosystem
+but all the results can easily be adapted to work with the Okamoto–Uchiyamascheme. In the Naccache–Stern cryptosystem, an RSA modulus nDpqis gen-
+erated along with a small integer B. Then,¾is computed as a square-free odd
+B-smooth integer such that it divides `(n) and is prime to `(n)=¾(a suggested
+size is¾> 2
+160). Let gbe an element whose multiplicative order modulo nis
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.10†G. Ateniese
+Fig. 5. Veriﬁable encryption of a Schnorr signature.
+a large multiple of ¾. A message m<¾is encrypted by computing gmmod n.
+Decryption is performed using the prime factors of ¾, getting mby chinese re-
+maindering (see Naccache and Stern 1998 for details). The resulting schemeis quite efﬁcient, indeed the optimized version costs a couple of RSA opera-tions with a similar modulus. The security of the scheme relies on the higher
+residuosity problem which is widely believed to be infeasible.
+The veriﬁable encryption of x, givenﬁ
+x, is performed by computing gxmod
+nand showing that D logﬁﬁxDD logggxviaEQDLOG (m;ﬁx,gx;ﬁ,g), for an
+arbitrary message m. Although we still use the same notation (i.e., EQDLOG (¢))
+as in the rest of the paper, proving equality of discrete logarithms from differentgroups requires an additional step by which the veriﬁer generates an elementof secret order that is subsequently used in the protocol. Without this element,the proof of equality may not work properly (see Camenisch and Michels 1999b).
+3.6 Schnorr and Other Discrete-log-type Signatures
+Letﬁbe a generator of the unique cyclic group of order a prime qinZZ
+⁄
+p, where p
+is some large prime number such that qdivides p¡1.Alice (the signer) selects
+the private key 1 •a•q, computes yDﬁamod pand publishes ( p,q,ﬁ,y).
+To generate a Schnorr signature on a message m,Alice selects a random secret
+integer k, with 1•k•q¡1, and computes rDﬁkmod p,eDH(mkr)9,
+andsDaeCkmod q.Alice ’s signature on mis the pair ( s,e).Bobveriﬁes the
+signature by checking whether eDe0, where e0DH(mkﬁsy¡e).
+Notice that ﬁis raised to the power of sbyBob. This suggests the following
+technique to make a T-veriﬁable encryption of the signature ( s,e):Alice sends
+fﬁs,egtoBob, proves knowledge of D logﬁﬁsand, ﬁnally, makes a veriﬁable
+encryption of s. The details are shown in Figure 5, where ( g,n) denotes the
+public-key ofTgenerated according to the Naccache–Stern cryptosystem (in
+particular, we set ¾>q).
+Showing, via EQ DLOG (¢), that the discrete logarithm of w1equals that
+ofw2, implicitly proves that the signer ( Alice ) knows D logﬁw1and D loggw2,
+respectively. The exponent smust satisfy some range constraints as described
+in Section 2; this might affect the choice of the random element kduring the
+signature process.
+The technique above can be also generalized to work with several discrete-
+log-based signatures schemes, such as Poupard and Stern [1998], ElGamal andDSA.
+9H(¢) is a hash function H:f0, 1g⁄¡!ZZq.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †11
+3.7 Security Analysis
+A veriﬁable encryption of a public-key signature scheme is a protocol between
+a prover and a veriﬁer that convinces with high probability the veriﬁer that anencrypted value is indeed a signature on a known message.
+More formally, let the triple ( G,E,D) denote a semantically secure crypto
+system, where kis the security parameter and ( E,D)ˆG(1
+k) is a pair such
+that D(E(m))Dmfor all messages m2f0, 1gk. Let ( SK,PK)ˆG2(1k2)a
+pair of secret and public key, respectively. Let s2S(m) denote a signature
+on a given message munder ( SK,PK). A veriﬁcation algorithm V(PK,s,m)
+will return 1 if sis indeed a signature on munder PK, an arbitrary value
+otherwise. Inspired by the deﬁnition in Camenisch and Damgard [2000], wehave the following deﬁnition.
+Deﬁnition 1.A veriﬁable encryption scheme for a signature son a message
+mconsists of a two-party protocol ( P,V) and an extraction algorithm Rthat
+extracts sfrom the output generated by V. Let O
+Pdenote the output generated
+byV, when interacting with Pon input ( E(s),m,k). The following properties
+must hold:
+(1) If Pand Vare honest then OP6D?for all ( E,D)ˆG(1k) and for all
+possible values of sandm.
+(2) For all polynomial time ¯P, all positive polynomials p(¢), all sufﬁciently large
+k, and all ( E,D)ˆG(1k) we have: Pr[ V(PK,R(D,O¯P),m)6D1 and O¯P6D?
+]<1
+p(k).
+(3) Signature Hiding: Given oracle access to P,Vdoes not gain a non-negligible
+advantage into computing any signature s02S(m).
+(4) Unforgeability: Given oracle access to P, which can be queried to obtain
+several valid veriﬁably encrypted signatures under PK, it is impossible to
+generate a valid veriﬁably encrypted signature under PKon a new message
+without further queries to the oracle.
+In this paper, we have analyzed the veriﬁable encryption of RSA-based sig-
+natures as well as discrete-log-based ones. For all the RSA-based signatures,we have solved the problem of veriﬁably encrypting a signature by releasing averiﬁable encryption of a eth root modulo n, where nis the product of two safe
+primes. Whereas in the discrete-log setting, we release a veriﬁable encryptionof a discrete logarithm.
+We concentrate on the interactive protocol underlying the veriﬁable encryp-
+tion we used for the RSA signature scheme.
+LetMDH(m)
+2,yDgx, and hDye. The interactive protocol between Alice
+(prover) and Bob(veriﬁer) is run as follows:
+(1)Alice chooses at random r,tand sends Bob:
+fK1DMdyr,K2Dgr,aDht,bDgtg:
+(2)Bobchooses a random challenge c2f0, 1g160and sends it to Alice .
+(3)Alice replies with sDtCcr(mod p0q0).
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.12†G. Ateniese
+(4)Bobcomputes WDKe
+1=Mand checks whether
+hsDaWcand gsDbKc
+2:
+Suppose that Alice can successfully answer two distinct challenges. That is,
+given two challenges c1,c2fromBob,Alice answers s1,s2. As noted in Chaum
+and Pedersen [1992], we then have
+hs1¡s2DWc1¡c2and gs1¡s2DKc1¡c2
+2:
+Thus, if c1¡c2<p0q0, a value rexists such that
+rDD loghWDD loggK2D(s1¡s2)=(c1¡c2)(mod p0q0):
+Consequently, WDhr,K2Dgr, and K1D(Mhr)d. This proves that ( K1,K2)
+is indeed an encryption of H(m)2d.
+Notice that we do not have to prove that the protocol above is a proof of
+knowledge, nevertheless it is interesting to analyze this possibility. We mustrely on the strong RSA assumption, in fact the knowledge extractor does notknow the group order ( p
+0q0) and thus cannot compute ( s1¡s2)=(c1¡c2) (modulo
+p0q0). However, this computation can be carried out in ZZsince it is easy to
+see that, under the strong RSA assumption, ( c1¡c2) divides ( s1¡s2) (inZZ).
+Furthermore, since Alice (the prover) knows the factorization of n(excluding
+the protocol for the Guillou–Quisquater signatures), we should slightly modifythe protocol as follows:
+—During the initialization phase the TTP Tselects a composite ˆ nand ˆ g2ZZ
+⁄
+ˆn,
+and sendsCERT
+T:ADST(g,yDgx,A,(e,n), ˆg,ˆn)t oAlice .
+—Given K1DMdyr,K2Dgr,aDht,bDgtand K3Dˆgrmod ˆ n,Alice now
+convinces Bobthat:
+D logy(Ke
+1=M)DD loggK2DD logˆgK3:
+Therefore, we can apply the proof techniques in Camenisch and Michels
+[1998b] and Fujisaki and Okamoto [1997].
+4. A CERTIFIED E-MAIL PROTOCOL
+A fair exchange of digital signatures can be built via veriﬁable encryption
+schemes as shown in Bao et al. [1998] and Asokan et al. [1998b]. The three-pass scheme in Bao et al. [1998] is simple but has the drawback that one ofthe participants can decide when the two signatures will be exchanged afterthe protocol has started. In particular, Alice may receive Bob’s signature after
+a certain amount of time, which can be chosen by Bobso to make his signature
+useless for Alice . A better model for fair exchange is presented in [Asokan et al.
+1998a, 1998b].
+Certiﬁed e-mail protocols are strictly related to fair exchange protocols. In-
+deed, in a certiﬁed e-mail scheme the intended recipient gets the mail content
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †13
+if and only if the mail originator receives an irrefutable evidence that the mes-
+sage has been, or will soon be, received by the recipient. Thus, the evidence
+may be a proof-of-delivery (the message was delivered to the recipient) or aproof-of-submission to a TTP (post ofﬁce), which will forward any message tothe intended recipient in a short time. Notice that, a certiﬁed e-mail protocol isnot a simultaneous exchange of items but rather a asymmetric exchange since
+the message has to be sent ﬁrst to allow the recipient to compute a receipt basedon the message received.
+In the rest of the paper, we show how to use our veriﬁable encryption schemes
+to build an efﬁcient certiﬁed e-mail protocol.
+4.1 Deﬁnitions
+We assume that each communication party has the ability to generate and
+verify digital signatures. We say that the TTP Tisvisible if it is obvious from
+the ﬁnal outcome that Tparticipated during the protocol. A protocol is invasive
+[Asokan et al. 1998a; Micali 1997] if one can tell that it was run by just lookingat the outcome. Typically, if the TTP Tis visible then the protocol that employes
+Tis invasive (notice that the reverse is not true).
+A certiﬁed e-mail protocol should minimally provide:
+—Fairness : No party should be able to interrupt or corrupt the protocol to force
+an outcome to his/her advantage. The protocol should terminate with eitherparty having obtained the desired information, or with neither one acquiringanything useful.
+—Monotonicity : Each exchange of information during the protocol should add
+validity to the ﬁnal outcome. That is, the protocol should not require anymessages, certiﬁcates, or signatures to be revoked to guarantee a propertermination of the protocol. (This is important because if revocation is neededto ensure fairness then the veriﬁcation of the validity of the protocol outcomebecomes a bottleneck as it would require TTP’s active participation.)
+—TTP invisibility : It makes it impossible to determine whether the TTP has
+been involved or not. (If the TTP were visible it would imply that the informa-tion added by the TTP to any protocol outcome cannot be removed and mustbe signed by the TTP itself. Verifying such a signature from the TTP wouldbe then part of the receipt veriﬁcation process. This would be too impracticalfor several reasons. For instance, the TTP is trusted during the exchange butmay not be so after a certain period of time. Still the validity of the receipt isbound to the validity of the signature generated by the TTP. The invisibilityproperty provides some peace of mind: Once the exchange has took place, theTTP may cease its activity, disappear, modify its policies, or change publickeys without affecting the validity of the protocol outcome.)
+—Timeliness : It guarantees that both parties will achieve their desired items
+in the exchange within ﬁnite time.
+Occasionally, it is desirable to keep the content of conﬁdential e-mails secret
+from trusted parties acting as intermediaries. Thus, an optional feature is
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.14†G. Ateniese
+Fig. 6. Off-line certiﬁed e-mail protocol via veriﬁable encryption of RSA signatures.
+—Conﬁdentiality : In case the exchange is deemed conﬁdential, the protocol
+should not need to disclose the message contents to any other party exceptingthe sender and the recipient.
+4.2 The Protocol
+A certiﬁed e-mail protocol using veriﬁable encryption is shown in Figure 6. We
+will assume that the communication is carried over private and authenticatedchannels.
+The protocol provides fairness; speciﬁcally, it ensures that the sender receives
+the receipt if and only if the recipient will have the message in his mailboxwithin a ﬁnite period of time. The protocol is designed so that the TTP is invokedonly in case of dispute. As long as both AandBfollow the protocol steps, there
+is no need to involve the trusted entity in the protocol. This represents animprovement over the approach employed by online protocols, where a trustedentity is needed for each transaction.
+Moreover, the protocol is designed to make sure that Acannot misbehave.
+Only Bis allowed to cheat by not sending the message in the last step. Since
+the sender initiates the exchange process, it appears natural to desire that therecipient of the message be relieved by any burden caused by malicious senders.
+User Breceives the certiﬁcate CERT
+TTP:Bby engaging in an initialization
+phase with the TTP. Similarly, B’s public key is ( e,n) with e0andnproduct of safe
+primes, and QR(n) is the subgroup of squares in which we operate. We make use
+of two protocol headers, PHandPH, which contain relevant information such
+as the identities of the parties involved ( A,B, and TTP), the cryptographic al-
+gorithms employed, timestamps and transaction IDs to prevent replay attacks,and other pertinent information about the protocol.
+The protocol consists of the following steps (all the operations are taken
+modulo n):
+—Step 1. The sender Aselects a random r, computes yDr
+eR(m), and signs it
+including a protocol header PH. Such a signature, denoted by SA, is sent to
+B.
+—Step 2. The recipient Bsquares yand computes ( y2)dDr2R(m)2d. It then
+computes the veriﬁable encryption of y2d,VET(y2d), and sends the result to
+A. However, Bhas to sign the result in order to include a protocol header PH
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †15
+and the sender’s signature SA. More importantly, B’s signature ( SB) makes
+it possible to neutralize malleability attacks against the ElGamal encryption
+and also preserves B’sprotocol view at that speciﬁc point in time.
+—Step 3. After receiving the message from B,Averiﬁes the signature and that
+the encryption contains the correct receipt. If that is the case, Asends mto
+B.
+—Step 4. The recipient Breads the message mand sends the receipt RecD
+R(m)dtoA.
+IfBdoes not send the receipt in Step 4, then Acontacts the trusted entity
+and both run the following protocol:
+—Step 1.Asends B’s signature, SB, to the TTP along with randm.
+—Step 2. The TTP veriﬁes ﬁrst the signatures SAand SB(SAis contained
+inSB). Then, it recovers y2dfrom the veriﬁable encryption and computes
+ydvia the Euclidean algorithm. Finally, the TTP checks whether the value
+sDyd=ris indeed a valid signature of the message munder B’s public key
+(i.e, it checks whether seDR(m)). If so, it sends stoAand forwards mtoB.
+The TTP has to forward the message mtoBto nullify any attempts of the
+sender Ato successfully retrieve a receipt without revealing the message m
+toB. Speciﬁcally, Amay not have sent the message min Step 3 above. The
+protocol fairness is built around the assumption that the sender Acan verify
+that the veriﬁable encryption indeed contains a valid receipt. Only the TTP canrecover the receipt from the veriﬁable encryption.
+In our protocol, the recipient Bdoes not have to be always online. If Bis
+ofﬂine, then TTP may have at least three possible behaviors:
+(1) TTP acts as a SMTP-like server: TTP will keep state and retry until Bis
+online.
+(2) TTP acts as a SMTP-like server and Bhas his own online mail server
+that collects his emails. This is the most likely case: TTP will forward anymessages to B’s mail server.
+(3) TTP acts as a POP-like server: TTP will keep state until Bretrieves his
+messages.
+The receipt, in our protocol, is a proof that the message was delivered to
+either Bor TTP (which will forward it to Bwithin a ﬁnite period of time).
+Indeed, the receipt states only that Bhas the ability, or potential, to read the
+message if he wants to, but Bmay decide to stay ofﬂine, or may not want
+to read the message, or may automatically delete it (e.g., in case of spam ).
+This implies that the receipt obtained by the sender should be interpreted as aproof-of-submission, which is weaker than a proof-of-delivery provided by othercertiﬁed email schemes, such as the one in Asokan et al. [1998b].
+Remark 1. In our protocol, the sender Ahas to reveal the message mto the
+TTP in case of dispute. If message privacy has to be preserved, it is sufﬁcient to
+substitute mwith
+PHjjPB(m) in the protocol above, where PB(¢) represents the
+public-key encryption under B’s public key and PHis a protocol header. Notice
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.16†G. Ateniese
+that the receipt assumes a new format:
+RecDR(PHjjPB(m))d,
+which has to be interpreted in a special way: it is considered a valid receipt of
+the message monly when accompanied by mandPHsuch that
+(Rec)eDR(PHjjPB(m)):
+The public-key encryption PB(¢) should be deterministic or, if randomized, the
+sender Amust reveal the random parameters used to encrypt the message. The
+approach we have taken for the implementation of the protocol is to encryptthe message masE
+k(MA C l(m)jjm),PB(kjjl), where k,lare random secret val-
+ues; MA C l(¢) is a MAC function, such as HMAC-SHA-1; PB(¢) is a deterministic
+public-key encryption algorithm, such as plain RSA; Ek(¢) is a symmetric-key
+encryption algorithm, such as AES in CBC mode.
+The new protocol header PHhas to be checked, either by Bor the TTP,
+to contain the correct information relevant to the protocol. Moreover, it hasto clearly state that the receipt Rec has to be interpreted in the special way
+described above. This inevitably makes the new protocol invasive.
+Remark 2. The certiﬁed e-mail protocol presented above works for RSA sig-
+natures but can easily be extended to work for other schemes based on a sim-ilar setting such as Rabin and Guillou–Quisquater [Guillou and Quisquater1988] signature schemes, or provably unforgeable signature schemes suchas Cramer–Shoup [Cramer and Shoup 1999] and Gennaro–Halevi–Rabin[Gennaro et al. 1999]. To do so, it is enough to replace the veriﬁable encryptionof RSA signatures with that of the desired signing algorithm.
+4.3 Analysis
+In this section, we present an analysis of our protocol. Our claim is follows.
+C
+LAIM 1.The protocol above is a certiﬁed e-mail protocol, which provides
+fairness, monotonicity, timeliness, and TTP invisibility. Moreover, the protocoloptionally provides conﬁdentiality of the message, that is, the arbitration can beperformed without revealing the e-mail content to the trusted intermediary.
+Clearly our protocol provides TTP invisibility since the structure of the re-
+ceipt does not indicate whether the TTP was involved or not in dispute resolu-tions. The protocol provides also monotonicity, since any signature (includingthe receipt) will not be revoked in order to guarantee a proper termination of theprotocol. Conﬁdentiality is achieved by encrypting the actual message content.
+The protocol provides timeliness since the protocol resolution can be executed
+in a ﬁnite period of time and messages are sent through resilient channels
+[Asokan et al. 1998a], that is, messages will be delivered within a time lapsewhich may be arbitrarily long, yet ﬁnite.
+Regarding fairness, there are two cases to consider. In the ﬁrst case, the TTP
+is not invoked and both Aand Bfollow the protocol steps. In the second case,
+the TTP is invoked by Ato solve a dispute ( Bcannot invoke the TTP). Observe
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †17
+that, in our protocol, the ﬁrst two messages are used to collect evidences that
+Acan use in case of dispute. Indeed, when the TTP is not invoked, the protocol
+messages that are relevant are only those in Steps 3 and 4, where a message m
+is sent in exchange of the corresponding receipt. Therefore, fairness is preservedin this case. If the TTP is invoked (by A) then B’s signature ( S
+B) will be sent
+to the TTP along with the message mand the blinding factor r. The TTP will
+compute ydfrom the veriﬁable encryption and will check whether
+(yd=r)eDR(m):
+If that is the case, then AandBreceive yd=randm, respectively. Hence, even
+in this case fairness is preserved since the sender will receive a signature on amessage which is being forwarded to the recipient through a resilient channel.
+It is interesting to notice that the recipient does not need to contact the TTP
+in case of dispute. This feature makes our protocols very attractive in real-world environments in which recipients would prefer to assume a passive rolerather than being actively involved in dispute resolutions caused by malicioussenders. More importantly, the recipient is stateless in the sense that it does
+not need to store state information on transactions in which he is involved.
+10
+Indeed, the recipient may not store anything about the ﬁrst two steps of theprotocol and, in principle, the message embedded by the sender in the value y
+in Step 1 of the protocol could be different from the message sent in Step 3.
+4.4 Comparisons
+In this section we compare our protocol with the state of the art in the ﬁeld.
+Some of the ofﬂine protocols are not monotonic, for instance, the protocol in
+Asokan et al. [1998a] requires signatures to be revoked in order to guaranteefairness. Among monotonic and off-line protocols, we believe those in Micali[1997] and Asokan et al. [1998b] represent the state-of-the-art in the ﬁeld. Thework of Micali [Micali 1997] shows that it is possible to achieve a simple certiﬁede-mail protocol with only three messages (one less than our protocol). However,it should be noticed that
+(1) the recipient of the message has to be actively involved in the dispute res-
+olution and is forced to keep state;
+(2) a time limit has to be incorporated into the message by the sender to force
+the recipient to send the receipt within a speciﬁed period of time. This hasto be done in order to guarantee fairness;
+(3) a reliable channel (as opposed to a resilient channel) is required between
+the recipient and the TTP.
+A channel is reliable when it is always operational and operates without
+delays. It is very difﬁcult to build a reliable channel in some network environ-ments, such as wireless networks. This fact may limit the applicability of theprotocol in Micali [1997]. Furthermore, for each message received, the recipient
+10What we state here is that the protocol does not require Band TTP to store state information. It
+is important to notice, however, that implementing a resilient channel with the current technologymay require Band TTP to do so.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.18†G. Ateniese
+is forced to communicate with the trusted intermediary in case of dispute and
+this has to happen before the time limit expires.
+The work in Asokan et al. [1998b] presents a fair-exchange protocol, which
+is provably secure in the random oracle model. The authors specialize theirprotocol to work as an ofﬂine certiﬁed e-mail scheme that, similarly to ourprotocol, requires only resilient channels. Their protocol is based on ver-
+iﬁable escrow schemes , which essentially are veriﬁable encryptions where
+each encryption comes with an attached condition that speciﬁes a decryp-
+tion policy. The scheme in Asokan et al. [1998b] has some drawbacks, morespeciﬁcally:
+(1) It is expensive in terms of communication complexity, performance, and
+amount of data transmitted. This is mainly due to the cut-and-choose in-
+teractive proof technique employed to achieve a veriﬁable escrow.
+(2) The recipient has to keep state and both the sender and the recipient have
+to be actively involved in dispute resolutions (but notice that one of theparticipants may successfully complete the dispute protocol when the otheris unavailable).
+(3) The TTP needs to keep state.
+The main advantage of our scheme is that it allows the recipient to be state-
+less. Indeed, the recipient is not involved in dispute resolutions and is not even
+supposed to contact the TTP in any case.
+In other schemes, a user would be forced to keep track of all messages re-
+ceived, store state information, and engage in protocol resolutions with theTTP. This may be very unappealing for those receiving hundreds of mes-sages (including junk emails) per day, or for those operating in environments
+where servers storing state information may frequently crash . In some cases
+(such as in Micali [1997]), operations have to be made before a time limitexpires which may make it even impossible to guarantee fairness in someenvironments.
+Stateless-recipient protocols are particularly useful when employed by users
+equipped with mobile devices, such as cellular phones or wireless PDAs, or anyother device that cannot reliably store state information.
+Remark (on timely completion). Some contract signing protocols, such as
+the one in Asokan et al. [1998b], provide the feature that either party is ableto deﬁnitively ﬁnish a transaction on its own (i.e., by interacting with the TTPonly). We believe that this feature of independent timely completion is important
+in contract signing or fair exchange but not in certiﬁed email (and our protocoldoes not provide it). The reason is that, in a certiﬁed email protocol, the sender A
+originates the transactions so, implicitly, Ahas always the ability to complete
+them whenever it is more convenient. For example, Amay have a message
+forBbut may decide to send it later (e.g., after a month) because, for some
+reason, receiving B’s receipt after a certain amount of time would give her
+some advantage.
+IfAgains any advantage from receiving B’s receipts at certain times then
+employing a certiﬁed email protocol with the independent timely completion
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.Veriﬁable Encryption of Digital Signatures †19
+property would not help: Amay just delay the transaction and have the receipt
+from Bwhen it is more convenient to her.
+5. CONCLUSION
+This paper presented simple and particularly efﬁcient veriﬁable encryption
+protocols for digital signatures. These protocols may be used as building blocksin the design of efﬁcient fair exchange of digital signatures and certiﬁed emailprotocols.
+ACKNOWLEDGMENTS
+We are grateful to Cristina Nita-Rotaru for her comments on this paper and forher contribution to the certiﬁed email protocol [Ateniese and Nita-Rotaru 2002].Cristina’s feedbacks were enlightening and her work on the system design andimplementation of the certiﬁed email protocol has been invaluable.
+Many thanks to Victor Shoup, Jan Camenisch, and Marc Joye for their in-
+sightful comments on the conference paper on veriﬁable encryption [Ateniese1999], and to Breno de Medeiros for his feedbacks on some parts of thispaper.
+REFERENCES
+ASOKAN , N., S CHUNTER , M., ANDWAIDNER , M. 1997. Optimistic protocols for fair exchange. In Fourth
+ACM Conference on Computer and Communication Security . ACM Press, 8–17.
+ASOKAN , N., S HOUP ,V . , ANDWAIDNER , M. 1998a. Asynchronous protocols for optimistic fair ex-
+change. In IEEE Symposium on Security and Privacy (Oakland, CA).
+ASOKAN , N., S HOUP ,V . , ANDWAIDNER , M. 1998b. Optimistic fair exchange of digital signatures.
+IEEE Journal on Selected Areas in Communications 18 , 4, 593–610, 2000. Extended abstract
+inAdvances in Cryptology—EUROCRYPT’98 . Lecture Notes in Computer Science, vol. 1403.
+Springer-Verlag, Berlin, 591–606.
+ATENIESE , G. 1999. Efﬁcient veriﬁable encryption (and fair exchange) of digital signatures. In
+Sixth ACM Conference on Computer and Communications Security (ACM CCS’99) . Also appeared
+as IBM Research Report.
+ATENIESE ,G . , DEMEDEIROS ,B . , ANDGOODRICH , M. T. 2001. TRICERT: distributed certiﬁed e-mail
+schemes. In ISOC 2001 Network and Distributed System Security Symposium (NDSS’01) (San
+Diego, CA, USA).
+ATENIESE ,G . ANDNITA-ROTARU , C. 2002. Stateless-recipient certiﬁed e-mail system based on ver-
+iﬁable encryption. In RSA 2002, McEnery Convention Center (San Jose, CA, USA, Feb. 19–22).
+BAHREMAN A.ANDTYGAR, J. D. 1994. Certiﬁed electronic mail. In Proceedings of Symposium on
+Network and Distributed Systems Security (Feb. 1994). I. Society, 3–19.
+BAO, F., D ENG,R .H . , ANDMAO. W. 1998. Efﬁcient and practical fair exchange protocols with
+off-line TTP. In IEEE Symposium on Security and Privacy (Oakland, CA).
+BELLARE ,M . ANDROGAWAY , P. 1993. Random oracles are practical: A paradigm for designing efﬁ-
+cient protocols. In First ACM Conference on Computer and Communication Security . ACM Press,
+62–73.
+BEN-OR, M., G OLDREICH , O., M ICALI,S . , ANDRIVEST , R. 1990. A fair protocol for signing contracts.
+IEEE Transactions on Information Theory IT-36 , 1, 40–46.
+BONEH , D. 1998. The decision Difﬁe-Hellman problem. In Algorithmic Number Theory (ANTS-
+III). Lecture Notes in Computer Science, vol. 1423. Springer-Verlag, Berlin, 48–63.
+CAMENISCH ,J .ANDDAMGARD , I. B. 2000. Veriﬁable encryption, group encryption, and their applica-
+tions to separable group signatures and signature sharing schemes. In Advances in Cryptology—
+ASIACRYPT’00 . Lecture Notes in Computer Science, vol. 1976. Springer-Verlag, Berlin, 331–345.
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.20†G. Ateniese
+CAMENISCH ,J . ANDMICHELS , M. 1998a. A group signature scheme with improved efﬁciency. In Ad-
+vances in Cryptology—ASIACRYPT’98 . Lecture Notes in Computer Science, vol. 1514. Springer-
+Verlag, Berlin, 160–174.
+CAMENISCH ,J . ANDMICHELS , M. 1998b. A Group Signature Scheme Based on an RSA-Variant.
+Technical Report RS-98-27, BRICS, Aarhus. An earlier version appears in Camenisch and Michels[1998].
+C
+AMENISCH ,J . ANDMICHELS , M. 1999a. Proving in zero-knowledge that a number is the product
+of two safe primes. In Advances in Cryptology—EUROCRYPT’99 . Lecture Notes in Computer
+Science. Springer-Verlag, Berlin.
+CAMENISCH ,J . ANDMICHELS , M. 1999b. Separability and efﬁciency for generic group signature
+schemes. In Advances in Cryptology—Crypto’99 .
+CHAN, A., F RANKEL ,Y . , ANDTSIOUNIS , Y. 1998. Easy come—easy go divisible cash. In Advances in
+Cryptology—EUROCRYPT’98 . Lecture Notes in Computer Science, vol. 1403. Springer-Verlag,
+Berlin, 561–575. Updated and corrected version available as GTE Technical Report.
+CHAUM ,D . ANDPEDERSEN , T. 1992. Wallet databases with observers. In Advances in Cryptology—
+Crypto’92 , 89–105.
+CRAMER ,R . ANDSHOUP , V. 1999. Signature schemes based on the strong RSA assumption. In Sixth
+ACM Conference on Computer and Communication Security . ACM Press.
+DENG, R. H., G ONG, L., L AZAR, A., ANDWANG, W. 1996. Practical protocols for certiﬁed electronic
+e-mail. Journal of Networks and Systems Management 4 , 3, 279–297.
+EVEN, S., G OLDREICH ,O . , ANDLEMPEL , A. 1985. A randomized protocol for signing contracts. Com-
+munications of the ACM 28 , 6, 637–647.
+FIAT,A . ANDSHAMIR , A. 1987. How to prove yourself: practical solutions to identiﬁcation and sig-
+nature problems. In Advances in Cryptology—CRYPTO’86 . Lecture Notes in Computer Science,
+vol. 263. Springer-Verlag, Berlin, 186–194.
+FUJISAKI ,E . ANDOKAMOTO , T. 1997. Statistical zero knowledge protocols to prove modular poly-
+nomial relations. In Advances in Cryptology—CRYPTO ’97 . Lecture Notes in Computer Science,
+vol. 1294. Springer-Verlag, Berlin, 16–30.
+GENNARO , R., H ALEVI ,S . , ANDRABIN, T. 1999. Secure signatures, without trees or random oracles.
+InAdvances in Cryptology—EUROCRYPT’99 . Lecture Notes in Computer Science, vol. 1592.
+Springer-Verlag, Berlin, 123–139
+GUILLOU ,L .C . ANDQUISQUATER , J. J. 1988. A paradoxical identity-based signature scheme result-
+ing from zero-knowledge. In Advances in Cryptology—CRYPTO’88 . Lecture Notes in Computer
+Science, vol. 403. Springer-Verlag, Berlin, 216–231.
+MENEZES ,A .J . , VANOORSCHOT ,P .C . , ANDVANSTONE , S. A. 1996. Handbook of Applied Cryptography .
+CRC Press, Boco Raton, FL (ISBN 0-8493-8523-7).
+MICALI, S. 1997. Certiﬁed e-mail with invisible post ofﬁces. Presented at the 1997 RSA Security
+Conference.
+NACCACHE ,D . ANDSTERN, J. 1998. A new public key cryptosystem based on higher residues. In
+Fifth ACM Conference on Computer and Communications Security . ACM Press, 59–66.
+OKAMOTO ,T . AND UCHIYAMA , S. 1998. A new public-key cryptosystem as secure as factoring.
+InAdvances in Cryptology—-EUROCRYPT’98 . Lecture Notes in Computer Science, vol. 1403.
+Springer-Verlag, Berlin, 308–318.
+POUPARD ,G . ANDSTERN, J. 1998. Security analysis of a practical “on the ﬂy” authentication and
+signature generation. In Advances in Cryptology—EUROCRYPT’98 . Lecture Notes in Computer
+Science, vol. 1403. Springer-Verlag, Berlin, 422–436.
+RIORDAN ,J . ANDSCHNEIER , B. 1998. A certiﬁed e-mail protocol. In Thirteenth Annual Computer
+Security Applications Conference (Dec.), 100–106.
+RIVEST , R. L., S HAMIR , A., ANDADLEMAN , L. M. 1978. A method for obtaining digital signatures
+and public-key cryptosystems. Communications of the ACM 21 , 2, 120–126.
+SCHNORR , C. P. 1991. Efﬁcient signature generation by smart-cards. Journal of Cryptology 4 ,3 ,
+161–174.
+ZHOU,J . ANDGOLLMANN , D. 1996. Certiﬁed electronic mail. In Proceedings of Computer Security—
+ESORICS’96 . Springer-Verlag, Berlin, 55–61.
+Received February 2002; revised February 2003, April 2003, August 2003; accepted December 2003
+ACM Transactions on Information and System Security, Vol. 7, No. 1, February 2004.

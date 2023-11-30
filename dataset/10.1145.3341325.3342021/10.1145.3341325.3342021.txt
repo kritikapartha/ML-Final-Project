@@ -1,0 +1,546 @@
+A wider picture of trust: confronting multi-contextual social
+traits for trust inference
+Karim Akilal
+karim@akilal.com
+Laboratoire d’Informatique Médicale,
+Faculté des Sciences Exactes,
+Université de Bejaia, 06000 Bejaia,
+Algérie.Mawloud Omar
+mawloud.omar@gmail.com
+Unité de Recherche LAMOS, Faculté
+des Sciences Exactes, Université de
+Bejaia, 06000 Bejaia, Algérie.Hachem Slimani
+haslimani@gmail.com
+Laboratoire d’Informatique Médicale,
+Faculté des Sciences Exactes,
+Université de Bejaia, 06000 Bejaia,
+Algérie.
+ABSTRACT
+With the advent of social networks, problems related to information
+veracity and people trustworthiness naturally arise and become
+more acute as the numbers of participants and the volumes of ex-
+changed information grow. Predicting and recommending trust
+(and distrust) levels is essential for a healthier online presence. Al-
+though many research efforts are being devoted to these tasks, most
+studies that have been undertaken in this area are constrained by
+two facts. 1) Distrust, contrary to trust, is not necessarily propaga-
+tive, thus is harder to infer using propagative approaches. 2) Most
+publicly available datasets fail to capture the essence of trust for
+they ignore one of its most important aspects: its context.
+In this paper, we propose a multidimensional trust model that
+allows us to describe some social traits that affect trust, and which
+could not be described with a unidimensional model. We, then, use
+these traits to propose a straightforward trust prediction approach
+that does not rely on trust propagation. Our work aims to provide a
+usable foundation and to ignite more advanced researches on trust
+and its applications.
+CCS CONCEPTS
+•Security and privacy →Trust frameworks ;•Human-centered
+computing →Collaborative and social computing .
+KEYWORDS
+trust, distrust, multi-contextual, trust inference, social traits, social
+networks.
+ACM Reference Format:
+Karim Akilal, Mawloud Omar, and Hachem Slimani. 2019. A wider picture
+of trust: confronting multi-contextual social traits for trust inference. In
+3rd International Conference on Future Networks and Distributed Systems
+(ICFNDS ’19), July 1–2, 2019, Paris, France. ACM, New York, NY, USA, 5 pages.
+https://doi.org/10.1145/3341325.3342021
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than ACM
+must be honored. Abstracting with credit is permitted. To copy otherwise, or republish,
+to post on servers or to redistribute to lists, requires prior specific permission and/or a
+fee. Request permissions from permissions@acm.org.
+ICFNDS ’19, July 1–2, 2019, Paris, France
+©2019 Association for Computing Machinery.
+ACM ISBN 978-1-4503-7163-6/19/07. . .$15.00
+https://doi.org/10.1145/3341325.33420211 INTRODUCTION
+We live in a world where nothaving a social media account is
+regarded as an exception. Yes, the open nature of online social
+networks (OSNs) is a bliss. It allows people to interact and freely
+exchange knowledge and information. Yet —let us admit it— this
+openness comes with a price. Indeed, malicious actors might take
+advantage of it to spread misinformation and even harm others [ 12].
+This brings us to the central question of this paper: what to believe,
+and more specifically, whom to trust online?
+In the old days of IRC and forums, this issue used to be addressed
+by human (and simple bots) moderation. Unfortunately, in a densely
+connected world where huge volumes of information flow uninter-
+ruptedly, these methods are inefficient and prone to corruption [ 26].
+These overwhelming volumes of data call for tools that can support
+timely, effective, and efficient knowledge extraction [ 21], in order
+to assist users by predicting and recommending how much should
+they trust, or distrust, others.
+Many research efforts have been undertaken in modeling, pro-
+cessing, and predicting trust (See [ 4,14,23,25] for surveys on the
+subject.) Yet most of these works tend to ignore a fundamental as-
+pect of trust: its context. Trust is not an absolute concept. It depends
+on a context [ 30], or a scope [ 16]. For instance, one might trust
+their doctor with their health but not much with their car. Trust in
+these two contexts (“medicine” and“auto repair” in this example)
+is expressed by two different values.
+While this duality has prompted some authors [ 19,22] to pro-
+pose a model where distrust is a separate concept that coexists with
+trust, others like [ 24] rightly insist that this coexistence is not prob-
+lematic as long as we consider trust relations as being multifaceted
+or multiplex. Still, we believe that the lack of multidimensional
+datasets has shaped most research efforts and made them underrate
+the importance of trust’s context.
+Moreover, some important antecedents of trust cannot be de-
+scribed, nor be modeled, in a unidimensional setting. For instance,
+in order to characterize partiality, one needs to know how much
+does a trustor utrust a trustee vin different contexts, or about
+different topics. Such a trait, among others, definitely affect the
+way we trust (or are trusted). We, therefore, need to take them into
+account, evaluate them, and involve them in trust prediction.
+In this paper, we propose a multidimensional model of trust that:
+(1) takes into account the context of trust.
+(2)considers trust and distrust as two opposite states with neu-
+trality in between.
+(3)allows us to characterize some social traits that affect trust
+(and distrust).ICFNDS ’19, July 1–2, 2019, Paris, France Karim Akilal, Mawloud Omar, and Hachem Slimani
+With this model, we then propose a simple and intuitive trust
+prediction mechanism based on the actors’ (trustors and trustees)
+traits and biases.
+This paper is structured as follows. After a brief review of some
+related work in Section 2, we give a throughout description of
+the proposed model in Section 3, and some social traits that do
+affect trust. Next, in Section 4 we present a simple, yet reason-
+able, approach to predict both trust and distrust using these traits.
+We conclude this paper in Section 5 with a summary and some
+perspectives of future work.
+2 RELATED WORK
+In this section, we will briefly present some research works that
+have been done in modeling and predicting trust. This very brief —
+and far from being exhaustive— review is structured on two angles:
+distrust handling and context-sensitivity.
+Trust is often modeled as a binary concept. Some works, and
+datasets, consider trust to be boolean, i.e., either one trusts someone
+else, or he/she does not [ 11]. Some other works treat trust as discrete,
+or continuous, positive values, and thus, ignore distrust or consider
+it as the absence of trust. Most of these works are built on the
+propagative aspect of trust [ 8]. Among these approaches, we can
+cite works done by [ 9,15,20]. These approaches often exploits trust
+transitivity, a property which states that if utrusts vwho trusts
+w, then umay trust wto some extent. This aspect, unfortunately,
+does not hold for distrust as shown by [ 3,27]. However, because
+distrust is actually as important (if not more important [ 5]) than
+trust itself, we have seen lately some efforts to model and predict
+both trust and distrust [1, 7, 18].
+Even though most social and philosophical studies agree that
+trust is context-dependent, the works cited so far, and most other
+research efforts (probably influenced by the used datasets [ 6]) com-
+pletely ignore the context-dependency of trust. This very important
+aspect of trust is implemented in some other works such as those
+conducted by Tang et al. [ 28,29]. Unfortunately —and probably
+because they were influenced by the used datasets— these works
+treat trust as a binary concept. In [ 31], the authors present an in-
+teresting take on context-sensitivity, and use matrix factorization
+to infer what they call trust transference between contexts. Yet, the
+model does not seems to take distrust into account. In the same vein,
+Jiang et al. [ 13] designed a multi-domain trust model that considers
+context-dependency and implemented it using multi-graphs. This
+model, and the associated propagative approach for trust inference,
+do not take into account distrust either.
+Speaking of propagation for trust inference, and the problem-
+atic situation of distrust, some propagative approaches such as
+STAR [ 7] simply ignore consecutive negative links in trust predic-
+tion, whereas the authors in [ 1,2] have proposed to predict trust
+and distrust without exploiting the propagative aspect of trust. In
+their first effort, they used collaborative filtering and agreement
+as a similarity metric. In the second approach, the authors have
+modeled trust as the outcome of a struggle between the trustor’s
+and the trustee’s social traits. This strategy is adopted in the present
+work and is being generalized to multi-contextual networks. This
+model and prediction approach are discussed in the next sections.3 THE PROPOSED MODEL
+3.1 Notation and preliminaries
+LetNbe a set of individuals that are able to trust and/or be trusted,
+and letCbe a set of contexts of trust. A context being a subject, an
+area of knowledge, a situation, etc. Before we dive into the details
+of the proposed model, let us agree on some basic notions:
+(1)Trust and distrust are context-sensitive, they are expressed
+relatively, or with regards, to a given context.
+(2)Trust and distrust are two opposite, and continuous, states
+of the same concept, with a third state in between which we
+denote as neutrality; that is, a state in which an individual u
+neither trusts, nor distrusts, another individual v.
+Table 1 summarizes the used notation throughout this paper.
+Notation Meaning
+N A set of individuals.
+C A set of trust contexts.
+t(u,v,ci)Contextual trust (distrust) that uputs in vin context ci.
+ti(u,v) Same as above.
+TC(u,v) Multi-contextual trust (or distrust) that uputs in v.
+− →Γi(u) Set of the trustees of the individual uin context ci.
+← −Γi(v) Set of the trustors of the individual vin context ci.
+m<0 Minimal value of trust (extreme distrust).
+M>0 Maximal value of trust (extreme trust).
+I Trust interval, that is [m,M].
+R Trust range. R=M−m.
+−−→mk The vector (m,m,···,m)inRkof which all kcompo-
+nents are equal to m.
+−−→Mℓ The vector (M,M,···,M)inRℓof which all ℓcompo-
+nents are equal to M.
+d(a,b) The Euclidean distance between vectors aandb.
+P+
+C(u,v) Positive partiality of utoward v.
+P-
+C(u,v) Negative partiality of utoward v.
+W+
+i(v) Positive trustworthiness of vin context ci.
+W-
+i(v) Negative trustworthiness of vin context ci.
+G+
+i(u) Positive trustingness of uin context ci.
+G-
+i(u) Negative trustingness of uin context ci.
+Table 1: Notation used throughout this paper
+We use Iverson Brackets [ 10,17]. This notation makes an integer
+(0or1) from a logical statement Pput between brackets as follows
+f
+Pg
+=1 ifPis
+true,
+0 ifPis false .
+Note that we adopt the “strong zero” convention described by
+Knuth as follows: “In general, when an Iverson-bracketed statement
+is false, we want it to evaluate into a “very strong 0,” namely a zero
+so strong that it annihilates anything it is multiplied by —even if that
+other factor is undefined. ” [17].
+3.2 Problem definition
+Simply stated, the goal of this work is to predict as efficiently, and
+as accurately as possible, how much would an individual u∈N
+trust, or distrust, another individual v∈N in a context ci∈C. To
+simplify our narrative, we will use “trust” to denote both states:
+trust (positive values) and distrust (negative values).A wider picture of trust: confronting multi-contextual social traits for trust inference ICFNDS ’19, July 1–2, 2019, Paris, France
+3.3 Contextual and multi-contextual trust
+Consider the following scenario involving two individuals u(e.g.,
+Alice) and v(e.g., Bob) inN, and two contexts c1(e.g., Art) and c2
+(e.g., Cooking) in C.
+Scenario 1. usomewhat trusts vinc1, but completely distrusts
+him/her in c2.
+The trust relation from utovis composite. It consists in two
+distinct contextual trust values. The keywords somewhat andcom-
+pletely hint that trust and distrust are measurable notions. They
+may be expressed using real values t(u,v,c1)andt(u,v,c2)in the
+interval I=[m,M](with m<0andM>0), such that the more
+positive these values are, the more utrusts vabout that given con-
+text, and the more negative they are, the more udistrusts vabout
+that context. Formally, we express contextual trust using a function
+t:N×N×C7→ Isuch that:
+•0<t(u,v,ci)≤M, when utrusts vin context ci.
+•m≤t(u,v,ci)<0, when udistrusts vin context ci.
+•t(u,v,ci)=0, when uneither trusts nor distrusts vin con-
+textci. (neutral)
+Now, the multi-contextual trust (or trust for short) that uputs in
+vis a vector composed of the contextual trust values that uputs in
+v. In other words, it is described using a vector TC(u,v)inInsuch
+that The ithcomponent of this vector represents the contextual
+trust t(u,v,ci)thatuputs in vregarding the context ci∈C. That
+is,
+TC(u,v)=
+t(u,v,c1),t(u,v,c2),···,t(u,v,cn)
+,where n=C.
+Note. We adopt henceforth the following compact notation: ti(u,v)=
+t(u,v,ci)to express the contextual trust that uputs in vabout a
+context ci. In other words:
+TC(u,v)=
+t1(u,v),t2(u,v),···,tn(u,v)
+,where n=C.
+3.4 Contextual trustors and trustees
+The set← −Γi(v)ofcontextual trustors of an individual vare other
+individuals inNthat emit a non neutral trust opinion about v
+regarding a context ci. That is,
+← −Γi(v)={u∈N | ti(u,v),0}.
+Likewise, the set− →Γi(v)ofcontextual trustees of an individual u
+are other individuals in Nabout which uemits a non neutral trust
+opinion regarding a context ci. That is,
+− →Γi(u)={v∈N | ti(u,v),0}.
+4 THE PROPOSED PREDICTION APPROACH
+The core idea of our trust prediction method is based on character-
+izing social traits that affect the way people trust (or are trusted),
+then involving these traits as forces in a tug-of-war -like game to
+influence trust. Results of a previous work [ 2] showed that this
+strategy is quite promising in a unidimensional setting. The present
+work aims to generalize the idea of conflicting social traits to a
+multi-contextual setting.4.1 Multi-contextual social traits metrics
+Using the previously described model, we define hereafter some
+social traits and biases that affect the act of trust.
+Definition 4.1 (Partiality) .Apartial trustor is one that emits
+mostly positive, or negative, opinions about a given trustee, and
+that no matter the context of trust.
+Given a set of contexts C, to characterize the tendency of a
+trustor to positively rate a trustee (positive partiality ), we use the
+functionP+
+C:N×N7→ [0,+1]defined as follows:
+P+
+C(u,v)=f
+C,∅g
+1−d(TC(u,v),−−→Mn)
+R√n
+,where n=C.
+(1)
+The moreP+
+C(u,v)approaches 1, the more uis positively partial
+toward v.
+Similarly, we characterize the negative partiality of a trustor u
+toward a trustee vwith the functionP-
+C:N×N7→ [0,+1]defined
+as follows:
+P-
+C(u,v)=f
+C,∅g
+1−d(TC(u,v),−−→mn)
+R√n
+,where n=C.(2)
+Likewise, the more P-
+C(u,v)approaches 1, the more uis nega-
+tively partial toward v.
+As illustrated in Fig. 1, the main idea behind Equations 1 and 2 is
+that the more the trust vector TC(u,v)is close to a vector of which
+all components are equal to M, the more uis positively partial
+toward v, and the more this vector is close to a vector of which all
+components are equal to m, the more uis negatively partial toward
+v.
+1
+-11 -1(M,M)
+(m,m)TC(u, v )(A)1
+-11 -1(M,M)
+(m,m)TC(u,
+v)(B)
+Figure 1: Illustration of the distances between TC(u,v)and
+the vectors−−→Mn, and−−→mn. (n=C=2). In the case (A), we
+can see that TC(u,v)is closer to−−→Mn= (M,M)than it is to
+−−→mn=(m,m), we thus say that uis positively partial toward v.
+The inverse can be seen in the case (B).
+Definition 4.2 (Trustworthiness) .We define the contextual trust-
+worthiness of an individual v∈N as the tendency of his/her con-
+textual trustors to rate him/her. A positive trustworthiness of v
+indicates that vis generally well trusted by his/her contextual
+trustors, and a negative trustworthiness of vshows that he/she is
+generally distrusted by his/her contextual trustors. The contextual
+trustworthiness of an individual gives an idea of his/her skills, or
+proficiency, in context ci.ICFNDS ’19, July 1–2, 2019, Paris, France Karim Akilal, Mawloud Omar, and Hachem Slimani
+Let← −Ti(v)=
+ti(u1,v),ti(u2,v),···,ti(uw,v)
+be a vector com-
+posed of the contextual trust values that v’s contextual trustors
+uj∈← −Γi(v)put in him/her regarding a context ci. To characterize
+thepositive trustworthiness of a trustee regarding a context ci, we
+use the functionW+
+i:N 7→ [0,+1]defined as follows:
+W+
+i(v)=f← −Γi(v),∅g
+1−d(← −Ti(v),−−→Mw)
+R√w
+,where w=← −Γi(v).
+(3)
+In Eq. 3, we check whether the contextual trust values ti(uj,v),
+uj∈← −Γi(v)are close to M. The more they are, the more vgenerally
+well trusted by his/her contextual trustors.
+Similarly, we define the negative trustworthiness ofvas the ten-
+dency of his/her contextual trustors to distrust him/her regarding
+a context ci. To characterize this negative trustworthiness, we use
+the functionW-
+i:N7→ [0,+1]defined as follows:
+W-
+i(v)=f← −Γi(v),∅g
+1−d(← −Ti(v),−−→mw)
+R√w
+,where w=← −Γi(v).
+(4)
+Definition 4.3 (Trustingness) .The contextual trustingness of a
+trustor uregarding a context ci, is his/her tendency to generally
+trust (or distrust) others regarding ci.
+Given a context ci, let− →Ti(u)=
+ti(u,v1),ti(u,v2),···,ti(u,vд)
+be a vector made of the contextual trust values ti(u,vj)thatuputs
+in his/her contextual trustees vj∈− →Γi(u).
+In the same vein as trustworthiness, we define positive G+
+i(u)
+and negativeG-
+i(u)trustingness of a trustor uregarding a context
+ciusing the functions G+
+i:N 7→ [0,+1]andG-
+i:N 7→ [0,+1]
+defined as follows:
+G+
+i(u)=f− →Γi(u),∅g
+1−d(− →Ti(u),−−→Mд)
+R√д
+,where д=− →Γi(u).
+(5)
+and
+G-
+i(u)=f− →Γi(u),∅g
+1−d(− →Ti(u),−−→mд)
+R√д
+,where д=− →Γi(u).
+(6)
+4.2 Trust prediction as a tug-of-war game
+Instead of propagating trust along paths from a trustor uto a trustee
+v, our approach stands on the idea that trust (and distrust) depends
+on the effects of some social traits of both the trustor and the trustee.
+In our case, we can summarize these effects as follows:
+(1)The more positively partial uis toward v, the more likely
+that ti(u,v)would converge toward M.
+(2)The more negatively partial uis toward v, the more likely
+that ti(u,v)would converge toward m.
+(3)The more positively trustworthy vis in context ci, is the
+more likely ti(u,v)would converge toward M.(4)The more negatively trustworthy vis in context ci, the more
+likely ti(u,v)would converge toward m.
+(5)The more positively trusting uis in context ci, the more
+likely ti(u,v)would converge toward M.
+(6)The more negatively trusting uis in context ci, the more
+likely ti(u,v)would converge toward m.
+In a sense, and as illustrated in Fig 2, the social traits listed above
+act as forces that try to affect the trust value ti(u,v), each one
+pulling it toward an extreme value ( morM). We therefore estimate
+ti(u,v)to be an average of these extreme values weighted by the
+forces that pull ti(u,v)toward them.
+Thus, givenK=C\{ ci}, we can summarize these forces as
+follows:
+f+(u,v)=P+
+K(u)+W+
+i(v)+G+
+i(u),
+f-(u,v)=P-
+K(u)+W-
+i(v)+G-
+i(u),(7)
+ti(u,v)m Mf−f+
+Figure 2: The value ti(u,v)is subject to two main forces : one
+that pulls it toward maximal trust M, the other toward max-
+imal distrust m.
+We estimate ti(u,v)to be equal to:
+ti(u,v)≈Mf+(u,v)+mf-(u,v)
+f+(u,v)+f-(u,v). (8)
+Note. The time complexity to predict the contextual trust ti(u,v)
+thatuwould put in vin a context ciisO
+n+− →Γi(u)+← −Γi(v)
+.
+The proposed trust prediction algorithm, as enunciated in Eq. 8,
+is definitely simple and intuitive. A similarly straightforward ap-
+proach has been adopted in a previous work [ 2] and has been proved
+to be quite effective, efficient, and robust to network sparsity.
+We are in the process to acquire —or, more precisely, munge —
+a multidimensional dataset to validate the current approach. We
+have good faith in its validity, and the in the strategy consisting in
+confronting individuals’ social traits to infer trust.
+Finally, we should point out the fact that this paper studies only
+three social traits. More traits may be considered thanks to the
+expressiveness of the adopted model, and thus be integrated in
+Eq. 8 for even more accurate results.
+5 CONCLUSION
+We have proposed a mathematical trust model that is able to de-
+scribe trust as we know it in the real world: as a multi-contextual
+concept. Moreover, using this model, we were able to express some
+social traits that undeniably affect the way trust is given (or re-
+ceived). Afterwards, we have involved these traits in a tug-of-war -
+like game in which the most prevailing trait would have more effect
+on the actof trust.A wider picture of trust: confronting multi-contextual social traits for trust inference ICFNDS ’19, July 1–2, 2019, Paris, France
+This strategy of predicting trust and distrust having been quite
+successful in a previous work [ 2], we hope that the presently de-
+scribed model will provide a solid foundation for exploring more
+social traits, and inciting more advanced research on trust as it
+really is experienced in real life; a subtle, nuanced, and complex
+concept.
+REFERENCES
+[1]Karim Akilal, Hachem Slimani, and Mawloud Omar. 2019. A robust trust inference
+algorithm in weighted signed social networks based on collaborative filtering and
+agreement as a similarity metric. Journal of Network and Computer Applications
+126 (jan 2019), 123–132. https://doi.org/10.1016/j.jnca.2018.11.008
+[2]Karim Akilal, Hachem Slimani, and Mawloud Omar. 2019. A very fast and robust
+trust inference algorithm in weighted signed social networks using controversy,
+eclecticism, and reciprocity. Computers & Security 83 (jun 2019), 68–78. https:
+//doi.org/10.1016/j.cose.2019.01.013
+[3]Kai-Yang Chiang, Cho-Jui Hsieh, Nagarajan Natarajan, Inderjit S Dhillon, and
+Ambuj Tewari. 2014. Prediction and clustering in signed networks: a local to
+global perspective. The Journal of Machine Learning Research 15, 1 (2014), 1177–
+1213.
+[4]Jin-Hee Cho, Kevin Chan, and Sibel Adali. 2015. A Survey on Trust Modeling.
+ACM Comput. Surv. 48, 2, Article 28 (10 2015), 40 pages. https://doi.org/10.1145/
+2815595
+[5]Thomas DuBois, Jennifer Golbeck, and Aravind Srinivasan. 2011. Predicting trust
+and distrust in social networks. In Privacy, Security, Risk and Trust (PASSAT) and
+2011 IEEE Third Inernational Conference on Social Computing (SocialCom), 2011
+IEEE Third International Conference on. IEEE, 418–424.
+[6]Hui Fang, Guibing Guo, and Jie Zhang. 2015. Multi-faceted trust and distrust
+prediction for recommender systems. Decision Support Systems 71 (2015), 37–47.
+[7]Peixin Gao, Hui Miao, John S Baras, and Jennifer Golbeck. 2016. Star: semiring
+trust inference for trust-aware social recommenders. In Proceedings of the 10th
+ACM Conference on Recommender Systems. ACM, 301–308.
+[8]Jennifer Golbeck. 2005. Personalizing applications through integration of inferred
+trust values in semantic web-based social networks. In Semantic Network Analysis
+Workshop at the 4th International Semantic Web Conference, Vol. 16. 30.
+[9]Jennifer Ann Golbeck. 2005. Computing and applying trust in web-based social
+networks. Ph.D. Dissertation.
+[10] Ronald L. Graham, Donald Ervin Knuth, and Oren Patashnik. 1994. Concrete
+mathematics a foundation for computer science. Addison-Wesley.
+[11] Ramanthan Guha, Ravi Kumar, Prabhakar Raghavan, and Andrew Tomkins.
+2004. Propagation of trust and distrust. In Proceedings of the 13th international
+conference on World Wide Web. ACM, 403–412.
+[12] Zhicong Huang, Alexandra Olteanu, and Karl Aberer. 2013. CredibleWeb: A
+Platform for Web Credibility Evaluation. In CHI ’13 Extended Abstracts on Human
+Factors in Computing Systems (CHI EA ’13). ACM, New York, NY, USA, 1887–1892.
+https://doi.org/10.1145/2468356.2468694
+[13] Cuiqing Jiang, Shixi Liu, Zhangxi Lin, Guozhu Zhao, Rui Duan, and Kun Liang.
+2016. Domain-aware trust network extraction for trust propagation in large-scale
+heterogeneous trust networks. Knowledge-Based Systems 111 (2016), 237–247.
+[14] Wenjun Jiang, Guojun Wang, Md Zakirul Alam Bhuiyan, and Jie Wu. 2016. Under-
+standing graph-based trust evaluation in online social networks: methodologies
+and challenges. ACM Computing Surveys (CSUR) 49, 1 (2016), 10.
+[15] Wenjun Jiang, Jie Wu, Feng Li, Guojun Wang, and Huanyang Zheng. 2016. Trust
+evaluation in online social networks using generalized network flow. IEEE Trans.
+Comput. 65, 3 (2016), 952–963.
+[16] Audun Jøsang. 2016. Computational Trust. In Subjective Logic. Springer, 243–270.
+[17] Donald E Knuth. 1992. Two notes on notation. The American Mathematical
+Monthly 99, 5 (1992), 403–422.
+[18] Srijan Kumar, Francesca Spezzano, VS Subrahmanian, and Christos Faloutsos.
+2016. Edge weight prediction in weighted signed networks. In Data Mining
+(ICDM), 2016 IEEE 16th International Conference on. IEEE, 221–230. https://doi.
+org/10.1109/ICDM.2016.0033
+[19] Roy J Lewicki, Daniel J McAllister, and Robert J Bies. 1998. Trust and distrust:
+New relationships and realities. Academy of management Review 23, 3 (1998),
+438–458.
+[20] Paolo Massa and Paolo Avesani. 2007. Trust metrics on controversial users:
+Balancing between tyranny of the majority. International Journal on Semantic
+Web and Information Systems (IJSWIS) 3, 1 (2007), 39–64.
+[21] Sorin Adam Matei, Elisa Bertino, Michael Zhu, Chuanhai Liu, Luo Si, and Brian
+Britt. 2015. A Research Agenda for the Study of Entropic Social Structural Evo-
+lution, Functional Roles, Adhocratic Leadership Styles, and Credibility in Online
+Organizations and Knowledge Markets . Springer International Publishing, Cham,
+3–33.
+[22] D Harrison McKnight and Vivek Choudhury. 2006. Distrust and trust in B2C
+e-commerce: Do they differ?. In Proceedings of the 8th international conferenceon Electronic commerce: The new e-commerce: innovations for conquering current
+barriers, obstacles and limitations to conducting successful business on the internet
+(ICEC ’06). ACM, 482–491. https://doi.org/10.1145/1151454.1151527
+[23] Yefeng Ruan and Arjan Durresi. 2016. A survey of trust management sys-
+tems for online social communities–Trust modeling, trust inference and attacks.
+Knowledge-Based Systems 106 (2016), 150–163.
+[24] F David Schoorman, Roger C Mayer, and James H Davis. 2007. An integrative
+model of organizational trust: Past, present, and future. Academy of Management
+review 32, 2 (2007), 344–354.
+[25] Wanita Sherchan, Surya Nepal, and Cecile Paris. 2013. A survey of trust in social
+networks. ACM Computing Surveys (CSUR) 45, 4 (2013), 47.
+[26] Ben Shneiderman. 2015. Building trusted social media communities: A research
+roadmap for promoting credible content. In Roles, trust, and reputation in social
+media knowledge markets. Springer, 35–43. https://doi.org/10.1007/978-3-319-
+05467-4_2
+[27] Jiliang Tang, Yi Chang, Charu Aggarwal, and Huan Liu. 2016. A Survey of Signed
+Network Mining in Social Media. ACM Comput. Surv. 49, 3 (Aug. 2016), 42:1–42:37.
+https://doi.org/10.1145/2956185
+[28] Jiliang Tang, Huiji Gao, and Huan Liu. 2012. mTrust: discerning multi-faceted
+trust in a connected world. In Proceedings of the fifth ACM international conference
+on Web search and data mining. ACM, 93–102.
+[29] Jiliang Tang, Huiji Gao, Huan Liu, and Atish Das Sarma. 2012. eTrust: Understand-
+ing trust evolution in an online world. In Proceedings of the 18th ACM SIGKDD
+international conference on Knowledge discovery and data mining. ACM, 253–261.
+[30] Mohammad Gias Uddin, Mohammad Zulkernine, and Sheikh Iqbal Ahamed. 2008.
+CAT: a context-aware trust model for open and dynamic systems. In Proceedings
+of the 2008 ACM symposium on Applied computing. ACM, 2024–2029.
+[31] Xiaoming Zheng, Yan Wang, Mehmet A Orgun, Guanfeng Liu, and Haibin Zhang.
+2014. Social context-aware trust prediction in social networks. In International
+Conference on Service-Oriented Computing. Springer, 527–534.

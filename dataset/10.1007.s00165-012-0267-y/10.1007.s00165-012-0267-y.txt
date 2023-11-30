@@ -1,0 +1,2288 @@
+DOI 10.1007/s00165-012-0267-y
+BCS © 2012Formal Aspects of Computing (2014) 26: 125–167 Formal Aspects
+of Computing
+Safe abstractions of data encodings in formal
+security protocol models
+Alfredo Pironti1a n dR i c c a r d oS i s t o2
+1Prosecco, INRIA Paris-Rocquencourt, 23, Avenue d’Italie, 75013 Paris, France
+2Dipartimento di Automatica e Informatica, Politecnico di Torino, Corso Duca degli Abruzzi, 24, 10129 Torino, Italy
+Abstract. When using formal methods, security protocols are usually modeled at a high level of abstraction. In
+particular, data encoding and decoding transformations are often abstracted away. However, if no assumptionsat all are made on the behavior of such transformations, they could trivially lead to security faults, for example
+leaking secrets or breaking freshness by collapsing nonces into constants.
+In order to address this issue, this paper formally states sufﬁcient conditions, checkable on sequential code,
+such that if an abstract protocol model is secure under a Dolev–Yao adversary, then a reﬁned model, which
+takes into account a wide class of possible implementations of the encoding/decoding operations, is implied tobe secure too under the same adversary model. The paper also indicates possible exploitations of this result in
+the context of methods based on formal model extraction from implementation code and of methods based on
+automated code generation from formally veriﬁed models.
+Keywords: Model abstraction, Reﬁnement, Security protocols
+1. Introduction
+In the last years, several techniques based on formal methods have been developed to analyze abstract mod-
+els of security protocols. These models, initially introduced by Dolev and Yao [ DY83 ], represent messages as
+instances of high level abstract data types. This high abstraction level makes automated veriﬁcation viable, so
+that Dolev–Yao veriﬁcation is now a well-established technique for security protocol veriﬁcation, even withinreach of non-experts. However, one question arises about how to ensure that the logical correctness of an abstract
+protocol is preserved when more concrete versions of the protocol are deﬁned and when their implementations
+are developed using programming languages.
+This paper focuses on one research line that consists of extending the application of the Dolev–Yao approach
+from very abstract models, where only the main message components and working scenarios are considered, to
+more detailed models capturing more closely all the real data structuring and the real program ﬂow of protocolimplementations.
+Correspondence and offprint requests to : R. Sisto, E-mail: riccardo.sisto@polito.it126 A. Pironti, R. Sisto
+Two different strategies have been proposed in order to cope with this extension: automatic code generation
+from abstract models, e.g. [ PSD04 ,TH04 ,GHRS05 ], and automatic model extraction from implementation code,
+e.g. [ BFGT06 ,J¨ur05 ,GLP05 ,BFG06 ].
+Methods based on automatic code generation start from a high-level, formally veriﬁed, speciﬁcation of the
+protocol, which abstracts away from many details about cryptographic and communication operations and data
+representations, and ﬁll the semantic gap between formal speciﬁcation and implementation, guided by implemen-tation choices provided by the user. In [ PS10 ], a formally sound algorithm is provided to automatically translate
+abstract models to source Java code. Notably, the code responsible for data transformations is not automatically
+generated, potentially allowing security ﬂaws to be introduced by incorrect manual implementation of such code.Indeed, in the case study reported in [ PPS12 ], about 30% of the code is dealing with data transformations and is
+manually implemented.
+Methods based on automatic model extraction start from an already existing, full blown implementation
+code, from which an abstract model is extracted and formally veriﬁed. In this case, a formal soundness proof
+has been given for the method presented in [ BFGT06 ]. One of the things that can be observed by looking at
+the results reported in [ BFGT06 ,J¨ur05 ,BFG06 ], is that the part of the extracted formal model that describes
+data encoding and decoding operations can be quite complex, as big in size as the rest of the protocol model.
+This occurs even though in [ BFGT06 ,BFG06 ] the implementations of some low-level library operations, such
+as those for basic XML manipulation, are not included in the model but rather assumed to correctly reﬁne their
+symbolic counterpart.
+The wrong implementation of data transformations may be responsible for security faults. For this reason, it
+is not possible to simply neglect them when analyzing security protocols. For example, consider this very simple
+RPC-like protocol in the Dolev–Yao model (where perfect encryption with a private shared key also subsumes
+authentication), expressed abstractly in Alice and Bob notation:
+1:A→B:{n,M,REQ}
+Kab;w h e r e nis a nonce and REQ a constant tag
+2:B→A:{n,f(M),RES}Kab;w h e r e RES is a constant tag
+Assume that, before sending message 2, Bemits a begin (A,B,n) event, meaning that a session of the protocol
+was started between Aand Bwith nonce n, and that, when receiving message 2, Aﬁrst checks that the received
+tag is RES and the received nmatches the local one, and only then emits an end(A,B,n) event, meaning that a
+session between Aand Bwith nonce nwas correctly terminated. On this abstract model, assuming Kab is initially
+not known by the adversary, one can prove the injective correspondence end(A,B,n)⇒begin (A,B,n), meaning
+that, even in the presence of a Dolev–Yao adversary, in each execution of the protocol each end(A,B,n) has its
+own corresponding begin (A,B,n).
+Now consider a reﬁned model, where each ﬁeld of the encrypted content of a message is encoded before
+applying encryption. Suppose the correct encoding for REQ is 0 and the correct encoding for RES is 1,
+but the implementations of the encoding and decoding transformations used by Aand Bhave some bugs.
+More precisely, suppose that, erroneously, eA(REQ )/equal11, where eA(·) is the implementation of the encod-
+ing transformation used by A. Suppose also that Buses a different implementation having the reverse bug,
+i.e. dB(1)/equal1REQ ,w h e r e dB(·) is the implementation of the decoding transformation used by B. Because
+of these errors, both message 1 and 2 have the same value for the tag and the reﬁned protocol model has
+a security ﬂaw, because the adversary can play message 1 back to A,a n d Awill accept her own message
+as a valid message 2, breaking the injective agreement. In conclusion, formal analysis can catch this ﬂaw if
+using a detailed model, close to the real implementation, while the ﬂaw is missed if using a more abstract
+model.
+This kind of errors does not necessarily affect interoperability (in the previous example, Aand Bcan run
+the protocol successfully despite their errors). This implies more difﬁculty in discovering such errors by classical
+program testing.
+The aim of this paper is to formally state and prove sufﬁcient conditions under which the detailed models of
+data transformations, such as the ones extracted from protocol code in [ BFG06 ], can be avoided and replaced
+by much simpler models or assumptions that can be checked on sequential code and in isolation (i.e. withoutconsidering the behavior of the adversary), while obtaining the same kind of security assurance on the protocol
+implementation.Safe abstractions of data encodings in formal security protocol models 127
+In this work, two different kinds of data transformation functions are identiﬁed (and named in this paper as
+follows):
+Marshaling functions Data transformation functions that operate on public data sent to or received from the
+network, such as the ones transforming between the internal representation of a protocol message and itsexternal wire representation;
+Encoding functions Data transformation functions that operate on possibly private data, such as a padding func-
+tion applied before block-encryption, or functions creating keys from raw key material.
+Encoding functions are more general than marshaling functions, because the former can operate on both
+private and public data, while the latter only operate on public data. So, ﬁnding sufﬁcient conditions to safelyabstract encoding functions from security protocol models would be enough to cover both classes of data trans-
+formation functions. However, exploiting the assumption that marshaling functions only operate on public data
+allows for weaker sufﬁcient conditions for their abstraction. Hence, ﬁrst specialized results for safe abstractionof marshaling functions are presented, which lead to weaker sufﬁcient conditions; then generalized results for
+encoding functions are presented, where stronger sufﬁcient conditions are required if private data can be accessed
+by the data transformation functions.
+Specifically, marshaling functions operate on data that can be made available to the adversary without com-
+promising any security property. So, in order to be able to soundly abstract these functions away, it is sufﬁcient to
+assume that they can do no worse than the adversary itself can do. In practice, the results in this paper formallyjustify the intuition that, provided marshaling functions do not access private data, any implementation cannot
+harm the protocol security.
+This clearly does not hold for more general encoding functions that can access private data, as showed by the
+example above, where a wrong encoding of the encrypted REQ tag could lead to a security ﬂaw. For instance,
+injectivity is one of the sufﬁcient conditions identiﬁed for safe abstraction of encoding functions, while this is not
+required for marshaling functions.
+The approach presented in this paper uses Communicating Sequential Processes (CSP) [ Hoa85 ,Ros97 ,Ros10 ]
+as the formal language for representing protocol models. Classically, a CSP model of a security protocol is fairly
+abstract: message exchanges are represented, and checks on received data are modeled by pattern matching.These are the models on which formal veriﬁcation is usually performed. Normally, such models have no notion
+of marshaling or encoding functions, and pattern matching is not the way typical implementations of security
+protocols would discriminate on received data: normally a stream of bytes is received and interpreted by theimplementation, before checks on the received values are performed. Hence, the formal veriﬁcation results have
+limited scope, because they do not say anything about those neglected details.
+One contribution of this paper is to ﬁnd sufﬁcient conditions such that veriﬁcation of a typical abstract CSP
+model of a security protocol also implies correctness of a more reﬁned CSP protocol model that takes those details
+into account. This saves veriﬁcation of the reﬁned—and more complex—model, which requires more veriﬁcationresources or more advanced veriﬁcation techniques.
+So, the ﬁrst problem that is addressed in this paper is to ﬁnd a general way to reﬁne a typical abstract CSP
+model, into a more reﬁned CSP model that faithfully represents how encoding functions work and how messagesare handled within a typical implementation.
+For each class of transformations, the reﬁnement is expressed by deﬁning a particular structure of concurrent
+processes in CSP, where data transformation operations are represented by separate processes, interacting withthe core processes that operate on the unencoded data. This modeling approach is quite general and close to
+real implementations. In addition to the process structure, only some general assumptions are introduced about
+the data transformation processes. Apart from these assumptions, such processes can be any process. Verifying aconcrete protocol implementation using this modeling strategy can thus be reduced to verifying that the protocol
+implementation fulﬁlls the assumptions made about data transformations, and verifying that the CSP reﬁned
+protocol model built according to such assumptions satisﬁes the required security properties. This approachmakes veriﬁcation modular, according to an assume-guarantee style.
+Even under the assumptions introduced, reﬁned protocol models can get much more complex than their
+original fully abstract versions, thus making veriﬁcation more challenging. To address this second problem, weformulate sufﬁcient conditions under which these reﬁned models can be soundly simpliﬁed. Soundness in this
+case means that, provided the sufﬁcient conditions hold, all the security faults related to a certain class of security
+properties are preserved when the model is simpliﬁed. This implies that it is enough to prove the absence of thesefaults in the simpliﬁed model to conclude that they are not present in the reﬁned model too, under the same
+adversary model (Dolev–Yao).128 A. Pironti, R. Sisto
+Simpliﬁcations are divided into two steps, and the sufﬁcient conditions for applying each step are expressed
+separately. The ﬁrst simpliﬁcation step is the main one, and already leads to a model close to the fully abstract
+one, while the second step completes the simpliﬁcation leading to the fully abstract model (without any referenceto data transformations).
+The concept of fault-preserving simplifying transformations applied to security protocols is not new. It was
+introduced by Hui and Lowe [ HL01 ], who identiﬁed some general classes of such transformations, and sufﬁcient
+conditions to apply them. In this paper, some of the work by Hui and Lowe is adapted and exploited for our
+purposes. However, only the second, minor simpliﬁcation step is reduced to Hui-Lowe simpliﬁcations in order
+to show its soundness. For the main simpliﬁcation step, instead, a different proof technique is used, which alsoleads to more general results.
+For marshaling functions, the idea is to prove the soundness of the main simpliﬁcation step by considering
+that the more abstract model is a re-parenthesization of the CSP expression describing the reﬁned model, where
+the data transformation layer is moved out of the honest agent and made part of the adversary. The sufﬁcient
+conditions (data transformations should do nothing more than what the adversary itself could do) imply that thissimpliﬁcation step does not add any new functionality that the adversary could not previously perform. Hence
+the same attacks that the adversary could carry out against the protocol in the reﬁned model can be carried out
+against the abstract version.
+This proof strategy cannot be used with encoding functions, which access secret data, because the adversary
+would get to handle some protocol secret values, thus easily breaking for instance conﬁdentiality. So, encoding
+functions are safely abstracted by showing that a reﬁned CSP model, where encoding functions are separateprocesses, is a trace reﬁnement of a more abstract CSP protocol that uses pattern matching to implement such
+encoding functions. To complete this proof, a weak simulation relation and trace reﬁnement properties of some
+CSP operators are used, and some standard assumptions on pattern matching (like the aforementioned injectivity)are made explicit sufﬁcient conditions.
+The results of this work can be exploited both when using the model extraction approach and when using
+code generation. In the former case, the assumptions and sufﬁcient conditions on data transformations must bechecked on the (sequential) code that implements them. If the conditions hold, this code can be safely abstracted
+during model extraction. With code generation, if the starting point is an already veriﬁed abstract protocol model,
+the results given in this paper formally prove that the same security properties still hold in a reﬁned model wherecode is generated so as to satisfy our assumptions and sufﬁcient conditions. Then, such assumptions and sufﬁcient
+conditions can be regarded as requirements on how the code must be generated, and the formal proofs given in
+this paper can be used as a basis for proving the soundness of reﬁnement in methods based on code generation.
+The remainder of the paper is organized as follows. Section 2introduces the notation and the modeling
+approach, based on CSP, that is used to reason about security protocols throughout the paper. Then, following
+the distinction identiﬁed between marshaling and encoding functions, Sect. 3focuses on marshaling functions,
+while Sect. 4generalizes the results considering encoding functions. Section 5discusses how the results can
+be applied when equational theories are introduced. Then, Sect. 6discusses experimental application of the
+results, using as examples the protocols for secure web services and the SSH transport protocol. Finally, Sect. 7
+concludes.
+2. Abstract protocol models and notation
+2.1. The CSP language
+Table 1illustrates the syntax of the CSP subset that is used in this work. Let ebe an event and P,Qprocesses. The
+preﬁxing operator combines an event eand a process Pinto the process e→P, which can only emit the event e
+and then behave like P.I ti ss a i dt h a t eis the preﬁx of e→P. The external choice P/squareQis the process that behaves
+like either PorQ, with the choice between the two made by the environment. Similarly, if Iis a set, the /squarei∈IPi
+process behaves like Pi, the choice of ibeing made by the environment among the elements of I. In this case, i
+may occur in Piand is bound in Pi. The internal choice operator /intersectionsqis similar, but the choice is made internally,
+not inﬂuenced by the environment. The parallel composition P/bardblQlets Pand Qexecute in parallel (subject
+to event synchronization, described below). Similarly, the /bardbli∈IPiprocess behaves like the parallel execution of
+several Piprocesses, one for each element of I, where in each process iis bound to a different element of I.T h e
+P\Eprocess behaves like Pwhere all the events in the set Eare removed from P.T h e P|<b|>Qprocess behaves
+like Pif the boolean expression bis true, otherwise it behaves like Q.I feand e/primeare events, P[[e/prime/e]] is the processSafe abstractions of data encodings in formal security protocol models 129
+Table 1. Syntax of the CSP subset used in this work
+Process Description
+e→P Preﬁxing
+P/squareQ External choice
+/squarei∈IPi External choice with binding
+P/intersectionsqQ Internal choice
+/intersectionsqi∈IPi Internal choice with binding
+P/bardblQ Parallel composition
+/bardbli∈IPi Parallel composition with binding
+P\E Event hiding
+P|<b|>Q If/else branching
+P[[e/prime/e]] Renaming
+P[x/y] Substitution
+let x/equal1expr within P Let binding
+STOP Stuck process
+that can emit e/primewhenever Pcan emit e. The process P[x/y]i sPwith all occurrences of free variable xsubstituted
+byy. The process let x/equal1expr within Pevaluates expression expr , binds variable xto its value v,a n dt h e n
+behaves like P[x/v]. The STOP process is the stuck process.
+The alphabet of a process P, denoted by αP, is the set of events that can occur in P.
+In the CSP semantics, when a process is ready to emit an event it blocks until the environment or a corre-
+sponding process can emit a matching event. When the environment or a corresponding process become ready
+to emit the matching event, the processes (or the process and the environment) can synchronize, and both simul-
+taneously emit the event and evolve atomically into the next state. By default, the P/bardblQprocess requires that P
+and Qsynchronize on all events in αP∩αQ(informally, on all events that they share), while the environment
+can match the remaining events. When synchronization between Pand Qis desired on a different set of events
+E, the notation P/bardblEQis used. Thus,
+P/bardblQ/definesP/bardbl
+αP∩αQQ
+An interesting case is P/bardbl{}Q, which means that Pand Qrun interleaved, that is in parallel without any internal
+synchronization. For convenience, the interleaving process is deﬁned as
+P|||Q/definesP/bardbl
+{}Q
+together with the interleaving with binding process |||i∈IPi.
+Events can be extended to have data after their name. For example, the events e1.Aand e2.B.Care the
+events e1and e2with associated data values Aand B,Crespectively. A data type can be deﬁned to spec-
+ify the possible data values that can occur in events. The notation e!A→ Pmeans that event ecan occur
+with value A, i.e. event e.Acan occur (and a corresponding matching event must occur in the environment
+for the process to evolve to P). The notation e?x→ Pmeans that event ecan occur, and it will match
+any other event e.A, evolving to P[A/x], where Acan be any data value belonging to the data type. Pattern
+matching can be used even in more general ways. For example, e.A?x!Amatches events e.A.B.Awhere Bcan
+be any value in the data type. Sometimes, when using data associated with events, an event is also called achannel.
+The notation {|e
+1,..., en|}denotes the set containing all events that match one of the eievent forms. For
+example, e.A.B∈{ | e|},a n d e.A.B.C∈{ | e?x.B|}.
+A sequence of events starting with event e1and terminating with event enis denoted by /angbracketlefte1,..., en/angbracketright.At r a c e
+trof a process Pis a sequence of events that can occur in P.tr↓edenotes the number of events eoccurring in
+trace tr.
+The set of all the traces of a process Pis denoted by traces (P). If traces (P)⊆traces (Q) then Pis a trace
+reﬁnement ofQ, written Q/subsetsqequalP.130 A. Pironti, R. Sisto
+Table 2. Syntactic sugar for the proposed datatype
+Message Representation
+Pa ir MN (M,N)
+Sh Key MM∼
+Pu b Key MM+
+Pr iKey MM−
+Sh Key En c r y pt MK {M}K
+P ubK eyE ncrypt MK {[M]}K
+P riK eyE ncrypt MK [{M}]K
+Ha sh MH (M)
+A trace speciﬁcation SPEC (tr) is a predicate whose free variable trrepresents a trace. A process Psatisﬁes a
+speciﬁcation if the corresponding SPEC (tr) predicate is true for all the traces of P:
+PsatSPEC ⇔∀ tr∈traces (P)·SPEC (tr).
+2.2. Modeling security protocols with CSP
+The datatype definitions and protocol models deﬁned in this work are an extension of the ones used in [ HL01 ].
+Essentially, they follow the Dolev–Yao approach. It is believable that the extended datatype proposed in thispaper can be enough to abstractly model the most common security protocols. Nevertheless, further extensions
+or modiﬁcations can be made to the datatype. The results presented here will still be valid, provided the new
+datatype satisﬁes some properties explicitly stated in this paper.
+The main extension that we introduce w.r.t. [ HL01 ] is an added support for non-atomic keys. This extension
+enables modeling protocols where the key is constructed from non-atomic data. The new datatype Message is
+deﬁned recursively as
+ShKey ::= Sh Key Message ;
+PubKey ::= Pu b Key Message ;
+PriKey ::= Pr iKey Message ;
+Message ::= Ato m Atom |Pa ir Message Message |
+Ha sh Message |ShKey |
+PubKey |PriKey |
+Sh Key En c r y pt Message ShKey |
+P ubK eyE ncrypt Message PubKey |
+P riK eyE ncrypt Message PriKey .
+where Atom represents the atomic messages used as building blocks for any other message. This definition has
+been developed using the following guidelines:
+•Each key is typed. It is possible to obtain a key from generic material (that is, any generic Message ). It is not
+possible to use raw material directly as a key; instead, the material must ﬁrst be fed to a key construction
+operator.
+•There is no longer need (as in [ HL01 ]) for the inverse K−1of a key K. Indeed, the key construction operators
+Pu b Key and Pr iKey fulﬁl this role.
+•No new types are added in order to represent encoding parameters or encoded data, because the idea is to have
+a single datatype that can be used to model protocol data at different detail levels.
+From now on, M,Nand Orange over Message ,Kover ShKey ,PubKey and PriKey ,Uand Sover 2Message,
+Aand Bover honest protocol agents, P,Qand Rover processes.
+In order to get better reading for processes, the syntactic sugar reported in Table 2is also provided.
+Once the datatype is deﬁned, it is also necessary to deﬁne the adversary knowledge derivation relation /turnstileleftwhich
+models the adversary data derivation capabilities: U/turnstileleftMmeans that Mcan be derived from U. The relation /turnstileleft
+is deﬁned as the smallest relation that satisﬁes the rules reported in Table 3.
+The following lemma about the relation /turnstileleftis introduced here because it will be needed in the rest of the paper:
+Lemma 2.1
+U/turnstileleftM∧U⊆U/prime⇒U/prime/turnstileleftM, (1)
+U/turnstileleftM∧U∪{M}/turnstileleft M/prime⇒U/turnstileleftM/prime. (2)Safe abstractions of data encodings in formal security protocol models 131
+Table 3. Rules for the knowledge derivation relation /turnstileleft
+Name Definition
+member : M∈U⇒U/turnstileleftM
+pairing : U/turnstileleftM∧U/turnstileleftN⇒U/turnstileleft(M,N)
+splitting : U/turnstileleft(M,N)⇒U/turnstileleftM∧U/turnstileleftN
+key derivation : U/turnstileleftM⇒U/turnstileleftM∼∧U/turnstileleftM+∧U/turnstileleftM−
+shared key encryption : U/turnstileleftM∧U/turnstileleftN∼⇒U/turnstileleft{M}N∼
+public key encryption : U/turnstileleftM∧U/turnstileleftN+⇒U/turnstileleft{[M]}N+
+private key encryption : U/turnstileleftM∧U/turnstileleftN−⇒U/turnstileleft[{M}]N−
+shared key decryption : U/turnstileleft{M}N∼∧U/turnstileleftN∼⇒U/turnstileleftM
+public key decryption : U/turnstileleft{[M]}N+∧U/turnstileleftN−⇒U/turnstileleftM
+private key decryption : U/turnstileleft[{M}]N−∧U/turnstileleftN+⇒U/turnstileleftM
+hashing : U/turnstileleftM⇒U/turnstileleftH(M)
+This lemma has been proved in [ HL01 ] for a similarly deﬁned relation based on the datatype deﬁned there,
+and can be proved to hold for the definition of /turnstileleftin Table 3, by structural induction. In order to apply the results
+given in this paper to an extension of this datatype, it is necessary to ensure that Lemma 2.1holds for the extended
+datatype.
+Honest agents and the adversary are deﬁned as in [ HL01 ]. For completeness, they are brieﬂy recalled here.
+A honest agent can take part in a protocol by using the following events:
+send.A.B.Magent Asends message M, with intended recipient B;
+receive .A.B.Magent Breceives message M, apparently from agent A;
+claimSecret .A.B.MA thinks that Mis a secret shared only with B;i fBis not the adversary, then the adversary
+should not learn M;
+running .A.B.MA thinks it is running the protocol with B;Mis a message, recording some details about the run
+in question.
+ﬁnished .A.B.MA thinks it has ﬁnished a run of the protocol with B;Mis a message, recording some details
+about the run in question.
+The send and receive events can also be interpreted as channels, used by the agents to exchange data; the remaining
+events are used to formally deﬁne the desired security properties of the protocol. Honest is the set of all honest
+agents.
+The adversary acts as the medium, thus being allowed to see, modify, forge or drop any message. It uses the
+knowledge derivation relation /turnstileleftto forge new messages from the previously learnt messages. The set of messages
+the adversary can derive from a knowledge Sis deﬁned as
+deds(S)/defines{M∈Message |S/turnstileleftM}.
+Finally, the formal definition of the adversary is
+ADV (S)/defines/square M∈Message send ?A?B!M→ADV (S∪{M})
+/square/square M∈deds(S)receive ?A?B!M→ADV (S)
+/square/square M∈deds(S)leak.M→ADV (S)
+where Sis the current adversary knowledge, and leak.Mis the event that signals that the adversary can derive
+Mfrom its current knowledge. The set of all agents is deﬁned as Agent /equal1Honest ∪{ADV}.
+The model representing all the honest agents and the adversary is called SYS , and is formally deﬁned as
+SYS/defines(|||A∈Honest PA)/bardblADV (AK 0)
+where, for each A∈Honest ,PAis the CSP process that describes A’s behavior, and AK 0is the initial adversary
+knowledge. By definition, in SYS the adversary and the honest agents synchronize on the send and receive events.
+For actors Aand B,t h e SYS process can be depicted as in Fig. 1.
+In this model decryption operations are represented by the CSP pattern matching feature on receive channels.
+For example, receive ?{x}N∼→Pcan receive an encrypted message, decrypt it by using key N∼and bind xto the
+obtained plaintext.132 A. Pironti, R. Sisto
+send.A.*
+receive.*.A receive.*.Bsend.B.*
+Fig. 1. Actors Aand Bwith ADV inSYS
+In this work, it is assumed that any trace property SPEC (tr) is such that its truth does not depend on the
+send and receive events that may appear in trace tr. Equivalently, process Psatisﬁes a speciﬁcation SPEC ,i f ft h e
+process P\{ | send,receive |},w h e r e send and receive events are hidden, satisﬁes the same speciﬁcation SPEC .
+Formally
+PsatSPEC ⇔P\{ |send,receive |}satSPEC (3)
+Assumption ( 3) is reasonable, because security properties are normally obtained by correct use of special events,
+such as claimSecret ,running orﬁnished , and not directly by observing the sequence of messages exchanged on
+the communication channels.
+Two predicates, namely secrecy and injective authentication (or simply authentication), deﬁne the two most
+common properties.
+Secrecy states that if agent Abelieves that message Mis shared only with honest agent B, then the adversary
+must not be able to derive Mfrom its knowledge:
+Secrecy (tr)/defines∀A∈Agent ;B∈Honest ·
+claimSecret .A.B.M in tr⇒¬ leak.Mintr
+In order to deﬁne authentication, a formal definition of AgreementSet is ﬁrst needed.
+M∈AgreementSet ⇔∃ tr∈traces (P);A∈Agents ;B∈Honest ·
+tr↓ﬁnished .A.B.M>0∨tr↓running .B.A.M>0(4)
+Informally, AgreementSet is the set of all the possible messages upon which the agents should agree (e.g. if the
+agents should agree on a key and an atom, the AgreementSet includes pairs with the ﬁrst item that is a key and
+the second one that is an atom).
+Authentication states that, for each protocol run that Athinks it has ﬁnished with B,Bmust have started a
+protocol run with A, and both Aand Bmust agree on some message M∈AgreementSet :
+Agreement AgreementSet (tr)/defines∀A∈Agent ;B∈Honest ;M∈AgreementSet ·
+tr↓ﬁnished .A.B.M≤tr↓running .B.A.M
+Weaker types of authentication have also been deﬁned, for instance non injective authentication, where there
+is no one-to-one correspondence between the runs of actors Aand B, or weak authentication, where there is no
+agreement on session data; they are described, for example, in [ Low97 ]. It is believable that the results proved in
+this paper for injective authentication hold for weaker forms of authentication too.
+3. Handling the marshaling layer
+In interoperable protocol implementations, all actors must exchange data encoded by the speciﬁed external
+representation, however, they can store data encoded in any internal representation, provided there exist some
+functions that can translate to and from the two representations. For example, one such function could trans-
+form a variable-length sequence of items, stored internally in some way, into an external standard representationmade up of an integer (the length of the sequence) followed by the encoding of each item of the sequence, with
+separators between items. The inverse function would do the inverse transformation.
+This section focuses on data transformation functions that operate on messages sent to or received from the
+network, which are called marshaling functions in this paper, after the “marshaling” term that is normally used
+to denote the operation of encoding data objects for transmission over a communication channel.
+Simple examples of such marshaling functions can be found in the popular TLS and SSH protocols. In TLS,
+the Record Layer Protocol is responsible for marshaling the encrypted payload o fa“ r e c o r d ”( ap a c k e ti nT L S
+terminology) by preﬁxing it as depicted in Fig. 2a: the content type ctindicates the kind of data contained in the
+payload, e.g. if the data are TLS handshake messages, or user application data; the protocol version pvindicates
+which TLS protocol version is in use; and the length lenindicates the length of the upcoming payload .T h e
+marshaled packet is then the concatenation of ( ct,pv,len,payload ).Safe abstractions of data encodings in formal security protocol models 133
+payload
+payload ct pv lenTLS Record Layer
+Marshaling
+(a)payload
+payload plen len paddingSSH BPP
+Marshaling
+(b)
+Fig. 2. Example of marshaling functions in the ( a) TLS and ( b) SSH protocols
+send.A.*
+receive.*.Aint_send.A.*
+int_receive.*.Asend.B.* int_send.B.*
+receive.*.B int_receive.*.B
+Fig. 3. Actors Aand Bwith ADV inSYSm
+In SSH, during the handshake phase, when encryption is not in place, the Binary Packet Protocol (BPP)
+is responsible for marshaling the SSH packets containing handshake messages according to Fig. 2b. Given a
+handshake message payload , the BPP adds a header containing the payload length len, followed by the padding
+length plen. Then the plaintext payload is concatenated and ﬁnally the padding is appended.
+In this work it is assumed, and thus modeled accordingly, that, as usual, the marshaling layer is implemented
+separately from the protocol logic layer.
+InSYS the actors exchange the abstract representation of data with the adversary. In order to model the
+marshaling layer, a reﬁned model SYSm(where mstands for marshaling) is deﬁned as depicted in Fig. 3for actors
+Aand B.
+Basically, SYSmacts like SYS , but it is explicitly modeled that the external representation of data is being
+exchanged over send and receive . Hence, even if the same names ( send and receive ) are used for channels in
+SYS and in SYSm, the data associated with these channels are different in the two models. More precisely, the
+model of each honest agent Ais reﬁned into Pm
+A, which is composed of two coupled processes PLm
+Aand ML A,
+representing the protocol logic and the marshaling layer of a program respectively. Each PLm
+AinSYSmacts like
+its corresponding PAinSYS , but it is explicitly modeled that it sends its internal representation to its coupled
+marshaling layer ML A, which in turn sends the external representation to the adversary, and vice versa.
+This reﬁned model can be described in CSP for all the honest agents as
+SYSm/defines(((|||A∈Honest PLm
+A)/bardbl(|||A∈Honest ML A))\{ | intsend,intreceive |})/bardblADV (AKm
+0)
+It could be argued that, potentially, this model allows each honest agent to send messages to any marshaling
+layer, and vice versa. However, the implementations of protocol logic and its coupled marshaling layer are very
+often part of the same application, so errors that would lead honest agents or marshaling layers to communicatewith the wrong process are not realistic. For this reason, it is assumed that PL
+m
+Aand ML Aemit events in the
+set{|intsend.A,intreceive ?B.A|}. This means that PLm
+Aonly exchanges messages with its coupled marshaling
+layer model ML A, and vice versa. Indeed, this assumption implies that such errors cannot happen in the model
+too. For the same reason, it is reasonable to hide the program internal communication channels intsend and
+intreceive from the adversary’s view.
+The initial adversary knowledge AKm
+0inSYSmhas some relation with AK 0inSYS , however this relation now
+is irrelevant, and can be explained later.
+Finally, the relation between each PAand the corresponding PLm
+Aand the formal definition of each ML Aare
+given. For each PA,PLm
+Acan be built by reﬁning PAso as to model the information that the protocol agent must
+provide to the marshaling layer for its proper working. More precisely, PLm
+Ais obtained from PAby replacing
+inPAeach event taking the form send.A.B.Mwith intsend.A.B.(Ato m L,(a,M)), and each event taking the
+form receive .B.A.Mwith intreceive .B.A.(Ato m L,(a,M)). Here, Ato m Lis a special atom not present in the
+definition of PA, whose only purpose is to tag the messages added by the reﬁnement to PLm
+A,a n d ais such that
+a∈Marshaling ⊆Message where Marshaling is the set of messages that can be used as marshaling parameters,134 A. Pironti, R. Sisto
+Fig. 4. Formal definition of the ML Aprocess
+i.e. additional information needed by the marshaling layer for its proper operation (e.g., an element of Marshaling
+may include the name of the marshaling algorithm to be applied and any related parameters, such as length of
+paddings etc.). Throughout the rest of the paper, a,b,cand drange over Marshaling .
+The elements of Marshaling that are used in reﬁning the protocol actor model may already appear in the
+abstract version PAas well. For example, if the marshaling parameters aare being negotiated within the protocol
+logic, then awill be present in PA. So, the message ( a,M) may be in PAas well. When reﬁning PAinto PLm
+A,
+new messages of the form ( a,M) are introduced, wherever message Mis output in PA. Now, to simplify back
+PLm
+AtoPA(done formally in Sect. 3.1.2 ), only the terms of the form ( a,M) that have been added during reﬁne-
+ment should be abstracted to M, while those ( a,M) terms originally present in PAshould be left untouched.
+The Ato m Lmarker (not present in PAby definition) is introduced to syntactically distinguish the ( a,M)t e r m s
+already present in PA, from the ( Ato m L,(a,M)) terms added by reﬁnement, so that only the latter will be the
+target of abstraction. Since Ato m Lis just a syntactic marker, it is assumed that neither PAnor PLm
+Aever accept
+Ato m Lon inputs or send it on outputs, with the only exception when Ato m Lis explicitly needed as syntactic
+marker. Similarly, it is assumed that Ato m L/negationslash∈AKm
+0: this assumption makes some proofs simpler, while not
+reducing the power of the adversary, since the protocol logic behavior is assumed to never depend on Ato m L
+anyway.
+Each process ML Amodels the behavior of the marshaling layer. Because of this, it can perform two kinds of
+actions:
+•receive from its coupled process PLm
+Ainternal representations of data, along with marshaling parameters, and
+send marshaled data to the ADV process;
+•receive marshaled data from the ADV process, and send to its coupled process PLm
+Athe internal representation,
+obtained using the unmarshaling parameters speciﬁed by PLm
+A.
+Apart from these assumptions about the possible interactions of ML A, it is assumed that internally ML Acan
+behave in any way, thus even including erroneous implementations of data transformations. The only restriction is
+that ML Acan access only the data explicitly provided from outside. This lets us see ML Aas part of the adversary,
+which is the intuition that will be used later on to abstract ML Afrom the model.
+The behavior of ML Acan be represented by the CSP process in Fig. 4,w h e r e eA(a,M)a n d dA(a,y)r e p r e s e n t
+the result of the encoding and decoding operations implemented in actor Arespectively. Each one of them can
+be any message that can be derived from aand Moraand yrespectively; formally:
+eA(a,M)∈deds({a,M})∧dA(a,y)∈deds({a,y})( 5 )
+By this definition, the properties of the marshaling layer model ML Acan be stated. The result eA(a,M)o f
+encoding Mwith parameters acan be anything that can be derived from Mand a, thus accounting for arbitrary
+complex encoding schemes. Two aspects of this definition are particularly interesting:
+•eA(a,M) can contain the same or less information than M;
+•all information in eA(a,M) that is not present in Mmust be present in a.
+That is, a possibly incorrect encoding function can lose some information on M, but can only use information that
+comes from the internal representation and from the marshaling parameters. In order to model some informationthat is hard-coded into the marshaling function implementation, that information needs to be added to aexplicitly.
+For example, the marshaling parameters used for a message of the TLS protocol would look like a/equal1(rlp,ct,pv),
+where rlpis the name of the record layer protocol encoding algorithm, and ctand pvare the content type and
+version. In this case, e
+A(a,M) would be such that eA((rlp,ct,v3.0),M)/equal1(ct,v3.0,lenght (M),M).
+The same reasoning applies to the result dA(a,y) of decoding ywith parameters a, but the case when yis
+not recognized as a valid encoding for parameters amust be taken into account as well. In the latter case, it is
+assumed that dA(a,y)/equal1Ato m E,w h e r e Ato m Eis a special atom that represents a decoding error code. Since
+this error code is part of the decoding function, it is assumed that Ato m E∈deds(a) for any a∈Marshaling .Safe abstractions of data encodings in formal security protocol models 135
+Moreover, to ensure the adversary capabilities are not restricted, it is assumed that for all adversary knowledges
+AK,Ato m E∈AK. For example, a decoding function for the TLS record layer protocol that just accepts version
+v3.0 could be deﬁned as:
+dA((rlp,ct,v3.0),(ct,v3.0,length (M),M))/equal1M
+dA(a,M) /equal1Ato m E
+where as usual the second case is taken if the arguments do not match the ﬁrst case.
+In the marshaling layer model analyzed here, it is modeled that decoding error conditions are reported to the
+protocol logic, through the use of the special Ato m Eerror code. A marshaling layer model that gets stuck when
+a decoding operation fails, so that the protocol logic is never delivered the special Ato m E, is possible, and is
+actually a reﬁnement of the model analyzed here. So the results obtained in this paper for the marshaling layermodel that reports the errors to the protocol logic, are also valid for the reﬁned model of the marshaling layer
+that immediately stops in case of error and does not require the protocol logic to handle error conditions.
+Another property implied by this model is that one computation of e
+A(a,M) and of dA(a,y) has no side
+effects and is memoryless. Encoding mechanisms with memory are not considered here for simplicity, but this
+model could be extended to include them.
+All the properties of the modeled marshaling layer, namely that the only data accessed by the marshaling/un-
+marshaling functions, including hard-coded values, are their input parameters and that no side effect occurs, are
+information ﬂow properties that can be veriﬁed on implementation code, by means of static analysis techniques
+for sequential code.
+3.1. Model simpliﬁcations
+The aim of this subsection is to prove that under some light conditions the simpliﬁcation of the reﬁned modelinto the abstract one does not lose security faults. This result justiﬁes the possibility to formally claim properties
+on the reﬁned model by performing veriﬁcation on the (simpler) abstract one. The simpliﬁcation can be divided
+into two subsequent steps as depicted in Fig. 5. The ﬁrst one removes the marshaling layer while the second one
+completes the transformation into the abstract system by removing the encoding parameters from the protocol
+logic.
+3.1.1. Removing the marshaling layer
+SYSmcan be simpliﬁed by removing processes ML Aand turning processes PLm
+Ainto their renamed versions
+PLm
+A[[send/int send]][[receive/int receive ]], so as to connect them directly to the adversary through the right channels
+send ,a n d receive .
+With abuse of notation, the PLm
+Asymbol will be used from now on to refer to both the process communicating
+onintsend ,intreceive , and the one communicating on send and receive . In fact, these two processes are the
+same, up to a renaming of communication channels. Keeping them under the same symbol actually helps in the
+explanation of the results, still allowing to produce rigorous proofs.
+Along with the above transformation, the initial adversary knowledge is also changed from AKm
+0into
+AKm-noML
+0 /definesAKm
+0∪Marshaling ∪{ Ato m L} (6)
+This is done in order to make sure that in the simpliﬁed model the adversary knows the encoding parameters
+and the special marker Ato m L. Actually this is the sufﬁcient condition introduced to guarantee the soundness
+of the simpliﬁcation.
+The ﬁnal result of the transformation is a new process SYSm-noMLdeﬁned as
+SYSm-noML/defines(|||A∈Honest PLm
+A)/bardblADV (AKm-noML
+0 )
+whose graphical representation is given in Fig. 5.
+This simpliﬁed model is very close to the abstract model SYS , the only difference being that when in SYS a
+send.A.B.Mor a receive .B.A.Moccurs, in SYSm-noMLasend.A.B.(Ato m L,(a,M)) or a receive .B.A.(Ato m L,
+(a,M)) occurs. In other words, SYSm-noMLis like SYS , but with each sent or received message tagged by its
+intended marshaling parameters and by Ato m L.136 A. Pironti, R. Sisto
+Fig. 5. The simpliﬁcation steps from SYSmtoSYS , using the intermediate SYSm-noML
+Another possible intuition to interpret SYSm-noMLis that it can be seen as an abstraction of SYSm,w h e r e
+the ML Aprocesses have been embedded into the adversary (and the communication channels renamed). This
+intuition is the basis for the proof justifying the ﬁrst reﬁnement step.
+Preservation of security properties in this transformation is expressed by:
+Theorem 3.1
+∀SPEC ·SYSm-noMLsatSPEC ⇒SYSmsatSPEC
+That is, all security properties deﬁned on traces that are satisﬁed by SYSm-noML, are satisﬁed by SYSmtoo. This
+means that if one has a protocol model like SYSm, including a marshaling layer complex at will, one can verify
+any security property deﬁned on traces on the simpler SYSm-noML, where there is no marshaling layer. By The-
+orem 3.1, if the property is veriﬁed on SYSm-noMLthen it can be concluded that the property holds on SYSm
+too.
+The proof of Theorem 3.1is given in Appendix A.1; here only a sketch is provided.
+Proof sketch of Theorem 3.1.Let us change SYSmby swapping channels intsend,intreceive with channels
+send,receive , and by re-parenthesizing processes as showed in Fig. 6, so as to make the marshaling layer become
+part of the adversary.
+In the resulting SYSm-advML, the adversary (in this sketch denoted by ADV-ML ) is the parallel composition
+ofADV (the adversary of SYS ) with ML A.
+To keep the proof sketch simple, we are using the same process name for ML Aand ADV ,e v e nw h e nt h e y
+communicate on swapped channels. (However, the proof given in Appendix A.1 makes this distinction explicit
+to avoid ambiguities.)Safe abstractions of data encodings in formal security protocol models 137
+Fig. 6. Actors Aand Bwith ADV-ML inSYSm-advML
+Any fault trace of SYSmis also a fault trace of SYSm-advML, because only an injective renaming of public and
+private channels relates the two models. The re-parenthesization is irrelevant because of the associative property
+of parallel composition. So, any trace property that holds on the intermediate SYSm-advMLis also implied to hold
+onSYSm.
+Now, the goal is to prove that the intermediate SYSm-advMLis a trace reﬁnement of SYSm-noML. This implies
+that any trace property that holds on SYSm-noMLalso holds on SYSm-advML, thus closing the chain between
+SYSm-noMLand SYSmand the proof of the theorem.
+SYSm-advMLand SYSm-noMLonly differ by the definition of the adversary, ADV-ML and ADV respectively.
+So, the proof reduces to prove a trace reﬁnement between the latter pair of processes. This part of the proof is
+divided into two steps. Step (i): deﬁne the knowledge MAK ofADV-ML as the adversary knowledge, plus the
+messages possibly being stored by ML A, when the latter received a message over a public (private) channel, but
+not yet delivered its encoded (decoded) form onto the private (public) channel. Then, show that MAK does not
+change when internal events happen inside ADV-ML (namely, private communication between ML Aand the
+adversary).
+Step (ii): show, by induction over the length of a trace tr, that for any trace trofADV-ML that leads to some
+knowledge MAK/prime, the same trace trcan lead ADV to a state with some AK/prime, such that deds(MAK/prime)⊆deds(AK/prime).
+This proves that ADV-ML is no more powerful than ADV is, and as a corollary leads to the required proof
+item showing that SYSm-advMLis a trace reﬁnement of SYSm-noML. /square
+Theorem 3.1states that in a protocol speciﬁcation where the marshaling layer is modeled as previously
+described, only the protocol logic represented by PLm
+Ais responsible for the security properties of the whole
+protocol, while any possible implementation of the marshaling layer ML Aof arbitrary complexity can be con-
+sidered as part of the adversary, provided that the latter knows all required marshaling schemes and parameters
+(because Marshaling ⊂AKm-noML
+0 ). One further condition required by Theorem 3.1is that the adversary knows
+the syntactic marker Ato m L. This is not an issue, since it is assumed that Ato m Lwill only be treated as a marker
+by honest agents.
+No assumption on the invertibility of encoding functions has been made, thus even erroneous speciﬁcations
+of encoding schemes are safe (though probably not functioning). For instance, an erroneous speciﬁcation thatrequires to collapse all nonces into a constant cannot be responsible for replay attacks, since it is protocol logic
+duty to check that the internal representation of the locally generated nonce is equal to the internal represen-
+tation of the received unmarshaled nonce. Moreover, since no assumption on implementation correctness hasbeen made, even erroneous implementations of the encoding scheme are safe, provided they satisfy the data ﬂow
+assumptions made.
+3.1.2. Removing the marshaling parameters
+This second step simpliﬁes each PLm
+Aback to PA, thus simplifying SYSm-noMLto the fully abstract SYS .
+For the main simpliﬁcation step from SYSminto SYSm-noML, presented in the previous section, it was possible
+to prove a preservation theorem that applies to any security property that can be deﬁned on traces (Theorem 3.1).
+For this second minor simpliﬁcation step, instead, the proof technique exploits the Hui and Lowe’s theory of fault-
+preserving simplifying transformations [ HL01 ], which lets us prove preservation on speciﬁc security properties
+rather than on any security property that can be deﬁned on traces. Then, in this paper the preservation theoremfor the second step applies only to the main security properties, i.e. secrecy and authentication, leaving extensions
+to other security properties as future work.138 A. Pironti, R. Sisto
+The preservation theorem for the second step can be formulated as follows.
+Theorem 3.2 IfAK 0/equal1AKm-noML
+0
+SYS satSecrecy ⇒SYSm-noMLsatSecrecy (7)
+SYS satAgreement AgreementSet ⇒SYSm-noMLsatAgreement AgreementSet (8)
+In practice, it means that if secrecy and authentication have been veriﬁed on SYS then the same properties
+hold on SYSm-noMLtoo, independently of encoding parameters. Putting together this theorem and Theorem 3.1
+we get ﬁnally that if secrecy and authentication have been veriﬁed on SYS then the same properties hold on
+SYSmtoo, provided the adversary knowledge in SYS includes encoding parameters and Ato m L.H o w e v e r ,t h e
+veriﬁcation of security properties other than secrecy and authentication does not beneﬁt of Theorem 3.2,b u t
+only of Theorem 3.1, i.e. these properties can be safely veriﬁed on SYSm-noML.
+Before giving the proof of Theorem 3.2, let us recall the part of the theory of fault-preserving simplifying
+transformations [ HL01 ] that will be used.
+In its simplest form, a fault-preserving simplifying transformation is a renaming transformation, i.e. a func-
+tion f:Message →Message that deﬁnes how messages in the original protocol are replaced by messages in the
+simpliﬁed protocol. The function fis then overloaded to take events, traces and processes, in such a way that f(e)
+isewith any message Moccurring in ereplaced by f(M),f(tr)i strwith any event eoccurring in trreplaced by
+f(e)a n d f(P) is a CSP process having as traces the ones that result from the application of fto the traces of P,
+i.e. such that traces (f(P))/equal1f(traces (P)).
+Let
+SYSRef/equal1(|||A∈Honest PRef
+A)/bardblADV (AKRef
+0)
+be a reﬁned protocol model with associated initial adversary knowledge AKRef
+0,a n d
+SYSAbs/equal1(|||A∈Honest f(PAbs
+A))/bardblADV (AKAbs
+0)
+one of its abstractions with associated initial adversary knowledge AKAbs
+0.A sp r o v e di n[ HL01 ], iff(·) is a renaming
+transformation that satisﬁes conditions
+U∪AKRef
+0/turnstileleftM⇒f(U)∪AKAbs
+0/turnstileleftf(M)( 9 )
+f(AKRef
+0)⊆AKAbs
+0 (10)
+then
+SYSAbssatSecrecy ⇒SYSRefsatSecrecy .
+For the preservation of authentication Hui and Lowe add another condition to the previous ones. In this
+work, the following slightly different additional condition is used that is weaker than the one given in [ HL01 ]:
+∀M,M/prime∈AgreementSet ·M/negationslash/equal1M/prime⇒f(M)/negationslash/equal1f(M/prime) (11)
+That is, f(·) must be locally injective on AgreementSet , and not on the whole Message set, as in [ HL01 ]. The result
+about authentication is that if equations ( 9), (10), and ( 11) are satisﬁed, then
+SYSAbssatAgreement f(AgreementSet )⇒SYSRefsatAgreement AgreementSet
+The proofs of this and other extensions can be found in [ Pir10 ].
+The reason why the preservation results obtained by the theory of Hui and Lowe are property-dependent is
+that the renaming transformations introduced in [ HL01 ] can in principle alter any event in the trace, even the
+special ones used to deﬁne security properties. So, for each renaming transformation and each security property,
+it is necessary to prove that, although the special events are modiﬁed, faults in the reﬁned system are preserved
+as faults in the abstract one (hence the fault-preserving name) by appealing to additional conditions that are
+property-dependent. In the transformation from SYSmtoSYSm-noML, instead, for any trace of the reﬁned SYSm,
+it is possible to ﬁnd a corresponding trace in SYSm-noMLwhere any event that is neither send nor receive is the
+same. This is why in that case a property-independent result could be obtained.
+The proof of Theorem 3.2uses one of the fault-preserving renaming transformations that were studied
+in [HL01 ]. This transformation collapses each pair ( M,M/prime) belonging to a given set Pairs into its ﬁrst item M.Safe abstractions of data encodings in formal security protocol models 139
+The formal definition of this function, here named f,i s :
+f(Ato m A)/equal1Ato m A,
+f((M,M/prime))/equal1/braceleftbigg
+f(M),
+(f(M),f(M/prime))if (M,M/prime)∈Pairs∧¬ isPair (M/prime),
+if (M,M/prime)/negationslash∈Pairs∧¬ isPair (M/prime),
+f((M,(M/prime,M/prime/prime)))/equal1/braceleftbigg
+f((M,M/prime/prime))
+(f(M),f((M/prime,M/prime/prime)))if (M,M/prime)∈Pairs,
+otherwise ,
+f({M}K)/equal1{ f(M)}f(K)
+f({[M]}K)/equal1{[f(M)]}f(K)
+f([{M}]K)/equal1[{f(M)}]f(K)
+f(H(M))/equal1H(f(M))
+f(K∗)/equal1f(K)∗
+where K∗ranges over {K∼,K+,K−}.
+As showed in [ HL01 ], one way of having conditions ( 9) and ( 10) satisﬁed with this transformation is to ensure
+that the knowledge of the adversary in SYSAbsincludes the transformed versions of the data known by the
+adversary in SYSRefplus the transformed versions of all the removed messages, i.e.
+AKAbs
+0⊇f(AKRef
+0)∪{ f(M/prime)|(M,M/prime)∈Pairs} (12)
+The proof that if this condition is satisﬁed then ( 9) and ( 10) are satisﬁed too for our modiﬁed datatype is very
+similar to the one given in [ HL01 ], by induction on the relation /turnstileleft. Condition ( 12) is needed in order to prove
+condition ( 9), because otherwise some source of information for the adversary could be removed by the trans-
+formation. In particular, suppose the {f(M/prime)|(M,M/prime)∈Pairs}terms were not included in the right hand side
+of (12). In this case we would have that, for any U/equal1{(M,M/prime)}with ( M,M/prime)∈Pairs , the condition U/turnstileleftM/prime
+would be true while f(U)/turnstileleftf(M/prime) would not necessarily be true, because f(U)/equal1f({(M,M/prime)})/equal1{M}, thus
+possibly invalidating condition ( 9). Hence the definition of condition ( 12).
+In order to preserve agreement, f(·) must also satisfy condition ( 11). In order to achieve this, only one addi-
+tional constraint is required:
+∀M∈AgreementSet ;subM ∈subterms (M)·isPair (subM )⇒subM /negationslash∈Pairs (13)
+where subterms (M) is the set containing Mand all its subterms. Constraint ( 13) means that no subterm of any
+M∈AgreementSet that is a pair must be in the Pairs set, that is if agreement is required on a pair, then that pair
+must not be collapsed.
+Using these results about function f(·), it is possible now to prove Theorem 3.2.
+Proof of Theorem 3.2.The proof is based on the fact that the function f(·) collapsing pairs can be safely used to
+transform PLm
+Ainto PA, and thus SYSm-noMLinto SYS . Indeed, PLm
+Ahas been obtained from PAby replacing
+each sent or received message Mwith ( Ato m L,(a,M)). Then, the following two steps take PLm
+Aback to PA:
+1.Ptmp
+A/equal1f(PLm
+A), with Pairs/equal1{(Ato m L,a)|a∈Marshaling }
+2.PA/equal1fsym(Ptmp
+A), with Pairs/equal1{(Ato m L,M)|M∈Message }
+where fsym(·) is the symmetric function of f(·), that coalesces pairs of the form ( M,M/prime) into their second item
+M/prime.
+In step 1, the syntactic marker Ato m Lis used to ﬁnd and remove all marshaling parameters that have been
+added to represent the marshaling layer. Then, step 2 removes the syntactic marker, ﬁnally obtaining PA.
+Exploiting the results proved in [ HL01 ], each one of these transformations preserves secrecy and authentica-
+tion if the required sufﬁcient conditions ( 12) and ( 13) hold.
+In step 1, the preservation results apply by assigning
+PAbs
+A/equal1Ptmp
+A; PRef
+A/equal1PLm
+A; AKRef
+0/equal1AKm-noML
+0
+By setting AKAbs
+0/equal1AKm-noML
+0 condition ( 12) becomes
+AKm-noML
+0 ⊇f(AKm-noML
+0 )∪{f(M/prime)|(M,M/prime)∈Pairs} (14)140 A. Pironti, R. Sisto
+plaintext MAC
+TLS Encoding
+in MEE scheme
+padding plaintext MAC plen
+Fig. 7. Example of encoding function in the TLS protocol
+It is now showed that ( 14) is satisﬁed. By the definition ( 6)o f AKm-noML
+0 , and since Ato m L/negationslash∈AKm
+0and Ato m L/negationslash∈
+Marshaling , it follows
+f(AKm-noML
+0 )/equal1f(AKm
+0)∪f(Marshaling )∪f({Ato m L})
+/equal1AKm
+0∪Marshaling ∪{ Ato m L}
+/equal1AKm-noML
+0
+Moreover, {f(M/prime)|(M,M/prime)∈Pairs}/equal1 Marshaling , because the only elements collapsed by f(·)i ns t e p1a r e
+marshaling parameters. So, ( 14) is ﬁnally reduced to AKm-noML
+0 ⊇AKm-noML
+0 , which is trivially true.
+Condition ( 13) holds too because Pairs∩subterms (AgreementSet )/equal1∅. Indeed, in step 1 each element in
+Pairs has the form ( Ato m L,a); but Ato m Lcan never appear in any running orﬁnished event, and thus in any
+subterm of the AgreementSet , because it is assumed that no honest agent will ever input or internally generate
+the Ato m Lvalue, except when the syntactic marker is explicitly needed.
+In step 2, the preservation results apply with
+PAbs
+A/equal1PA; PRef
+A/equal1Ptmp
+A; AKRef
+0/equal1AKm-noML
+0 ; AKAbs
+0/equal1AK 0
+Condition ( 12) is clearly satisﬁed because of the theorem hypothesis AK 0/equal1AKm-noML
+0 , and with a reasoning
+similar to the one done in step 1. Also condition ( 13) holds because of the same reasoning used for step 1.
+Summing up, since each transformation consists of applying the renaming function f(·) with conditions ( 12)
+and ( 13) satisﬁed, we can conclude that both transformations preserve secrecy and authentication, which proves
+the theorem. /square
+Since ( 9) depends on the derivation relation /turnstileleft, this condition must be checked each time the datatype is
+updated.
+4. Handling the encoding of data to be ciphered and key material
+Cryptographic protocols must deﬁne, for interoperability, not only the encoding of messages that are sent and
+received on communication channels, but also the encoding of data on which cryptographic operations areapplied. For instance, when block ciphers are in use, the plaintext must normally be padded before encryption,
+so that the length of the padded plaintext is a multiple of the encryption block size.
+For example, the TLS protocol uses a MAC-then-Encode-then-Encrypt (MEE) scheme whose encode step
+is depicted in Fig. 7. The encoding function concatenates the plaintext of a packet with the MAC computed in
+the ﬁrst step of the MEE scheme. Then some padding is added to ensure the ﬁnal length is block aligned with
+the encryption scheme block size, and ﬁnally the padding length plen is appended. The resulting byte array is
+ﬁnally encrypted, performing the last step of the MEE scheme. The message is sent after applying the marshaling
+transformation showed in Fig. 2a. At the receiver side, the unmarshaling is ﬁrst performed, which returns the
+encrypted byte array of the message. After decryption, the resulting byte array is decoded by ﬁrst computing theplaintext length (using plen and the ﬁxed size of MAC ) and then extracting the various components from the
+byte array.
+In SSH, when encryption is in place, the BPP operations described in Fig. 2b become the encoding opera-
+tions performed before encryption, and the marshaling layer becomes transparent. That is, the result of the BPP
+encoding is ﬁrst encrypted, and then directly sent over the network (concatenated with a MAC of constant size).
+Interestingly, when some data are received from the network, the marshaling layer just passes the byte stream as isto the protocol layer, which decrypts the received ciphertext unconditionally. Then, as soon as the ﬁrst 4 bytes are
+decrypted, it is the decoding function responsibility to check the value lenof the length ﬁeld, to decide on how toSafe abstractions of data encodings in formal security protocol models 141
+process the subsequent data. This design was meant to hide the length of the exchanged data by keeping it secret,
+in order to avoid attacks based on the knowledge of the length of the exchanged messages. However, checking the
+length ﬁeld from decrypted data that is not yet authenticated by a check of the MAC leads to a conﬁdentialityﬂaw [ APW09 ], if the adversary alters the ﬁrst block of an encrypted message. Unfortunately, in the standard
+Dolev–Yao model of perfect encryption, where messages are values of abstract types and the adversary can only
+encrypt/decrypt messages if it has the correct key, this kind of attacks cannot be caught because encryption isimplicitly authentic if the key stays secret.
+The modeling of marshaling functions introduced in the previous section lets one soundly abstract the mar-
+shaling layer under very few sufﬁcient conditions (the adversary must know the encoding parameters). Unfor-tunately, that layered model only applies to the marshaling layer, which operates on already protected data, and
+not on encoding operations performed on data to be further processed by cryptographic operations. The main
+difference between the two cases is that the data on which the marshaling layer operates could be accessed by
+the adversary in their unmarshaled form without compromising the protocol security anyway, while the other
+encoding functions operate on possibly conﬁdential data.
+For this reason, in this section a more general model of encoding functions is introduced. This more general
+model can handle encoding functions operating on conﬁdential data, as well as marshaling functions. However,
+when using this general model, the sufﬁcient conditions for the sound abstraction of the encoding functionsneed to be much stronger. For this reason, it is convenient to apply the results found in this section using
+the more general model only to encoding functions that operate on possibly conﬁdential data, where such
+generality is required, and one has to be satisﬁed with stronger sufﬁcient conditions. For marshaling func-tions, instead, it is convenient to use the specialized model of Sect. 3, because it requires weaker sufﬁcient
+conditions.
+Accordingly, and for simplicity, when presenting the general model developed in this section, reference will
+be made only to the encoding functions applied to data to be fed to cryptographic functions. As showed in
+Sect. 6, the general and specialized models can be combined together to handle both marshaling, and encoding
+of possibly conﬁdential data, in the most convenient way.
+The reﬁnement of the abstract protocol model into the general model that includes data encoding can be seen
+as divided into two steps. In the ﬁrst step, encoding operations are introduced, but using pattern matching for
+the corresponding decoding operations. In the second step, a more realistic model of a real implementation isﬁnally considered, where decoding operations occur explicitly.
+4.1. The ﬁrst reﬁnement step
+The starting point is the abstract protocol model SYS , where the encoding of data is completely abstracted
+away. The result of the ﬁrst reﬁnement step is denoted SYSe-pm(where estands for encoding and pmfor pattern
+matching) and is formally deﬁned as
+SYSe-pm/defines|||A∈Honest Pe-pm
+A/bardblADV (AKe-pm
+0)
+where Pe-pm
+Aincorporates the capability of encoding data before applying cryptographic operations on them, and
+of decoding the outcome of decryption operations.
+Similarly to Sect. 3, encoding parameters are formalized as messages a∈Encoding , and the encoding of
+message Mperformed by actor Ausing parameters ais formalized as eA(a,M). As in Sect. 3, condition ( 5), i.e.
+the assumption that encodings and decodings are deducible, is assumed to hold, and absence of side effects and
+of memory between calls is also assumed.
+Process Pe-pm
+Adiffers from PAonly by the addition of encoding operations, one before each cryptographic
+operation. More precisely, in Pe-pm
+A, each abstract term {N}Koccurring in PAis reﬁned into {eA(a,N)}K, where the
+choice of ais made so as to comply with the protocol speciﬁcation documents. Similarly, terms {[N]}K,[{N}]K,
+H(N), and K∗(where, as stated above, K∗ranges over {K∼,K+,K−}) are reﬁned into {[eA(a,N)]}K,[{eA(a,N)}]K,
+H(eA(a,N)), and eA(a,K)∗respectively.
+The meaning of this reﬁnement is that, when encrypting data, the encoded plaintext is encrypted, instead of
+its internal representation. Similarly, when building a key, the encoded key material is used instead of its internal
+representation.142 A. Pironti, R. Sisto
+InPe-pm
+Athe decoding operations dA(a,·), corresponding to eA(a,·), are not represented explicitly. Instead,
+they are represented implicitly by pattern matching, in the same way as decryption is represented implicitly in
+the abstract CSP model. For example, receive .B.A.{eA(a,x)}K→Pmeans receiving {eA(a,x)}K, decrypting the
+received message with key K, decoding the outcome of decryption by using the inverse of eA(a,·), and ﬁnally
+binding xto the result of decoding, before proceeding with P.
+Of course, this model is still rather abstract, because of the pattern matching mechanism, which is not the way
+decoding is normally implemented. Moreover, using pattern matching introduces a further assumption about
+eA(a,·), i.e. eA(a,·) is assumed to be injective. Encoding functions used in protocols should always be deﬁned so
+as to be injective, because otherwise there could be encoded data that cannot be decoded uniquely. However, oneparticular implementation e
+A(a,·) of an injective encoding function could be non-injective, because of implemen-
+tation errors. For example, let us denote length (M) the length in bytes of a message M, and let us consider the
+trivial definition of an injective encoding function that encodes a message Mas the concatenation of a binary
+representation of length (M) followed by the length (M)b y t e so f M. A wrong implementation of this injective
+function that, for example, trims Mto a maximum length K, is non-injective, because it maps all the messages
+longer than Kthat have the same preﬁx to the same encoded message.
+After having introduced the ﬁrst reﬁnement step from SYS toSYSe-pm, sufﬁcient conditions are now intro-
+duced under which secrecy and authentication are preserved when transforming back SYSe-pminto SYS .T h e
+conditions for preservation of authentication are stronger than those for secrecy.
+One ﬁrst condition, which is common for both secrecy and authentication, is
+∀a,O.eA(a,O)/equal1e(a,O) (15)
+where e(a,M) denotes the definition of the encoding function (in contrast with eA(a,M), which denotes its imple-
+mentation in agent A). This condition means that the encoding implementation in each actor is correct with
+respect to the speciﬁcation of the encoding scheme. In practice, if ( 15) holds, then all actor’s implementations of
+encoding functions are equivalent, so that implementing actors can be ignored. So, the e(a,O) symbolic form of
+encoding will be used from now on, regardless of the implementing actor, when condition ( 15) is assumed to hold.
+A second condition, common for both authentication and secrecy, is the injectivity of e(a,·), which normally
+holds for any well-deﬁned encoding algorithm, as already observed.
+A data renaming transformation fd(·), that transforms Pe-pm
+Ainto PA, and thus SYSe-pminto SYS , is deﬁned
+as the identity function except for the following cases:
+fd(M,M/prime)/equal1(fd(M),fd(M/prime))
+fd({e(a,M)}K)/equal1{ fd(M)}fd(K)
+fd({[e(a,M)]}K)/equal1{[fd(M)]}fd(K)
+fd([{e(a,M)}]K)/equal1[{fd(M)}]fd(K)
+fd(H(e(a,M)))/equal1H(fd(M))
+fd(e(a,K)∗)/equal1(fd(K))∗
+This function is well-deﬁned because e(a,·) is injective. It is the key for proving our preservation results, via Hui
+and Lowe’s theory.
+Finally, a third condition, common for both authentication and secrecy, has to be added about the adversary
+knowledge:
+AK 0⊇fd(AKe-pm
+0)∪fd(Encoding ) (16)
+Hypothesis ( 16) is reasonable because it simply requires that the adversary in the abstract system knows
+at least the simpliﬁed form of messages that are known by the adversary in the reﬁned system, along with the
+encoding parameters.
+Preservation of secrecy in the reﬁnement from SYS toSYSe-pmcan now be expressed by the following theorem.
+Theorem 4.1
+If (15) holds and e(a,·) is injective and ( 16) holds
+SYS satSecrecy ⇒SYSe-pmsatSecrecy
+Proof In order to prove that secrecy in the abstract system implies secrecy in the reﬁned system, it is enough to
+show that fd(·) is actually a fault preserving simplifying transformation that preserves secrecy, which amounts to
+check that conditions ( 9) and ( 10) are satisﬁed.
+Satisfaction of condition ( 9) can be proved by induction over the knowledge derivation relation /turnstileleft; while
+satisfaction of condition ( 10) can be proved by hypothesis ( 16). /squareSafe abstractions of data encodings in formal security protocol models 143
+In order to prove that authentication is preserved when reﬁning SYS into SYSe-pm, one further condition
+that must hold for messages in AgreementSet has to be stated. Let us introduce now the symbolic expression of a
+message, that is a term that represents the message but leaving all data encoding operations in their symbolic forme(a,O) (in contrast to resolve them to the resulting term obtained by encoding message Owith parameters a).
+Using the symbolic expression concept, the AgreementSet can be partitioned into equivalence classes. Two
+messages Mand M
+/primebelong to the same equivalence class if their symbolic expressions are equal, modulo a renam-
+ing of the ﬁrst argument of each encoding operation occurring in them (namely the aargument of e(a,O)). The
+M∼M/primenotation means that Mand M/primebelong to the same equivalence class. For example, if ( H(e(a,O)),N)
+is the symbolic expression of M, and ( H(e(b,O)),N) is the symbolic expression of M/prime, then M∼M/primeis true; in
+contrast, if ( H(e(b,O)),N/prime) is the symbolic expression of M/primeand N/negationslash/equal1N/prime, then M/notsimilarM/prime, because their symbolic
+expressions also differ by the N/negationslash/equal1N/primeterms. In other words, each equivalence class contains all the messages that
+can be obtained by applying encodings with various encoding parameters to the same unencoded message.
+The condition to be added for the preservation of authentication is:
+∀M,M/prime∈AgreementSet ·M∼M/prime⇒M/equal1M/prime(17)
+which states that each equivalence class must have only one element. In other words, it must never happen that
+AgreementSet contains two messages that share the same symbolic expression, except for some encoding param-
+eters. To show why ( 17) is necessary, consider the following counter-example. Suppose ( 17) does not hold. In
+a reﬁned model, agreement could fail because one agent emits his running event on H(e(a,M)), while another
+agent emits his ﬁnished event on H(e(b,M)). However, such a fault would not be preserved in the corresponding
+abstract model, where both events would be done on H(M), letting agreement succeed.
+Indeed, the SSH protocol discussed in Sect. 6performs agreement on a ﬁnal hash , requiring a careful eval-
+uation on whether ( 17) is satisﬁed. In practice, ( 17) is enforced by explicitly including, within each message
+upon which agreement is required, the parameters that must be used to encode each part of the message itself.
+For example, agreement on H(e(a,M)) becomes agreement on ( a,H(e(a,M))). In this way, parameter ais not
+abstracted away in the abstract model, where agreement happens on ( a,H(M)).
+Preservation of authentication in the reﬁnement from SYS toSYSe-pmcan now be expressed by the following
+theorem.
+Theorem 4.2
+If (15) holds and e(a,·) is injective and ( 16) holds and ( 17) holds
+SYS satAgreement fd(AgreementSet )⇒SYSe-pmsatAgreement AgreementSet
+Proof In order to prove that fd(·) preserves agreement, since conditions ( 9) and ( 10) have already been proved
+for Theorem 4.1, it is enough to prove ( 11), that is fd(·) is locally injective on AgreementSet .I no t h e rw o r d s ,i fb y
+hypotheses ( 15), (16) and ( 17),fd(·) satisﬁes condition ( 11), then this theorem is proved.
+Now, function fd(·) is showed to be locally injective on AgreementSet .
+Let M,M/prime∈AgreementSet with M/negationslash/equal1M/prime.I fM/notsimilarM/prime, then Mand M/primeare terms with different structures,
+or, if they have the same structure, there exist two subterms Nand N/primewith N/negationslash/equal1N/prime, in the same position in
+Mand M/primerespectively, that cause them to differ. In this case, fd(M)/negationslash/equal1fd(M/prime) because it can be easily showed,
+by structural induction over messages, that fd(·) preserves message structure and does not alter subterms, except
+for removing symbolic encoding operations, and their ﬁrst parameter, which is not what is making Mand M/prime
+different in this case.
+IfM∼M/prime, then, by ( 17), if follows that M/equal1M/prime, which contradicts the hypothesis, so this case cannot
+happen. /square
+By Theorem 4.1, one can verify secrecy on the simpler abstract model SYS , and the same property is implied to
+hold on the more reﬁned model SYSe-pm, under the hypotheses that encoding functions are injective and correctly
+implemented in all protocol actors (plus the fact that the adversary in the abstract model knows all encoding
+parameters used by the protocol). By Theorem 4.2, proving authentication on SYS implies authentication in
+SYSe-pm, under the further condition that the encoding parameters used in the agreement terms are themselves
+agreed upon.144 A. Pironti, R. Sisto
+Fig. 8. Actors Aand Bwith ADV inSYSe
+As with Theorem 3.2, if extensions of the proposed datatype are used, structural inductions used in the proofs
+of Theorems 4.1and4.2must be checked to hold for the new datatype.
+4.2. The second reﬁnement step
+As already observed, SYSe-pmis still very abstract, because of the pattern matching mechanism used for decoding.
+Sometimes, models like SYSe-pmare used, with e(a,·) simply deﬁned as a symbolic injective function, and cor-
+rectness of data encoding and decoding assumed by hypothesis. These models are not much more complex than
+the corresponding abstract models where data encoding is fully abstracted away, because most of the complexity
+of data encoding stands in the implementation of encoding and decoding algorithms, which is not representedwhen encoding functions are symbolic.
+The second step of reﬁnement that will be introduced shortly in this section makes the application of data
+encoding and decoding operations explicit in the model, like it was for the analogous operations in Sect. 3. In this
+way, the possibility to represent significant parts of the actual implementation of data encoding and decoding
+algorithms in non-symbolic form is enabled.
+In order to make data decoding explicit in the model, the same notation introduced in Sect. 3is used here: the
+decoding of message Mwith parameters adone by actor Ais denoted d
+A(a,M) and the special atom Ato m E
+represents a decoding error code returned by the decoding algorithm when Mis not recognized as a valid encod-
+ing.
+For simplicity, in this second reﬁnement step the application of eAis kept inline, while the application of
+dAis delegated to a separate process, which is convenient in order to eliminate the unrealistic pattern matching
+mechanism for decoding, and make the latter explicit, as typical protocol implementations do.
+More precisely, each process Pe-pm
+Ais reﬁned into a process Pe
+A, composed of the protocol logic PLe
+Acoupled
+with a decoding process DEC A.E a c hp a i ro f PLe
+Aand DEC Aprocesses internally communicates by the psendA
+and preceiveAhidden dedicated channels. The reﬁned system is denoted SYSe.
+The structure of SYSewith two actors Aand Bis depicted in Fig. 8. The formal definition of SYSeis
+SYSe/defines(|||A∈Honest Pe
+A)/bardblADV (AKe
+0)
+where Pe
+A/defines(PLe
+A/bardblDEC A)\priv Aand priv A/equal1{ | psend A,preceive A|}.
+The PLe
+Aprocess incorporates the capability of encoding data before applying cryptographic operations on
+them, and delegates to DEC Athe task of decoding the plaintext after having decrypted a ciphertext. The call of
+the decoding function dA(a,M) is represented by the event psend A.(M,a) while the successful termination of the
+operation is represented by the event preceive A.N,w h e r e N/equal1dA(a,M) is the result of decoding. If decoding is
+unsuccessful, i.e. dA(a,M)/equal1Ato m E,DEC Agets stuck, and PLe
+Agets stuck too. This behavior, which is realistic
+for the kind of encoding considered in this section, corresponds to an aborted session.
+Each DEC Aprocess is formally deﬁned as follows:
+DEC A/defines/squarey∈Message
+a∈EncodingpsendA!(y,a)→
+(preceiveA!dA(a,y)→DEC A)|<dA(a,y)/negationslash/equal1Ato m E|>STOP(18)
+In order to obtain Pe
+Afrom Pe-pm
+A,e a c h receive .B.A.MinPe-pm
+A must be turned into a receive .B.A.M/prime,
+followed by zero or more psend A.(y,a)→preceive A.N/primepreﬁx pairs, representing the interaction with the DEC A
+process. For example, receive .A.B.{eA(a,M)}K→Pmust be turned into receive .A.B.{y}K→psend A.(y,a)→
+preceive A.M→P.Safe abstractions of data encodings in formal security protocol models 145
+The reﬁnement transformation from Pe-pm
+AtoPLe
+Acan be formalized by a function rfrom processes to pro-
+cesses such that PLe
+A/equal1r(Pe-pm
+A).
+Function rc a nb ed e ﬁ n e da s
+r(ev→P)/equal1(re(ev)→r(P))
+r(ω(P1,..., Pnω))/equal1ω(r(P1),..., r(Pnω))
+where evranges over event preﬁxes, ωranges over CSP operators, nωstands for the arity of ω,a n d reis another
+reﬁnement function that describes how event preﬁxes are reﬁned. In this definition the usual convention applies
+according to which the ﬁrst matching rule is applied. Therefore, according to this definition, only event preﬁxes
+are reﬁned, while all other operators are unaffected by the reﬁnement.
+According to the idea expressed previously, only receive preﬁxes are reﬁned. Each receive event is reﬁned into
+a similar receive event, followed by zero or more pairs of psend Apreceive Aevents. The formalization of reis
+re(receive .B.A?N)/equal1receive .B.A?FNGN
+re(ev)/equal1ev
+where ( FN,GN)/equal1rt(N)a n d rtis another function that describes how terms are reﬁned. rttakes a term Nand
+returns a pair where the ﬁrst element FNis the reﬁned term and the second one GNis a possibly empty sequence
+of preﬁxes that have to be added after the receive event being reﬁned and that represent the interactions with the
+decoding process.
+rtcan be deﬁned by reﬁning encryption terms like {eA(a,N)}Kinto{y}K,w h e r e yis a new fresh variable for
+storing the received message. The decoding of yis represented by appending the preﬁxes “ →psend A.(y,a)→
+preceive A.N/prime”, where N/primeis obtained by recursively applying the same procedure to N.
+Formally,
+rt((N,O))/equal1((FN,FO),GNGO)
+rt(/epsilon1K(eA(a,N)))/equal1(/epsilon1K(y),“→psend A.(y,a)→preceive A.FN”GN) with ynew fresh variable
+rt(N)/equal1(N,/epsilon1)
+where here ( FN,GN)/equal1rt(N), (FO,GO)/equal1rt(O),/epsilon1K(·) represents any encryption operator (either {·}Kor{[·]}Kor
+[{·}]K) for which the inverse of Kis known to the process, /epsilon1represents the empty string and GNGOrepresents the
+simple concatenation of strings GNand GO.
+As an example, let us consider the reﬁnement of a process Pe-pm
+Adeﬁned as
+receive .B.A./braceleftbig
+eA(a,/bracketleftbig
+{eA(b,Ato m A)}K1/bracketrightbig
+)/bracerightbig
+eA(c,K2)+→P
+where K1is a shared key known by Pe-pm
+A(in this example K1is opaque, e.g. Pe-pm
+Ahas received it as an opaque
+message), and eA(c,K2)+is a public key for which the corresponding private key eA(c,K2)−is known by Pe-pm
+A.
+The reﬁned process PLe
+A, to be coupled with its decoding process DEC A, is in this case
+receive .B.A.{[y1]}eA(c,K2)+→psend A.(y1,a)→preceive A.{y2}K1→
+psend A.(y2,b)→preceive A.Ato m A→r(P)
+In order to be able to perform decryption operations, PLe
+Amust know the symmetric key K1and the private key
+eA(c,K2)−,a s Pe-pm
+Adoes. In this example, PLe
+Areceives {[y1]}eA(c,K2)+, i.e. a message encrypted with public key
+eA(c,K2)+, and decrypts it by using the known reﬁned private key ( eA(c,K2)−(because the private key is required
+to decrypt public-key ciphered data). Then, the encoded message y1and the decoding parameters aare sent to
+the coupled DEC Aprocess, which returns the decoded representation. The returned message must match {y2}K1,
+where y2is again in the encoded form required by the cryptographic algorithm. This means that PLe
+Adecrypts the
+returned message with K1and gets y2. Finally, PLe
+Asends y2and the decoding parameters btoDEC A, obtaining
+the decoded plaintext, which is checked to match Ato m A.
+As a second example, let us consider the abstract process Pe-pm
+Adeﬁned as
+receive .B.A.{eA(b,H(eA(c,Ato m A)))}eA(a,K)∼→P
+where Pe-pm
+A is assumed to know K, and thus also eA(a,K)∼. The reﬁned process PLe
+A, to be coupled with its
+decoding process DEC A,i s
+receive .B.A.{y}eA(a,K)∼→psend A.(y,b)→preceive A.H(eA(c,Ato m A))→r(P) (19)146 A. Pironti, R. Sisto
+In this example, Pe-pm
+Areceives a message and decrypts it using the symmetric key eA(a,K)∼, which must be known
+byPLe
+Atoo. The obtained plaintext yshould be the encoding, with the parameters brequired by the cryptographic
+algorithm, of the original message H(eA(c,Ato m A)). Here yis treated by PLe
+Aas an opaque message and it
+is sent along with bto the coupled decoding process DEC A. The latter returns the internal representation of y,
+which is checked to match H(eA(c,Ato m A)).
+The inverse of r, i.e. the function that takes back from PLe
+AtoPe-pm
+A, will be denoted f. Note that fcan simply
+be deﬁned as:
+f(receive .B.A?M→psend A.(y,a)→preceive A.N→P)/equal1f(receive .B.A?M/bracketleftbigeA(a,N)/y/bracketrightbig
+→P)
+f(ω(P1,..., Pnω))/equal1ω(f(P1),..., f(Pnω))
+Although function fis deﬁned for any CSP process, in order to keep the proofs simpler, from now on it will
+be assumed that PLe
+Ais a sequential process. This assumption does not narrow the generality of our results, since
+multi-threaded implementations of protocol logics can be simulated by corresponding sequential implementa-
+tions.
+Now that the formal relation between SYSeand SYSe-pmhas been deﬁned, the following sufﬁcient conditions
+for fault preservation when abstracting from SYSetoSYSe-pmcan be formulated:
+∀a,yd A(a,y)/negationslash/equal1Ato m E⇒eA(a,dA(a,y))/equal1y (20)
+AKe-pm
+0⊇AKe
+0 (21)
+Condition ( 20) is true if, for each actor, the implementation of the encoding function eA(a,·) is the inverse of the
+implementation of the decoding function dA(a,·). This property will be named the “e/d round-trip property”.
+Condition ( 21) is true if, at the beginning of the protocol run, the adversary in the intermediate system knows at
+least the same messages known by the adversary in the reﬁned system.
+Differently from Sect. 4.1, no assumption on implementation correctness with respect to any encoding scheme
+speciﬁcation is made here, and no relationship is being assumed between encoding scheme implementations of
+different actors. That is, the e/d round-trip property ( 20) can be checked in isolation on each implementation
+alone, without referring to any encoding scheme speciﬁcation. In addition to the above conditions, the injectivityofe
+A(a,·) has to be assumed, otherwise the pattern matching mechanism in SYSe-pmwould not work.
+Canonicalization schemes are neglected, because they transform data between two different items of the
+same equivalence class, and all such items are normally represented by a single term in an abstract formal model.
+Indeed, as stated in [ KR06 ] too, canonicalization does not impact security properties, as long as all elements of the
+same canonicalization equivalence class have the same meaning (which actually is the aim of canonicalization).Moreover, representing canonicalization operations in abstract models would introduce non injective functions,
+whose interaction with some security properties (e.g. authentication) would be rather complex, despite not so
+significant.
+The fault preservation property in this case can be proved with respect to any trace property (and is based on a
+different reasoning w.r.t. the simplifying transformations introduced by Hui and Lowe). The intuition is that, by
+deﬁning P
+e
+A/defines(PLe
+A/bardblDEC A)\priv A, and assuming the e/d round trip property ( 20),Pe-pm
+Aand Pe
+Abehave in the
+same way except for receive events. While Pe-pm
+Agets stuck on receive events of non matching messages, Pe
+Areceives
+those messages but subsequently deadlocks, within DEC A. Then, if communication events are disregarded, it is
+possible to prove that any (fault) trace in SYSeis also a (fault) trace in SYSe-pm, provided the adversary in SYSe-pm
+is not less powerful than the adversary in SYSe(this condition is expressed by ( 21)).
+Formally, the fault preservation property is expressed by the following theorem and corollary.
+Theorem 4.3 Let comm /equal1{ | send,receive |}, and let eA(a,·) be injective. Then, the e/d round-trip property ( 20)
+and condition ( 21) imply
+SYSe-pm\comm /subsetsqequalSYSe\comm (22)
+Corollary 4.4 Under the same hypotheses of Theorem 4.3,
+∀SPEC ·SYSe-pmsatSPEC ⇒SYSesatSPEC (23)Safe abstractions of data encodings in formal security protocol models 147
+Summing up the results of Theorem 4.3and Corollary 4.4, if the adversary knowledge in the abstract system
+is no less than the adversary knowledge in the reﬁned system, and the e/d round-trip property holds (i.e. the
+implementation of the encoding function of each actor is the inverse of the implementation of the decodingfunction of the same actor), then the more abstract SYS
+e-pmcan be veriﬁed instead of SYSe, for any security
+property.
+By this result, when a model extraction approach like the one presented in [ BFGT06 ] is used, the veriﬁcation
+of any security property can be safely divided into two distinct veriﬁcations. On one hand, the veriﬁcation of
+the property on an abstract protocol model, where all the decoding functions that are modeled in this work by
+the DEC Aprocesses are left out. On the other hand, the veriﬁcation that the sequential code of each encoding
+procedure implements the inverse of the corresponding decoding procedure.
+The proof of Corollary 4.4is now given, and the proof of Theorem 4.3is sketched. The full proof of Theo-
+rem 4.3is available in Appendix A.2.
+Proof of Corollary 4.4 From Theorem 4.3, the trace reﬁnement relation ( 22) implies
+SYSe-pm\comm satSPEC ⇒SYSe\comm satSPEC
+Then, by using the ⇐side of assumption ( 3), it follows that ( 23) holds. /square
+The proof of Theorem 4.3uses the following lemma, which states the trace reﬁnement relationship that binds
+Pe-pm
+Aand Pe
+A.
+Lemma 4.5 Let comm A/defines{|send.A,receive ?B.A|}.I f( 20) and ( 21) hold, then, for any A∈Honest ,
+(Pe-pm
+A/bardblADV (AKe-pm
+0))\comm A/subsetsqequal(Pe
+A/bardblADV (AKe
+0))\comm A (24)
+This lemma descends from the fact that, as already observed, the difference between Pe-pm
+Aand Pe
+Astands only
+inreceive ?B.Aevents. If such events are hidden, and Pe-pm
+Ais combined with an adversary that is not less powerful
+than the one combined with Pe
+A, the fault traces occurring in Pe
+Acan occur in Pe-pm
+Atoo. Technically, the proof
+of Lemma 4.5, which is in Appendix A.3, is based on proving that the two sides of ( 24) are bound by a weak
+simulation relationship. This relationship, which formalizes the intuition given above, implies trace reﬁnement.
+Proof sketch of Theorem 4.3Let us start from SYSe-pmand let us substitute, one by one, each Pe-pm
+A into the
+corresponding Pe
+A. At each substitution step a new process is obtained that can be proved, by using Lemma 4.5,
+to be a trace reﬁnement of the previous one. More precisely, this part of the proof is done by induction.
+The base of the induction is
+∀X∈Honest · SYSe-pm\comm /subsetsqequal/parenleftbig/parenleftbig
+|||A∈Honest \{X}Pe-pm
+A|||Pe
+X/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+This relation can be proved to hold by using Lemma 4.5, the property of /subsetsqequalaccording to which for any context
+C[] we have A/subsetsqequalR⇒C[A]/subsetsqequalC[R], and a distribution-like property of hiding over parallel composition in CSP .
+The induction step is formulated as
+∀X∈Honest \Ref/parenleftbig/parenleftbig
+|||A∈Honest \RefPe-pm
+A||| ||| B∈RefPe
+B/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+/subsetsqequal/parenleftbig/parenleftbig
+|||A∈Honest \(Ref∪{X})Pe-pm
+A||| ||| B∈Ref∪{X}Pe
+B/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+The induction step can be proved in a way similar to the base. /square
+5. Introducing equational theories
+Equational theories are sometimes useful in security protocol models, when different forms of a message need
+to be considered equal. For example, one may want to identify nested pairs with different associativity, like for
+example (( M,N),O) and ( M,(N,O)), if one is just interested in the ordered list of elements contained in a nested
+pair.
+A way to introduce an equational theory in the protocol model is explained in [ HL01 ], and is based on the
+definition of a normal form for messages. As the equational theory introduces an equivalence relation on the setof messages, for each equivalence class a unique message of that class is selected as the normal form of all the
+messages belonging to the class.148 A. Pironti, R. Sisto
+Formally, a normal form function nf:Message →Message is introduced that turns a message into its normal
+form. The property that nfmust satisfy in order to be a valid normal form function is
+nf(M)/equal1nf(N)⇐⇒ M/equal1EN (25)
+where /equal1Emeans equality modulo the equational theory while /equal1is the original syntactic equality of the term
+algebra. In other words, if we take the normal form of messages, equality modulo the equivalence relation is
+reduced to syntactic equality.
+In [HL01 ], it is showed how a normal form function can be deﬁned for pairs, so that, for example, ( M,(N,O))
+and (( M,N),O) are considered equal, but, of course, a normal form can be deﬁned for other equational theories
+as well.
+After having deﬁned nf, the models of protocol actors are constrained to use only messages in normal
+form by applying nfto any message expression occurring in any protocol actor process. In particular, since
+send and receive action preﬁxes now take the form send.A.B.nf(M)a n d receive .B.A.nf(M) respectively, each
+actor process can only send and receive messages in normal form. Similarly, all claimSecret ,running and
+ﬁnished events can only occur with messages in normal form. Only leak events, that are executed by the
+adversary without synchronization with actor processes, may in principle lead messages that are not in normal
+form.
+In order not to limit the adversary power, when a normal form is introduced it is necessary to ensure that
+the adversary can always compute nf(M), so that all the messages that are in the adversary’s knowledge can
+be leaked in the normal form. To do this, the following new rule is added to the definition of the knowledge
+derivation relation:
+normal form :U/turnstileleftM⇒U/turnstileleftnf(M)
+Should this be omitted, our definition of secrecy would not catch the right Dolev–Yao secrecy concept. For
+example, it would be possible that claimSecret happens on a normal form message nf(M), and the adversary
+can derive an equivalent message Mthat is not in normal form, but he cannot derive nf(M) itself. In this case,
+secrecy as deﬁned in this paper would hold, despite the message not being really secret according to the Dolev–Yao secrecy concept in the presence of an equational theory. The normal form derivation rule solves this issue,
+making the secrecy definition of this paper match with the Dolev–Yao secrecy concept.
+With some equational theories the additional derivation rule is superﬂuous: for example, with equality mod-
+ulo associativity of pairs, the only way for the adversary to derive a message Mthat is not in normal form is by
+the pairing rule, and nf(M) can also be derived using the pairing rule in a different way. However, with other
+equational theories it is necessary to keep the normal form derivation rule explicit; an example will be providedin the next section.
+As also observed in [ HL01 ], the definition of a normal form is very much orthogonal to how the results
+about fault-preserving simplifying transformations have been obtained. In particular, it can be proved that allthe theorems about fault preservation of renaming transformations that are used in this paper are still valid when
+using a normal form for messages in the way explained above. This implies that Theorems 3.2,4.1,a n d 4.2still
+hold.
+Let us now consider the other theorems that do not rely on renaming transformations.
+The proof of Theorem 3.1is based on a re-parenthesization of processes, which, of course, can be done in the
+same way when normal forms are used. The core of the proof is then the proof that ADV-ML is a trace reﬁnement
+ofADV . This still holds when using a normal form for messages because the ADV process can always derive the
+normal form of any known message.
+In Theorem 4.3, the exploited CSP properties are valid under the condition that the alphabets of the protocol
+agents are disjoint, which is still satisﬁed in case the normal form of messages is used. Indeed, the protocol agents’
+alphabets are disjoint (so that they use the adversary as the proxy for their communication) due to the agentnames used within the events, rather than the exchanged messages.
+In Lemma 4.5, the simulation relation is not deﬁned on messages, and so it remains unchanged. Finally, all
+analyzed traces can happen, and the subset relation between the adversary knowledges in the two systems stillholds when a normal form is used, because the adversary can always generate messages in normal form.Safe abstractions of data encodings in formal security protocol models 149
+6. Applications and examples
+This section shows some practical applications of the results illustrated in this paper. First, it is showed how all
+sufﬁcient abstraction conditions stated in this paper can be met on a class of concrete encoding schemes, that
+includes XML encodings.
+Then, the modeling of an SSH Transport Layer Protocol client is presented. Both an abstract model and a
+reﬁned one are provided, along with checks or assumptions needed on implementation code in order to preserve
+security properties from the abstract model to the reﬁned one. The reﬁned model includes altogether marshal-
+ing/unmarshaling functions for network messages, as explained in Sect. 3, and encoding/decoding functions for
+data on which cryptographic operations are applied, as illustrated in Sect. 4.
+6.1. A class of data encodings including XML encodings
+The encoding schemes considered in this example simply add a header to each part of the message being encoded,
+and do not alter the message content itself. Formally:
+e(a,(M,M/prime))/equal1(e(a,M),e(a,M/prime))
+e(a,M)/equal1(head (a,M),M) (26)
+where head (a,M)∈deds({a,M}) is a header that may depend on parameters aand on message M. The peculiar-
+ity of this kind of encoding function is that it distributes headers across pairs. It is possible to deﬁne the symmetric
+encoding function, that adds a trailer, or padding, to data; it is furthermore possible to combine the two.
+This class of encoding schemes is general enough to include, for example, XML encodings. Then, it can be
+used to model the data encodings used in the protocols of the WS-Security [ NKHBM06 ] standard.
+In [BFG06 ], an implementation of the XML encoding scheme where XML fragments are internally rep-
+resented as F# (an ML dialect) records is described. For example, the XML security header speciﬁed in theWS-Security standard is internally stored as:
+type security = {
+timestamp: ts;
+utoks: utok list;xtoks: xtok list;ekeys: encrkey list;
+dsigs: dsig list }
+Then, a set of gen* andparse* functions, implemented in F#, is used to translate internal records to and from
+XML, for example when an XML fragment must be encrypted.
+In the CSP modeling framework for cryptographic protocols used in this paper, an F# record (i.e. the internal
+data representation) can be modeled by means of nested pairs. The F# functions translating to and from XML,
+are actually encoding functions that add some XML header and trailer to each element of the record, that is tothe nested pairs. Thus, the gen* andparse* functions behave like the encoding scheme deﬁned in ( 26).
+If these functions can be proved side-effect free and memoryless, and if they only use the given input param-
+eters or hard-coded values (which amounts to check an information ﬂow property on the implementation code),then all the sufﬁcient conditions required in Sect. 3are satisﬁed. So, if these functions are used to generate the
+XML encoding that is exchanged on communication channels, then they can be safely left out when using the
+model extraction approach.
+Moreover, assuming that the conditions required in Sect. 3are met, in order to check that the implementation
+of these functions satisﬁes Theorem 4.3, it is enough to additionally check that, on one hand, the gen* functions
+only add a tagged fragment before and after any record element, leaving the record element unchanged (withthe exception of canonicalization operations, which are abstracted in the model). The added tagged fragment
+may be anything that can be correctly recognized in the decoding phase. This implies that the tagged fragment
+is something that cannot occur as part of a normal message to be encoded, which also implies injectivity ofthe encoding function implementation. For Theorem 4.3to hold, correctness of implementation w.r.t. the XML
+speciﬁcation is not required. On the other hand, it is enough to check that the parse* functions match some
+expected tagged header and trailer, that must comply with the expected record type and value, and that they storethe data between header and trailer into the proper record ﬁeld without further modiﬁcation (with the exception
+of canonicalization operations).150 A. Pironti, R. Sisto
+For applying Theorems 4.1and 4.2, the correctness of the encoding functions implementation w.r.t. their
+speciﬁcation is additionally needed. This amounts to the extra check that the tagged data added by the encoding
+gen* functions, and recognized by the decoding parse* functions, actually comply with the XML and WS-Secu-
+rity standards. However, this simpliﬁcation step is less important, because most of the complexity is eliminated
+in the ﬁrst step.
+6.2. Experimental results
+In [BFGT06 ], a model extraction approach for security protocols was proposed. The FS2PV tool automatically
+extracts a ProVerif [ Bla01 ,AB05 ] model from the F# implementation of a protocol, and then security prop-
+erties are checked with the ProVerif tool on the extracted model. A ProVerif model is speciﬁed in applied picalculus [ AF01 ]. Although a formal mapping between applied pi calculus and CSP is outside the scope of this
+paper, both modeling languages rely on a Dolev–Yao algebraic datatype and adversary. So, when experimentally
+evaluating our approach, the ProVerif tool and applied pi calculus will be used, although the results in this paperare formally developed in CSP only.
+In [BFGT06 ], when model extraction is performed, a model is extracted from the gen* andparse* function
+implementations too, and a global protocol model including the model of these encoding functions is formally
+analyzed. Moreover, messages are modeled in their encoded, complex form. As reported by some of the same
+authors in [ BBF+11 ] when reviewing the model extraction approach with FS2PV ,
+“Even if ProVerif scales up remarkably well in practice, beyond a few message exchanges, or a few hundred lines of F#, veriﬁcation becomes
+long (up to a few days) and unpredictable (with trivial code changes leading to divergence).”
+Applying the simpliﬁcations proposed here is a way to reduce model size and veriﬁcation complexity.
+In this section, the gain obtained with the proposed approach is evaluated in terms of veriﬁcation time on a
+case study based on FS2PV and ProVerif.
+In order to provide a fair evaluation, the most recent (and optimized) versions of the tools are used. The
+current version of FS2PV comes with the Otway–Rees example only, the other examples presented in [ BFG06 ]
+having been discontinued. Hence, our evaluation is done on the Otway–Rees protocol.
+The ProVerif model extracted from the full F# implementation of the protocol is 578 lines long, while the
+ProVerif model extracted by ignoring the gen* andparse* functions is almost half in size, counting 324 lines.
+Veriﬁcation of the simpliﬁed model is on average 1 .32±0.01 times faster than veriﬁcation of the same properties
+on the reﬁned model. The reductions in size and veriﬁcation time can in general mitigate the problems exposed
+in [BBF+11 ]. In particular, the reduction in model size seems a key factor for reducing unpredictability and
+divergence, according to the experience reported in [ BBF+11 ].
+With the current version of the FS2PV tool, we had to manually alter the F# code so that the encoding/decod-
+ing functions could be ignored. However, it would be fairly easy to extend the FS2PV tool so that functions
+belonging to user-speciﬁed F# modules would be ignored. So, at the cost of implementing the extension once,one could get the beneﬁt of smaller models and faster veriﬁcation every time the tool is used.
+6.3. Modeling an SSH transport layer protocol client
+In this example, lists of messages, like for example ( M,M/prime,M/prime/prime), stand for corresponding nested right-associating
+pairs, i.e. ( M,M/prime,M/prime/prime) stands for ( M,(M/prime,M/prime/prime)).
+The SSH Transport Layer Protocol [ YL06b ] (SSH-TLP) is part of the SSH three protocols suite [ YL06a ]; in
+particular it is the ﬁrst protocol that is used in order to establish an SSH connection between client and server.SSH-TLP gives server authentication to the client, and establishes a set of session shared secrets.
+6.3.1. Modeling SSH-TLP abstractly
+A possible fully abstract model of an SSH-TLP client is reported in Fig. 9. According to our modeling approach,
+this model is part of the abstract SYS , where one or more instances of SSHClient can partake together with one
+or more instances of the SSH-TLP server model, and with the adversary.
+The SSHClient process starts a protocol session with the server at line 2 by sending it the client identiﬁcation
+string denoted IDC . The server responds with IDS, the server identiﬁcation string, which is received by the client
+at the same line. Then, at line 3, the client generates and sends a nonce cookieC , followed by the client lists of
+supported algorithms CAlgs . The generation of a nonce is represented in CSP as an internal choice on the setSafe abstractions of data encodings in formal security protocol models 151
+Fig. 9. A possible fully abstract model of an SSH-TLP client
+Cookies ⊆Atom of all possible nonces. The server responds by sending a nonce cookieS , followed by the server
+lists of supported algorithms SAlgs , which are received by the client at line 4. Then, at lines 5–6, the client computes
+the value of the Difﬁe Hellman (DH) parameters gand pby computing the Negotiate (CAlgs ,SAlgs ,Param ) func-
+tion, which returns the requested negotiated algorithm parameter named Param , obtained from the supported
+client and server algorithms CAlgs and SAlgs .CryptoParameter ⊆Message is the set of messages that can be
+used as cryptographic algorithms or parameters. Once gand phave been obtained, at line 7 the client gener-
+ates a random private key xand sends EXP p(g,x) (its DH public key, as explained below), which is a message
+representing the result of the modular exponentiation e/equal1gxmod p.
+At line 8, the client receives a message containing the opaque server public key PubKeyS , the opaque server DH
+public key DHPublicS and the server signed ﬁnal hash [ {H(ﬁnalHash )}]PriKeyS . As prescribed by the signature algo-
+rithm, the server signature of ﬁnalHash is performed by encrypting, with the private key, the hashing of the message
+to be signed, rather than the message itself. The server computes its DH public key as DHPublicS /equal1EXP p(g,y),
+where yis the server’s DH private key. However the client is modeled to receive an opaque DHPublicS message,
+because the server DH public key is an opaque value from the client’s point of view. Analogous reasoning holds
+for public and private server keys PubKeyS and PriKeyS .T h et e r m ﬁnalHash is the value upon which agreement
+is required, and contains all the relevant data of a protocol session. At line 8 of Fig. 9, this term has not been
+expanded for simplicity. Its expansion is:
+ﬁnalHash /equal1H(IDC,IDS,(cookieC ,CAlgs ),(cookieS ,SAlgs ),PubKeyS ,
+EXP p(g,x),DHPublicS ,EXP p(DHPublicS ,x))
+The term EXP p(DHPublicS ,x), that is used inside the ﬁnal hash, is the DH shared key as computed by the client.
+This is the main session secret, shared between the client and the server. Finally, the GO(·) process invoked at
+line 9 deals with the security events of the protocol and is deﬁned as
+GO(DHKey ,ﬁnalHash ,PubKeyS ,IDS)/equal1
+(claimSecret .me.you.DHKey →ﬁnished .me.you.ﬁnalHash →STOP )
+|<PubKeyS /equal1/equal1 TrustedKeyOf (IDS)|>STOP
+That is, if the received server public key PubKeyS corresponds to the locally stored trusted key for the server
+identiﬁed by IDS, which is retrieved by the function TrustedKeyOf (IDS), then the protocol run ends well, and all
+security properties can be claimed, namely the secrecy of the DH shared key DHKey , and the agreement on the
+server signed ﬁnalHash . Agreement on ﬁnalHash implies agreement on all the data items on which it is computed.
+However, since the ﬁnal hash is used in later phases of the SSH protocol with other data in order to establish aset of session keys, it is required that actors agree explicitly on ﬁnalHash , and not only on its contents.
+To model the DH modular exponentiation properties, a new operator Ex p is added to the datatype:
+Ex p Message Message Message
+along with the syntactic sugar Ex p MNO /equal1EXP
+O(M,N). From the point of view of the adversary knowledge
+derivation relation /turnstileleft,Ex p represents a non invertible function like a hash. Accordingly, only a single exponenti-
+ation rule is needed, deﬁned as
+exponentiation : U/turnstileleftM∧U/turnstileleftN∧U/turnstileleftO⇒U/turnstileleftEXP O(M,N)152 A. Pironti, R. Sisto
+This rule is like the hashing one. For this reason, all previously proved results still hold.
+Now, to model the DH property such that the same DH shared key is obtained by a pair of agents via modular
+exponentiation of their own private DH key with the other agent’s public DH key, the following equation mustbe modeled
+EXP
+O(EXP O(M,N),N/prime)/equal1EXP O(EXP O(M,N/prime),N) (27)
+The two sides of the equation represent the same DH shared key, as computed by each agent. Then, equation ( 27)
+is such that this DH shared key is considered the same by all parties, regardless of the agent that computed it.
+Equation ( 27) entails an equational theory in the CSP model, and this can be treated by the approach explained
+in Sect. 5.
+The equational theory induced by ( 27) is a commutative property, so a normal form can be deﬁned by ﬁrst
+deﬁning a total ordering of messages and then taking as the normal form of equivalent messages the one where
+the arguments that can commute occur in the order deﬁned by the total ordering.
+The total ordering on messages can be deﬁned by ﬁrst introducing a total ordering on the set of atoms and
+a total ordering on the set of data operators. Formally, let us denote <Athe strict total order relation on Atom ,
+/Delta1the set of datatype operators, </Delta1the strict total order relation on /Delta1and<the strict total order relation on
+Message . Also, let δrange over /Delta1and n(δ) denote the arity of δ.
+Then, <can be deﬁned as the least relation that satisﬁes the following implications:
+A<AA/prime⇒ Ato m A< Ato m A/prime
+δ</Delta1δ/prime⇒δArg 1··· Arg n(δ)<δ/primeArg/prime
+1··· Arg/prime
+n(δ/prime)
+Mi<M/prime
+i∧∀ j∈[1,i−1]Mj/equal1M/prime
+j⇒δM1··· Mn(δ)<δ M/prime
+1··· M/prime
+n(δ)
+It is straightforward to prove that <is transitive and such that for any M,N∈Message exactly one of
+M<N,M/equal1N,a n d N<Mholds, which implies that <actually deﬁnes a total ordering on Message .
+The normal form function can ﬁnally be deﬁned as follows:
+nf(Ato m A)/equal1 Ato m A
+nf(EXP O(EXP O(M,N),N/prime))/equal1/braceleftbigg
+EXP nf(O)(EXP nf(O)(nf(M),nf(N)),nf(N/prime)) ifnf(N)<nf(N/prime)
+EXP nf(O)(EXP nf(O)(nf(M),nf(N/prime)),nf(N)) else
+nf(EXP O(M,N))/equal1EXP nf(O)(nf(M),nf(N))
+nf(δM1··· Mn(δ))/equal1δnf(M1)···nf(Mn(δ))
+The proof that ( 25) holds with this definition (and hence this is a valid normal form) can be done by induction
+on the size (i.e. number of operators) of M. The base case (size = 1) corresponds to M/equal1Ato m Aand is trivially
+true, while the induction case can be proved by using the definition of nf. Interestingly, this normal form func-
+tion is one that could not necessarily be computed by the adversary unless we give explicitly the adversary the
+capability to do so, because EXP O(EXP O(M,N),N/prime)/negationslash∈deds({EXP O(EXP O(M,N/prime),N)}) without the addition
+of the normal form derivation rule U/turnstileleftM⇒U/turnstileleftnf(M).
+Finally, such definition of the normal form leads to the desired DH property. In the DH key exchange algo-
+rithm, if Kand K/primeare the DH private keys, then EXP p(g,K)a n d EXP p(g,K/prime) are the DH public keys, where
+gand pare the DH group parameters, while EXP p(EXP p(g,K),K/prime)a n d EXP p(EXP p(g,K/prime),K) both represent
+the DH shared key that can be obtained by each actor. Only one of the two forms (the normal form) will actually
+occur in the protocol, the other one being converted to the normal form by function nf.
+6.3.2. Reﬁning the SSH-TLP model and checking sufﬁcient conditions for abstraction
+This section shows how the abstract model presented in the previous section can be reﬁned, according to the
+modeling approach presented in this paper, and how the checks required to safely abstract the reﬁned model can
+be done.
+Two kinds of details that have been studied in isolation, namely the marshaling layer, as modeled in Sect. 3,
+and the encoding of data to be ciphered or hashed and key material, as modeled in Sect. 4, are applied altogether
+in this model.Safe abstractions of data encodings in formal security protocol models 153
+Moreover, a new kind of reﬁnement, related to cryptographic algorithms and parameters, is needed in
+this example. For example, it is needed to distinguish whether a hash is performed by using the MD5 or the
+SHA-1 algorithms, or whether encryption is 3DES or AES. The abstract datatype deﬁned in Sect. 2, intentionally
+represents encryption or hashing independently of how they are concretely implemented.
+Different real cryptographic algorithms (e.g. SHA-1 or MD5) implement cryptographic primitives (e.g. a
+hash function) in different, incompatible ways, and missing information on the used algorithms may lead to misspossible security faults. For example, the SSH-TLP itself requires agreement on the value of the ﬁnal hash, which
+is then used as the material to build a set of shared session keys. If both actors are to obtain the same ﬁnalHash ,
+and compute the ﬁnalHash
+∼key, it is a prerequisite to key agreement that they have previously agreed on the
+same hashing algorithm and key construction algorithm. Otherwise, they could obtain the same symbolic value
+(a shared key obtained from a non invertible representation of the hashed data), but different concrete values.
+Then, key agreement may fail in the concrete world, even if the actors agree on the abstract ﬁnalHash∼key.
+In order to faithfully describe this issue, cryptographic algorithms and their parameters are sometimes intro-
+duced in abstract descriptions. For example, in [ HL01 ,BFGT06 ], encryption functions are distinguished accord-
+ing to the algorithm and parameters they use.
+In this example, in order to handle cryptographic algorithms and parameters, one could extend the data-
+type and the associated derivation relation /turnstileleftshowed in Sect. 2. The obtained datatype would be similar to the
+one presented in [ HL01 ]. However, this approach would not give us the opportunity to easily discuss about the
+conditions under which abstracting these details is safe.
+So, the idea is to ﬁt cryptographic algorithms and parameters inside the current datatype, and then to abstract
+them away, by reusing some results already obtained in this paper. In practice, the cryptographic algorithms and
+parameters are taken from the set CryptoParameter ⊆Message and are added as the ﬁrst argument of each crypto-
+graphic operation. The reﬁned model that is obtained in this way corresponds to the ones used in [ HL01 ,BFGT06 ]
+where different encryption, decryption and hashing functions are used for each different choice of algorithms
+and parameters.
+For example, the reﬁned encryption
+[{RSA,H(SHA 1,M)}]PriKey
+expressed in the modeling framework being presented here, corresponds, using an approach like the one presented
+in [HL01 ,BFGT06 ], to a term like RSAEncrypt (PriKey ,SHA 1Hash (M)), i.e. the hashing of Mperformed using
+the SHA-1 algorithm and associated parameters, encrypted with the RSA algorithm and associated parameters.
+The three different kinds of reﬁnements must be applied on the same system in the correct order, so as to avoid
+improper interactions: ﬁrst, data to be ciphered or hashed and key material should be reﬁned; then cryptographic
+algorithms and parameters should be added; ﬁnally the marshaling layer should be introduced.
+The reﬁned model for the SSH-TLP client includes, in addition to a reﬁned model of the client protocol logic,
+which can be rewritten as in Fig. 10, a marshaling layer model ML A, and a decoding process model DEC A. Most
+of the complexity of the protocol indeed stands in ML Aand DEC A.
+In Fig. 10,string denotes the SSH string encoding, bytes denotes a raw encoding (a sequence of bytes), mpint
+denotes the SSH encoding of a multiple precision integer and namelists denotes the SSH encoding of a list of lists
+of strings. The bin pack parameter speciﬁes that the SSH-BPP encoding as depicted in Fig. 2b must be used, with
+apayload made up of as many ﬁelds as the number of subsequent parameters, each of which in turn speciﬁes
+the encoding to be applied to each ﬁeld. So, for example, KEX speciﬁes the encoding of an SSH key exchange
+packet, which is an SSH-BPP packet with a payload that includes a sequence of bytes followed by a list of strings.
+Similarly to the abstract model, at line 2, the client exchanges client and server identiﬁcation strings by the
+ﬁrst two protocol messages, while at lines 3–4 the client and server key exchange messages are sent, containing
+the client and server nonces and the lists of supported algorithms. Then, at lines 5–10 algorithms negotiationtakes place. While in the abstract model only pand gwhere explicitly negotiated, because they were needed by
+theEXP function anyway, in the reﬁned model all negotiated algorithms and parameters occur. In particular, the
+FinalHashAlg ,SignHashAlg ,SignMode ,a n d SignPadding variables represent the cryptographic algorithms and
+parameters (such as SHA-1 for FinalHashAlg or RSA for SignHashAlg ) that are negotiated for the protocol run.
+As in the abstract model, at line 11, the client sends his DH public key to the server, while at line 12 he receives the
+server public key, the server DH public key, and the server signature of the ﬁnal hash, performed with the serverprivate key. Interestingly, since the client has the corresponding server public key (also received at line 12), at
+line 12 the result of decrypting the server signature is stored into variable y, which represents the encoded form of154 A. Pironti, R. Sisto
+Fig. 10. A possible reﬁned model of an SSH-TLP client
+the data signed by the server. At lines 13–14, the client deals with his encoding layer DEC A, sending the encoded
+signed data to DEC A, and getting back the internal representation of such signed data. Finally, the protocol run
+ends at line 15 with the invocation of the GOprocess, dealing with the security events for the protocol run.
+The eme(·) function used in this reﬁned model represents the implementation of encoding transformations. Its
+detailed description is omitted here for simplicity.
+Let us show now how, by the results presented in this paper, this reﬁned model can be simpliﬁed to perform
+formal veriﬁcation of security properties, and what checks or assumptions are needed on the sequential code thatimplements encoding/decoding functions in order to safely apply each simpliﬁcation.
+In order to remove the models of the marshaling layer ML
+Afrom the reﬁned system model SYSm, the two
+steps described in Fig. 5are applied in order. Step 1, which is justiﬁed by Theorem 3.1, requires by the defini-
+tion ( 6) that the adversary knowledge used for veriﬁcation in the abstract system includes encoding parameters
+(already showed to be a reasonable constraint). Moreover, the implementation of the marshaling functions must
+be checked to be memoryless, and to access no external data but their input parameters (which amounts tocheck an information ﬂow property on sequential code). Since the properties to be veriﬁed for this protocol are
+secrecy and authentication, also step 2 can be performed, further abstracting the Ato m Lterm and the mes-
+sages in Marshaling that have been added by the marshaling layer reﬁnement procedure. This step, justiﬁed by
+Theorem 3.2, can be applied without the need of further checks.
+In order to abstract away the decoding processes DEC
+A, added by the reﬁnement about encoding functions
+applied to data to be ciphered or hashed, according to Theorem 4.3three conditions have to be checked: (i) the
+injectivity of the encoding function implementation eme(·) must be checked on its sequential code; (ii) the e/d
+round-trip property ( 20) must be checked on the sequential code of the implementation of the encoding and
+decoding functions eme(·)a n d dme(·); and (iii) the same data ﬂow properties already speciﬁed for the marshaling
+and unmarshaling functions must be checked. Finally, the adversary knowledge must not be smaller in the abstract
+system w.r.t. the adversary knowledge in the reﬁned system, which is enforced when verifying the abstract system.
+When verifying secrecy, by Theorem 4.1even data encodings can be abstracted, by removing the eme(·) func-
+tions from the client role model, provided the implementation of the sequential encoding/decoding functions is
+showed to be correct with respect to their speciﬁcation; this check can be done in isolation. The same simpliﬁ-
+cation can be applied when verifying authentication, by exploiting Theorem 4.2, but in this case condition ( 17)
+must be guaranteed to hold too. As discussed in Sect. 4.1when introducing condition ( 17), this can be ensured
+by explicitly adding the negotiated parameters to the internal actions used to specify agreement. For example,
+theﬁnished action should become
+ﬁnished .me.you.(ﬁnalHash enc,FinalHashAlg )Safe abstractions of data encodings in formal security protocol models 155
+This condition is needed even though the negotiated algorithm is already included in the agreed CAlgs and
+SAlgs , because it is necessary to ensure that the speciﬁc negotiated algorithm is agreed, rather than the sets of
+algorithms from which it is selected.
+The models of cryptographic algorithms and parameters only affect data terms including cryptographic
+operations. As previously hinted, the idea is to reuse some results presented in this paper, namely the modeling
+approach developed in Sect. 4, in a particular way, such that the models of cryptographic algorithms and param-
+eters can be represented as encodings in the current datatype, rather than being explicitly added to it. The main
+advantage is that the sufﬁcient abstraction conditions already showed in Sect. 4can be directly reused in order
+to abstract cryptographic algorithms and parameters too.
+So, referring to the modeling approach presented in Sect. 4, let us deﬁne the following encoding:
+e(a,M)/equal1(a,M)
+d(a,(a,M))/equal1M
+d(a,N)/equal1Ato m E,ifNdoes not take the form ( a,M)(28)
+that formally deﬁnes the reﬁnement that models cryptographic algorithms and parameters. Clearly, by these
+definitions e(a,·) is injective and the e/d round-trip property ( 20) is satisﬁed. Here, a∈CryptoParameter are the
+cryptographic algorithms and parameters chosen according to the protocol speciﬁcation documents. However,
+this reﬁnement is only a data reﬁnement; in particular it does not add any decoding process, nor the associatedint
+send and intreceive actions, because there is no direct mapping of this reﬁnement to protocol implementa-
+tions. Indeed, the Dolev–Yao model used in this paper assumes perfect cryptography, so the only errors that can
+be found by this reﬁnement are logic ones, not implementation speciﬁc ones.
+Then, in order to verify the secrecy property, by the results stated in Sect. 4, cryptographic algorithms
+and parameters can be abstracted away with no additional check. When verifying authentication, they canbe abstracted away if condition ( 17) holds, which can be ensured as already explained for the abstraction of
+encodings applied to data on which cryptographic operations are performed.
+7. Conclusions
+The work presented in this paper is a useful step towards the veriﬁcation of reﬁned security protocol models that
+take data transformations into account, thus allowing formal veriﬁcation to get closer to protocol code written
+in a programming language.
+The main contributions of the paper are:
+•the formulation of a set of sufﬁcient conditions under which the models of data encoding and decoding functions
+can be safely simpliﬁed or even completely abstracted away under the Dolev–Yao assumption
+•the formal justiﬁcation of the above conditions
+It has been showed that different conditions apply to different kinds of encoding and decoding operations.
+Specifically, two kinds of data transformations can be distinguished.
+For what concerns marshaling functions, a reﬁned protocol model corresponding to a typical layered imple-
+mentation of such operations has been deﬁned. It has been proved that, in order to verify secrecy or authentica-
+tion properties on the reﬁned model, it is enough to verify those properties on the corresponding abstract model,provided that the adversary knows the encoding parameters, which is a reasonable assumption. Alternatively, in
+order to check a generic security property deﬁned on protocol traces, still a simpliﬁed reﬁned model, that excludes
+explicit models of encoding and decoding functions but preserves the parameters of such operations, can be usedin place of the full one.
+The model of encoding schemes that has been developed in this work is general enough to take into account
+a widely used class of encoding schemes and implementations, namely the memoryless and side effect free ones.Moreover, no assumption has been made about invertibility nor about implementation correctness of marshal-
+ing functions; instead, it is only required that the implementation of such marshaling functions satisﬁes some
+information ﬂow properties, that can be checked by standard static analysis techniques. The consequence ofthis result is that, if such information ﬂow properties are satisﬁed on implementation code, then even erroneous
+speciﬁcations or implementations of encoding schemes cannot be more harmful than a Dolev–Yao adversary is.156 A. Pironti, R. Sisto
+Then, in order to deal with the wider class of encoding functions, including the ones applied to data to be
+ciphered or hashed, a more general model supporting a wide class of data encoding schemes has been intro-
+duced. On this model, it has been showed that the models of the decoding operations can be safely omitted whenverifying security properties, but under stricter constraints: it is required that the implementations of encoding
+functions are injective and that they are the inverses of the corresponding decoding functions for each actor. If
+secrecy is being veriﬁed, then the encoded form of messages can also be safely abstracted away, by additionallychecking that the implementation of the encoding and decoding functions is correct w.r.t. their speciﬁcation and
+by ensuring that encoding parameters are in the adversary knowledge. If instead authentication is being veriﬁed,
+then the encoded form of messages can be abstracted if all actors agree on the same encoding parameters too.This condition can be checked as part of the abstract protocol veriﬁcation, as shown in Sect. 6.
+Therefore, an important distinction in criticality has been showed to exist between marshaling functions,
+for which neither invertibility nor correctness is needed, and encodings applied to key material or to data to be
+encrypted, for which both are needed in order to use the fully abstract model.
+A previous work related to our approach is [ KR06 ], where it is showed that any Dolev–Yao model of a
+WS-Security protocol, where the XML encoding is embedded into the datatype, can be simpliﬁed into a more
+abstract protocol, still preserving secrecy and agreement, by abstracting away XML tag encodings and just keep-
+ing the contents of XML elements. Another related work is [ BCFG07 ], where WS-Security protocols are veriﬁed
+for security properties. In those works, XML tags are part of the datatype. It turns out that the results being
+presented here can be reused to generalize in two directions the works of [ KR06 ,BCFG07 ]. On one hand, the
+work presented here takes the implementation of encoding functions into account, and is not limited to consideronly how they are speciﬁed. On the other hand, the results proposed here apply to any encoding scheme, XML
+and WS-Security being a particular instance of it.
+Although some of the results presented in this paper are probably not so surprising, all of them have been
+formally proved for the ﬁrst time in this paper, and they ﬁnd application in improving the development of for-
+mally veriﬁed implementation code of security protocols, both using the code generation approach or the model
+extraction approach.
+An important step towards a formally safe reﬁnement process in methods based on code generation has been
+made. For example, when dealing with marshaling operations, the developer only needs to write and verify the
+abstract protocol model, and the code generation engine can take care of ensuring that the generated code meetsthe data ﬂow assumptions made about the reﬁned model. A similar approach can be used to deal with encod-
+ing and decoding operations made on data on which cryptographic operations are applied. In this case, more
+constraints are required on the generated implementation code. By the way, it has been showed that, at least forthe important class of XML encodings, the check on the correctness of the encoding and decoding functions is
+simple enough.
+When adopting a model extraction approach, the results presented in this paper can be used to simplify the
+extracted model. We have showed that, by abstracting away implementation details from the model, a reduction in
+the time needed for formal veriﬁcation and the possibility to analyze more complex protocols are ﬁnally achieved.
+It may be argued that, in order to abstract details away, some properties have to be veriﬁed on the implemen-tation code. This is true, however, the implementation code to be checked is sequential and independent from
+the adversary, and thus simpler to be checked in isolation than it is checking a full protocol model, which is a
+concurrent system that includes a detailed model of the encoding and decoding functions and an adversary.
+Moreover, sometimes the source code that implements encoding and decoding functions may not be available
+(e.g. for libraries). In such cases, code extraction is even impossible. The results presented in this paper show what
+are the requirements on this code, which can be used to derive specifically targeted testing procedures in order to
+get a good assurance level in these cases too.
+Some issues on the topics presented in this paper are still open for future work. In particular, the conditions
+under which the ﬁnal transformation back to the original abstract model is safe for other security trace properties
+or for security properties not deﬁned on traces (e.g. strong secrecy) could be further explored. Furthermore, one
+could consider veriﬁcation with computational models or timed models instead of veriﬁcation with Dolev–Yaomodels. For example, in [ BCF07 ] it is explicitly stated that being able to safely exclude some parts of protocol
+implementations would be useful in model extraction, when dealing with a computational model too; it is believ-
+able that stricter constraints on the implementation code than the ones presented in this paper will be required,however. After all, a Dolev–Yao model provides a simple but rigorous way to reason about security protocols,
+but it also provides a limited form of security assurance. It can uncover and avoid several kinds of logical errors
+in security protocols, which makes it very useful, but it should be complemented by more low-level risk analysisSafe abstractions of data encodings in formal security protocol models 157
+techniques, in order to get best security assurance. Specifically, protocols formally veriﬁed by using Dolev–Yao
+models can still be affected by lower-level security faults, like for example the ones showed in [ BKN02 ,APW09 ].
+Extending the work presented here to computational models and timed models could then undoubtedly broadenits application scope.
+Acknowledgements
+We thank the authors of [ BFG06 ] for kindly providing access to the FS2PV tool and support on reproducing
+their results. We wish also to thank the anonymous reviewers for their helpful comments.
+Appendix: Proofs of Theorems
+A.1. Proof of Theorem 3.1
+The following statement is proved, that implies the theorem: for all traces tr/primeofSYSmsuch that an attack exists
+intr/prime, there exists a trace tr/prime/primeofSYSm-noML, such that an attack exists in tr/prime/primetoo. Formally,
+∀tr/prime∈traces (SYSm)·¬ SPEC (tr/prime)⇒
+∃tr/prime/prime∈traces (SYSm-noML)·¬ SPEC (tr/prime/prime)
+In order carry out the proof, the intermediary SYSm-advMLdepicted in Fig. 6is used. It is formally deﬁned as
+SYSm-advML/defines(|||A∈Honest PLm
+A)||ADV-ML
+where PLm
+Ais communicating on the send and receive channels. To avoid ambiguities in the remainder of the
+proof, the ADV-ML process, which is the part inside the dashed box in Fig. 6, is formally deﬁned as
+ADV-ML /defines(((|||A∈Honest MLs
+A)/bardblADVs(AKm
+0))\{ | int|}) (29)
+where the swapping of the communication channels is made explicit by deﬁning
+ext/equal1send,receive
+MLs
+A/equal1ML A[[int,ext/ext,int]]
+ADVs(AKm
+0)/equal1ADV (AKm
+0)[[int/ext]]
+A lemma is now introduced. It is needed to complete the proof of this theorem.
+Lemma A.1. The adversary of SYSm-advMLis a trace reﬁnement of the adversary of SYSm-noML;
+ADV (AKm-noML
+0 )/subsetsqequalADV-ML
+By Lemma A.1. and by reﬁnement properties exposed in [ Ros97 ], it follows that
+SYSm-noML/subsetsqequalSYSm-advML
+Let us assume that a fault trace tr/primeexists in traces (SYSm). Recall that SYSm-advMLis obtained from SYSm,
+by injectively renaming communication channels of the processes appearing in SYSm. In particular, only the
+send ,receive ,intsend and intreceive channels are renamed by each other, so that they are in fact swapped.
+Moreover, since every renaming is injective, no non-determinism is introduced in the whole SYSm-advML.S o ,b y
+assumption ( 3), and by taking into account that events on private channels do not affect the truth of a security
+property, the trace tr/prime/prime/prime∈traces (SYSm-advML), that is obtained by swapping channels in tr/prime, is a fault trace too.
+Finally, since SYSm-noML/subsetsqequalSYSm-advMLholds, tr/prime/prime/primeis also a (fault) trace in SYSm-noML. Then, having showed that
+faults are preserved from SYSmtoSYSm-noML, the theorem is proved.
+Proof of Lemma A.1. In order to carry out the proof, the reachable states of ADV-ML are written explicitly. For
+this reason, let ML ibe deﬁned as a generic state reachable from |||A∈Honest MLs
+A. Moreover, for each state ML i,
+letMK ibe the “marshaling layer knowledge”, that is the set of all the encoded messages ready to be delivered to
+theADVscomponent of ADV-ML , but not yet dispatched to it.158 A. Pironti, R. Sisto
+Formally, MK iis a set of messages that can be deﬁned inductively. In the initial state
+ML 0/equal1||| A∈Honest MLs
+A
+we have MK 0/equal1∅. The evolution of MK iafter an event ecan be represented by an extension of thee−→ state
+transition relation as follows: MK ie−→ MK jmeans that the occurrence of ein a state where the set of encoded
+messages ready to be delivered to ADVsisMK ileads to a new state where the new set is MK j. Now, since the
+events eoccurring in ML ican only take 4 different forms, the relatione−→ on sets of messages can be deﬁned
+by enumeration. By the definition of process ML Ain Fig. 4, and taking into account that MLs
+Ahas swapped
+channels, it follows that
+MK isend.A.B.(Ato m L,(a,M))−→ MK i∪{eA(a,M)}
+MK ireceive .A.B.(Ato m L,(a,M))−→ MK i
+MK iint send.A.B.eA(a,M)−→ MK i\{eA(a,M)}
+MK iint receive .A.B.y−→ MK i
+A generic state of ADV-ML then takes the form
+ADV-ML i/defines(ML i/bardblADVs(AKm
+i))\{ | int|}
+where AKm
+iis the current adversary knowledge. The initial state is
+ADV-ML 0/equal1ADV-ML
+i.e.
+ADV-ML 0/equal1(ML 0/bardblADVs(AKm
+0))\{ | int|}
+Finally, the total knowledge MAK iassociated with state ADV-ML iis deﬁned as
+MAK i/definesMK i∪AKm
+i
+By Lemma 2.1,i ns t a t e ADV-ML i,w eh a v e deds(AKm
+i)⊆deds(MAK i).
+Let us preliminary prove the following
+Lemma A.2.
+ADV-ML iτ−→ ADV-ML j/equal1⇒ MAK i/equal1MAK j
+whereτ−→ represents the occurrence of an internal event (i.e. an event not visible from the environment, like for
+example a hidden event).
+Proof There are two possible cases: τcomes from an intsend event, or τcomes from an intreceive event.
+caseτcomes from event intsend.A.B.eA(a,M) By the definition of each process MLs
+A, a corresponding send.A.B.
+(Ato m L,(a,M)) must have previously occurred. So, by the definition of MK i,
+eA(a,M)∈MK i
+and
+MK j/equal1MK i\{eA(a,M)}
+and, by the definition of ADVs,
+AKm
+j/equal1AKm
+i∪{eA(a,M)}
+soMAK i/equal1MAK j.
+caseτcomes from event intreceive .A.B.yBy the definition of MK i,
+MK j/equal1MK iSafe abstractions of data encodings in formal security protocol models 159
+and, by the definition of ADVs,
+AKm
+j/equal1AKm
+i
+soMAK i/equal1MAK j. /square
+Now that Lemma A.2. is proved, the following property can be proved for each trace tr, which implies
+Lemma A.1.:
+(ADV-ML 0tr/equal1⇒ ADV-ML f)/equal1⇒
+∃AKm-noML
+f |(ADV (AKm-noML
+0 )tr/equal1⇒ ADV (AKm-noML
+f )∧deds(MAK f)⊆deds(AKm-noML
+f ))
+The proof is based on induction on the length of trace tr.
+Base ( length (tr)/equal10)Since tris the empty trace
+ADV-ML 0τ−→∗ADV-ML f
+Then, by Lemma A.2.,w eh a v et h a t
+MAK f/equal1MAK 0/equal1MK 0∪AKm
+0/equal1AKm
+0
+Moreover, ADV (AKm-noML
+0 ) cannot execute internal events, so if we take
+AKm-noML
+f /equal1AKm-noML
+0
+then, considering that by definition ( 6) it follows that
+AKm
+0⊂AKm-noML
+0
+we can conclude deds(MAK f)⊆deds(AKm-noML
+f ).
+Induction ( length (tr)/equal1n+1)The trace tris then composed of a subtrace tr/primeof length n, followed by the n+1th
+event. There are three possible cases: the n+1thevent is a send,receive orleak event.
+case n+1thevent is a send event By the definitions of processes and by inductive hypotheses
+ADV -ML 0tr/prime
+/equal1⇒ ADV -ML i
+Moreover:
+ADV-ML iτ−→∗ send.A.B.(Ato m L,(a,M))−→τ−→∗ADV-ML f
+By Lemma A.2.,MAK iwill remain unchanged for each τtransition before the send event, and MAK f
+will remain unchanged for each τtransition after the send event. Moreover, by definition,
+MAK f/equal1MAK i∪{eA(a,M)}
+At the other side, by inductive hypotheses, there exists AKm-noML
+i such that
+ADV (AKm-noML
+0 )tr/prime
+/equal1⇒ ADV (AKm-noML
+i )
+and
+ADV (AKm-noML
+i )send.A.B.(Ato m L,(a,M))−→ ADV (AKm-noML
+f )
+where AKm-noML
+f /equal1AKm-noML
+i ∪{(Ato m L,(a,M))}
+By inductive hypotheses, deds(MAK i)⊆deds(AKm-noML
+i ); by definition ( 5)o feA(a,M) and by Lemma 2.1,
+it follows that deds(eA(a,M))⊆deds((Ato m L,(a,M))). So
+deds(MAK i∪{eA(a,M)})⊆deds(AKm-noML
+i ∪{(Ato m L,(a,M))})
+thus deds(MAK f)⊆deds(AKm-noML
+f ).160 A. Pironti, R. Sisto
+case n+1thevent is a receive event By process definitions and by inductive hypotheses
+ADV-ML /Gamma1tr/prime
+/equal1⇒ ADV-ML i
+Moreover:
+ADV-ML iτ−→∗ receive .A.B.(Ato m L,(a,dA(a,y)))−→τ−→∗ADV-ML f
+By Lemma A.2.,MAK iwill remain unchanged for each τtransition before the receive event, and MAK f
+will remain unchanged for each τtransition after the receive event. Moreover
+MAK f/equal1MAK i
+At the other side, by inductive hypotheses, there exists AKm-noML
+i such that
+ADV (AKm-noML
+0 )tr/prime
+/equal1⇒ ADV (AKm-noML
+i )
+Then, we need to show that
+ADV (AKm-noML
+i )receive .A.B.(Ato m L,(a,dA(a,y)))−→ ADV (AKm-noML
+f )
+where AKm-noML
+f /equal1AKm-noML
+i , because the adversary knowledge does not change on receive events.
+Since, by inductive hypotheses, deds(MAK i)⊆deds(AKm-noML
+i ), and it has been showed that both MAK f/equal1
+MAK iand AKm-noML
+f /equal1AKm-noML
+i hold, it is possible to conclude that
+deds(MAK f)⊆deds(AKm-noML
+f )
+holds too. In order to complete the proof of this case, it is enough to show that the receive event
+indeed can happen in ADV (AK/prime/prime
+i), that is, in order to send ( Ato m L,(a,dA(a,y))) on the receive channel,
+ADV (AKm-noML
+i ) must be able to derive the required message from its knowledge.
+Ifaand yare derivable from AKm-noML
+i , then, by definition ( 5),dA(a,y) is derivable too, and, by applying
+the pairing rule, ( a,dA(a,y)) is derivable too. Message ais derivable from AKm-noML
+i with the member rule,
+since
+a∈Marshaling ⊂AKm-noML
+0 ⊆AKm-noML
+i
+Message yis derivable from AKm-noML
+i because, since the receive event can happen in ADV-ML i, then
+y∈deds(MAK i)
+and, by inductive hypotheses,
+deds(MAK i)⊆deds(AKm-noML
+i )
+thus y∈deds(AKm-noML
+i ).
+Finally, if Ato m Lis derivable from AKm-noML
+i , then, by applying the pairing rule, the required
+(Ato m L,(a,dA(a,y))) message can be obtained. The message Ato m Lis derivable from AKm-noML
+i with
+the member rule, because
+Ato m L∈AKm-noML
+0 ⊆AKm-noML
+i
+case n+1thevent is a leak event By process definitions and by inductive hypotheses
+ADV-ML /Gamma1tr/prime
+/equal1⇒ ADV-ML i
+Moreover:
+ADV-ML iτ−→∗ leak.M−→τ−→∗ADV-ML f
+By Lemma A.2.,MAK iwill remain unchanged for each τtransition before the leak event, and MAK fwill
+remain unchanged for each τtransition after the leak event. Moreover, the leak event is not engaged by
+theML iprocess, so MK f/equal1MK i, and, by the definition of adversary, Sf/equal1Si,s o MAK f/equal1MAK i.Safe abstractions of data encodings in formal security protocol models 161
+At the other side, by inductive hypotheses, there exists AKm-noML
+i such that
+ADV (AKm-noML
+0 )tr/prime
+/equal1⇒ ADV (AKm-noML
+i )
+and
+ADV (AKm-noML
+i )leak.M−→ ADV (AKm-noML
+f )
+where AKm-noML
+f /equal1AKm-noML
+i . So, by inductive hypotheses, it follows that deds(MAK f)⊆deds(AKm-noML
+f ).
+Finally, the leak.Mevent can indeed happen in ADV (AKm-noML
+i ) because, by hypotheses, the leak.Mevent
+c a nh a p p e ni n ADV-ML i, which implies M∈MAK i. Since, by inductive hypotheses, deds(MAK i)⊆
+deds(AKm-noML
+i ), it follows that M∈AKm-noML
+i too, so the leak.Mevent can happen in ADV (AKm-noML
+i ).
+/square
+A.2. Proof of Theorem 4.3
+As explained in the proof sketch, the proof idea for Theorem 4.3is to reﬁne all abstract protocol logics Pe-pm
+Ain
+SYSe-pminto their reﬁned counterparts Pe
+A, one at a time, thus reﬁning the whole SYSe-pmtoSYSe.
+Unfortunately, it is not possible to trivially infer this result directly from Lemma 4.5. Indeed, it is true that,
+for any processes Aand R, and for any context C[] ,
+A/subsetsqequalR⇒C[A]/subsetsqequalC[R]
+So, let us consider that Lemma 4.5holds for honest actor H. Then, setting the context to
+C[X]/equal1(|||A∈Honest \{H}Pe-pm
+A/bardblX)\comm
+leads to a process
+(|||A∈Honest \{H}Pe-pm
+A/bardbl((Pe-pm
+H||ADV (AKe-pm
+0))\comm H))\comm
+which is not trivially proved to have all and the same traces of SYSe-pm.
+The proof steps of trace reﬁnement reported here use two CSP operator properties that are introduced now.
+The ﬁrst property states that, for any processes P,Q,R,i fαP∩αQ/equal1∅, then
+P/bardbl(Q/bardblR)/equal1(P|||Q)/bardblR
+This property follows by the definition of the parallel and interleaved operators.
+Informally, this property means that if Pand Qcannot communicate directly (because, being the intersection
+of their alphabets empty, they cannot synchronize on any event), then, on one hand, Pcommunicating with
+Q/bardblR, is actually only communicating with R; on the other hand, Qis only communicating with R, and never
+with P. Thus, Racts as a proxy between Pand Q, while the latter two processes can execute in interleaving.
+The second property states that, for any processes P,Q,R,i fαP∩αQ/equal1∅, then
+(P/bardbl(Q/bardblR))\(αQ∩αR)∪(αP∩αR)/equal1(P/bardbl((Q/bardblR)\(αQ∩αR)))\(αP∩αR)
+Informally, this property means that, since Pand Qnever communicate directly, and Ris their proxy, from
+P’s view it is irrelevant whether communication between Qand Ris observable or not, thus allowing to put Pin
+parallel either with Q/bardblRor with ( Q/bardblR)\(αQ∩αR). However, from an observer point of view, communication
+between Qand Rmust always be hidden, so if it is not hidden with the ( Q/bardblR)\(αQ∩αR) process, it must be
+hidden at the top level process.
+Indeed, in the used Dolev–Yao approach, any pair of protocol actors has disjoint alphabets, because the
+adversary is the only proxy between any pair of actors, and they can never communicate directly. Thus, these
+properties directly apply when Pand Qare two processes representing interleaved actors and Ris the adversary.
+Trace reﬁnement is proved by induction over the number of protocol logics that are step by step reﬁned in
+SYSe-pm.
+base It will be proved that SYSe-pm, where all protocol logics are abstract, is reﬁned by a process where one
+protocol logic is reﬁned, that is
+∀X∈Honest ·/parenleftbig
+|||A∈Honest Pe-pm
+A/bardblADV (AKe-pm
+0)/parenrightbig
+\comm /subsetsqequal/parenleftbig/parenleftbig
+|||A∈Honest \{X}Pe-pm
+A|||Pe
+X/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm162 A. Pironti, R. Sisto
+The proof steps are:
+/parenleftbig
+|||A∈Honest Pe-pm
+A/bardblADV (AKe-pm
+0)/parenrightbig
+\comm
+/equal1/parenleftbig/parenleftbig
+|||A∈Honest \{X}Pe-pm
+A|||Pe-pm
+X/parenrightbig
+/bardblADV (AKe-pm
+0)/parenrightbig
+\comm
+/equal1/angbracketleftbig
+by letting Others /equal1||| A∈Honest \{X}Pe-pm
+A/angbracketrightbig
+/parenleftbig/parenleftbig
+Others |||Pe-pm
+X/parenrightbig
+/bardblADV (AKe-pm
+0)/parenrightbig
+\comm
+/equal1/angbracketleftbig
+by property of |||and/bardbl,and by α(Others )∩αPe-pm
+X/equal1∅/angbracketrightbig
+/parenleftbig
+Others /bardbl/parenleftbig
+Pe-pm
+X/bardblADV (AKe-pm
+0)/parenrightbig/parenrightbig
+\comm
+/equal1/angbracketleftbig
+by hiding property; letting comm−/equal1comm \comm X/angbracketrightbig
+/parenleftbig
+Others /bardbl/parenleftbig
+Pe-pm
+X/bardblADV (AKe-pm
+0)\comm X/parenrightbig/parenrightbig
+\comm−
+/subsetsqequal/angbracketleftbig
+consider the context Others surrounding the process reﬁned in Lemma 4.5/angbracketrightbig
+/parenleftbig
+Others /bardbl/parenleftbig/parenleftbig
+Pe
+X/bardblADV (AKe
+0)/parenrightbig
+\comm X/parenrightbig/parenrightbig
+\comm−
+/equal1/angbracketleftbig
+by hiding property/angbracketrightbig
+/parenleftbig
+Others /bardbl/parenleftbig
+Pe
+X/bardblADV (AKe
+0)/parenrightbig/parenrightbig
+\comm
+/equal1/angbracketleftbig
+by property of |||and/bardbl,and by α(Others )∩αPe
+X/equal1∅/angbracketrightbig
+/equal1/parenleftbig
+(Others |||Pe
+X)/bardblADV (AKe
+0)/parenrightbig
+\comm
+/equal1/angbracketleftbig
+by deﬁnition of Others/angbracketrightbig
+/equal1/parenleftbig/parenleftbig
+|||A∈Honest \{X}Pe-pm
+A|||Pe
+X/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+induction It will be showed that if the reﬁnement relation holds when nactors have been reﬁned, then it keeps hold-
+ing when the n+1thactor is reﬁned too. Let Ref be the set of already reﬁned actors, then ∀X∈Honest \Ref
+/parenleftbig/parenleftbig
+|||A∈Honest \RefPe-pm
+A||| ||| B∈RefPe
+B/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+/equal1/parenleftbig/parenleftbig
+|||A∈Honest \(Ref∪{X})Pe-pm
+A||| ||| B∈RefPe
+B|||Pe-pm
+X/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+/subsetsqequal/angbracketleftbig
+by setting Others /equal1||| A∈Honest \(Ref∪{X})Pe-pm
+A||| ||| B∈RefPe
+B;
+by using the same steps as in base case/angbracketrightbig
+/parenleftbig/parenleftbig
+|||A∈Honest \(Ref∪{X})Pe-pm
+A||| ||| B∈RefPe
+B|||Pe
+X/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+/equal1/parenleftbig/parenleftbig
+|||A∈Honest \(Ref∪{X})Pe-pm
+A||| ||| B∈Ref∪{X}Pe
+B/parenrightbig
+/bardblADV (AKe
+0)/parenrightbig
+\comm
+In the inductive step, the adversary knowledge in the abstract system (the one having nreﬁned actors) is set
+toAKe
+0, and not AKe-pm
+0. Indeed, after the ﬁrst reﬁnement step made in the base case, the adversary knowledge
+is “restricted” to AKe
+0, the reﬁned one. This is not an issue during the inductive step, because condition ( 21)i n
+Lemma 4.5requires, in the abstract system, that the adversary knowledge is a weak superset of the adversary
+knowledge in the reﬁned system.Safe abstractions of data encodings in formal security protocol models 163
+A.3. Proof of Lemma 4.5
+Lemma 4.5states that, under the same assumptions used by Theorem 4.3, if communication channels are hidden,
+then one abstract protocol logic Pe-pm
+Aacting with the adversary, is reﬁned by its more detailed protocol logic Pe
+A,
+that explicitly models the decoding process, acting with the adversary.
+Proof A weak simulation relation between the abstract process
+Pe-pm
+A/bardblADV (AKe-pm
+0)/equal1f(PLe
+A)/bardblADV (AKe-pm
+0)
+and the reﬁned process
+Pe
+A/bardblADV (AKe
+0)/equal1((PLe
+A/bardblDEC A)\priv A)/bardblADV (AKe
+0)
+is ﬁrst proved, which is then showed to imply the desired trace reﬁnement. Brieﬂy, a weak simulation relation
+binds the transitions between external states of an abstract process to the transitions between external states of a
+reﬁned (also called concrete in other works) process, but each process is still allowed to perform any internal step
+in between two external states. More details about the weak reﬁnement used here can be found, for example, in[Sch05 ].
+An external state of the reﬁned protocol logic of actor Ais deﬁned as a generic state PL
+e
+Aiof the process
+PLe
+A, such that PLe
+Aidoes not begin with an event in the priv Aset; that is, PLe
+Aidoes not take the form ev→Q,
+with ev∈priv A(by construction of PLe
+A,i fa ne v e n t ev∈priv Acan occur, it is the only event that can occur).
+Accordingly, an external state of the reﬁned process takes the form
+SYSe
+Ai/equal1((PLe
+Ai/bardblDEC A)\priv A)/bardblADV (AKe
+i)
+because, by construction of PLe
+Aand DEC A, the latter process will always be in its initial state, which is DEC A,
+when the former is in an external state.
+In the same way, an external state Pe-pm
+Aiof the abstract protocol logic is deﬁned as a generic state of f(PLe
+A)
+that is not ready to perform an event that is in priv A. With this definition it turns out that anystate of f(PLe
+A)
+is an external state, since all events in priv Ahave been removed by f(·). Then, any external state of the abstract
+process takes the form
+SYSe-pm
+Ai/equal1Pe-pm
+Ai/bardblADV (AKe-pm
+i)
+The relation Rthat binds external states of the abstract process to external states of the reﬁned one is formally
+deﬁned as
+R(SYSe-pm
+Ai,SYSe
+Ai)⇔Pe-pm
+Ai/equal1f(PLe
+Ai)∧AKe-pm
+i⊇AKe
+i
+Relation Rholds on the initial states of the abstract and reﬁned processes. Indeed, PLe
+Amust be an external
+state, because, by construction, it cannot begin with an event in priv A. Moreover, by hypothesis ( 21),AKe-pm
+0⊇AKe
+0
+holds.
+Let us denote with P/ev(“Pafter ev”) the state of process Pafter it has engaged the event ev;i fP/evis not
+applicable, that is, Pcannot engage the event ev, then P/ev/equal1P. With this definition, the operator /(“after”) is
+distributive with respect to the operator /bardbl, which synchronizes on the intersection of the alphabets, that is
+(P/bardblQ)/ev/equal1P/ev/bardblQ/ev
+The after operator is then overloaded to sequences of events in the obvious way.
+In order to show that the weak simulation relation holds, it is enough to show that, for any external states
+SYSe
+Ai,SYSe-pm
+Ai, and event sequence evs:
+R(SYSe-pm
+Ai,SYSe
+Ai) ∧ SYSe
+Aievs→SYSe
+Ai/evs
+/equal1⇒
+SYSe-pm
+Aiev∗
+s→SYSe-pm
+Ai/ev∗
+s∧ R(SYSe-pm
+Ai/ev∗
+s,SYSe
+Ai/evs,)(30)164 A. Pironti, R. Sisto
+whereevs→denotes the concatenation of state transitions for all events in evs,a n d ev∗
+sis the sequence of events
+obtained by stripping all τevents from evs.
+By the definition of adversary,
+ADV (AKe-pm
+i)/ev∗
+s/equal1ADV (AKe-pm
+j)
+where AKe-pm
+jis the new adversary knowledge reached after ev∗
+s, and, by the distribution property of the after
+operator
+SYSe-pm
+Ai/ev∗
+s/equal1(f(PLe
+Ai)/bardblADV (AKe-pm
+i))/ev∗
+s
+/equal1f(PLe
+Ai)/ev∗
+s/bardblADV (AKe-pm
+i)/ev∗
+s
+/equal1f(PLe
+Ai)/ev∗
+s/bardblADV (AKe-pm
+j)
+The same reasoning applies in the reﬁned model.
+Now all the possible event sequences evsthat can lead to one of the next external states must be considered. evs
+cannot start with a τstep, because it starts from an external state. Moreover it is enough to prove ( 30) for event
+sequences evssuch that no proper subsequence of evsleads to an external state because then the most general case
+descends by induction. Then, if evsstarts with a claimSecret ,running ,ﬁnished ,leak orsend event, it is possible
+to consider only the case when it is composed of just one event, because after the ﬁrst event an external state isreached.
+Let us ﬁrst consider these cases, where ev
+s/equal1/angbracketleftev/angbracketright/equal1 ev∗
+sand let us show that ( 30) holds.
+case ev/equal1claimSecret .A.B.MBy hypothesis this event can happen in the reﬁned system. If we let PLe
+Aj/equal1PLe
+Ai/ev,
+we have
+((PLe
+Ai/bardblDEC A)\priv A)/ev/equal1(PLe
+Ai/ev/bardblDEC A/ev)\priv A
+/equal1(PLe
+Aj/bardblDEC A)\priv A
+because ev/negationslash∈priv Aand DEC Ais only engaged in the events in priv A.
+Since evcan occur in PLe
+Ai,a n d PLe
+Aiev→PLe
+Aj, by the properties of f(·), it can be concluded that
+f(PLe
+Ai)ev→f(PLe
+Aj)
+that is, evcan also happen in the abstract system, and the states of the abstract and reﬁned protocol logics
+after evare bound by f(·).
+Moreover, after event ev, adversary knowledges remain unchanged in both systems, so AKe-pm
+j⊇AKe
+jholds,
+and it can be concluded that Rholds after ev.
+The same reasoning also applies for the running and ﬁnished events.
+case ev/equal1leak.MSince this event is engaged by the adversary process, and not by the protocol logic, if evcan
+happen in the reﬁned system, then Mmust be in the adversary knowledge, that is M∈AKe
+i. Consequently,
+by the assumption AKe-pm
+i⊇AKe
+i, it follows that M∈AKe-pm
+itoo, and evc a nh a p p e ni nt h ea b s t r a c ts y s t e m
+too. Moreover, the state of the protocol logic and the adversary knowledge remain unchanged after this event
+in both reﬁned and abstract processes, so relation Rstill holds after it.
+case ev/equal1send.A.B.MIf this event can happen in the reﬁned system, it can also happen in the abstract system,
+because, as with the claimSecret event,
+PLe
+Aiev→PLe
+Aj
+implies
+f(PLe
+Ai)ev→f(PLe
+Aj)
+While the reasoning about the protocol logic states is the same as explained in the claimSecret .A.B.Mcase,
+the reasoning about adversary knowledges changes. After the event evhappens in the reﬁned system, we have
+AKe
+j/equal1AKe
+i∪{M}
+and similarly, in the abstract system,
+AKe-pm
+j/equal1AKe-pm
+i∪{M}Safe abstractions of data encodings in formal security protocol models 165
+Since, by hypothesis, AKe-pm
+i⊇AKe
+iholds, then AKe-pm
+j⊇AKe
+jholds too.
+The cases that remain to be considered are when evsstarts with a receive .B.A.Mevent. This event is followed
+by the τsteps coming from the sequence of the pairs of priv send A.(y,a)→priv receive A.Npreﬁxes that have
+been added during reﬁnement after the receive event. An external state is reached only after all these τsteps have
+been completed and, after a receive event, the protocol logic is obliged by construction to execute the sequence
+of private actions before any further external action. Then, there is a single external state that can be reached
+by the protocol logic after a receive event. Moreover, being the protocol logic synchronized with the adversary,
+the latter can execute only internal actions, i.e. leak actions, while the protocol logic is executing the internal
+steps that follow a receive event. These leak events do not change the global state. In conclusion, the only event
+sequences that start with a receive event and that lead to an external state are those that, after the receive event,
+have a sequence of τevents, corresponding to all the private actions that follow the receive event in the protocol
+logic, with interleaved leak events generated by the adversary. All these sequences lead to a single external state. If
+the reﬁned protocol logic cannot execute one of the private actions that follow a receive event, the protocol logic
+gets stuck and no external state is ever reached. So, the only case that must be considered in order to check ( 30)
+is when all the private actions are executed.
+By using the distributive property of the after operator, again we analyze protocol logics ﬁrst, and then
+adversary knowledges.
+In the reﬁned system we have
+((PLe
+Ai/bardblDEC A)\priv A)/evs/equal1(PLe
+Aj/bardblDEC A)\priv A
+The state of DEC Adoes not change because after each pair of priv send Aand priv receive Aevents, it returns to
+its initial state, and we are under the hypothesis that all private events happen.
+Let
+receive .B.A.T→priv send A.(y1,a1)→priv receive A.T1→...
+→priv send A.(yn,an)→priv receive A.Tn→PLe
+Aj
+be the sequence of preﬁxes that are executed in PLe
+Aiwhen evsoccurs.
+By the definition of DEC Ait follows that the data exchanged between the protocol logic and DEC Ain each
+pair of events priv send A.(M,a),priv receive A.Nmust satisfy equations N/equal1dA(a,M)a n d N/negationslash/equal1Ato m E. Then,
+if all private events can occur in the reﬁned system, the previous receive .B.A.Tevent must have bound variables
+inTin such a way that Ti/equal1dA(ai,yi)f o ra l l1 ≤i≤n.B u t ,b y( 20), this also implies that
+eA(ai,Ti)/equal1eA(ai,dA(ai,yi))/equal1yi
+By the definition of f(·), we have that the abstract protocol logic in state f(PLe
+Ai) is ready to execute
+receive .B.A.T∗→f(PLe
+Aj)
+where T∗/equal1T/bracketleftbigeA(a1,T1)/y1/bracketrightbig
+.../bracketleftbigeA(an,Tn)/yn/bracketrightbig
+, i.e. where T∗isTwith the same binding of variables that occurs in
+the concrete system when all private events occur.
+Then, if in the reﬁned system an event receive .B.A.Mfollowed by all the subsequent private events can occur,
+the same event can occur in the abstract system too, and
+f(PLe
+Ai)receive .B.A.M→ f(PLe
+Aj)
+With respect to the adversary, since the event receive .B.A.Mcan happen in the reﬁned system, it follows
+that M∈AKe
+i. Since AKe-pm
+i⊇AKe
+i, it follows that the event can happen in the abstract system too, because
+M∈AKe-pm
+i. Moreover, since after a receive event adversary knowledges remain unchanged, it also follows that
+AKe-pm
+j⊇AKe
+j.
+In order to complete the proof of the simulation relation, we have to show that leak events interleaved in evs
+can happen in the abstract system too. This descends from the fact that neither the receive event nor the τevents
+change the adversary knowledge. Then, the occurrence of a leak.Nevent in evsimplies that N∈AKe
+i, which, in
+turn, by the hypothesis AKe
+i⊆AKe-pm
+i, implies N∈AKe-pm
+i, which ﬁnally means that leak.Ncan be executed by
+the adversary in the abstract system too.166 A. Pironti, R. Sisto
+The weak simulation relation that has been proved implies that any trace of the reﬁned system Pe
+A/bardblADV (AKe
+0)
+that leads to an external state is also a trace of the abstract system Pe-pm
+A/bardblADV (AKe-pm
+0). However it is still pos-
+sible that a trace that leads to an internal state in the reﬁned system is not a trace of the abstract system. By thecases that have just been analyzed, it can be realized that a trace of the reﬁned system can lead to an internal
+state only when the last action performed by the protocol logic is a receive . Moreover, in this trace, the last receive
+event can be followed only by leak events. The longest preﬁx of this trace that leads to an external state is the
+one that is obtained by removing the last receive event and the subsequent leak events, and the proof previously
+given ensures that this is also a trace of the abstract system. Moreover, since the receive event does not change
+the adversary knowledge, we can conclude that any leak event following the receive event in the reﬁned system
+could also occur, both in the reﬁned and in the abstract systems, before the receive event. Then, we have that even
+when a trace trof the reﬁned system is not a trace of the abstract system, the abstract system can still execute a
+trace tr
+∗that differs from tronly in the last receive event. This lets us conclude that Lemma 4.5, which involves
+processes with hidden send and receive events, holds. /square
+References
+[AB05] Abadi M, Blanchet B (2005) Analyzing security protocols with secrecy types and logic programs. J ACM 52(1):102–146
+[AF01] Abadi M, Fournet C (2001) Mobile values, new names, and secure communication. In: Symposium on principles of program-
+ming languages, pp 104–115
+[APW09] Albrecht MR, Paterson KG, Watson GJ (2009) Plaintext recovery attacks against SSH. In: IEEE symposium on security and
+privacy, pp 16–26
+[BBF+11] Bengtson J, Bhargavan K, Fournet C, Gordon AD, Maffeis S (2011) Reﬁnement types for secure implementations. ACM
+Trans Programm Lang Syst 33(2):8:1–8:45
+[BCF07] Bhargavan K, Corin R, Fournet C (2007) Crypto-verifying protocol implementations in ML. In: Proceedings of workshop
+on formal and computational cryptography
+[BCFG07] Bhargavan K, Corin R, Fournet C, Gordon AD (2007) Secure sessions for web services. ACM Trans Inf Syst Secur 10(2):article
+8
+[BFG06] Bhargavan K, Fournet C, Gordon AD (2006) Veriﬁed reference implementations of WS-security protocols. In: Proceedings
+of web services and formal methods, pp 88–106
+[BFGT06] Bhargavan K, Fournet C, Gordon AD, Tse S (2006) Veriﬁed interoperable implementations of security protocols. In: Pro-
+ceedings of computer security foundations workshop, pp 139–152
+[BKN02] Bellare M, Kohno T, Namprempre C (2002) Authenticated encryption in SSH: provably ﬁxing the SSH binary packet protocol.
+In: Proceedings of the 9th ACM conference on computer and communications security, pp 1–11
+[Bla01] Blanchet B (2001) An efﬁcient cryptographic protocol veriﬁer based on Prolog rules. In: IEEE computer security foundations
+workshop, pp 82–96
+[DY83] Dolev D, Yao AC-C (1983) On the security of public key protocols. IEEE Trans Inf Theory 29(2):198–207[GHRS05] Guttman J, Herzog J, Ramsdell J, Sniffen B (2005) Programming cryptographic protocols. In: Trustworthy global computing,
+pp 116–145
+[GLP05] Goubault-Larrecq J, Parrennes F (2005) Cryptographic protocol analysis on real C code. In: Proceedings of veriﬁcation, model
+checking, and abstract interpretation, pp 363–379
+[HL01] Hui ML, Lowe G (2001) Fault-preserving simplifying transformations for security protocols. J Comput Secur 9(1/2):3–46[Hoa85] Hoare CAR (1985) Communicating sequential processes. Prentice Hall[J¨ur05] J ¨urjens J (2005) Veriﬁcation of low-level crypto-protocol implementations using automated theorem proving. In: Proceedings
+of formal methods and models for co-design, pp 89–98
+[KR06] Kleiner E, Roscoe AW (2006) On the relationship between web services security and traditional protocols. Electron Notes
+Theor Comput Sci 155:583–603
+[Low97] Lowe G (1997) A hierarchy of authentication speciﬁcations. In: Proceedings of computer security foundations workshop, pp
+31–43
+[NKHBM06] Nadalin A, Kaler C, Hallam-Baker P, Monzillo R (2006) OASIS web services security: SOAP message security 1.1 (WS-security
+2004)
+[Pir10] Pironti A (2010) Sound automatic implementation generation and monitoring of security protocol implementations from
+veriﬁed formal speciﬁcations. PhD thesis, Politecnico di Torino, Italy
+[PPS12] Pironti A, Pozza D, Sisto R (2012) Formally-based semi-automatic implementation of an open security protocol. J Syst Softw
+85:835–849
+[PS10] Pironti A, Sisto R (2010) Provably correct Java implementations of Spi Calculus security protocols speciﬁcations. Comput
+Secur 29:302–314
+[PSD04] Pozza D, Sisto R, Durante L (2004) Spi2java: automatic cryptographic protocol java code generation from spi calculus. In:
+Proceedings of international conference on advanced information networking and applications, pp 400–405
+[Ros97] Roscoe AW (1997) The theory and practice of concurrency. Prentice Hall[Ros10] Roscoe AW (2010) Understanding concurrent systems. Springer, Berlin[Sch05] Schellhorn G (2005) ASM reﬁnement and generalizations of forward simulation in data reﬁnement: a comparison. Theor
+Comput Sci 336(2–3):403–435Safe abstractions of data encodings in formal security protocol models 167
+[TH04] Tobler B, Hutchison A (2004) Generating network security protocol implementations from formal speciﬁcations. In: Proceed-
+ings of certiﬁcation and security in inter-organizational e-services, Toulouse, France
+[YL06a] Ylonen T, Lonvick C (2006) The secure shell (SSH) protocol architecture. RFC 4251 (Proposed Standard), January 2006[YL06b] Ylonen T, Lonvick C (2006) The secure shell (SSH) transport layer protocol. RFC 4253 (Proposed Standard), January 2006
+Received 30 September 2011
+Accepted in revised form 8 October 2012 by Eerke Boiten and Steve SchneiderPublished online 13 November 2012

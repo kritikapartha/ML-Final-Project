@@ -1,0 +1,1610 @@
+Updatable Oblivious Key Management for Storage Systems
+Stanislaw Jarecki
+University of California, IrvineHugo Krawczyk
+Algorand FoundationJason Resch
+Independent
+ABSTRACT
+We introduce Oblivious Key Management Systems (KMS) as a much
+more secure alternative to traditional wrapping-based KMS that
+form the backbone of key management in large-scale data storage
+deployments. The new system, that builds on Oblivious Pseudoran-
+dom Functions (OPRF), hides keys and object identifiers from the
+KMS, offers unconditional security for key transport, provides key
+verifiability, reduces storage, and more. Further, we show how to
+provide all these features in a distributed threshold implementation
+that enhances protection against server compromise.
+We extend this system with updatable encryption capability that
+supports key updates (known as key rotation) so that upon the peri-
+odic change of OPRF keys by the KMS server, a very efficient update
+procedure allows a client of the KMS service to non-interactively
+update all its encrypted data to be decryptable only by the new
+key. This enhances security with forward and post-compromise
+security, namely, security against future and past compromises, re-
+spectively, of the client’s OPRF keys held by the KMS. Additionally,
+and in contrast to traditional KMS, our solution supports public
+key encryption and dispenses with any interaction with the KMS
+for data encryption (only decryption by the client requires such
+communication).
+Our solutions build on recent work on updatable encryption
+but with significant enhancements applicable to the remote KMS
+setting. In addition to the critical security improvements, our de-
+signs are highly efficient and ready for use in practice. We report
+on experimental implementation and performance.
+CCS CONCEPTS
+•Security and privacy →Key management.
+KEYWORDS
+key management, updatable encryption, Oblivious PRF, OPRF
+ACM Reference Format:
+Stanislaw Jarecki, Hugo Krawczyk, and Jason Resch. 2019. Updatable Obliv-
+ious Key Management for Storage Systems. In 2019 ACM SIGSAC Con-
+ference on Computer and Communications Security (CCS ’19), November
+11–15, 2019, London, United Kingdom. ACM, New York, NY, USA, 15 pages.
+https://doi.org/10.1145/3319535.3363196
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than ACM
+must be honored. Abstracting with credit is permitted. To copy otherwise, or republish,
+to post on servers or to redistribute to lists, requires prior specific permission and/or a
+fee. Request permissions from permissions@acm.org.
+CCS ’19, November 11–15, 2019, London, United Kingdom
+©2019 Association for Computing Machinery.
+ACM ISBN 978-1-4503-6747-9/19/11. . . $15.00
+https://doi.org/10.1145/3319535.33631961 INTRODUCTION
+The ever expanding cloud storage infrastructure is one of the pillars
+of modern computing. Yet, the key management systems (KMS)
+provisioning keys for the protection of the stored data have not
+changed fundamentally in decades. This setting involves three sep-
+arate parties: a clientC, a remote storage server StS(e.g., a cloud
+service) that stores client data in encrypted form, and a key man-
+agement server KmS that stores cryptographic keys for the client.
+The client uses the services of KmS each time it needs to encrypt or
+decrypt the data. The idea is that KmS is better equipped to keep
+keys secret and StSis better equipped to store large amounts of
+data reliably. Thus, KmS is charged with protecting secrecy and
+StSwith protecting availability.
+The typical deployment of such systems in practice (including
+large cloud-based operations such as AWS [ 2], Microsoft [ 39], IBM
+[27], Google [ 24]) uses the traditional wrap-unwrap approach for
+managing data encryption keys ( dek) as shown in Fig. 1. When
+clientCneeds to encrypt a data object, it chooses a symmetric
+keydekwith which it encrypts the object, then sends dekto key
+management server KmS who wraps (i.e., encrypts) dekunder a
+client-specific (master) key kcstored at KmS and returns the result,
+called a wrap , toC. Finally,Cstores wrap and the data encrypted
+under dekat the storage server StS. WhenCneeds to retrieve an
+object, it gets the corresponding ciphertext from StS, sends the
+attached wrap toKmS who unwraps (i.e., decrypts) it using kcand
+sends dekback toC, who uses it for decryption.
+This key encapsulation mechanism, while effective and widely
+deployed, presents significant potential vulnerabilities. First, en-
+cryption keys dekare exposed in the clear to KmS . Second, the
+security of dek, hence the security of all encrypted data, relies
+on the channel between the client and KmS . Such a channel, typ-
+ically implemented by TLS, is vulnerable to a large class of at-
+tacks, from implementation and configuration errors to certification
+and man-in-the-middle attacks. Third, even in normal operation,
+the key dekis visible to any middlebox and endpoint where TLS
+traffic is decrypted. Additionally, KmS can trace objects being en-
+crypted/decrypted via the wrap values. A further shortcoming is
+the cost of rotating a client key by KmS : Changing the value kcfor
+a new kc′requires the client (or StS) sending each wrap toKmS for
+unwrapping under kcand re-wrapping under kc′. This is not only
+a performance issue but a security one too (due to long period of
+time till all wraps are updated and till kccan be safely erased).
+Oblivious KMS. Our first contribution is a simple approach to key
+management based on Oblivious Pseudorandom Functions (OPRF)
+[22,29,41], that addresses the above vulnerabilities and offers addi-
+tional features absent in traditional systems. OPRFs are interactive
+schemes between a server holding a key to a PRF and a client
+holding an input. At the end of the interaction the client learns
+the output of the PRF on its input and the server learns nothing
+(neither the input nor the output of the function). OPRFs have
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+379Parties: key management server KmS , storage server StS,
+clientC(= data owner).
+Functions: Symmetric authenticated encryption scheme
+Enc; wrapping functions Wrap ,Unwrap (used to to en-
+crypt/decrypt data encryption keys).
+Keys: KmS stores a client-specific wrapping key kcfor each
+client.
+Encryption of object (ObjId ,Obj) by clientC:
+(1)Cchooses random Enckeydek(data encryption key);
+(2)Csends(ObjId ,dek) toKmS;
+(3)KmS returns(ObjId ,wrap =Wrapkc(dek))
+(Note: KmS authenticatesCbefore using kc);
+(4)Csends(ObjId ,wrap ,Encdek(Obj)) toStSfor storage.
+Decryption of object ObjId byC:
+(1)Cretrieves(ObjId ,wrap ,Encdek(Obj)) from StS;
+(2)Csends(ObjId ,wrap) toKmS;
+(3)KmS returns(ObjId ,dek=Unwrapkc(wrap))
+(4)Cdecrypts Encdek(Obj)) using dek.
+Figure 1: Traditional Wrapping-based Key Management
+found numerous applications and there are very efficient OPRF
+implementations, e.g. based on the Diffie-Hellman (DH) problem in
+regular elliptic curve groups [16, 21, 26, 40, 47] (see Fig. 3).
+In our Oblivious Key Management System (OKMS) (see Fig. 2), a
+clientCwho requires a data encryption key dekfor encrypting a
+data object interacts with the OKMS server in an OPRF protocol.
+C’s input is an identifier for the data object while the server’s input
+is an OPRF key (typically unique per client and denoted kc), and
+Cuses the output from the OPRF as the dek1. In this way, the
+OKMS server does not learn dek(or even the object identifier). The
+system does not rely on an external secure channel (e.g., TLS) to
+transport dek; instead dekis protected by the security properties
+of the OPRF.2
+This addresses two major vulnerabilities of traditional KMS sys-
+tems: visibility of the dekto the server and potential exposure of
+this key in transit between client and server. Moreover, using the
+most efficient DH-based implementations of OPRFs, the protec-
+tion against these threats is unconditional. Even a computationally
+unbounded server (that knows the OPRF key) or a network eaves-
+dropper cannot learn anything about the dek, or about the object
+identifier input into the OPRF. Note that in OKMS, the only way for
+an adversary to decrypt a ciphertext is by impersonating the legiti-
+mate client or by learning the OPRF key kcand the corresponding
+ObjId value. In contrast, in traditional systems, data encryption
+keys dekare potentially vulnerable even if the KmS key is well pro-
+tected (e.g., inside a hardware module) as the dekare transmitted
+outside the protected zone.
+1Alternatively, the output of the OPRF can be used as a key-encrypting key ( kek) to
+locally encrypt dek.
+2A TLS connection can be used to transport auxiliary information or client credentials
+but is not needed for transporting data encryption keys.The OPRF approach supports additional properties that enhance
+security even further and beyond anything offered by the tradi-
+tional solutions. First, it provides verifiability, namely, the ability
+ofKmS to prove toCthat the returned dekis indeed the value
+that results from computing the OPRF on the client-provided object
+identifier. This prevents data loss that occurs if the returned dek
+is wrong (either due to computing error or to adversarial action);
+indeed, encrypting data with an incorrect, or irrecoverable, key can
+lead to irreparable data loss. Second, the DH-based OPRF, hence
+also the OKMS using it, is amenable to distribution as a multi-server
+threshold scheme where the OPRF key is protected as long as less
+than a defined threshold of the servers is corrupted. Finally, the de-
+scribed system can be adapted to also support updatability, namely,
+periodic key rotation of the client master key kcbyKmS with a
+very efficient (non-interactive) procedure for updating ciphertexts
+to be decryptable by the new key and not by previous ones. This
+procedure does not endangered the secrecy of the data and there-
+fore can be performed by the StS. The design of such system is the
+main technical contribution of our work and is discused next.
+Updatable Oblivious KMS. Traditional wrapping-based key man-
+agement systems as those described above (and in Fig. 1) require
+client keys kcto be updated periodically by the server KmS . Such
+update, known as key rotation, is needed to limit the exposure of
+data upon the exposure of kc. For traditional wrapping systems,
+changing kcwith a new kc′involves unwrapping and re-wrapping
+allof a client’s ciphertexts as well as transmitting all these wrap
+values between the storage server and KMS server. Moreover, an
+old key kccannot be erased until allciphertexts are updated to the
+new key kc′, extending the exposure period of kcsignificantly.
+This need to update clients’ keys in storage systems (and other
+applications) has led to the notion of updatable encryption [9] whose
+goal is to provide more efficient and more secure solutions to this
+key rotation problem. Many flavors of updatable encryption have
+been suggested [ 9,10,20,36]. In this work we investigate this
+notion in the context of our oblivious KMS approach leading to the
+design of an Updatable Oblivious KMS (UOKMS).
+In UOKMS, upon the rotation of a client’s key kc, server KmS
+computes a short update token ∆as a function of the old and new
+keys kc,kc′, and transmits ∆to clientC. Using ∆,C’s storage server
+StScan transform allciphertexts that were encrypted with keys
+derived from kcinto ciphertexts decryptable by the new kc′but not
+by the old kc. This operation preserves the security of the data, it is
+performed locally at the storage server StSwithout any interaction
+withKmS ,and it only modifies a short component of the ciphertext
+(independent of the length of the encrypted data) making the whole
+operation highly efficient. Security-wise it protects against future
+and past compromises of the client’s key kc.
+The above UOKMS scheme offers another major performance
+advantage compared to traditional KMS and our own OKMS scheme:
+Encryption of data requires no interaction with the KMS server, and
+an interaction is only needed to decrypt data. More generally, our
+UOKMS supports public key encryption, so everyone can encrypt
+data for clientC, but onlyCcan decrypt it, via an interaction with
+the KMS server.
+Threshold Updatable OKMS. Both OKMS and UOKMS solutions
+can be implemented via distributed servers so that clients’ OPRF
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+380keys are secure for as long as no more than a threshold number of
+servers are compromised. These systems inherit the high efficiency
+of Threshold OPRF constructions [ 30] (also in the case of the OPRF
+variant used in the UOKMS solution). In the UOKMS setting, the up-
+date token ∆is computed distributively among the servers through
+an efficient multi-party computation. These solutions preserve the
+verifiability property of OPRFs and they can be implemented in
+aclient-transparent way, namely, the client’s operations and code
+are identical regardless of the implementation as a single-server or
+multi-server. See Section 5.
+Formal model and analysis. We formally analyze our UOKMS
+solution in an Updatable Oblivious KMS security model that shares
+close similarities with recent models of updatable encryption (or
+encryption with key rotation) [ 9,10,20,36], but also has some
+significant differences. One crucial difference comes from the key
+management setting treated here where the client interacts with
+two outsourced remote services KmS andStS. In particular, this raises
+potential security vulnerabilities arising from the communication
+channel between client and KmS . This major concern is absent
+from previous updatable encryption models that treat the client
+andKmS essentially as collocated entities. The other aspect that is
+unique to our solution and formal treatment is the obliviousness of
+computation on the side of KmS . Yet another difference is that while
+the typical storage setting does not require public key encryption,
+we naturally include this setting in our updatable model.
+Our updatability model allows attacks on both KmS andStS,
+including exposure of client keys kc, update values ∆, and the at-
+tacker’s ability to see and write ciphertexts into StS. Security is
+provided against future and past attacks, namely, forward and post-
+corruption security, with a simulation-based security model. Obvi-
+ously, the model disallows attack combinations that would lead to
+trivial wins for the attacker (e.g., decrypting a challenge ciphertext
+in a period for which it learns the KMS key kc). The model accom-
+modates the oblivious setting where an attacker that communicates
+with KmS (and is in possession of C’s credentials) can decrypt anyq
+ciphertexts after qinteractions with KmS , but all other ciphertexts
+remain secure. This, together with the attacker’s capability to access
+a ciphertext-update oracle and the use of authenticated encryption,
+achieves CCA-like security for oblivious and updatable encryption.
+The security proof for our UOKMS scheme, presented in Section 4,
+carries in the random oracle model under a strengthened variant
+of the Gap One-More Diffie-Hellman assumption [ 5,32] that we
+show to hold in the generic group model.
+Implementation and performance. In Section 6 we present per-
+formance information from our implementation of both OKMS
+and UOKMS solutions showing the practicality of our techniques,
+in particular the ability of servers to support a large number of
+operations and clients per second. In OKMS, client time is approx-
+imately 0.4 msec for a wrap and 0.2 msec for an unwrap. For the
+UOKMS system, performance is even better: a client can sustain
+over 41000/6000/14000 for wrap/unwrap/update operations per sec-
+ond respectively, with a single-thread and single CPU core, and
+server operations are only needed for unwrapping. We also demon-
+strate good throughput and latency results from a prototype im-
+plementation of the (U)OKMS Server deployed to an Amazon EC2
+instance. We find this implementation capable of answering over30,000 requests per second in both single-server and multi-server
+deployments. Finally, we discuss implementation experience man-
+aging KmS keys in Hardware Security Modules (HSM).
+1.1 Comparison to previous work
+We are the first to present a comprehensive updatable solution
+to the central problem of key management in cloud-based (and
+other) storage systems that exploits the power of oblivious com-
+putation, and the first to develop a security model for such setting.
+Our motivation and modeling bear similarities with recent models
+of Updatable Encryption (UE) [ 9,10,20,34,36], but also has some
+significant differences. Most prominent is the use of obliviousness
+as a way to address potential vulnerabilities arising from a remote
+key management system, as opposed to one that is collocated with
+the client as was asssumed in all the above works on updatable
+encryption. Other novel features of our solution include uncondi-
+tional hiding of data encryption keys and object identifiers from
+KmS , and building a distributed UOKMS service via a threshold im-
+plementation. Our updatability solution is ciphertext-independent
+(namely, the update token is of size independent from the number
+of ciphertexts and size of data to be updated) as in several prior
+UE schemes [ 9,20,34,36]. Among those, our scheme is the most
+efficient, requiring a single short update value ∆from the KmS
+server and a single exponentiation per object for the update opera-
+tion, compared e.g. to two exponentiations per ciphertext block in
+the schemes of [ 34,36]. Our UOKMS scheme can be extended to
+provide ciphertext indistinguishability and unlinkability similarly
+to e.g. [ 34,36], but it would inherit the inefficiency of such solution
+making it impractical in any large-scale data storage deployment.3
+Finally, our model and solution are the first to support public key
+encryption, including CCA-like security in the setting of oblivious
+encryption. We elaborate further on the relation to prior updatable
+encryption work in Section 3.2.
+Updatable encryption is closely related to proxy re-encryption
+(PRE), in particular, the Diffie-Hellman techniques at the center of
+our implementation directly relate to the PRE scheme of Blaze et
+al. [7]. Recently, [ 17,18] treat forward secrecy and post-corruption
+security in the context of PRE for which they define evolutionary
+keys as in our context. However, the requirements of PRE, particu-
+larly as set forth in [ 17], are more stringent than needed in our case.
+These include generating update values using the delegatee’s public
+key rather than on input its secret key, achieving unidirectionality,
+supporting general DAG delegation graphs, ensuring ciphertext
+indistinguishability, and more. As a result, they require more in-
+volved and less efficient techniques; in particular, [ 18] builds on
+pairing-based constructions and HIBE [ 8,14] while [ 17] uses lattice-
+based fully-homomorphic techniques from [ 11,46]. On the other
+hand, in spite of their stronger properties, none of these schemes
+support oblivious computation.
+Our use of OPRF function can be seen as an “OPRF-as-a-service"
+application, a term coined in [ 19]. We borrow the notion of up-
+datable oblivious PRF from that work, but their application was
+3Several prior works, e.g. [ 34,36], consider ciphertext unlinkability (over update
+periods) as a major design goal, but achieve it at the cost of requiring O(n)exponenti-
+ations to update a ciphertext of length n. We believe that in most practical settings,
+linkability would still be possible via metadata, object identifiers, etc., hence not worth
+the high computational cost it entails.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+381targeted to password verification protocols, while ours is a general
+encrypted storage system. (Moreover, the protocol of [ 19] is signifi-
+cantly less efficent as it uses groups with bilinear maps to obtain
+the stronger notion of updatable “partially oblivious" PRF, which
+we do not require.) OPRF’s are also used in “password-protected
+secret sharing" [ 28] which can implement distributed password-
+secured storage but without the ability to update the master en-
+cryption key. Moreover, both of these solutions are specialized for
+password-authenticated clients while UOKMS accommodates any
+client-to-KMS or client-to-StS authentication mechanisms.
+Comparison to U-PHE. The goals of UOKMS bear some similarity
+to Updatable Password-Hardened Encryption (U-PHE) of [ 35]. In
+the U-PHE setting a server Sstores encrypted data on behalf of its
+clients. The encryption and decryption of data require Sto hold the
+client’s password and involve an interaction of Swith an additional
+server R, called the rate limiter. In particular, an attacker who learns
+S’s state (but not the stored client password), cannot decrypt client’s
+data without guessing the client’s password and interacting with
+the rate limiter R. The solution offers verifiability and updatability
+similarly to our case, and in terms of our UOKMS model one can
+think of Sas the storage server StSandRas the key management
+server KmS . However, in contrast to UOKMS, in U-PHE the server
+Slearns both the client’s decrypted message and the client’s pass-
+word (in particular, one relies on TLS for transmitting the password),
+while in UOKMS only the client encrypts and decrypts data and
+neither server learns it. Moreover, the U-PHE decryption protocol
+is not oblivious, i.e. server R, i.e., KmS , can identify the decrypted
+ciphertext. Also, as in the case of [ 19,28] above, PHE is specialized
+to the password authentication case, while UOKMS is indepen-
+dent of the means of authentication used by clients, allowing any
+form of client authentication credentials. Additionally, the U-PHE
+scheme of [ 35] is less efficient than our UOKMS, specifically their
+encryption is interactive while ours is not, their decryption and
+update are both roughly twice more expensive than ours, and a
+threshold implementation of the rate-limiter server of [ 35] would
+be significantly more expensive than our threshold KmS.
+2 UPDATABLE OBLIVIOUS KMS
+We present our main scheme, UOKMS (for Updatable Oblivious
+KMS), that builds on the general approach to Oblivious KMS de-
+scribed in the introduction and recalled next.
+2.1 Oblivious Key Management System
+Figure 2 specifies the Oblivious KMS (OKMS) protocol that serves
+as a basis for our Updatable scheme in the next section. OKMS is
+described and motivated in the Introduction as a much more secure
+alternative to the wrapping-based approach (Fig. 1) in wide use
+today in storage systems, particularly in large cloud deployments.
+When implemented with the DH-based OPRF scheme dh-op from
+Fig. 3, one obtains an OKMS that is highly efficient (see Sec. 6)
+and accommodates extensions to verifiability and distributed im-
+plementation (Sec. 5). The security of the OKMS scheme and its
+implementation using dh-op follows from the OPRF properties (in
+particular as studied in [ 28,29]). We do not formally analyze the
+OKMS scheme but rather do so in Sections 3 and 4 for its extensionFunctions: OPRF Fand symmetric authenticated encryption
+scheme Enc.
+OPRF Keys: KmS stores a client-specific OPRF key kcfor
+each client.
+Encryption of object Objby clientC:Cruns OPRF proto-
+col with KmS whereCinputs object identifier ObjId andKmS
+inputs key kc.Csetsdek=Fkc(ObjId) and stores the pair
+(ObjId ,Encdek(Obj)) at storage server StS.
+Decryption of encrypted object ObjId by clientC:
+As in the encryption case, Cinteracts with KmS to compute
+dek=Fkc(ObjId) and decrypts Objusing dek.
+Verification of correct computation of dek: Use a verifi-
+able OPRF [28].
+Figure 2: Oblivious KMS (OKMS)
+Components: G: group of prime order q;H,H′: hash func-
+tions with ranges {0,1}ℓandG, respectively, where ℓis a
+security parameter.
+PRF FkDefinition: For key k←RZqandx∈{0,1}∗, define
+Fk(x)=H(x,(H′(x))k)
+Oblivious FkEvaluation between client Cand server S
+(1) On input x,Cpicks r←RZq; sends a=(H′(x))rtoS.
+(2)Schecks that the received ais in group Gand if so it
+responds with b=ak.
+(3)Coutputs Fk(x)=H(x,b1/r).
+Figure 3: DH-based OPRF function dh-op [29]
+to the Updatable OKMS setting presented next. (A model and anal-
+ysis of OKMS can be obtained by specializing the UOKMS model
+to a single update period.)
+2.2 Updatable OKMS
+Key management systems are required, by regulations and best prac-
+tices, to periodically update client keys kc(an operation known as
+key rotation ). The goal is to limit the negative effects of the compro-
+mise of a key kcto a shorter period of time and to as little data as
+possible. This is particularly important for keys that protect data
+stored for long periods of time as it is common in many cloud stor-
+age applications (anything from user photos to regulated financial
+information). Upon the rotation by the KMS server KmS of a key kc
+into a new key kc′, all ciphertexts protected with kcand held by the
+storage server StSneed to be updated too. The updated ciphertexts
+should be decryptable by kc′but not by kc. The goal is that an
+attacker that learns kcbut only sees updated ciphertexts should
+not be able to learn anything about the encrypted data in the new
+period (while kc′is unexposed). Similarly if the attacker has seen a
+ciphertext encrypted using an unexposed kcand later learns kc′, it
+still should not learn anything from that ciphertext. This provides
+both forward security (security against future exposures) and post-
+compromise security (security against past exposures). Obviously,
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+382Setting: Generator дof group Gof prime order q; symmetric authenticated encryption scheme Enc,Decwith keys of length
+security parameter ℓ; hash function H:G→{0,1}ℓ.
+Client keys: KMS server KmS stores a client-specific random key kc∈Zqfor each client; storage server StSstores certified
+public value yc=дkcfor clientC.
+Encryption of object Obj: To encrypt Objunder key yc, pick r←RZq\{0}, set w=дranddek=H(ycr), and output
+ciphertext triple c=(ObjId ,w,Encdek(Obj)).
+Decryption of ciphertext c=(ObjId ,w,e):(1)Csends u=wr′forr′←RZqtoKmS ; (2)KmS checks if u∈Gand if so returns
+v=ukctoC; (3)Coutputs Obj=Decdek(e).
+(Note thatCruns the decryption protocol only if cisvalid and we define c=(ObjId ,w,e)as valid iff w∈Gandw,1.)
+Key rotation and update: To change client’s key from kctokc′,KmS sends ∆=kc/kc′andy′c=дkc′toStS.StSreplaces
+ycwithy′cand replaces each ciphertext c=(ObjId ,w,e)with c′=(ObjId ,w′=w∆,e), provided that w∈G. (Element w<G
+indicates an invalid ciphertext which can be removed.)
+Figure 4: Updatable Oblivious KMS Scheme
+one also requires that the update process itself does not reveal en-
+crypted information to StS(e.g., decrypting and re-encrypting the
+data by StSwould not be considered secure).
+In the traditional wrapping-based KMS of Fig. 1, such key ro-
+tation operation requires interaction between the storage server
+StSand KMS server KmS where StSsends every stored wrap to
+KmS for unwrapping under kcand re-wrapping using kc′. This
+requires the transmission of all wrap values between StSandKmS ,
+and the exposure of all dekvalues to KmS . In a large storage setting
+such process can take very long time (particularly under the “lazy
+evaluation" practice where a wrap held by StSis updated to kc′
+only when the application requires a regular unwrap operation for
+that object). During all this time the old and new keys kc,kc′must
+be stored at KmS thus extending the life and exposure period of
+these keys.
+In Fig. 4 we present an Updatable Oblivious KMS that adapts the
+OKMS scheme from the previous section to the updatable setting.
+Using techniques from updatable encryption [9,20,36] adapted to
+the oblivious setting, we achieve some desirable properties, both in
+terms of security and performance. First, upon the change of key
+kcinto a new key kc′, KMS server KmS can produce a short token ∆
+with which allthe ciphertexts of client Ccan be updated by StSin a
+way that achieves the above security properties. Second, the update
+operation is non-interactive: It is performed locally by StSwith the
+sole possession of ∆. Note that once KmS produces a new key kc′
+and the corresponding update value ∆,KmS can immediately erase
+the old key kc, hence reducing the risk of exposure to only one key
+at a time. Finally, the update operation at StSonly requires a single
+exponentiation per ciphertext independently of the ciphertext size,
+compared to at least 2 exponenentiations per ciphertext in previous
+updatable encryption schemes (see also footnote 3), leading to a
+fast update of all ciphertexts that were encrypted under kc. Thus,
+one obtains a very efficient update procedure that achieves better
+security than in the wrapping-based KMS in many ways: dekkeys
+are never exposed to StSor to KmS during updates; old keys can
+be erased immediately upon rotation; the interaction between StS
+andKmS is minimal (only ∆is transmitted); and ∆can be erased
+byStSas soon as it locally updates all ciphertexts.The UOKMS scheme from Fig. 4 departs from the OKMS scheme
+of Fig. 2 in some important ways. First, to allow for fast updates,
+ciphertexts are composed of two parts, a wrap and a symmetri-
+cally encrypted ciphertext that derives the encryption key from
+wrap . For updates, only wrap is updated. Second, the encryption
+operation is non-interactive, that is, C(or anyone else) can encrypt
+data locally without interacting with KmS provided that it pos-
+sesses the equivalent of a certified “public key" yccorresponding
+tokc(yc=дkcin our scheme). Decryption is only possible via
+an oblivious interaction with KmS . As a “side effect" of the above
+properties, the UOKMS scheme supports public key encryption,
+meaning that anyone can produce ciphertexts but only Ccan de-
+crypt them, thus expanding the use cases for such KMS solution.
+Note that decryption requires interaction with KmS which we as-
+sume has the means to authenticate decryption requests from C.
+Third, the UOKMS scheme from Fig. 4 is presented in terms of a
+specific instantiation rather than using generic tools like the OPRF
+in OKMS. Indeed, the malleability properties required for the up-
+date operations are not possible with a generic OPRF (but see below
+about Weak OPRFs). Finally, verifiability of correct encryption by
+KmS is not needed in UOKMS where encryption is non-interactive,
+and verification of correct decryption can be done via the (symmet-
+ric) authenticated decryption operation Dec. This saves the need to
+verify the correct exponentiation by KmS , further improving the
+performance of UOKMS.
+Correctness of the UOKMS scheme is easy to validate. For en-
+cryption, one sets w=дrfor random r, then derives the encryp-
+tion key dekfromyrc, encrypts the data and stores w. For decryp-
+tion,Ccomputes wkcobliviously in interaction with KmS and
+derives dekfrom this value. This recovers the original data as
+yrc=(дkc)r=(дr)kc=wkc. Regarding the update operation,
+if we denote by wtandktthe values of wandkc, respectively, after
+tupdates (here w0denotes the original value of wcomputed at the
+time of deriving dek, and k0denotes the client’s key kcas it existed
+at that time), then one can see inductively that if wkt
+t=wk0
+0(the
+latter is the value from which dekis derived), then this is also true
+fort+1, namely,(wt+1)kt+1=(w0)k0. Indeed, we have that wt+1=
+w∆t+1
+t=wkt/kt+1
+t, thus(wt+1)kt+1=(wkt/kt+1
+t)kt+1=wkt
+t=wk0
+0.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+383Security of the UOKMS scheme from Fig. 4 is proven in Section 4
+based on the security model presented in Section 3.
+In Section 5 we show how to distribute the KmS functionality of
+UOKMS through a threshold scheme which includes the distributed
+generation of the value ∆so only StScan learn it.
+On Weak Oblivious PRF. The UOKMS scheme from Fig. 4 derives
+symmetric encryption keys from a function Fk(w)=H(wk)defined
+over elements in a group Gof prime order q(where the key k
+is chosen at random in the set Zq). The function Fhas strong
+similarities with the OPRF dh-opk(x)=H(x,(H′(x))k)from Fig. 3
+that we use as the basis of the OKMS scheme from Fig. 2, as well
+as some fundamental differences. First, the input to Fis a group
+element (rather than an arbitrary string mapped into the group by
+the hash function H′indh-op ). But more importantly, knowing wk
+for any value wallows to compute the function on wtfor known t.
+At the same time, computing Fon a independently random group
+element is hard under CDH hence Fcan be modeled as a Weak PRF
+(as noted in [ 40]). In our application for UOKMS we also use the
+fact that Fcan be computed obliviously and use its homomorphic
+properties to support updatability. We leave as a future work item
+the formalization of such “oblivious Weak OPRF" function in the UC
+model, similarly to the treatment of OPRFs in [ 29]. For the purpose
+of our use of Fin the context of UOKMS, we carry the analysis
+directly in a specialized UOKMS security model that we present in
+Section 3.
+3 SECURITY MODEL FOR UPDATABLE
+OBLIVIOUS KMS
+We introduce the security model for Updatable Oblivious KMS
+which combines the elements and advantages of oblivious compu-
+tation and updatable encryption in a single model. As in updatable
+encryption, e.g. [ 9,10,20,34,36], we consider keys that evolve
+over epochs, where at the beginning of a new epoch the encryp-
+tion/decryption key is replaced with a fresh key. In our case, this
+applies to client keys kcheld by the Key Management server KmS .
+The goal is to capture the security of key rotation both in the sense
+of forward security and post-compromise security. That is, the com-
+promise of a client key kcfrom a given epoch should not help in
+exposing data encrypted either at a later epoch or in a previous
+epoch. In the latter case, however, one needs to qualify this require-
+ment. Suppose that a ciphertext eis generated using the key kcfrom
+epoch tand later the key kc′for epoch t′>tis exposed; should
+the data dencrypted under ciphertext estill be secure? Clearly, if
+the attackerAseese′, the updated version of ciphertext ein epoch
+t′, thenAcan decrypt e′and obtain d. However, ifApossesses
+kc′andebut does not have the updated e′then the security of d
+needs to be fully preserved.
+The above illustrates the intricacies of updatable encryption
+models, which require careful bookkeeping of information avail-
+able to the attacker: What ciphertexts it sees and when, for what
+epochs it obtains the secret key kc, and for which it receives update
+information, etc. The goal is to prevent the attacker from learning
+anything that is not trivially (and unavoidably) derivable from the
+information it requests. In this section, we set these rules and goals
+through a formal model of UOKMS security, and use it in Section 4
+to prove the security of our UOKMS design from Fig. 4.3.1 Formal UOKMS Scheme
+Formally, an Updatable Oblivious KMS (UOKMS) scheme is a tuple
+of algorithms KGen ,Enc,UGen ,UEnc , and a protocol Dec, intended
+for a KMS server KmS, a storage server StS, and a clientC, s.t.:
+•KGen is a key generation algorithm, run by KmS , which
+on input a security parameter ℓgenerates a public key pair
+(sk,pk).
+•Encis an encryption algorithm, run by any party, which on
+input key pkand plaintext mgenerates ciphertext c.
+•Dec=(Dec.KmS,Dec.C)is an interactive decryption proto-
+col between a client running Dec.C(pk,c)andKmS running
+Dec.KmS(sk ,pk), where Dec.Coutputs mor⊥.
+•UGen is an update generation algorithm, run by KmS , which
+on input(sk,pk)generates a new key pair (sk′,pk′)together
+with an update token ∆.
+•UEnc is a ciphertext update algorithm, run by StS, which on
+input(c,pk,∆)outputs an updated ciphertext c′.
+An UOKMS scheme must satisfy the following correctness prop-
+erty. First, the interactive decryption must recover the encrypted
+plaintext, i.e. for any m, if(sk,pk)← KGen( ℓ)andc←Enc(pk ,c)
+then Dec.C(pk,c)outputs mafter an interaction with
+Dec.KmS(sk ,pk). Furthermore, the same correctness property ap-
+plies to keys and ciphertexts produced and updated in later peri-
+ods. That is, for every m, if(sk,pk)← KGen( ℓ),c←Enc(pk ,m),
+(sk′,pk′,∆) ← UGen(sk ,pk), and c′←UEnc( c,pk,∆), then
+Dec.C(pk′,c′)outputs mafter interacting with Dec.KmS(sk′,pk′).
+On public and private values. We model UOKMS as a public key
+encryption scheme where any party in possession of the public key
+pkcan encrypt files for the client whose corresponding decryption
+keyskis held by KmS . It is assumed that KmS has the means to
+authenticate the client before engaging in a decryption operation
+using key skbut a secret channel between client and KmS is not
+needed. The update token ∆is assumed to be transmitted from KmS
+toStSover a secure channel. No other party needs or should know
+this value. In particular, the model does not guarantee secrecy of
+skt+1given sktand∆t+1or secrecy of sktgiven skt+1and∆t+1.
+For example, in our UOKMS scheme of Figure 4 receiving ∆t+1
+allows one to derive both skt+1from skt, and sktfrom skt+1. In
+this case, if ∆t+1was leaked then a KmS corrupted in epoch twould
+be effectively also corrupted in epoch t+1, and vice versa.4
+3.2 UOKMS obliviousness and security
+The definition below formalizes the notion of KMS obliviousness.
+Definition 3.1. We say that a UOKMS scheme is oblivious if for
+all efficient algorithms Athe interaction ofAwith Dec.C(pk,c0)
+is indistinguishable from interaction with Dec.C(pk,c1), for any
+(pk,c0,c1)output byAs.t.c0,c1are valid ciphertexts of the same
+length and pkis a valid public key.5
+4This is not a necessary feature of a UOKMS scheme, i.e. one could imagine that
+∆t+1allows for updating ciphertexts (and the public key), but not for updating the
+corresponding secret key. However, all existing ciphertext-independent updatable
+encryption schemes, ours included, allow for updating skgiven ∆.
+5The public key pk, normally chosen by KmS , can be chosen byAin this definition,
+modeling a malicious KmS , butCcan check some properties of the public key and
+the ciphertext, e.g. that they contain expected group elements, before running Dec.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+384As noted above, defining security of UOKMS, and of updatable
+encryption in general, requires establishing the rules of what in-
+formation the adversary is entitled to receive and when, and what
+constitutes a win relative to that information. In our model, time
+is divided into epochs at the beginning of which a new key pair
+(sk,pk)and an update token ∆are generated. For each epoch the
+adversaryAreceives the new public key pk, and can request to see
+either the new secret key skor the update token ∆, which corre-
+sponds toAcompromising in that epoch, respectively either server
+KmS or server StS. AlgorithmAis also given oracle access to the
+ciphertext-update function UEnc but it is not allowed to use it for
+trivial wins, e.g., updating challenge ciphertexts to an epoch for
+which it knows the secret key. Note that Alearns the secret key
+sktof epoch tifAasks for it, but also if Aasks for skt−1in epoch
+t−1and asks for ∆tin epoch t. This shows that what Acan learn
+in one epoch may depend on what it knew in the previous epoch,
+and the UOKMS security game rules must reflect that.
+We formalize these rules and the attacker goals via the real-ideal
+experiments shown in Fig. 5. In each epoch t, the attacker receives
+pktand chooses to either corrupt KmS , hence obtaining skt, or to
+corrupt StS, hence obtaining the update token ∆t, except if KmS
+was corrupted in epoch t−1(otherwise the attacker could calculate
+sktfrom skt−1and∆t, making this case equivalent to corrupting
+both KmS andStSin epoch t). In addition,Aobtains access to
+oracles Enc,Dec,UEnc , depending on the compromised party. An
+aspect of the definition that is specific to our oblivious setting is
+that the attacker with access to the oblivious decryption oracle can
+decrypt any ciphertext of its choice in a decryption call, but each
+call can result in decryption of at most a single challenge ciphertext.
+More generally, with qcalls to the decryption oracle, Acan decrypt
+qmessages but nothing more. Finally, we note that the ability of
+the attacker to access a decryption oracle provides CCA security to
+our public key scheme in the oblivious setting.
+Figure 5 shows two experiments: Experiment Expreal
+uokms(A, ℓ)
+which models an interaction of the real-world adversary Awith the
+real UOKMS scheme, and experiment Expideal
+uokms(A,SIM, ℓ)which
+models an interaction of a simulator SIM with an “ideal” UOKMS
+scheme. We call a UOKMS scheme secure if the two interactions,
+real and ideal, are indistinguishable. Formally:
+Definition 3.2. LetAdvreal
+uokms(A, ℓ)be the probability that ex-
+periment Expreal
+uokms(A, ℓ)outputs 1, and let Advideal
+uokms(A,SIM, ℓ)
+be the probability that experiment Expideal
+uokms(A,SIM, ℓ)outputs 1.
+We say that UOKMS scheme is secure if for all efficient algorithms
+Athere exist an efficient algorithm SIM s.t.|Advreal
+uokms(A, ℓ)−
+Advideal
+uokms(A,SIM, ℓ)|is negligible in ℓ.
+The real experiment Expreal
+uokms(A, ℓ)in Figure 5 models an in-
+teraction of adversary Awith a UOKMS scheme which progresses
+through epochs t=0,1, ...where the flag corrtdesignates whether
+Acorrupts KmS (kms) or the storage server StS(sts) in epoch t.
+After the initialization which generates the initial KMS key pair
+(sk0,pk0)we give pk0toAand letAinteract with the encryption,
+decryption, and ciphertext update oracles. We model the progress
+from one epoch to the next via “party corruption” oracle Corr which
+usesA’s decision bit corrt+1to corrupt either KmS orStSin thenext epoch6. This oracle triggers a key update, i.e. a new KMS key
+pair is created as(skt+1,pkt+1,∆t+1)←UGen(sk t,pkt), and the
+epoch counter tis incremented. Adversary Athen receives the new
+public key pkt+1and possibly more, depending on the parties it
+corrupts: Namely, if corrt+1=kms thenAalso gets the new secret
+keyskt+1, and if corrt+1=corrt, i.e. ifAcorrupts the same party
+in the two consecutive epochs, then Aalso gets the update token
+∆t+1. Crucially,Adoes notget∆t+1ifcorrt+1,corrt. (Indeed, as
+mentioned above, in the UOKMS scheme of Figure 4, receiving the
+update token would allow the adversary to effectively extend the
+corruption of KmS from epoch tto epoch t+1and vice versa.)
+The security experiment assumes that KmS corruptions are pas-
+sive in the sense that if corrt=kms we letAlearn skt(and∆tif
+corrt−1=kms), but we do not let Ainterfere in the update gen-
+eration and/or the dissemination of the created update token and
+a public key, or in the execution of the decryption protocol. (All
+existing Updatable Encryption security notions make such choices,
+e.g. assuming that even if the adversary compromises the entity
+that stores the key, the key update is still generated honestly.)
+We assume that StScorruptions are active in the sense that for
+epochs where corrt=stswe not only letAlearn∆t, but we also
+giveAan access to the ciphertext update oracle UEnc which on
+input(t′,c), for t′<tandca ciphertext from epoch t′, outputs the
+updated value of cat epoch t. That is, the oracle runs the update
+algorithm on (supposed) ciphertext ct′=cusing update tokens
+∆t′+1, ...,∆t, and outputs the updated ciphertext ct. This models
+the ability of the adversary to inject ciphertexts to StSin some
+epoch – either by directly modifying these ciphertexts when StSis
+corrupted, or by sending a ciphertext to the client who then stores
+it atStS7– and then having this ciphertext updated by the UEnc
+oracle. Note that the Update protocol is not provided at epochs
+where corrt=kms since this would allow Ato decrypt challenge
+ciphertexts using the compromised KmS key.
+Our UOKMS models a public key encryption where adversary
+Acan encrypt any message at will, but the role of the encryption
+oracle Encin the UOKMS security game is to model the generation
+ofchallenge ciphertexts. Namely, in the real game, oracle Encon
+A’s input mgenerates a ciphertext c=Enc(pkt,m), but in the ideal
+game the same ciphertext cmust be produced by the simulator
+algorithm SIM given only|m|(and flag enc) as an input while the
+plaintext mis added to the (secret) list Lof encrypted challenge
+plaintexts. Adversary Acan decrypt any ciphertexts (or indeed any
+ciphertext-like objects of its choice) using the decryption oracle
+Dec. Because we aim to support oblivious decryption, the precise
+ciphertext whichAeffectively enters into the decryption oracle
+is hidden from the oracle, hence we must count each decryption
+oracle access as an attempt to decrypt some challenge ciphertext.
+We model this in the ideal game by giving SIM access to a single
+location in list Lof challenge plaintexts, per each Decquery ofA.
+Note that this technically implies that the simulator can extract the
+unique ciphertext which Aattempts to decrypt in this oblivious
+6We assume w.l.o.g. that Acorrupts exactly one of these parties in each epoch. In
+particular, the real-world event when both StSandKmS are corrupted in epoch tis
+reflected in our model by KmS corrupted in two consecutive epochs t−1,t, because
+this reveals both sktand∆ttoA. On the other hand, the epoch without corruption
+strictly weakens the adversary capabilities hence it is subsumed by the other cases.
+7Note that our treatment is of a public key encryption, so other parties can potentially
+create ciphertexts which land in the StSstorage.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+385Expreal
+uokms(A, ℓ)
+Sett←0andcorr 0←sts. Generate(sk0,pk0)←KGen( ℓ)and give pk0toA. The experiment output is the output of Aafter
+interaction with the following oracles:
+Enc: OnA’s input m, ifcorrt=stsoutput Enc(pkt,m);
+Dec: LetAinteract with Dec.S(sk t);
+UEnc: OnA’s input(t′,c), ifcorrt=stsand0≤t′<tthen
+setct′:=c; for j=t′+1totsetcj:=UEnc( cj−1,pkj,∆j); output ct;
+Corr: OnA’s input corrt+1, set(skt+1,pkt+1,∆t+1)←UGen(sk t,pkt);
+If(corr t,corrt+1)=(kms ,kms) output(pkt+1,skt+1,∆t+1);
+If(corr t,corrt+1)=(kms ,sts)output pkt+1;
+If(corr t,corrt+1)=(sts,kms) output(pkt+1,skt+1);
+If(corr t,corrt+1)=(sts,sts)output(pkt+1,∆t+1);
+Increment epoch counter t:=t+1.
+Expideal
+uokms(A,SIM, ℓ)
+Sett←0andcorr 0←sts. Initialize an empty challenge plaintext list L. Let a stateful algorithm SIM generate pk0on input ℓ
+and give pk0toA. Experiment output is the output of Aafter interaction with the following oracles:
+Enc: OnA’s input m, ifcorrt=stsaddmtoLand output SIM(enc ,|m|);
+Dec: LetAinteract with SIM(dec) while letting SIM learn onechosen item in L;
+UEnc: OnA’s input(t′,c), ifcorrt=stsand0≤t′<tthen output SIM(upd ,t′,c);
+Corr: OnA’s input corrt+1output SIM(corr t+1)and increment epoch counter t:=t+1.
+Figure 5: Security Experiments for Updatable Oblivious KMS
+decryption protocol instance, or otherwise the simulator wouldn’t
+know which plaintext on list Lit should access. Observe also that
+we do not create challenge ciphertexts in an epoch where KmS is
+corrupted, because knowledge of KmS ’s private key makes all such
+ciphertexts insecure.
+We stress that the Expreal
+uokmssecurity game allows any pattern of
+corruptions except corruption of both StSandKmS in a single epoch
+(see footnote 6). However, our model of corruptions is static in the
+sense thatAmust decide which party to corrupt at the beginning
+of each epoch. (See also the discussion below.)
+Prior Updatable Encryption Models. Our notion of Updatable
+(Oblivious) KMS is related to Updatable Encryption (UE) or Encryp-
+tion with Key Rotation, which was studied in several recent works
+[9,10,20,34,36]. UOKMS extends the notion of UE by splitting
+the UE’s client into two separate entities, the KMS server, which
+holds the client’s decryption key and generates key updates, and
+the client itself, who decrypts the ciphertexts retrieved from the
+storage server via an interactive decryption protocol with the KMS.
+The UOKMS model thus lifts the notion of Updatable Encryption to
+the setting that reflects realistic large cloud storage deployments,
+where the decryption keys of all clients are held by a specialized
+Key Managment server. On the other hand, collapsing the client
+and the KMS in the UOKMS model into a single entity gives exactly
+the setting of UE, hence our UOKMS scheme and security notion
+give rise to the corresponding UE scheme and notion.
+Our security model corresponds to the ciphertext-independent
+UE model of Lehmann et al. [ 36] (which refines the model of Ev-
+erspaugh et al. [ 20]), where a single update message can be used to
+update any number of ciphertexts. Of these only the recent work ofKlooss et al. [ 34] addresses CCA security, and lets the adversary ac-
+cess a decryption oracle, as we do in our model. However, of the two
+schemes shown secure in [ 34] the one whose efficiency is compara-
+ble to ours does not allow the adversary an unrestricted access to
+the Ciphertext Update oracle, while our model allows unrestricted
+access to both DecandUEnc oracles. The scheme of [ 34] which al-
+lows such unrestricted oracle access relies heavily on pairing-based
+NIZKs, using e.g. 22 pairings in decryption, in contrast to a single
+standard group exponentiation used in decryption in our scheme.
+However, our model of UOKMS security is specialized to the case of
+oblivious interactive decryption where the decryption oracle, which
+models the KMS server, runs on blinded ciphertexts. In such setting
+a standard CCA notion, where the decryption oracle is restricted
+from decrypting a challenge ciphertext, does not apply. Thus we
+capture security with a “counting method” which enforces that any
+Qaccesses to the decryption oracle allow for learning plaintext
+information in at most Qchallenge ciphertexts. Ours is the first
+treatment of Updatable Encryption with oblivious decryption pro-
+cedure, and this setting necessitates a “counting-based” notion of
+security in the presence of decryption oracle.
+The UE schemes of [ 20,34,36] achieve update indistinguishabil-
+ity, i.e. a ciphertext updated to the new epoch cannot be efficiently
+linked to the original from the previous epoch. We do not consider
+this property, although our scheme can be extended to support it,
+because achieving this property requires update cost proportional
+to the total size of the encrypted data, which we believe is impracti-
+cal in large storage deployments (see footnote 3). The above UE
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+386schemes also consider ciphertext integrity, but this notion is special-
+ized to the case of symmetric key encryption, while our UOKMS
+model treats the case of public key encryption.
+Finally, we should point out that our security model is static in
+the sense that an adversary must choose at the beginning of each
+epoch whether it compromises the decryption key stored by the
+KMS or the update token held by the storage server (or both). By
+contrast, [ 34,36] consider an adaptive model of corruptions, where
+an adversary can request either the decryption key or the update to-
+ken or both for any pastepoch as well. The adaptive security model
+is more general and less restrictive, but we analyze the security
+of our scheme only in the static model because adaptive security
+presents subtle technical challenges which we do not know how
+to overcome.8Technically, the simulator would have to make bets
+about past epochs, guessing whether an adverary will eventually
+ask for a decryption key for some past epoch (in which case the sim-
+ulator needs to know this epoch key), or whether an adversary will
+ask for an update token which allows updating a challenge cipher-
+text to that epoch (in which case the simulator needs to embed an
+encryption challenge in that epoch key). Since the simulator needs
+to make these bets with respect to polynomially-many past epochs,
+the probability that its guesses are all correct will be negligible, and
+it is not clear if such strategy can lead to efficient simulation. We
+thus believe that security analysis in the fully adaptive model of
+[34, 36] remains an open question.
+4 SECURITY ANALYSIS OF THE UOKMS
+SCHEME
+The UOKMS scheme shown in Figure 4 is information-theoretic
+oblivious, as is the OPRF protocol dh-op on which the Decryption
+protocol in Fig. 4 is based, but the security of this scheme relies on
+theOMDH-IO computational assumption and the (receiver) non-
+committing property of symmetric encryption, both defined below:
+One-More DH with Inverse Oracle (OMDH-IO) Assumption.
+For any PPTAthe following probability is negligible:
+Prob[A(·)k,(·)1/k(д,дk,д1, . . . ,дN)={(дjs,дk
+js)}s=1,...,Q+1]
+with the probability going over random kinZq, random choice
+of group elements д1, . . . ,дNinG=⟨д⟩, andA’s randomness,
+and where(·)kand(·)1/kare exponentiation oracles, and Qis the
+number ofA’s queries to the(·)koracle.
+Without access to oracle (·)1/k, the above is identical to the
+One-More DH (OMDH) assumption [ 6,32], which was used e.g.
+for proving the security of the practical OPRF schemes [ 28,29],
+particularly the one shown in Figure 3 in Section 2.1. Thus, OMDH-
+IO is a strengthening of OMDH; its security can be proven in the
+Generic Group Model (GGM) as an extension to the proof of OMDH
+in that model [ 31] and with a slight modification of the security
+bounds. We sketch this adaptation in Appendix A.
+Receiver Non-Committing Symmetric-Key Encryption. This
+property of symmetric-key encryption (SKE) is used in our security
+analysis to enable the simulation required by the security game in
+8We stress that this is an issue in the proof only and not an explicit attack, and that
+similar technical issues were observed regarding adaptive security in other contexts,
+e.g. in proactive cryptosystems, see e.g. [1, 13, 37].Fig. 5. Informally, it states that without knowledge of the encryption
+key, ciphertexts do not commit to their underlying plaintexts, thus
+allowing the simulator to “explain" a fixed ciphertext as the encryp-
+ton of any plaintext. Formally, a symmetric encryption scheme
+(Enc,Dec) isreceiver non-committing (RNC) if for any PPT Athere
+exists PPT SIM s.t.A’s view in the following real and ideal games
+is indistinguishable: (1) In the real game Ainteracts with oracles
+EncandReveal, where Enc(i,m)picks random key kiand outputs
+e=Enc(ki,m)while Reveal( i)reveals ki; (2) In the ideal game A
+interacts with a stateful algorithm SIM, s.t. whenAsends(i,m)
+as an Encquery, SIM must return eon input(i,|m|), and whenA
+sends ias aReveal query, SIM must output kion input(i,m).
+Theorem 4.1. The UOKMS scheme in Figure 4 is unconditionally
+oblivious and is secure under the OMDH-IO assumption in ROM if
+the symmetric encryption scheme Encis receiver non-committing.
+Notes on the Proof. The proof of Theorem 4.1 is presented in Sec-
+tion 4.1. We note that the inverse exponentiation oracle in OMDH-
+IO is necessary to obtain the theorem as the protocol (in the context
+of our model) provides an attacker Athat corrupts KmS in epoch
+t−1andStSin period twith an oracle to the function (·)1/kt. In-
+deed, in epoch t,Aobtains access to UEnc which implements an
+exponentiation oracle (·)∆t=(·)kt−1/kt, and together with knowl-
+edge of kt−1,Acan compute(·)1/kton any value of its choice. The
+RNC property of SKE Encis likewise necessary. Consider an at-
+tackerAmaking two queries: (a) an Encquery on some m, and (b) a
+Decquery whereAruns the Dec.Cprotocol on the received cipher-
+textc=(ObjId ,w,e). By the UOKMS security game rules of Fig. 5
+the simulator SIM has to simulate this as follows: (a) it produces c
+on message length |m|, and (b) on input mretrieved from list L, it
+simulates protocol Dec.Sso that cdecrypts to m.SIM’s response v
+toA’s message uin the decryption protocol, see Fig. 4, defines the
+effective KMS key as k=DL(u,v), and consequently defines the
+data encryption key for (ObjId ,w,e)asdek=H(wk). Thus when
+SIM defines the output dekof oracle Hon input wkit must satisfy
+that e=Encdek(m). In particular, SIM first creates ciphertext e
+given just|m|and then, given m, it creates deks.t.e=Encdek(m),
+wihch implies that SKE Encsatisfies the RNC property.
+Corollary 4.2. The UOKMS scheme in Figure 4 is secure under
+the OMDH-IO assumption in the Ideal Cipher Model and ROM if the
+symmetric encryption is implemented using CTR or CBC modes.
+The corollary follows because CTR and CBC encryption modes
+satisfy the receiver non-committing property in the Ideal Cipher
+model: If message length |m|defines nblocks for block cipher E
+then SIM services Encquery on input(i,|m|)by setting cipher-
+texte=(IV,e1, ...,en)where IVand all ei’s are random blocks.
+When SIM getsm=(m1, ...,mn)to service Reveal( i)query, values
+(IV,e1, ...,en,m1, ...,mn)define ninput/output pairs which SIM
+needs to set for E(k,·)for random key k. For counter mode CTR,
+SIM setsE(k,IV+j)=mj⊕ejfor all jwhile for CBC mode, SIM
+setsE(k,mj⊕ej−1)=ejfor all jwhere e0=IV. Either way by
+randomness of ei’s this sets E(k,·)outputs on ngiven points to
+nrandom values. The probability that this creates collisions in
+E(k,·)is negligible, and by randomness of kthere is a negligible
+probability that any points of E(k,·)were queried before.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+387Note. The above argument can be expanded to include authenticated
+encryption via encrypt-then-mac where the simulator chooses the
+MAC key.
+4.1 Proof of Theorem 4.1
+Proof. Note first that the unconditional obliviousness of this
+UOKMS scheme is immediate, because for any public key pkand any
+two valid ciphertexts c0=(ObjId0,w0,e0)andc1=(ObjId1,w1,e1),
+the interaction with Dec.Con(pk,cb)forb=0andb=1is
+identical: In either case Csends u=(wb)r′forr′←RZq, which
+is a random group element if wb∈Gandwb,1because the
+group order is prime. To argue UOKMS security we will first show
+an efficient simulator algorithm SIM which having access to (any)
+adversary algorithm A, interacts with the ideal UOKMS game
+Expideal
+uokms. We will then re-write SIM as a reduction algorithm Rs.t.
+ifAhasϵadvantage in distinguishing an interaction with the real
+UOKMS game Expreal
+uokmsand an interaction with SIM andExpideal
+uokms,
+i.e. if
+ϵ=|Pr[1←Expreal
+uokms(A, ℓ)]−Pr[1←Expideal
+uokms(A,SIM, ℓ)] |
+then reductionR, given access toA, has the same probability ϵof
+solving the OMDH-IO problem. It follows that under the OMDH-IO
+assumption quantity ϵmust be negligible, which implies that the
+UOKMS scheme is secure. We note that in one step along these
+SIM modifications we replace the real symmetric encryption Enc
+with the simulator assumed by the RNC property of SKE Enc. We
+provide the details of the proof now.
+The proof relies on the ROM model for function H:G→{0,1}ℓ
+used in UOKMS in Figure 4. Specifically, we treat Has an external
+entityAneeds to query to compute Houtputs, simulator SIM and
+reductionRinterceptA’s calls to H, and we measure probabilities
+p0=Pr[1←Expreal
+uokms(A, ℓ)]andp1=Pr[1←Expideal
+uokms(A,SIM, ℓ)]
+over the randomness of H. For simplicity of notation we assume
+that group Gis fixed for every security parameter ℓand we assume
+a non-uniform security model both for the OMDH-IO assumption
+and UOKMS security. To reduce visual clutter we denote plaintext
+files as minstead of Objand we omit idenfiers ObjId in ciphertexts.
+We will first describe game G, which reproduces the same dis-
+tributionAsees in the real security game Expreal
+uokms, but does it in
+a way which makes it easier to understand simulator SIM which
+we will describe next. Game Gpicks k∈Zqand sets the first
+epoch key as(k0,y0)=(k,дk). Game Galso picks a list of random
+group elements д1, ...,дNinG, where Nis the upper-bound on the
+number of EncqueriesAmakes. Then for every i>0,Gpicks
+the following values: If Acorrupts KmS in epoch ithen Gpicks
+random ki←Zqand outputs(ki,yi)foryi←дki. (IfAcorrupts
+KmS for two epochs in the row Galso outputs ∆i=ki−1/ki.) IfA
+corrupts StSin epoch ithen Gacts depending on which party A
+corrupted in epoch i−1: (case 1) If it was StSthen Gpicks random
+∆i←Zqand outputs yi←yi−11/∆i; (case 2) If it was KmS then
+Gpicks random ∆j+1,i←Zqand outputs yi←yj1/∆j+1 ,iwhere j
+was the last epoch when Acorrupted StSbeforeAcorrupted KmS
+in epoch i−1. Let EKbe the set of epochs when Acorrupts KmS
+andESthe set of epochs when Acorrupts StS. The above process
+defines value δifor each i∈ESs.t.yi=y1/δi(hence ki=k/δi),
+andGcan compute this δias eitherδi−1·∆i, if(i−1)∈ES, or asδj·∆j+1,i, ifj∈ESand{j+1, ...,i−1}⊆EK. Given these values,
+Gservices oracles Enc,Dec, and UEnc at epoch i∈ES(note that
+these calls are disallowed if i∈EK) as follows:
+•Greplies to n-th call to Enc(m)with c=(w,Encdek(m))
+where w=(дn)δianddek=H(z)forz=(дn)k; (Note that
+z=wk/δi, hence cis distributed as in the real interaction.)
+•Greplies to message utoDecwithv=(u1/δi)k;
+•Greplies to UEnc( t′,c)forc=(w,e)with(w′,e)forw′=
+wδi/δt′ift′∈ES, and w′=(wδi·kt′)1/kift′∈EK.
+The correctness of EncandDec responses follows because ki=
+k/δi, and as for UEnc , note that ki=k/δi, and the implicit update
+from epoch t′to epoch iis∆t′,i=kt′/ki, which together implies
+that∆t′,i=(kt·δi)·(1/k). Thus game Greproduces the exact same
+view as security game Expreal
+uokms.
+Simulator SIM interacts with an ideal experiment Expideal
+uokmsand
+executes the same algorithm as game G– including picking the ini-
+tial key kand keys kiifi∈EKand update-related values δiand∆j,i
+ifi∈ESas described above (and defining corresponding δi’s and
+ki’s). For handling oracles EncandDec,SIM resorts to the (stateful)
+simulator SIM Eassumed by the Receiver Non-Committing (RNC)
+property of the symmetric encryption Enc. First, whenAsends
+t-th query mto oracle Encin epoch i∈ES, we put mat position t
+in list L, and SIM replies toAwith c=(w,e)forw=(дt)δiande
+computed by SIM Eon input(t,|m|). Second, whenAsends uto
+Dec,SIM replies with v=(u1/δi)kand then monitors A’s queries
+toH: IfAmakes query ztoHs.t.z1/k=дtforдt∈{д1, ...,дN}
+then SIM asksExpideal
+uokmsto reveal message mat the t-th position in
+listL, sends(t,m)as the Reveal query to SIM E, and given key dek
+asSIM E’s response, defines H(z)=dek. By the RNC property of
+Enc, pairs(dek,e)produced by SIM Eare computationally indistin-
+guishable from random dekande=Encdek(m). (In particular, this
+process sets H(z)to a value indistinguishable from random.)
+The only difference between A’s interaction with GandA’s
+interaction with SIM (which in turn interacts with Expideal
+uokms) is if
+in the latter caseAqueries Hon arguments(дi)kfor more than
+Qelements in{д1, ...,дN}where Qis the number ofA’s decryp-
+tion queries: Given Qdecryption queries SIM is allowed to learn
+only Qitems in list L, so it can embed correct messages as de-
+cryptions of Qchallenge ciphertexts, involving Qchallenge points
+{дjs}s=1,...,Q, but SIM will not be able to decrypt correctly the
+(Q+1)-st ciphertext(w,e)formed as w=(дjQ+1)δis.t.Aqueries
+Honz=(дjQ+1)k=wki. In other words, if there is ϵdifference be-
+tween Pr[1←Expreal
+uokms(A, ℓ)]andPr[1←Expideal
+uokms(A,SIM, ℓ)]
+thenϵis upper-bounded by the probability that Aqueries Hon val-
+ues(дj)kforQ+1pointsдjin{д1, ...,дN}. But by inspection of SIM
+one can see that SIM can be readily changed to reduction Ragainst
+the OMDH-IO problem: Rfollows the algorithm of SIM except that
+uses the OMDH-IO challenge key дkasy, it gets points(д1, . . . ,дN)
+as part of the OMDH-IO challenge, and it uses OMDH-IO oracles
+(·)k,(·)1/kinstead of using exponent kdirectly. Note that SIM uses
+(·)konly Qtimes, to service the Qdecryption oracle queries, and if
+Amakes queries to HonQ+1arguments(дj)kwith probability
+ϵ, thenRwill break OMDH-IO with probability ϵbecauseRcan
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+388identify such queries with oracle (·)1/k. This completes the proof
+of Theorem 4.1. 
+5 THRESHOLD OKMS AND UOKMS
+The key management systems (particularly for storage applications)
+that motivate our work are often characterized by the large amounts
+of data they store as well as the value and long-lived nature of
+this data. The whole security of such an operation depends on
+the security of the KMS client keys, hence the importance of key
+rotation (as addressed by UOKMS) as a way to limit the bad effects
+of key exposure. Yet, the main priority is to prevent these keys from
+leaking in the first place. Fortunately, all the schemes presented in
+this paper lend themselves to efficient distributed implementations
+via the very efficient Threshold OPRF tdh-op [30] shown in Figure 6.
+In our application, client keys kcare shared among nKMS servers
+S1, . . . , Sn, so that the cooperation of t+1of these is needed to
+compute the OPRF function with kcas the key, while the compro-
+mise of tservers provides no information to the attacker on kc.
+Moreover, the key kcis never reconstructed or exists in one place,
+not even at generation (which is also performed distributively). In
+addition, this scheme enjoys proactive security [25,43], namely, the
+sharing among the nservers can be refreshed periodically so that
+the attacker needs to break into t+1servers during the same time
+period to be able to compromise the key. Servers can be replaced
+and shares recovered, protecting secrecy and integrity/availability
+of the system as needed for long-lived keys.
+Thetdh-op function from Fig. 6 implements exactly the OPRF as
+defined in the OKMS scheme from Fig. 2. For the UOKMS scheme of
+Fig. 4, the only difference is in the input from the client (a random
+group element rather than a hashed value).
+Note on efficiency. The dominant cost of computation in tdh-op is
+one exponentiation for each of the t+1servers and two exponenti-
+ations for the client regardless of the values nandt. We note that
+tdh-op is described in a simplified form in Figure 6 where the set of
+reconstruction parties SEis assumed to be known by Cin advance.
+If the reconstruction set SEis not known a-priori (i.e., more than
+t+1servers are contacted), each Siwould respond with akiandC
+would compute the interpolation in the exponent at the cost of a
+single multi-exponentiation (which can be further optimized when
+theαi’s are small, e.g., αi=i, using a recent technique from [ 44]).
+An additional important feature of the tdh-op solution is that the
+aggregation of server values biinto the dh-op result can be done
+by a proxy server (one of the threshold servers or a special purpose
+one) so that the threshold implementation is transparent to the
+client.
+5.1 Distributed Updates
+While a threshold solution greatly increases the security of the KMS
+keys, one may still want to apply key rotation, particularly given
+the efficiency of updates in our UOKMS solution. In the threshold
+setting this means that at the beginning of a rotation epoch, the
+servers, that have a sharing of a key kc, need to choose a new
+random client key kc′and generate the value ∆=kc/kc′. However,
+∆should only be disclosed to the client Cand the storage server
+StS, calling for a distributed generation of ∆where no subset of t
+or less servers learn anything about this value.We show a procedure that given (n,t)Shamir sharing of a key k
+generates(n,t)sharing of a new random key k′and of the update
+token ∆=k/k′. It uses two standard tools from multi-party com-
+putation: (i) The joint generation of a Shamir sharing ρ1, . . . ,ρnof
+a uniformly random secret ρoverZq, e.g., [ 45] or Fig. 7 of [ 23], and
+(ii) a Distributed Multiplication protocol which given the sharings
+of secret aand secret bgenerates a sharing of the product a·b
+without learning anything about either secret, e.g., [23].
+The distributed update protocol assumes that nservers S1, . . . , Sn
+have a sharing(k1, . . . , kn)of a key k. To produce a new key k′the
+servers jointly generate a sharing ρ1, . . . ,ρnof a random secret ρ∈
+Zqand run distributed multiplication to generate shares k′
+1, . . . , k′n
+of the new key defined as k′=ρ·k. Finally, each server Sisends
+toCand/or StSits shareρifrom which the recipient reconstructs
+ρand sets ∆:=ρ−1[=k′/k].
+5.2 Verifiable Threshold (U)OKMS
+As noted earlier, being able to verify the correctness of a data
+encryption key dekbefore encrypting an object is an important fea-
+ture of the OKMS solution and a major advantage over traditional
+wrapping-based KM systems (Fig. 1). OKMS Verifiability requires
+checking the correct OPRF operation by the KmS for which Veri-
+fiable OPRFs [ 28] are available, assuming the client possesses the
+authentic public key дkccorresponding to KmS keykc. As indi-
+cated in Section 2.2, verifiability in the case of UOKMS can be done
+directly via correct symmetric authenticated decryption, thus dis-
+pensing with the need to check the oblivious operation by KmS . In
+the threshold case, however, where multiple servers provide input
+for decryption, it is necessary to identify misbehaving servers. Thus,
+in the threshold case, verifiability is needed also for UOKMS.
+Note that for the single-server dh-op scheme of Fig.3, verifiabil-
+ity can be added via a simple non-interactive zero-knowledge proof
+of equality of logarithms. For the threshold case, namely, tdh-op
+scheme of Fig.6, if we assume that the client possesses the public
+keysдkicorresponding to the shares kiof key k=kc, then zero-
+knowledge proofs can be used too for verification. However, this
+prevents the ability to have a “proxy" (e.g., any one of the nservers)
+that does the aggregation of the bivalues returned by the servers
+into the OPRF result. With ZK verification, it is the client itself that
+needs to do this aggregation. This loses the “client transparency"
+property of tdh-op that has the important practical advantage that
+the client (and its software) need not be aware of the implemen-
+tation of the server, whether it is a single-server deployment or a
+multi-server one.
+Next, we present an alternative verification procedure that is
+client transparent. The client only needs to have the certified public
+keyдkfor key k(regardless of the number of servers). We first de-
+scribe the scheme for the case of the single-server OPRF dh-op from
+Fig. 3 and later extend it to the threshold case. (This works directly
+for OKMS, the adaptation to UOKMS is immediate.) The procedure
+is reminiscent of Chaum’s protocol for undeniable signatures [ 15]
+but simplified by dispensing of zero-knowledge proofs that are
+not needed here. It is easy to verify that the integrity guarantee is
+unconditional, namely, against unbounded attackers.
+•On input x,Csetsh=H′(x), sets r,c,d←RZq, and sends
+to server Sthe pair of values a=hr,b=hcдd.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+389Key and server initialization.
+Keyk←RZqis secret shared using Shamir’s scheme with parameters n,t;
+Server Si,i=1, . . . , n, holds share ki.
+Threshold Oblivious Computation of Fk(x).
+•On input x, clientCpicks r←RZqand computes a:=H′(x)r; it chooses a subset SEof[n]of size t+1and sends to
+each server Si,i∈SE , the value aand the subsetSE.
+•Upon receiving afromC, server Siverifies that a∈Gand if so it responds with bi:=aλi·kiwhereλiis a Lagrange
+interpolation coefficient for index iand index setSE.
+•WhenCreceives bifrom each server Si,i∈SE ,Coutputs as the result of Fk(x)the value H(x,(Î
+i∈SEbi)1/r)).
+Figure 6: Protocol tdh-op [30]:(n,t)-threshold computation of dh-op from Fig. 3
+•Sresponds with A=ak,B=bk.
+•Cchecks that
+Ar′=Bc′v−dc′(1)
+where r′=r−1,c′=c−1(andv=дk). It rejects if the
+equality does not hold, otherwise Csets the value of(H′(x))k
+toAr′which it is already computed for equation (1).
+This procedure involves running dh-op on two different values
+and then verifying consistency via a single multi-exponentiation
+by the client. The additional computational cost with respect to
+the base dh-op is a single exponentiation for the server and two
+multi-exponentiations for the client, essentially doubling the work
+for the non-verified case.
+We now adapt the scheme to the threshold OPRF tdh-op . The
+client Csends the same pair of values (a,b)to each participant
+server Siwho responds with Ai=aki,Bi=bki. Upon gather-
+ingt+1responses, Cinterpolates in the exponent (one multi-
+exponentiation) to obtain values A,Band checks the identity (1).
+If it holds, Csets(H′(x))ktoAr′, else it applies the check (1) to
+each pair Ai,Bireceived by participating server Siusingvi=дki
+instead ofv.
+The computational cost in the normal case, where the verifica-
+tion against v=дksucceeds, is the same as in the single-server
+case except for one additional interpolation in the exponent. If
+verification against v=дkfails then the cost is an additional multi-
+exponentiation per each participating server. As said, the special
+feature of this procedure is that the client can interact with a proxy
+(or gateway) in a way that all operations by the client are identical
+to the single-server case. The proxy will send the values (a,b)gen-
+erated by the client to the servers and will aggregate the responses
+Ai,Biinto a single response that can be verified with the public
+keyдk. Before sending to the client, the proxy can verify if the ag-
+gregation verifies correctly. If not, it needs to check the individual
+values sent by each server and discard the bad ones – all of this is
+done without any awareness by the client. Thus resulting in fully
+client-transparent solution.
+6 IMPLEMENTATION AND PERFORMANCE
+We report on implementation and performance of the OKMS and
+UOKMS schemes from Section 2.1 (Fig. 2) and Section 2.2 (Fig. 4),
+respectively.OKMS Client Operations (Single Thread)
+Wrap Unwrap
+Hash to Curve 58.26 58.26
+Generate Blind 1.58 1.58
+Apply Blind 68.07 68.07
+Create Challenge 83.27 -
+Inverse Blind 16.95 16.95
+Remove Blind 68.07 68.07
+Verify Response 106.67 -
+Total Time ( µs) 402.86 212.92
+Operations / Second 2,482 4,696
+Figure 7: Client operation time and Op/s in OKMS
+Microbenchmarks. Implementations of all necessary client and
+server operations were written in C++ using the OpenSSL library
+(version 1.1.1-pre5) to provide cryptographic functionality. Perfor-
+mance tests were conducted on a machine with an Intel(R) Xeon(R)
+CPU E5-2666 v3 @ 2.90GHz having 15 GB of memory. The imple-
+mentation was compiled with the gcc compiler with optimization
+level 3.
+The following tables detail the run times of each operation aver-
+aged over 10,000 trials. These tests used only a single thread and
+CPU core; results could be improved by performing these opera-
+tions concurrently across multiple CPU cores.
+In these tests, all elliptic curve operations were based on NIST
+P-256. Field operations (for Shamir and blinding factors) were de-
+fined over the prime order of NIST P-256. Hashing to the curve
+(as required by the OPRF defined in Fig. 3) was performed using
+SHA-256 and the constant time Simplified SWU algorithm [12].
+Client operations in the OKMS scheme are shown in Fig. 7 for
+both encryption (“wrapping") and decryption (“unwrapping"). The
+two operations differ only in that interactive verifiability is per-
+formed for wrap operations, while for unwrapping (the more com-
+mon operation) regular symmetric key verification suffices.
+When the (U)OKMS servers are deployed in a threshold architec-
+ture then some entity must perform polynomial interpolation “in
+the exponent”. This can be implemented as a multi-exponentiation
+of the individual server’s contributions together with the corre-
+sponding Lagrange coefficients. This interpolation operation could
+variously be performed by one of the servers, by the client, or by a
+dedicated intermediate entity.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+390Interpolation Layer Performance (Single Thread)
+(t+1)-of-N Time ( µs) Ops / Second
+1-of-1 81.68 12,242
+3-of-5 155.99 6,410
+5-of-9 236.72 4,224
+5-of-15 236.66 4,225
+6-of-11 280.04 3,570
+Figure 8: Interpolation layer performance for various
+threshold parameters
+(U)OKMS Server Operations (Single Thread)
+Time ( µs) Ops / Second
+Wrap 136.13 7,345
+Unwrap 68.07 14,691
+Figure 9: (U)OKMS Server performance for wrap and un-
+wrap
+UOKMS Operations (Single Thread)
+Time ( µs) Operations / Second
+Wrap 24.24 41,261
+Unwrap 162.33 6,160
+Update 68.07 14,691
+Figure 10: Client operation time and Op/s in UOKMS
+We observe that the multi-exponentiation time dominates the
+cost of the interpolation (computing the Lagrange coefficients is
+correspondingly cheap), and we find that the total cost depends on
+the threshold rather than the total number of servers. We report
+interpolation times in Fig. 8.
+Server operations, measured for the single server and thresh-
+old variants of this (U)OKMS scheme (implemented with protocol
+tdh-pop ) are shown in Fig. 9. This includes only performing an
+exponentiation (EC scalar multiply) in the curve for each input pro-
+vided by the client (the wrap operation is more costly as it includes
+an additional exponentiation to support the interactive verification
+procedure from Section 5.2).
+Total time and operations per second is not significantly different
+for the threshold case, as each of the involved servers computes the
+same function in parallel.
+Client performance in the UOKMS scheme (Sec. 2.2) is shown
+in Fig. 10. This setting benefits from being able to perform wrap
+operations without server involvement, and can further benefit
+from precomputation tables for exponentiation of дandдk. In our
+testing, precomputation provided more than a 600% speed up (11.33
+vs. 68.20µs). We summarize the number of operations per second
+the client can perform in the UOKMS.
+(U)OKMS Server. To evaluate performance and scalability we
+hosted our (U)OKMS server implementation on Amazon’s Elas-
+tic Compute Cloud (EC2)[3] using a c4.2xlarge instance type. This
+instance type provides 8 virtual CPUS with an Intel(R) Xeon(R)
+CPU E5-2666 v3 @ 2.90GHz having 15 GB of memory and was the(U)OKMS Server Throughput (8 CPU cores)
+Scheme KeepAlive No KeepAlive
+Static Page 65,018 6,462
+OPRF (Unwrap) 32,094 6,349
+Figure 11: (U)OKMS Server Requests/s on EC2 instance (LAN
+setting)
+same instance type used to obtain the microbenchmark numbers
+above.
+Requests to this server were issued over HTTP and the web
+server, nginx, was configured with 8 worker processes (one per
+CPU). OKMS functionality was added to this web server as a na-
+tively compiled module which used the OpenSSL library (version
+1.1.1-pre5) to provide cryptographic functionality. The server ran
+Ubuntu 16.04 as its operating system.
+Throughput. To measure throughput a client machine (also
+c4.2xlarge ) was deployed in the same Amazon Web Service (AWS)
+availability zone as the server. We used the HTTP load generating
+tool heyto measure the throughput for each scheme. hey was con-
+figured with a concurrency level of 80 and all results were averaged
+over 50,000 requests. All requests were for an unwrap operation and
+were sent over HTTPS using (TLS 1.2 with ECDHE-ECDSA-AES256-
+GCM-SHA384). The server used a self-signed certificate with an EC
+key on the NIST P-256 curve. Computation time dominates in the
+LAN setting due to almost negligible network latency, with the CPU
+cores reaching near 100% utilization during the LAN throughput
+tests. To gauge the limits of the server performance, client-side
+operations of blinding and verification were not performed by the
+load generator.
+For each scheme, we tested with session KeepAlive on and off.
+When off, a new TCP connection and TLS session must be nego-
+tiated for each request. When on, the connection setup costs are
+amortized over all requests, which is in line with a client that must
+unwrap many keys.
+The table in Figure 11 details the observed throughput in re-
+quests per second (RPS) for the various schemes and two KeepAlive
+configurations (all over TLS). We compare these schemes to a static
+page as a baseline.
+We observe that for the No KeepAlive configuration, the cost of
+creating the new connection and establishing the TLS session domi-
+nates resulting in very little difference in RPS between the schemes.
+For the KeepAlive configuration, throughput is significantly better,
+achieving over 30,000 RPS for the OPRF/T-OPRF case. Thus our
+(U)OKMS implementation can handle a large number of clients
+with a single server. For comparison, Amazon’s object storage ser-
+vice reported a peak load of 1.1 million requests per second [ 33].
+If needed, the KMS implementation can be scaled with standard
+techniques, such as deploying a greater number of servers. With a
+few dozen servers in the KMS, a unique key could be supplied each
+time an object is written to or read from Amazon’s service.
+Hardware Security Modules. A best practice for securing master
+keys is to keep them within Hardware Security Modules (HSMs)[ 4]
+to prevent their export to less secure locations. Fortunately, the
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+391methods described in this paper are supported by existing commer-
+cial HSMs. Indeed, most HSMs support the PKCS#11 standard[ 42].
+This specification defines an API method called CKM_ECDH1_DERIVE
+that takes an arbitrary point as an input and returns the x-coordinate
+of the point resulting from a scalar multiplication of the input point
+using an HSM-held private key as the scalar.
+We tested three HSM implementations and found all supported
+the ECDH1 derive method. The returned x-coordinate is sufficient
+to perform an oblivious key derivarion, and verification, but verifi-
+cation (only needed in the OKMS setting and for threshold imple-
+mentations of the OPRF) requires that both positive and negative
+solutions for the y-coordinate be checked By importing an elliptic
+curve private key computed as a Shamir share, existing HSMs can
+be used as part of a threshold implementation. Due to oblivious-
+ness, interpolating the result from a threshold of HSMs can be done
+external to the HSM without sacrificing confidentiality.
+We note two potential limitations of using an HSM to hold the
+OPRF key. The first is that HSMs are often limited in the curves they
+support. While all of the HSMs we evaluated supported standard
+NIST curves, none supported Curve25519. The second limitation
+is performance. While high end commercial HSMs can achieve
+up to 22,000 scalar multiplications per second[ 48], this is roughly
+equivalent to what a single core can achieve in a multi-core server
+CPU.
+While software implementations of symmetric key wrapping
+algorithms can be several orders of magnitude faster than asym-
+metric operations, we found HSMs often employ specialized hard-
+ware to accelerate the normally slower asymmetric operations.
+In some cases, HSMs[ 48] including those used by leading cloud
+providers[ 38], the number of supported ECC operations per second
+is comparable to that of supported symmetric encryption operations
+per second.
+In conclusion, while in the traditional key-wrapping approach
+(Fig. 1) one can secure wrapping keys diligently e.g., in HSMs, the
+plain data encryption keys ( dek) travel over much less secure TLS
+channels (sometimes ending or visible in multiple points outside
+the HSM boundary), and are potentially exposed to rogue adminis-
+trators, accidental logging, etc. In contrast, these vulnerabilities are
+eliminated by the oblivious computation approach where as long
+as the OPRF key is secure, nothing can be learned about the data
+(other than by corrupting the client). Fortunately, securing these
+OPRF keys in HSMs is practical today as noted above, and while
+symmetric operations are less expensive than OPRF ones in general,
+HSMs with 20,000 EC op/sec can hardly be the system’s bottleneck
+(of course, in large operations multiple HSMs will be used). Impor-
+tantly, in UOKMS encrypting data does not necesitate of interaction
+with the KmS , further increasing performance. Additionally, the
+UOKMS approach offers much more efficient key rotation than tra-
+ditional systems where rotation requires communication with the
+KMS for each key ( dekorkek) to be updated. This slows down the
+rotation process, resulting in longer rotation periods and reduced
+security.ACKNOWLEDGMENTS
+We thank Anja Lehmann for very helpful discussions related to secu-
+rity notions of Updatable Encryption schemes. Our implementation
+experience and reporting has benefited enormously from the work
+of Martin Schmatz, Navaneeth Rameshan, and Mark Seaborn. We
+thank the CCS reviewers who helped improving the presentation
+of the paper.
+REFERENCES
+[1]J. F. Almansa, I. Damgård, and J. B. Nielsen. Simplified threshold RSA with
+adaptive and proactive security. In S. Vaudenay, editor, Advances in Cryptology
+- EUROCRYPT 2006, pages 593–611, Berlin, Heidelberg, 2006. Springer Berlin
+Heidelberg.
+[2]Amazon Web Services. Aws key management service cryptographic details, 2016.
+https://d1.awsstatic.com/whitepapers/KMS-Cryptographic-Details.pdf.
+[3]Amazon Web Services. Aws elastic compute cloud, 2018. https://aws.amazon.
+com/ec2/.
+[4]E. Barker and W. Barker. Recommendation for key management, part 2: Best prac-
+tices for key management organizations (2nd draft). Technical report, National
+Institute of Standards and Technology, 2018.
+[5]M. Bellare, C. Namprempre, D. Pointcheval, and M. Semanko. The one-more-
+RSA-inversion problems and the security of Chaum’s blind signature scheme.
+Journal of Cryptology, 16(3):185–215, June 2003.
+[6]M. Bellare, C. Namprempre, D. Pointcheval, and M. Semanko. The One-More-
+RSA-Inversion problems and the security of chaum’s blind signature scheme.
+Journal of Cryptology, 16(3):185–215, 2003.
+[7]M. Blaze, G. Bleumer, and M. Strauss. Divertible protocols and atomic proxy
+cryptography. In K. Nyberg, editor, EUROCRYPT’98, volume 1403 of LNCS, pages
+127–144. Springer, Heidelberg, May / June 1998.
+[8]D. Boneh, X. Boyen, and H. Shacham. Short group signatures. In M. Franklin,
+editor, CRYPTO 2004, volume 3152 of LNCS, pages 41–55. Springer, Heidelberg,
+Aug. 2004.
+[9]D. Boneh, K. Lewi, H. W. Montgomery, and A. Raghunathan. Key homomorphic
+prfs and their applications. In Advances in Cryptology - CRYPTO 2013 - 33rd Annual
+Cryptology Conference, Santa Barbara, CA, USA, August 18-22, 2013. Proceedings,
+Part I, pages 410–428, 2013.
+[10] D. Boneh, K. Lewi, H. W. Montgomery, and A. Raghunathan. Key homomorphic
+prfs and their applications. IACR Cryptology ePrint Archive, 2015:220, 2015.
+[11] Z. Brakerski and V. Vaikuntanathan. Fully homomorphic encryption from
+ring-LWE and security for key dependent messages. In P. Rogaway, editor,
+CRYPTO 2011, volume 6841 of LNCS, pages 505–524. Springer, Heidelberg, Aug.
+2011.
+[12] E. Brier, J.-S. Coron, T. Icart, D. Madore, H. Randriam, and M. Tibouchi. Efficient
+indifferentiable hashing into ordinary elliptic curves. Cryptology ePrint Archive,
+Report 2009/340, 2009. http://eprint.iacr.org/2009/340.
+[13] R. Canetti, R. Gennaro, S. Jarecki, H. Krawczyk, and T. Rabin. Adaptive security
+for threshold cryptosystems. In M. Wiener, editor, Advances in Cryptology —
+CRYPTO’ 99, pages 98–116, Berlin, Heidelberg, 1999. Springer Berlin Heidelberg.
+[14] R. Canetti, S. Halevi, and J. Katz. A forward-secure public-key encryption scheme.
+In E. Biham, editor, EUROCRYPT 2003, volume 2656 of LNCS, pages 255–271.
+Springer, Heidelberg, May 2003.
+[15] D. Chaum. Zero-knowledge undeniable signatures. In I. Damgård, editor, EU-
+ROCRYPT’90, volume 473 of LNCS, pages 458–464. Springer, Heidelberg, May
+1991.
+[16] D. Chaum and T. P. Pedersen. Wallet databases with observers. In E. F. Brickell,
+editor, CRYPTO’92, volume 740 of LNCS, pages 89–105. Springer, Heidelberg, Aug.
+1993.
+[17] A. Davidson, A. Deo, E. Lee, and K. Martin. Strong post-compromise secure
+proxy re-encryption. In Information Security and Privacy (ACISP) 2019, 2019.
+[18] D. Derler, S. Krenn, T. Lorünser, S. Ramacher, D. Slamanig, and C. Striecks. Revis-
+iting proxy re-encryption: Forward secrecy, improved security, and applications.
+In M. Abdalla and R. Dahab, editors, PKC 2018, Part I, volume 10769 of LNCS,
+pages 219–250. Springer, Heidelberg, Mar. 2018.
+[19] A. Everspaugh, R. Chaterjee, S. Scott, A. Juels, and T. Ristenpart. The pythia PRF
+service. In 24th USENIX Security Symposium (USENIX Security 15), pages 547–562,
+Washington, D.C., 2015. USENIX Association.
+[20] A. Everspaugh, K. G. Paterson, T. Ristenpart, and S. Scott. Key rotation for
+authenticated encryption. In Advances in Cryptology - CRYPTO 2017 - 37th
+Annual International Cryptology Conference, Santa Barbara, CA, USA, August
+20-24, 2017, Proceedings, Part III, pages 98–129, 2017.
+[21] W. Ford and B. S. Kaliski Jr. Server-assisted generation of a strong secret from a
+password. In 9th IEEE International Workshops on Enabling Technologies: Infras-
+tructure for Collaborative Enterprises (WETICE 2000), pages 176–180, Gaithersburg,
+MD, USA, June 4–16, 2000. IEEE Computer Society.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+392[22] M. J. Freedman, Y. Ishai, B. Pinkas, and O. Reingold. Keyword search and oblivious
+pseudorandom functions. In J. Kilian, editor, TCC 2005, volume 3378 of LNCS,
+pages 303–324. Springer, Heidelberg, Feb. 2005.
+[23] R. Gennaro, M. O. Rabin, and T. Rabin. Simplified VSS and fact-track multiparty
+computations with applications to threshold cryptography. In B. A. Coan and
+Y. Afek, editors, 17th ACM PODC, pages 101–111. ACM, June / July 1998.
+[24] Google Cloud. Google cloud key management service, 2018. https://cloud.google.
+com/kms/.
+[25] A. Herzberg, S. Jarecki, H. Krawczyk, and M. Yung. Proactive secret sharing
+or: How to cope with perpetual leakage. In D. Coppersmith, editor, CRYPTO’95,
+volume 963 of LNCS, pages 339–352. Springer, Heidelberg, Aug. 1995.
+[26] B. A. Huberman, M. K. Franklin, and T. Hogg. Enhancing privacy and trust in
+electronic communities. In EC, 1999.
+[27] IBM. Ibm key protect, 2018. https://console.bluemix.net/catalog/services/key-
+protect.
+[28] S. Jarecki, A. Kiayias, and H. Krawczyk. Round-optimal password-protected
+secret sharing and T-PAKE in the password-only model. In P. Sarkar and T. Iwata,
+editors, ASIACRYPT 2014, Part II, volume 8874 of LNCS, pages 233–253. Springer,
+Heidelberg, Dec. 2014.
+[29] S. Jarecki, A. Kiayias, H. Krawczyk, and J. Xu. Highly-efficient and composable
+password-protected secret sharing (or: how to protect your bitcoin wallet online).
+InSecurity and Privacy (EuroS&P), 2016 IEEE European Symposium on, pages
+276–291. IEEE, 2016.
+[30] S. Jarecki, A. Kiayias, H. Krawczyk, and J. Xu. TOPPSS: Cost-minimal password-
+protected secret sharing based on threshold OPRF. In D. Gollmann, A. Miyaji,
+and H. Kikuchi, editors, ACNS 17, volume 10355 of LNCS, pages 39–58. Springer,
+Heidelberg, July 2017.
+[31] S. Jarecki, A. Kiayias, H. Krawczyk, and J. Xu. TOPPSS: Cost-minimal password-
+protected secret sharing based on threshold OPRF. Cryptology ePrint Archive,
+Report 2017/363, 2017. http://eprint.iacr.org/2017/363.
+[32] S. Jarecki and X. Liu. Fast secure computation of set intersection. In J. A. Garay
+and R. D. Prisco, editors, SCN 10, volume 6280 of LNCS, pages 418–435. Springer,
+Heidelberg, Sept. 2010.
+[33] Jeff Barr. Amazon S3 – Two Trillion Objects, 1.1 Million Requests / Second,
+2013. https://aws.amazon.com/blogs/aws/amazon-s3-two-trillion-objects-11-
+million-requests-second/.
+[34] M. Klooß, A. Lehmann, and A. Rupp. (R)CCA secure updatable encryption with
+integrity protection. In Eurocrypt 2109, 2019.
+[35] R. Lai, C. Egger, M. Reinert, S. Chow, M. Maffei, and D. Schröder. Simple password-
+hardened encryption services. In 27th USENIX Security Symposium (USENIX
+Security 18), 2018.
+[36] A. Lehmann and B. Tackmann. Updatable encryption with post-compromise
+security. In Advances in Cryptology - EUROCRYPT 2018 - 37th Annual International
+Conference on the Theory and Applications of Cryptographic Techniques, Tel Aviv,
+Israel, April 29 - May 3, 2018 Proceedings, Part III, pages 685–716, 2018.
+[37] A. Y. Lindell. Adaptively secure two-party computation with erasures. In M. Fis-
+chlin, editor, Topics in Cryptology – CT-RSA 2009, pages 117–132, Berlin, Heidel-
+berg, 2009. Springer Berlin Heidelberg.
+[38] Microsoft. How many cryptographic operations are supported per second with
+dedicated hsm?, 2019. https://docs.microsoft.com/en-us/azure/dedicated-hsm/
+faq#performance-and-scale.
+[39] Microsoft Azure. Azure key vault, 2018. https://docs.microsoft.com/en-us/azure/
+key-vault/key-vault-overview.
+[40] M. Naor, B. Pinkas, and O. Reingold. Distributed pseudo-random functions and
+KDCs. In J. Stern, editor, EUROCRYPT’99, volume 1592 of LNCS, pages 327–346.
+Springer, Heidelberg, May 1999.
+[41] M. Naor and O. Reingold. Number-theoretic constructions of efficient pseudo-
+random functions. In 38th FOCS, pages 458–467. IEEE Computer Society Press,
+Oct. 1997.
+[42] OASIS Open. PKCS #11 Cryptographic Token Interface Base Specification Ver-
+sion 2.40, 2015. https://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/os/pkcs11-
+base-v2.40-os.html.
+[43] R. Ostrovsky and M. Yung. How to withstand mobile virus attacks (extended
+abstract). In L. Logrippo, editor, 10th ACM PODC, pages 51–59. ACM, Aug. 1991.
+[44] A. Patel and M. Yung. Fully dynamic password protected secret sharing, 2017.
+manuscript.
+[45] T. P. Pedersen. A threshold cryptosystem without a trusted party (extended
+abstract) (rump session). In D. W. Davies, editor, EUROCRYPT’91, volume 547 of
+LNCS, pages 522–526. Springer, Heidelberg, Apr. 1991.
+[46] Y. Polyakov, K. Rohloff, G. Sahu, and V. Vaikuntanathan. Fast proxy re-encryption
+for publish/subscribe systems. ACM Transactions on Privacy and Security (TOPS),
+20, 2017.
+[47] K. Sakurai and Y. Yamane. Blind decoding, blind undeniable signatures, and
+their applications to privacy protection. In Proceedings of the First International
+Workshop on Information Hiding, pages 257–264, London, UK, UK, 1996. Springer-
+Verlag.
+[48] Thales. SafeNet Luna Network HSM, 2019. https://safenet.gemalto.com/
+resources/data-protection/luna-sa-network-attached-hsm-product-brief/.A PROOF OF THE OMDH-IO ASSUMPTION IN
+THE GENERIC GROUP MODEL
+We sketch the steps for adapting the GGM proof of OMDH from [ 31]
+to the OMDH-IO case. As argued in [ 31], it suffices to show OMDH
+security for N=Q+1, in which case the upper-bound on a proba-
+bility that a GGM adversary solves the OMDH problem in a group
+of prime order qwhile making rgroup operations and Qqueries to
+the exponentiation oracle (·)kis(Q(2Q+r)2)/q. In a GGM proof,
+see Theorem 6 in Appendix A in [ 31], every group element the
+adversary obtains is represented with a (random string assigned to)
+a polynomial in unknowns (u1, ...,uN,k)forui=DL(д,дi). Group
+multiplications or divisions correspond to, respectively, adding or
+subtracting such polynomials, and querying oracle (·)kon a group
+element corresponds to multiplying the corresponding polynomial
+byk. The proof argues that the only way the adversary can win is
+either if some two different polynomials it creates have equal val-
+ues on random inputs (u1, ...,uN,k), or that the group elements it
+outputs correspond to polynomials k·u1, . . . , k·uN. The latter case
+is easily seen as impossible for an adversary which can has only
+Q=N−1accesses to the “multiply-a-polynomial-by- k” oracle(·)k,
+while the upper-bound on the probability of the first case comes
+from the fact that there are at most 2Q+rpolynomials, each one
+has at most degree Qink(and linear in variables u1, . . . , uN), and
+the fact that a non-zero Q-degree polynomial can have at most Q
+roots, hence each pair of different polynomials can evaluate to the
+same value on random exponent (u1, ...,uN,k)with probability at
+most Q/q. If the GGM adversary in addition makes tqueries to the
+inverse-exponentiation oracle (·)1/k, each query multiplies the cor-
+responding polynomial by k−1, and the resulting polynomials, after
+multiplying all of them by kt, can be thought of as polynomials
+of degree at most Q+tinstead of Q. Thus by the same argument,
+the upper-bound on the probability of GGM adversary to solve all
+N=Q+1challenges is bounded by (Q+t)(2Q+t+r)2/q. Note
+thatr>>max( Q,t)in typical applications, including our UOKMS
+scheme, hence this bound can be approximated as (Q+t)r2/q.
+Session 2D: Encryption (Searchable, Updatable, Homomorphic, etc.)
+CCS ’19, November 11–15, 2019, London, United Kingdom
+393

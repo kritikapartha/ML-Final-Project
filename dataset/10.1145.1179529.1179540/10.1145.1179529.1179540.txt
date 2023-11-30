@@ -1,0 +1,693 @@
+Privacy Preserving Multi-Factor Authentication with
+Biometrics
+Abhilasha
+Bhargav-Spantzel
+CERIAS
+Purdue University
+West Lafayette, IN
+bhargav@cs.purdue.eduAnna Squicciarini
+Purdue University
+West Lafayette, IN
+squiccia@cs.purdue.eduElisa Bertino
+Purdue University
+West Lafayette, IN
+bertino@cs.purdue.edu
+ABSTRACT
+An emerging approach to the problem of reducing the identity theft
+is represented by the adoption of biometric authentication systems.
+Such systems however present however several challenges, relatedto privacy, reliability, security of the biometric data. Inter-operabilityis also required among the devices used for the authentication. More-over, very often biometric authentication in itself is not sufﬁcientas a conclusive proof of identity and has to be complemented with
+multiple other proofs of identity like passwords, SSN, or other user
+identiﬁers. Multi-factor authentication mechanisms are thus re-quired to enforce strong authentication based on the biometric andidentiﬁers of other nature.
+In this paper we provide a two-phase authentication mechanism
+for federated identity management systems. The ﬁrst phase consists
+of a two-factor biometric authentication based on zero knowledge
+proofs. We employ techniques from vector-space model to gener-ate cryptographic biometric keys. These keys are kept secret, thuspreserving the conﬁdentiality of the biometric data, and at the sametime exploit the advantages of a biometric authentication. The sec-ond authentication combines several authentication factors in con-
+junction with the biometric to provide a strong authentication. A
+key advantage of our approach is that any unanticipated combina-tion of factors can be used. Such authentication system leveragesthe information of the user that are available from the federatedidentity management system.
+Categories and Subject Descriptors
+K.6.5 [ Computing Milieux ]: Management of Computing Informa-
+tion Systems— Security and protection
+General Terms
+Design, Security
+Keywords
+Identity Theft Prevention, Privacy, Biometrics, Authentication
+Permission to make digital or hard copies of all or part of this work for
+personal or classroom use is granted w ithout fee provided that copies are
+not made or distributed for proﬁt or c ommercial advantage and that copies
+bear this notice and the full citation on the ﬁrst page. To copy otherwise, torepublish, to post on servers or to redist ribute to lists, requires prior speciﬁc
+permission and/or a fee.
+DIM’06, November 3, 2006, Alexandria, Virginia, USA.
+Copyright 2006 ACM 1-59593-547-9/06/0011 ...
+$5.00.1. INTRODUCTION
+The problem of identity theft, that is, the act of impersonating
+others’ identities by presenting stolen identiﬁers or proofs of iden-tities, has been receiving increasing attention because of its highﬁnancial and social costs. Recent federated digital identity man-
+agement systems if on one side have improved the management of
+identity information and user convenience, on the other side do notprovide speciﬁc solutions to address identity theft. One approachto such problem is the adoption of biometric identiﬁcation andau-
+thentication systems. These systems are automated methods for
+recognizing an individual based on some physical characteristics,
+such as ﬁngerprints, voice, or facial features.
+Biometric identiﬁcation and authentication are differentiated as
+follows. Biometric identiﬁcation occurs when an individual pro-vides a sample biometric, sometim es without any additional knowl-
+edge, and the system must compare that sample with every storedrecord to identify a match. This is known as a one-to-many match,
+and is executed without any corroborating data. By contrast, bio-
+metric authentication occurs when an individual presents a biomet-ric sample, and some additional identifying data, such as a photo-graph or password, which is then compared with the stored samplefor that individual. Biometric authentication provides some inher-
+ent advantages as compared to other non-biometric identiﬁers since
+biometrics correspond to a direct ev idence of the personal identity
+versus possession of secrets which can be potentially stolen. More-over, most of the times biometric enrollment is executed in-personand in controlled environments making it very reliable for futureuse.
+Challenges in Biometric Authentication. Biometric authentica-
+tion poses however several non-trivial security challenges becauseof the inherent features of the biometric data itself. Addressingthese challenges is crucial for the large scale adoption of biometricauthentication and its integration with other authentication tech-niques and with access control systems.
+Biometric matching is probabilistic in nature, which implies that
+two samples of the same individual are never exactly the same. Ifthe two samples are encrypted for security reasons, they need to bedecrypted before they can be matched. This raises the issue of keymanagement to enable decryption, and also represents a point ofvulnerability in the process. Moreover, it is very hard to revoke and
+change biometrics in case biometric data are compromised. At the
+time of enrollment or veriﬁcation the individuals biometric is readas a template, that is, is a binary ﬁle created using distinctive infor-mation from a biometric sample, which is then stored in a databaseor on a token. These templates are often vendor-speciﬁc and there-
+fore the interoperable use of such templates in a distributed system
+is very difﬁcult if at all possible.
+63Biometric authentication from a remote location also represents
+a difﬁcult issue because of the risk of spooﬁng attacks. The cred-
+ibility of the output from a biometric matching process dependsentirely on the integrity of the sample provided, and whether itwas provided by the true owner of the biometric. Older generationbiometric capture devices were vulnerable to spooﬁng attacks, andthere is extensive work currently in the area of biometric capture
+devices to able to withstand different spooﬁng attacks.
+Biometric authentication can be implemented through systems
+performing the matching either on the server or on the client side .
+Depending on whether the matching of the biometric template isexecuted - at the server or at the client - different security problemsarise. In the former case the main issues are related with the large
+scale and distributed management of biometric templates. The cre-
+ation of a database of a particular biometric at the server shoulditself be secure and possibly decentralized. Also, such databasewould be highly dependent on a particular software or hardwareand thus could not be interoperable. Such a system is also CPU-intensive because of the matching operations.
+Additionally, storing biometric information in repositories along
+with other personally identiﬁable information raises several secu-rity and privacy risks [1]. These databases are vulnerable to attacksby insiders or external adversaries and may be searched or usedoutside of their intended purposes. It is important to note that ifthe stored biometric identiﬁers of an individual are compromised,
+there will be severe consequences for the individual because of the
+lack of revocation mechanisms for biometrics.
+Due to the security and privacy problems of server side match-
+ing, there have been several efforts in biometric authentication tech-nology using client side matching [15, 16]. Such an approach is
+convenient as it is relatively simple and cheap to build biometric
+authentication systems supporting biometric storage at the clientend able to support local matching. Nevertheless, systems of suchtype are not secure if the client device is not trusted; therefore ad-ditional cryptographic support is needed.
+Several efforts have been undertaken to strengthen client side
+authentication. Previous approaches [3, 12] have been developed
+based on Chaum and Pederson walle t-with-observer paradigm [5].
+An interesting approach recently proposed focuses on key extrac-tion from biometrics which entails the problem of “approximateequality” in biometric comparisons. Several approaches have beenproposed for overcoming this difﬁculty, including the use of error-
+correcting codes [9], fuzzy commitments and fuzzy vaults [15, 16]
+and fuzzy extractors [10]. However, several of these schemes maybe vulnerable to replay attacks, non-repudiation and to cryptanaly-sis.
+Client side authentication systems also led to research in key
+generation mechanisms using biometrics [26, 10, 18]. Key gen-
+eration is executed by ﬁrst extracting the biometric features from
+the biometric data based on the feature extraction module of thebiometric authentication system. Then, the biometric features aresent to the system speciﬁc key-generation module to generate a key,that we refer to as bio-key . The challenge in such research direction
+is to devise algorithms for reliable key generation. Such key gen-
+eration algorithms must be able to generate the same key despitethe noise in biometric readings. Moreover, the semantics of the us-age of such a key should still retain the property of ”what you are”
+versus ”what you have” .
+Desiderata. Based on the previous discussion we identify sev-
+eral crucial properties of a suitable biometric authentication system.
+The system must:
+•preserve the privacy of biometric data;•be convenient to use and interoperable with different authen-
+tication servers thus providing scalability.
+•be able to perform client-side matching without requiring
+tamperproof or trusted hardware;
+•support revocation of the biometric identiﬁers;
+•be resilient to the compromise of the biometric template it-
+self;
+•be resilient to replay attacks so that the replay of the biomet-
+ric signal or the key generated based on the biometric cannotresult in successful authentication;
+•provide security for any cryptogr aphic token associated with
+the biometric and efﬁciently manage keys;
+•provide non-repudia tion and accountability.
+Our approach. In this paper we cast the problem of biometric
+authentication in the speciﬁc context of federated identity systems
+[11, 13, 23], which typically rely on attributes and properties of
+the member users to enforce authentication. Our main objectiveis to achieve a privacy preserving methodology, in which use ofcredentials and biometric is completed without loss or exposure ofadditional data. The ﬁrst problem we have to deal with in our ef-fort toward a methodology for biometric authentication in federated
+systems is related with interoperability. If on one hand federated
+digital identity systems need to support data heterogeneity, on the
+other hand, biometric vendors typically generate proprietary tem-plates which are not interoperable among each other. Obviously,this represents a major limitation to the large scale deployment ofa federated system. In order to address this problem in a privacy
+preserving fashion we develop a cryptographic key generation al-
+gorithm for use at the client side, which can thenceforth be usedinteroperably with other clients in the federation. Precisely, in thispaper we use the mechanisms from vector space modelling [24] togenerate cryptographic bio-keys.
+To further preserve privacy we provide authentication protocols
+based on well known techniques called zero knowledge proof of
+knowledge (ZKPK’s for brevity) [2, 4]. ZKPK’s allow a user tohave a private secret, and prove its possession without releasingit. As such, bio-keys are never released but are instead used togenerate a proof of the ownership of the biometric. This proof is
+sufﬁcient for the purposes of authentication as it would correspond
+to the biometric enrolled in the system. The use of ZKPK proofenables us to have a two-factor authentication by using information
+theoretically secure Pedersens commitments [19]. Such commit-ments also elegantly handle revocation of the generated bio-keys.
+We also show how the two-factors can be combined with other
+identity information available in the federation to provide multi-
+factor authentication . Providing proof of the biometric identiﬁer
+itself is not sufﬁcient as the proof of knowledge of other sensi-tive identiﬁers like social security number (SSN) or the credit cardnumber (CCN) can be required to complete the authentication pro-cedure. The following example introduces a scenario which we
+will use to illustrate the authentication phases.
+E
+XAMPLE 1.Consider a federation including a Bank CityBank ,
+and a Tax Authority TaxAuthr .CityBank is the local bank for
+the user Alice and contains all ﬁnancial information concerning
+Alice . She also enrolls other information with the bank which can
+be potentially used at the time of authentication. CityBank is
+essentially Alice’s local identity provider.
+64Alice wants to ﬁll her tax on line with TaxAuthr . However
+TaxAuthr requires its on-line users to authenticate using two-
+factors biometric authentication to access such service. Further,if Alice wants to do money transactions, then TaxAuthr requires
+her to perform multi-factor authentication by providing proof ofownership of a registered 1) biometric 2) CCN and 3) veriﬁed SSN.Thus depending on the service requested, Alice would need either
+need to perform two-factor or multi-factor authentication.
+The main contributions of our work can be summarized as follows.
+We describe a novel method for key-generation using vector-spacemodeling. This is a generic methodology to generate bio-key where
+the vectors used could correspond to any deﬁned combination of
+one or more biometrics. As compared to existing bio-key gener-ation work, we differ in how the bio-keys are actually used. Theactual key is never revealed as it is possibly could leak further in-formation of the individual. We therefore use it for zero knowledge
+proof of knowledge which directly provides for unlinkability and
+replay avoidance. We provide a two-phase authentication mecha-nism for federated identity management systems. The ﬁrst phaseconsists of a two-factor authentication with biometric data, and thesecond of a multi-factor authentication with other user attributes.We show how we can use our protocols to secure biometric data
+itself thus preventing its fraudulent u se that would result in identity
+theft and other security breeches. In addition, we show how privacypreserving multi-factor authentication can be enforced in federatedidentity management systems with the ability to use biometric datajust like the other identifying attributes of the user. Our approachis privacy preserving in that all the authentication steps are done
+with limited disclosure of data that cannot be used for any other
+purpose other than the authentication decision itself. The paper isorganized as follows. In Section 2 we provide basic background in-formation regarding biometric authentication followed by Section3 where we provide a brief review of authentication in federatedidentity management systems. Then in Section 4 we provide our
+key protocols required for biometric authentication. In particular
+in Section 4.1 we elaborate on our approach towards biometric keygeneration, followed by Section 4.2 where we show how it can beused in zero-knowledge proof of knowledge. In Section 5 we showhow we can provide strong authentication using multi-factor. Fi-
+nally, we provide a detailed analysis of our approach in Section 6
+and then conclude.
+Figure 1: A Generic Biometric System.
+2. BIOMETRIC AUTHENTICATION
+BACKGROUND
+Biometrics adds a new type of authentication which, unlike from
+conventional approaches, is not based on what an individual knowsor possesses, but on some characteristics of the individual itself. We
+elaborate on the main concepts related to biometric in this section.
+A typical biometric system model consists of a capture device,
+a feature extraction unit, a comparison algorithm ,a n d a storage
+device . The capture device captures the raw sample provided by
+the individual. The feature extraction unit processes the raw sampleto extract the relevant information, also called features , which can
+then be used in the comparison process. The comparison algorithm
+will match two processed biometric samples, and give as output asimilarity score. The storage device will store the templates created
+during the enrollment process. A template is data, which representsthe biometric measurement of an individual, used by a biometricsystem directly or indirectly for comparison against other biometric
+samples.
+A biometric system typically supports two sub-processes: regis-
+tration (also called enrollment), and authentication (see Figure 1).
+Enrollment : It is the process of capturing the features from a
+biometric sample provided by an individual and convertingit into a template. The effectiveness of enrollment strictly
+depends on the quality of the data submitted along with the
+biometric. Thus, the enrollment process has also to ensurethat the veriﬁcation documents (like passports and drivers li-censes) are trustworthy so that a fake or false identity is notlinked to a biometric. Additionally, no duplicate records haveto be stored in the database for the same identity. Such enroll-
+ment mechanism is a key aspect of biometric authentication
+making it very reliable. Enrollment is the ﬁrst interaction ofthe user with the biometric system, and misuses of such op-eration can affect the quality of sample being provided bythe user, which in turn affects the overall performance of thesystem. An uncomfortable ﬁrst experience could affect later
+interactions of the user with the system, thereby affecting the
+overall system performance.
+Once the process of registration is successfully completed,
+the individual can use the biometric system for authentica-
+tion.
+Authentication Biometric authentication is performed when the
+individual presents his/her biometric sample along with someother identiﬁer which uniquely ties a template with that indi-vidual. The matching process is performed against only thattemplate. This is a one-to-one matching process.
+3. AUTHENTICATION IN FEDERATED
+IDENTITY MANAGEMENT SYSTEM
+Digital identity can be deﬁned as the digital representation of the
+information known about a speciﬁc individual or organization. Assuch it encompasses, not only login names, but many additionalinformation, referred to as identity attributes oridentiﬁers , about
+users. Managing identity attributes raises a number of challenges,
+due to conﬂicting requirements. On the one hand, identiﬁers needto be shared to speed up and facilitate authentication of users andaccess control. On the other hand, identity attributes need to be pro-tected as they may convey sensitive information about an individualand can be targets of attacks like identity theft . In cyberspace pre-
+venting identity theft is especially hard because digital information
+can be copied hence stolen unnoti ced. Identity of an individual can
+be represented through different types and combinations of identi-ﬁers. Therefore when reasoning about authentication it is importantto consider a combination of multiple identiﬁers. Such an authen-tication mechanism is called multi-factor authentication and is a
+prevalent mechanism to mitigate the threat of identity theft.
+65Figure 2: Identity Record Example
+An emerging approach to address issues related to identity man-
+agement is based on the notion of federations [11, 13, 23]. The goal
+of federations is to provide users with protected environments tofederate identities by the proper management of identity attributes.Federations provide a controlled method by which federation mem-
+bers can provide more integrated and complete services to a qual-
+iﬁed group of individuals within certain sets of business transac-tions. By controlling the scope of access to participating sites, byenabling secure, cross-domain transmission of users personal in-formation, federations can make more difﬁcult the perpetration of
+identity frauds, as well as their frequency, and the potential impact
+of these frauds.
+Federations are usually composed by two main entities: identity
+providers (IdPs), managing identities of individuals, and serviceproviders (SPs), offering services to registered individuals. In atypical federated identity management system the individual reg-
+isters with his/her local IdP and is assigned a username and pass-
+word. Registration is usually based on an in-person veriﬁcationat some registration ofﬁce. Based on this information a registeredindividual can submit additional attributes and its corresponding at-tribute release policies, which are stored at the local IdP. The IdP isthen contacted whenever the user interacts with any other SP in the
+federation when additional user information is needed. The IdP is
+in charge of sending the SP the submitted user attributes in accor-dance to the attribute release policies. In [2] a third type of entitywas introduced referred to as Registrar which essentially captures
+the notion of proofs of identity for static user attributes like SSNand CCN. These proofs are based on ZKPK protocols and Section
+4 describes a modiﬁed version of the ZKPK which is speciﬁc for
+biometrics. Like the biometric system, the proposed IdM systemalso supports two main phases, namely enrollment and authentica-tion. At the time of enrollment the zero knowledge commitmentsof the strong identiﬁers
+1are recorded with additional meta infor-
+mation about the state of the identiﬁer. This record, referred to
+identity record , is stored under the single sign-on identiﬁer of the
+individual. An example of an identity record (IdR) is shown inFigure 2. Typically the identiﬁers recorded in an identity recordcorrespond to what you have , like Credit Card Number (CCN) and
+Social Security Number (SSN). We show how we can use identi-
+ﬁers corresponding to who you are in such an identity record, as
+illustrated in the last row of Figure 2 with the tag “ﬁnger print”.
+Our goal is to use biometrics in combination with the other com-
+mitted identiﬁers in the identity record at the time of authentica-tion. As such, at the time of authentication, multiple commitments
+1Strong identiﬁers are those that uniquely identify an individual.
+This is also known has personally identiﬁable information.Biometric
+scannerFeature
+ExtractionKey GenerationRandom
+KeyZero Knowledge
+Proof of
+KnowledgeProofsVerify
+ProofsClient Side Server Side
+Step 1Step 2 Step 3
+Step 4
+Step 5Step 6
+Figure 3: Flow representing biometric authentication using
+zero knowledge proofs
+of strong identiﬁers and biometric commitments can be combined
+in an ad-hoc fashion, and veriﬁed by using exactly the same ap-
+proach developed for the case on non-biometric data. This mech-anism would prove the knowledge and possession of such provenidentiﬁers. In the next section we illustrate how biometric readingscan be used so that the extracted information can be used across thefederation, thus achieving interoperability.
+4. BIOMETRIC AUTHENTICATION
+The main steps in the proposed biometric authentication are shown
+in Figure 3. Here the biometric is read at step 1, followed by featureextraction and bio-key generation at step 3. It is non trivial to usea freshly recorded biometric reading as the secret key, used in step5 in the ZKPK. This is because every time particular biometric isread, the resulting template may be substantially different. There-
+fore reducing a biometric reading to a unique secret key poses sev-
+eral challenges [26, 18]. Using well known error correcting codes[9] on the ﬁngerprint templates itself is not straightforward becausethe digital encoding of the two templates vary substantially if onlythe bit pattern is considered. Moreover, key generation differs fromtemplate matching since while re-generating the key the original
+ﬁngerprint template is not available. We therefore investigate a
+technique based on ﬁngerprint classiﬁcation to deﬁne a character-istic vector for a ﬁngerprint which is subsequently used by vectorspace modeling (VSM) [24] methodologies to retrieve a unique key.
+4.1 Key Generation using Biometric Templates
+Fingerprint classiﬁcation can be taken as a special case of pattern
+classiﬁcation techniques which aim at reducing the computationaloverhead of pattern matching. If biometric patterns can be catego-
+rized, then given a pattern it may be possible to match the input
+pattern only against the stored templates in the same category ofthe input pattern. This is sometimes referred to as “binning”. Ithas been shown in [14] that ﬁngerprints can be classiﬁed accord-ing to three different dimensions: by the shapes and contours of
+individual patterns, by the ﬁnger positions of the pattern types, and
+by relative size, determined by counting the ridges in loops and bytracing the ridges in whorls. The resulting information is codedaccording to a concise representation, referred to as characteristic
+vector .
+Each element of the characteristic vector is weighted with re-
+spect to the importance of that characteristic. For example, a com-
+mon approach to classify a ﬁngerprint is based on the pattern typewhich can be precisely one of ﬁve classes, namely, whorl, rightloop, left loop, arch, and tented arch. Since this classiﬁcation isbased not on exact minutiae points but instead on certain invariantcharacteristics of a ﬁngerprint depending on the properties of the
+ﬁngerprint as a whole, two such sets of characteristics of a partic-
+66Figure 4: Vector Representation
+ular ﬁngerprint would be almost the same. We assign a weight to
+such invariant characteristics which is higher than the ﬁne granu-lar information provided by the ﬁngerprint template, that typicallyhas higher possibility to be erroneous. Multiple characteristics ofdifferent types would be required so as to uniquely generate a key.
+Once the values corresponding to the elements of the characteris-
+tic vector of the input ﬁngerprint are retrieved, we then use Salton’sVector Space Model [20] for retrieving all information required toevaluate the key. A valid pre-deﬁned bio-key space and the inputﬁngerprint are represented in a high-dimensional space where eachdimension corresponds to a term in the characteristic vector of the
+biometric. Both the valid key space and the ﬁngerprint input for
+key generation are vectors as illustrated in Figure 4.
+If the key space is denoted as /vectorK, then the i
+thvector in /vectorKis
+represented as /vectorki=/angbracketleftwi,1, .., w i,m/angbracketrightwhere wi,jis the weight cor-
+responding to the jthdimension, 1≤j≤m, of this vector.
+Similarly the biometric reading of the input biometric is denoted
+as/vectorb=/angbracketleftwb,1, .., w b,m/angbracketright. The weights directly help in computing
+the similarity of any two vectors. The similarity is essentially the
+cosine measure of the angle between two such vectors. For two
+vectors /vectorkand/vectorbthe cosine similarity is given by:
+cosθ=/vectork×/vectorb
+|/vectork||/vectorb|=
+/C8
+jwi,j×wb,j
+/D5
+/C8
+jw2
+i,j
+/D5
+/C8
+jw2
+b,j
+Here/vectork×/vectorbis the vector product of /vectorkand/vectorb, calculated by mul-
+tiplying corresponding weights together. The cosine measure alsocalculates the angle between the vectors in a high-dimensional vir-tual space. Different heuristics can be used to set the weight ofeach element in the vector [21]. The higher the weight the greater
+i st h ei m p a c to nt h ec o s i n e . T h em a i ni d e ai st og i v em o r ew e i g h t
+to those characteristics of the biometric which are more constantand unique for an individual. To weigh the unique characteristics,the term weighting used in [25], called inverse document frequency(id ffor brevity), can be used. Here the term rarity is a measure of
+its importance. It is calculated as id f
+j=log(B/bf j).H e r e Bis
+the number of biometric samples in a collection and bfus the fre-
+quency of the particular biometric feature. Thus id fmeasures the
+importance of a feature based on that feature rarity. Often id fis
+normalized to force values to fall in a particular range. Once the
+vectors /vectorkiand/vectorbare generated, we are able to determine the closest
+match of /vectorbin the keyspace /vectorK. The resulting /vectorkmatch is then used as
+the biometric key for authentication.
+Protocol 1 generate-biometric-key
+Require: Valid key space deﬁnition /vectorKin a vector space model.
+UserUwith biometric xprovided to sensor S.
+Ensure: Sis trusted with biometric data of U.
+1:read
+ biometric (x)←t:Usends its biometric data xtoS
+andtis the result of the feature extraction.
+2:init
+char
+ vector (t)←/vectorb0: This function outputs /vectorb0=
+/angbracketleftw0
+b,1..w0
+b,m/angbracketrightsuch that the weights for each dimension of the
+vector is set to 0.
+3:weigh
+ char
+ vector (/vectorb0)←/vectorb: This function outputs /vectorb=
+/angbracketleftwb,1..wb,m/angbracketrightwith appropriate weights for each dimension.
+4:get
+closest
+ key (/vectorb,/vectorK)←/vectorki: This function outputs /vectorki=
+/angbracketleftwi,1, .., w i,m/angbracketrightwhich is most similar to /vectorb.
+5:generate-crypto-key (/vectorki)←m: The key vector /vectorkiis trans-
+formed to an integer mused as the cryptographic secret key.
+6:return m
+4.2 Using Biometric Keys for Zero Knowledge
+Proof
+Once the bio-key is generated it can then be used in to perform a
+zero knowledge proof of knowledge (ZKPK) to authenticate the in-dividual to the authenticating server. The ZKPK module illustrated
+in step 5 in Figure 3 is described in this section.
+Preliminary ZKP Concepts. ZKP systems are interactive systems
+in which two parties, the prover and veriﬁer, interact. The proverclaims that a statement is true and the veriﬁer wants to be con-vinced that this is true. At the end of the interaction, the veriﬁeris either convinced that the statement is true, or alternatively, dis-
+covers that the statement is not true. ZKP’s have extensively been
+used for identiﬁcation purposes [2, 4, 6]. Using the ZKP for bio-metric data is not straightforward because the biometric templatecannot be replicated exactly like the cryptographic keys. We there-fore present a semantically secure ZKP based on the ﬁnal key gen-erated according to the approach described in Section 4.1. ZKP’s
+are based on secrets that are hidden in tokens provided to the au-
+thenticating party at the time of enrollment. Such tokens are calledcommitments . Commitments are cryptographic tokens that enables
+the user being bound to a secret the possession of which can beveriﬁed at a later stage without revealing the secret itself.
+We now present two relevant protocols: a protocol for generat-
+ing the bio-key to use at authentication time and the commitmentprotocol.Protocol Description. The main steps of the key generation pro-
+tocol (see Protocol 1) can be summarized as follows. Note that thesame key generation protocol is used both at the time of enrollment
+and authentication. Let Ube the individual to be authenticated.
+First the biometric template xofUis read by sensor S.T h e n( s t e p
+2) the client invokes function init
+char
+ vector which extracts the
+desired features from the biometric template read. This is the initialcharacteristic vector which is weighed according to system deﬁnedheuristics in the function weigh
+char
+ vector . At this point the in-
+put vector /vectorbis ready to be matched with the key space /vectorKto ﬁnd
+the closest matching key vector /vectorki. This key space is stored at the
+client device. This is executed by function get
+closest
+ keywhich
+depends on the VSM technique. Once the key vector is identiﬁed,
+function generate-crypto-key reads this key vector to obtain the
+ﬁnal secret used as a cryptographic key in the ZKP. This functionmay use an expansion function to sample the bio-key from a wellspread or uniform distribution. The generated keys size is dictatedby the group Z
+2B+kwhere kandBare security parameters of the
+federation system. Additional secrets can also be incorporated in
+67Protocol 2 ZKP with Biometric Commitments
+Require: U, Registrar Reg and Federations Veriﬁers Vagree on
+a group G,al a r g ei n t e g e r Func (k)and 2B/angbracketrightord(G),Tis a
+public constant chosen arbitrarily large, kandBare security
+parameters.
+Ensure: Private knowledge of Uism,r .
+{Enrollment or Commitment Phase: }
+1:Reg chooses h∈G which has a Func (k)rough order, a ran-
+dom secret s∈Z2B+k.I t s e t s g←hsand sends the public
+keyK=(g;h)and proves that g∈/angbracketlefth/angbracketright.
+2:Uchooses random r←Z2B+k.
+3:Uassigns m:=generate-biometric-key .
+4:Usends its public commitment CK(m,r ): =gm∗hrtoReg
+and stores δ.(δcan optionally be stored at Reg )
+{Authentication or Proving Phase: }
+5:Upicks random y∈[0..T∗2k],s∈[0..T∗2B+2k]at random
+and sends d=gy∗hstoV.
+6:Vsends random challenge e∈[0..Func (k)]toU.
+7:Uassigns m/prime:=generate-biometric-key (x/prime).
+{m/primeshould be equal to m}
+8:Usendsu=y+em/prime,v=s+ertoV.
+9:V: accepts if gu∗hv=d∗ce
+10:return
+the last function if desired.
+Functions in Protocol 1, collectively referred to as generate-
+crypto-key are in the Damgard Fugisaki Integer Commitment Scheme
+[8] as shown in Protocol 2. In the following we highlight the main
+steps which enable the use of biometric commitments. At the timeof enrollment instead of sending the actual biometric x,t ot h ea u -
+thentication entity ( Reg in this case), Uat step 3 calculates the
+biometric commitment and generates the secret being committedasm:=generate-crypto-key (x). In a typical integer commit-
+ment scheme mwould be the value of the sensitive data which is
+being committed. Consequently, at the time of veriﬁcation Uwill
+have to prove the knowledge of this mand the random number r
+which it generated at step 2 of Protocol 2. Uhas to store ras spec-
+iﬁed in a typical ZKP system, but mshould be generated at the
+time of authentication. More speciﬁcally, at step 7, Ucan gener-
+atem
+/primeusing the same key generation function as enrollment. If
+the difference between xandx/primeis tolerable then committed secret
+mwill be equal to the retrieved secret m/prime.I fUhasmandrit
+follows that the proof at step 9 will succeed. The ZKP can be efﬁ-ciently computed as shown in [4]. The challenge response can be
+made non-interactive using ﬁat shamir heuristic to enhance the ef-
+ﬁciency. As compared to other models where the bio-key could bebased on symmetric encryption, would require the key to be knownto the veriﬁer, which we prevent in our trust model. Thus we haveshown how biometric data can be successfully used in a ZKPK ofauthentication.
+5. MULTI-FACTOR AUTHENTICATION
+Several biometric mechanisms have been recently considered and
+proposed, such as DNA sequencing, retina scans and ﬁngerprints.However, most commercially viable physical biometric set in the
+foreseeable future are ﬁngerprints [22]. A multi-factor authentica-
+tion becomes essential if ﬁngerprint is the biometric chosen, be-cause today’s cheap ﬁngerprint scanners are not reliable enough tobe used alone. The ﬁngerprint biometric may not be more securethan PINs. The ﬁnal readings of ﬁngerprints retrieved from a sen-sor are typically static values and their false acceptance rates imply,
+e.g., 1/100,000 security (i.e., perhaps 17 bits) [17]. Therefore ﬁn-gerprint may be more affective as one of the factors in a multi-factor
+authentication. In Section 4 we showed how we can preserve the
+privacy of a biometric used for authentication. In this section weshow how we can achieve privacy preserving multi-factor authenti-cation providing relatively stronger authentication as compared tosystems that are solely dependent on either what you know iden-
+tiﬁers or who you are identiﬁers. This is because identiﬁers can
+be stolen or shared, and there is a threat to copy biometrics too.
+However, if a collection of these different types of identiﬁers arechallenged in an ad-hoc, unpredictable manner, then such threatsare mitigated sufﬁciently.
+5.1 Two-Factor Authentication using ZKP
+In Protocol 2 there are two speciﬁc secrets which have to be
+known to the user, namely mandr2.mcorresponds to the number
+generated by Protocol 1 of the ﬁngerprint of the prover. Thus, m
+covers the who you are criterion of the authentication. The second
+secret ris the random number generated by the prover when the
+initial enrollment is done. This is depicted in step 2 of Protocol 2.Without the knowledge of rthe proofs uandvcannot generated
+at step 8. ris chosen such that its bit length is at least twice that
+of the order of hand the ﬁnal commitment is statistically close to
+uniform distribution in /angbracketlefth/angbracketright, for any value of m. T h i si se s s e n t i a l
+for the hiding property of the ZKP. Hence, we conclude that therandom rserves as a second factor essential for a successful ZKPK
+used for authentication. rthus corresponds to the what you have
+aspect of authentication. Note that even if one of the secrets, eithermorrbut not both, is compromised, the adversary cannot generate
+the correct proofs. We therefore assert that Protocol 2 provides a
+secure two-factor authentication.
+5.2 Multi-Factor Authentication using
+Federation Registrar
+Additional privacy preserving multi-factor authentication is pos-
+sible by leveraging the registrar of the identity management system
+mentioned in Section 3. Typical enrollment of attributes omits step
+3 of Protocol 2. In this manner an identity record corresponding to
+the proofs of identity is created. An example of such identity recordis shown in Figure 2. Here, additional information regarding eachcommitted identiﬁer is also recorded which provides additional se-curity properties as illustrated in [2]. Depending on the policy of
+the authenticator, multiple commitments of the identity record can
+be used for authentication. We omit the details of such proofs asthey have been provided in our previous work [2].
+Referring to Example 1, Alice can enroll with her identity provider
+CityBank . Now at the time when using non-ﬁnancial services from
+TaxAuthr , with the help of Protocols 1 and 2, proof of the ﬁnger-
+print itself provides the required two-factor authentication. To sat-isfy the authentication requirements at the time of ﬁnancial trans-actions with TaxAuthr , Alice refers to the identity record stored
+at her local registrar (see Figure 2). She combines the proof ofknowledge of the identiﬁers with tags CCN, SSN and Fingerprint
+and uses the same proof of knowledge as in Protocol 2 for each
+of the identiﬁers. Efﬁcient combinations of such proofs have beenexplored in [4].
+6. ANALYSIS
+We now analyze the security, privacy and architectural aspects
+of the proposed authentication protocols. In particular we assess
+the level of protection provided by our mechanism against identitytheft in the presence of malicious parties.
+2All symbols and variables used in this section correspond to the
+ones presented in Protocol 2
+686.1 Security Analysis
+Before presenting the security properties of our system, we illus-
+trate the key assumptions which our solution builds on.
+ASSUMPTION 1.The characteristic vector used in Protocol 1
+is sound.
+The VSM technique adopted for the key generation in Protocol
+1 requires that correct and sufﬁcient features are recorded by thefunction init
+char
+ vector . The output vector is then weighed by
+the function weigh
+ char
+ vector resulting in the ﬁnal characteristic
+vector /vectorb. This is however a realistic assumption as shown by the
+examples of possible characteristics provided in Section 4.1.
+ASSUMPTION 2.The characteristic vector used in Protocol 1
+is sufﬁciently expressive to uni quely identify an individual with a
+high pr obability.
+This assumption relates to the expressiveness of the characteris-
+tic vector so that it can capture the uniqueness of a given biometric.We require that this is done with a s ufﬁciently high probability,
+although we show in the security analysis that in the presence ofcollision Protocol 1 is still resistant to collision.
+A
+SSUMPTION 3.The initial enrollment of the biometric is se-
+cure.
+This assumption is especially true considering the current day bio-
+metric enrollment where the individual is required to come in per-son and the enrollment is performed in a controlled environmentby the designated authorities. If the enrollment is done in an in-
+secure fashion, it would lead to serious repercussions, especiallyin systems where the enrolled biometric is the only factor checked
+during authentication.
+Based on the above assumption the following security properties
+hold.
+T
+HEOREM 1.Soundness : Let U be an individual, and B be
+the biometric associated with it. If U has enrolled using Protocol2, then it can execute the authentication phase successfully.
+P
+ROOF . At the time of enrollment Ugenerates a bio-key mand
+also chooses a random r.ris the only value stored with U.T h e na t
+authentication time, because of Assumption 1, the bio-key m/prime=m
+can be regenerated. As evident from step 8 of Protocol 2 the ﬁnal
+proof can be constructed correctly based on the retrieved values m
+andr. Therefore Protocol 2 is sound.
+We now show an interesting result on the unforgeability of our
+protocols. In our context this notion is different to the conventionalnotion of key unforgeability, as for us unforgeability refers to theincapacity of any attacker to forge the protocol to be authenticatedwith someone else’s biometric.
+T
+HEOREM 2.Unforgeability (Two-factor): Let U be an indi-
+vidual with biometric B and associated random secret r, and A be
+an adversary with biometric B’. If ris not known to A, then Proto-
+col 2 satisﬁes unforgeability.
+PROOF . Let the keys generated at step 3 of Protocol 2 be mUfor
+UandmAforA. Under Assumption 2, with a high probability mU
+is not equal to mA. If the enrollment has been executed correctly,
+thenmUis the biometric enrolled. Therefore, the proof generated
+would be incorrect and step 9 of Protocol 2 will return false.If however, mAhappens to be equal to mUto complete the proof
+in step 8 Awould have to guess the random value r. Since this
+random value is chosen from Z2B+kit is infeasible for an adversary
+to guess it. This condition holds tr ue provided the secrecy condition
+onr(as given in the theorem). Thus the two-factor authentication
+is unforgeable and the thesis holds.
+THEOREM 3.Unforgeability (Multi-factor): Let U be an indi-
+vidual with biometric B included with other identiﬁers in an Iden-
+tity Record IdR, and A be an adversary. Let a subset Iof identiﬁer
+commitments in IdR including the commitment of B be used forauthentication. If at least one of the secrets associated with Iis
+not known by A, then A cannot execute the authentication phase ofProtocol 2 successfully.
+P
+ROOF .L e tIbe set deﬁned as {i1, .., i n}where ik,1≤k≤n,
+is the biometric commitment. Note each identiﬁer is also associ-ated with random secrets {r
+1, .., r n}generated at the time of the
+enrollment. Multi-factor authentication in essence executes Proto-col 2 separately. If anyone of the 2nidentiﬁers in Iand random
+secrets together is not known to the adversary, then the proof of at
+least one of the ZKPK will fail. This would result in failing theauthentication process. Note that the length and the content of I
+is chosen in an ad-hoc fashion at the time of authentication, thusmaking the challenge fresh and not pre-determined. This furthermakes the probability of forging minimal.
+THEOREM 4.Revocation and Re-enrollment of the revoked
+biometric : Let U be a user with biometric B enrolled in a federated
+system such that the bio-key generated with B is m. The authentica-
+tion system supports revocation of the enrolled biometric and alsore-enrollment of the same biometric as a different biometric com-mitment.
+P
+ROOF . Revocation of U’s biometric commitment can be done
+trivially by including such commitment in a revocation list which ischecked before authentication. Moreover, the IdR associated withUcan be updated to ensure that the status of this biometric com-
+mitment is updated. For further details corresponding to revocation
+of identiﬁers in IdR please see [2]. Once a commitment is revoked,
+the two secrets mandrcorresponding to this commitment can-
+not be used together. Therefore for a legitimate re-enrollment ofa biometric B, a new pair m
+/primeandr/primehas to be used such that ei-
+therm/prime/negationslash=morr/prime/negationslash=r, or both. Since the random r/primewill be
+chosen randomly, the re-enrollment of B with the same bio-key is
+possible. However, if required a new m/primecan be generated in the
+generate-crypto-key function in Protocol 1, if such a procedure
+incorporates an additional random input at the time of generationof the bio-key. Therefore revocation and re-enrollment are possiblein the authentication system using Protocols 1, 2.
+Note that the above discussion also implies that a user can enroll
+multiple times with the same biometric identiﬁer and these enroll-ments cannot be linked based on the enrolled values.
+Identity Theft Protection . Biometric identiﬁers correspond to
+the physical characteristics of a person and are as such harder tosteal as compared to other identiﬁers which are normally stored in
+external devices. Furthermore, the enrollment procedure for bio-
+metrics is typically very strong thus leading to higher assurance onthe enrolled biometric commitment. In our system, biometric keysare generated on the ﬂy and are not stored either at the client or theserver. The biometric templates in fact represent intrinsic informa-tion about the user, therefore theft of the template leads to identity
+theft.
+69It would be important that the freshness and liveness of a bio-
+metric be ensured by the biometric scanner (step 1 of Figure 3). If,
+however, an adversary manages a duplicate latex ﬁngerprint to beable to generate the bio-key, then the identity theft attempt would beprevented as the attacker would still need to have the random secretto generate the proofs as required by the authentication Protocol 2.Even if the client device and ZKPK modules are compromised so
+as to maliciously store previous legitimate proofs, still the adver-
+sary cannot execute Protocol 2 successfully. This is because of thenature of the ZKPK itself, that requires a fresh random challengeand to reconstruct the proof each time.
+3Furthermore, from Theo-
+rem 3 we get strong authentication, which is in fact the predominantsolution to mitigate the threat of identity theft.
+6.2 Privacy
+The problem with biometric data is that it inherently may contain
+other information not required for the purposes of authentication.Our approach of key generation based on the biometric maintainsthe advantages of the biometric authentication and at the same timeprevents any leakage of additional personal information. Thus thedata collected at the time of authentication cannot be used for any
+other purpose other than the authentication decision itself.
+The bio-key generated is also secured based on the ZKPK proofs.
+Thus the bio-key cannot be reverse engineered to guess the char-acteristic vector used to generate that key. This further preservesprivacy of the biometric. Moreover, as illustrated in the previoussection, the unforgeability and revocability also help in preserving
+the privacy and misuse.
+6.3 Architectural Issues
+In our scheme, the actual biometrics template is never stored any-
+where, thus providing storage efﬁciency and preventing the need ofdatabases storing biometric templates. Accordingly, the databasethreats with respect to external and internal attackers, and tamper-ing with stored templates are prevented.
+A federated identity management system has to handle hetero-
+geneity of the various clients and the servers. Using the methodol-ogy presented, the clients can generate the keys using any propri-etary biometric scanner or software, and the server can still authen-ticate based on the same ZKPK. In fact, the level of interoperabilityis even higher, in that adding biometric authentication does not re-
+quire additional veriﬁcations at the server end. As such, the server
+can verify the proofs of a biometric just like other identiﬁers storedin the users IdR. This also helps addressing deployment and scala-bility concerns.
+The computational overhead at the client is also minimal since
+the vector space methods are efﬁcient. The ZKPK proofs can be
+efﬁciently implemented and aggregation techniques have been pro-
+posed to further compute the multi-factor proofs in a concise man-ner.
+7. RELATED WORK
+Several efforts have been undertaken to strengthen client side au-
+thentication. Previous approaches like [3, 12] build on Chaum and
+Pederson wallet-with-observer paradigm. Here a tamper-proof de-vice available at the clients end is required where the comparisonis made. In this model a smart card provided to the user acts as thewallet, and the wallet runs a local process which is called the ob-server. The wallet is assumed to be tamper-resistant and powerful
+enough to carry out relatively expensive cryptographic computa-
+3This is true under the assumption that the bio-key is not stored in
+the device.tions. Security of the wallet in possession of the user is the key.
+Indeed, if the client side device is compromised then replay attacks
+or fraudulent authentication results may be sent to the server. Fur-thermore this model is not scalable nor interoperable. It can poten-tially be used by a party other than the owner which is an undesiredproperty for biometric authentication.
+Several efforts in cryptography based on biometrics are fuzzy
+commitments and fuzzy vaults [15, 16] and fuzzy extractors [10]
+have been proposed. However, several of these schemes may bevulnerable to replay attacks, non-repudiation and the vulnerabil-ity of the resultant keys generated to cryptanalysis. Many of theschemes mentioned depend on the fuzzy commitment scheme whichwas developed by Juels and Wattenberg [15] who have proposed an
+improvement and generalization of the approach by Davida et. al.
+[9] where a synthesis of error correcting codes with cryptographictechniques was proposed.
+Unlike traditional commitment schemes, the fuzzy commitment
+scheme was designed mainly to be resilient to the small corrup-tions of the committed value, which is also called the witness .T h i s
+means that if prover Poriginally committed value x,t h e n Pcan
+potentially open the original commitment or decommit successfullywith a value x
+/primevery close to x. One of the ways to express close-
+ness of two values is Hamming distance. This cryptographic prim-itive of fuzzy commitments was proposed to be achieved with thehelp of error correcting codes (ECC). ECC enable transmission of
+a message mintact over a noisy communication channel. An ap-
+proach based on ECC is not trivial to implement because of thecomplexity and intensive calculations. Therefore we investigate anapproach based on recording speciﬁc characteristics of a biomet-ric, instead of dealing with the biometric template as a simple bit
+pattern. We believe such a mechanism is highly practical. We not
+only use the bio-key as it is, but we also combine it with ZKPK toassure the privacy of the bio-key itself.
+Key Generation based on biometric aggregation has been inves-
+tigated in [7]. Here several invariant features of different types ofbiometric are used to derive a bio-key that is used to encrypt a plain
+text message with a header information. The decryption is based
+on a new generated bio-key which may be not exactly the same asthe initial key. Different permutations of the newly computed bio-key are used to decrypt the header of the encrypted message afterwhich the rest of the message is inferred. This approach was shownefﬁcient and addressed the non-repudiation problems. However, to
+be robust this scheme needs several biometrics. We provide a more
+ﬁne granular approach which can generate different keys for closelylooking biometrics. This greatly depends on the characteristic vec-tor as highlighted in Section 4.1. We further use information theo-retic ZKPK that provide additional privacy and security propertiesas shown in the analysis in Section 6.
+8. CONCLUSION AND FUTURE WORK
+In this paper we have developed a privacy preserving biometric
+authentication methodology. Our approach has several security andprivacy advantages for the authentication mechanism and the bio-metric itself. We provide a new application of vector-space modelto generate efﬁciently cryptographic biometric keys. We preserveprivacy and unconditional security of the biometric key by employ-
+ing information theoretically secure ZKPK. Our notion of privacy
+relates to the amount of data disclosed and the controlled usageof it, for the speciﬁc authentication purposes it was designed for.Moreover, we show how the biometric authentication can be com-bined with other identiﬁers used in a federated IdM system for au-thentication, thus resulting in a multi-factor authentication.
+We plan to extend this work in several directions especially with
+70respect to experimentation. First we plan to work on simulations
+and evaluations of ﬁngerprints, and voice prints biometrics to de-
+velop examples of the characteristic vectors. We will investigatehow this characteristic vector differs in the various vendor speciﬁcbiometric scanners. The second direction is to use this characteris-tic vector to generate a key space in VSM which is sufﬁciently ex-pressive to generate different keys from closely related biometrics.
+Finally, we would like to investigate combining various biometrics
+in the VSM model as investigated in [7]
+9. ACKNOWLEDGEMENT
+The work reported in this paper has been sponsored by NSF un-
+der the ITR Project 0428554 “The Design and Use of Digital Iden-tities”. We thank Prof. Samuel Wagstaff and Shimon Modi for theiruseful suggestions.
+10. REFERENCES
+[1] The battle against phishing: Dynamic security skins. In
+SOUPS ’05: Proceedings of the 2005 symposium on Usable
+privacy and security , pages 77–88, New York, NY , USA,
+2005. ACM Press.
+[2] A. Bhargav-Spantzel, A. Squicciarini, and E. Bertino.
+Establishing and protecting digital identity in federation
+systems. Journal of Computer Security , 13(3):269–300,
+2006.
+[3] G. Bleumer. Biometric yet privacy protecting person
+authentication. Lecture Notes in Computer Science ,
+1525:99–110, 1998.
+[4] J. Camenisch and A. Lysyanskaya. Efﬁcient non-transferable
+anonymous multi-show credential system with optionalanonymity revocation. In B. Pﬁtzmann, editor, Advances in
+Cryptology — EUROCRYPT 2001 , volume 2045, pages
+93–118. Springer Verlag, 2001.
+[5] D. Chaum and T. P. Pedersen. Wallet databases with
+observers. In CRYPTO ’92: Proceedings of the 12th Annual
+International Cryptology Conference on Advances in
+Cryptology , pages 89–105, London, UK, 1993.
+Springer-Verlag.
+[6] D. Chaum and H. van Antwerpen. Undeniable signatures. In
+Advances in Cryptology — CRYPTO ’89 , volume 435, pages
+212–216. Springer-Verlag, 1990.
+[7] C. R. Costanzo. Biometric cryptography: Key generation
+using feature and parametric aggregation. Online Technical
+Report, 2004.
+[8] I. Damg˚ ard and E. Fujisaki. An integer commitment scheme
+based on groups with hidden order. In Advances in
+Cryptology — ASIACRYPT 2002 , volume 2501. Springer,
+2002.
+[9] G. Davida, Y . Frankel, and B. Matt. The relation of error
+correction and cryptography to an ofﬁne biometric basedidentication scheme, 1999.
+[10] Y . Dodis, R. Ostrovsky, L. Reyzin, and A. Smith. Fuzzy
+extractors: How to generate strong keys from biometrics andother noisy data. In Eurocrypt 2004 , 2006.[11] Identity-Management. Liberty alliance project.
+http://www.projectliberty.org .
+[12] R. Impagliazzo and S. M. More. Anonymous credentials
+with biometrically-enfor ced non-transferability. In WPES
+’03: Proceedings of the 2003 ACM workshop on Privacy in
+the electronic society , pages 60–71, New York, NY , USA,
+2003. ACM Press.
+[13] Internet2. Shibboleth.
+http://shibboleth.internet2.edu .
+[14] A. Jain, S. Prabhakar, L. Hong, and S. Pankanti.
+Filterbank-based ﬁnge rprint matching, 2000.
+[15] A. Juels and M. Wattenberg. A fuzzy commitment scheme.
+InACM Conference on Computer and Communications
+Security , pages 28–36, 1999.
+[16] A. Juels and M. Wattenberg. A fuzzy vault scheme. In
+Proceedings of IEEE International Symposium on
+Information Theory, 2002. , 2002.
+[17] C. Mills. Biometrics: Back to security basics, rsa security,
+2002.
+[18] F. Monrose, M. Reiter, Q. Li, and S. Wetzel. Using voice to
+generate cryptographic keys. 2001.
+[19] T. P. Pedersen. Non-interactive and information-theoretic
+secure veriﬁable secret sharing. In J. Feigenbaum, editor,
+Advances in Cryptology – CRYPTO ’91 , volume 576, pages
+129–140. Springer Verlag, 1992.
+[20] G. Salton, A. Wong, and C. S. Yang. A vector space model
+for automatic indexing. Commun. ACM , 18(11):613–620,
+1975.
+[21] H. soo Kim, I. Choi, and M. Kim. Reﬁning term weights of
+documents using term dependencies. In SIGIR ’04:
+Proceedings of the 27th annual international ACM SIGIR
+conference on Research and development in informationretrieval , pages 552–553, New York, NY , USA, 2004. ACM
+Press.
+[22] U. Uludag, S. Pankanti, S. Prabhakar, and A. Jain. Biometric
+cryptosystems: Issues and challenges, 2004.
+[23] I. M. R. VeriSign. Web Services Federation Language
+(WS-Federation). version 1.0. July 8 2003.
+http://www-128.ibm.com/developerworks/
+library/specification/ws-fed/ .
+[24] Z. W. Wang, S. K. M. Wong, and Y . Y . Yao. An analysis of
+vector space models based on computational geometry. In
+SIGIR ’92: Proceedings of the 15th annual international
+ACM SIGIR conference on Research and development ininformation retrieval , pages 152–160, New York, NY , USA,
+1992. ACM Press.
+[25] H. Wu and G. Salton. A comparison of search term
+weighting: term relevance vs. inverse document frequency.InSIGIR ’81: Proceedings of the 4th annual international
+ACM SIGIR conference on Information storage and retrieval ,
+pages 30–39, New York, NY , USA, 1981. ACM Press.
+[26] W. Zhang, Y .-J. Chang, and T. Chen. Optimal thresholding
+for key generation based on biometrics. In ICIP , pages
+3451–3454, 2004.
+71

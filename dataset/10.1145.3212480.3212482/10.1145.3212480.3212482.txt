@@ -1,0 +1,672 @@
+Lightweight Message Authentication for Constrained Devices
+Elena Dubrova
+Royal Institute of Technology
+Stockholm, Sweden
+dubrova@kth.seMats Näslund
+Royal Institute of Technology
+Stockholm, Sweden
+matsna@kth.se
+Göran Selander
+Ericsson Research, Ericsson AB
+Stockholm, Sweden
+goran.selander@ericsson.comFredrik Lindqvist
+Ericsson Research, Ericsson AB
+Stockholm, Sweden
+fredrik.lindqvist@ericsson.com
+ABSTRACT
+Message Authentication Codes (MACs) used in today’s wireless
+communication standards may not be able to satisfy resource limita-
+tions of simpler 5G radio types and use cases such as machine type
+communications. As a possible solution, we present a lightweight
+message authentication scheme based on the cyclic redundancy
+check (CRC). It has been previously shown that a CRC with an
+irreducible generator polynomial as the key is an ϵ-almost XOR-
+universal (AXU) hash function with ϵ=(m+n)/2n−1, where mis
+the message size and nis the CRC size. While the computation of
+n-bit CRCs can be efficiently implemented in hardware using linear
+feedback shift registers, generating random degree- nirreducible
+polynomials is computationally expensive for large n. We propose
+using a product of kirreducible polynomials whose degrees sum up
+tonas a generator polynomial for an n-bit CRC and show that the
+resulting hash functions are ϵ-AXU with ϵ=(m+n)k/2n−k. The
+presented message authentication scheme can be seen as providing
+a trade-off between security and implementation efficiency.
+CCS CONCEPTS
+•Security and privacy →Hash functions and message au-
+thentication codes;
+KEYWORDS
+Universal hashing, message authentication, data integrity, CRC
+ACM Reference Format:
+Elena Dubrova, Mats Näslund, Göran Selander, and Fredrik Lindqvist. 2018.
+Lightweight Message Authentication for Constrained Devices. In WiSec ’18:
+Proceedings of the 11th ACM Conference on Security & Privacy in Wireless
+and Mobile Networks, June 18–20, 2018, Stockholm, Sweden. ACM, New York,
+NY, USA, 6 pages. https://doi.org/10.1145/3212480.3212482
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than ACM
+must be honored. Abstracting with credit is permitted. To copy otherwise, or republish,
+to post on servers or to redistribute to lists, requires prior specific permission and/or a
+fee. Request permissions from permissions@acm.org.
+WiSec ’18, June 18–20, 2018, Stockholm, Sweden
+©2018 Association for Computing Machinery.
+ACM ISBN 978-1-4503-5731-9/18/06. . . $15.00
+https://doi.org/10.1145/3212480.32124821 INTRODUCTION
+Today minimal or no security is typically provided to low-end wire-
+less devices such as sensors or RFID tags in the conventional belief
+that the information they gather is of little concern to attackers [ 24].
+However, case studies have shown that a compromised sensor can
+potentially be used as a stepping stone for attacks on other devices
+connected to the network, or the network itself [21].
+It is forecasted that 75 billion devices will be connected world-
+wide by year 2025 [ 22]. Home appliances, meters, sensors, are ve-
+hicles will be accessible and controlled via local networks or the
+Internet, opening an entirely new range of services appealing to
+users. Future networks might support services related to industrial
+automation, traffic safety, smart transport, smart grid, e-health,
+etc [ 11]. As the value of the information to which the low-end
+devices have access via networks increases, so are incentives to
+attack these devices. The damage caused by an attack on critical
+infrastructure may not be limited to a business or reputation, but
+could have a severe impact on public safety, national economy, or
+national security.
+Many low-cost wireless devices work under severe resource con-
+strains such as limited battery, memory, computing capability, and
+insufficient bandwidth. To satisfy their constrains, it seems desir-
+able to re-use existing functions for implementing cryptographic
+primitives. In particular, functional similarities between error de-
+tection and data integrity protection can be exploited to combine
+these functions in one.
+Most link layers have an existing n-bit cyclic redundancy check
+(CRC) in place which only protects against random, accidental mod-
+ifications. Data integrity protection can be implemented by using
+some n-bit message authentication code, e.g. keyed hash message
+authentication code HMAC [ 1], KECCAK Message Authentication
+Code KMAC [ 17], or cipher block chaining message authentication
+code CBC-MAC [ 2]. However, such an approach expands the mes-
+sage by nbits and requires a separate encoding/decoding engine
+which is more complex than the CRC encoding/decoding engine.
+For example, it was shown in [ 26] that the KMAC128 takes 45
+times more area and consumes 28 times more power compared to
+the 128-bit CRC-based MAC algorithm from [ 10] (both algorithms
+were implemented in 65 nm CMOS with 1.2V operating voltage
+and 1GHz clock frequency).
+On the other hand, if we simply replace ann-bit CRC with an n-
+bit HMAC, KMAC or CBC-MAC, we cannot guarantee the detection
+of the same type of random errors as the CRC. For example, the
+196WiSec ’18, June 18–20, 2018, Stockholm, Sweden Elena Dubrova, Mats Näslund, Göran Selander, and Fredrik Lindqvist
+detection of n-bit burst errors cannot be guaranteed. This may have
+a negative impact on the reliability of communication links. Only
+if we make the conventional CRC cryptographically secure, can we
+assure a certain level of security without sacrificing reliability.
+The latter motivated the development of cryptographically se-
+cure CRCs. Krawczyk [ 16] has shown that a CRC with an irreducible
+generator polynomial as the key is an ϵ-almost XOR-universal
+(AXU) hash function with ϵ=(m+n)/2n−1, where mis the mes-
+sage size and nis the CRC size. While the computation of CRC can
+be efficiently implemented in hardware using linear feedback shift
+registers (LFSRs), generating random irreducible polynomials of
+a desired degree is computationally expensive ( Ω(n3)time for a
+degree- npolynomial [13]1).
+Our contributions. In this paper, we propose to replace the irre-
+ducible generator polynomial of the CRC by a product of irreducible
+polynomials of lower degrees, which are easier to generate, and
+show that the resulting hash function families are ϵ-AXU with
+ϵ=(m+n)k/(2n−k). We describe how these ϵ-AXU hash functions
+can be combined with one-time pads to construct ϵ-secure MACs
+and quantify the trade-off between implementation efficiency and
+security provided by the presented message authentication scheme.
+Related Work. CRC-based ϵ-AXU hash functions and the related
+MACs have been studied in the past. Rabin [ 20] first proposed the
+use of CRCs in the cryptographic context, as a fingerprint of data
+(where the fingerprint is kept secret). However, his construction
+does not shift the message by nbit positions before performing
+moduloд(s)operation, where д(s)is the CRC generator polynomial.
+For this reason, it is nonsecure for message authentication.
+Krawczyk [ 16] has shown that, if shifting of the message by n
+bit positions is added to Rabin’s construction [ 20], the construction
+becomes secure for message authentication provided that the tag is
+encrypted with a one-time pad. He proved that the probability of
+breaking the resulting authentication scheme is at most ϵ=m+n
+2n−1,
+where nis CRC size and mis message size.
+In [9] the case of CRC generator polynomial of type (1+s)p(s),
+where p(s)is a primitive polynomial, was considered. In addition
+to detecting all burst errors of size n−1or less, such CRCs are able
+to detect all double-bit errors. The latter is important for systems
+using Turbo codes, including LTE, because double-bit errors are the
+most frequent error patterns introduced by Turbo code decoders [ 3].
+It was shown in [ 9] that the attack success probability in this case
+is at mostϵ=m+n−1
+2n−2.
+In [10] Krawczyk’s approach was further extended to the case
+of random polynomials. This eliminates the need for irreducibility
+tests, however, the security of the resulting constructions drops
+sharply with the growth of message and CRC sizes. Thus, such a
+construction is suitable for the authentication of short messages
+only (few tens of bytes).
+2 BACKGROUND
+An almost-universal hash function (AUHF) is a keyed function with
+the property that, for any pair of distinct messages, the probability
+1There are asymptotically better algorithms for testing irreducibility, approaching
+O(n2)[6], but their usefulness for small n, relevant in the context of this paper, is
+unclear.that the outputs of the hash function on these two messages are
+equal is small. The probability is taken over the choice of the key
+and the meaning of “small" usually stated as a parameter of the
+definition. An almost XOR-universal hash function (AXUHF) is
+slightly stronger variant which has the property that, for any con-
+stant from the output space of the function, the probability for the
+XOR of the outputs of the hash function on the two inputs is equal
+to a given constant, is small. AUHFs and AXUHFs are important
+information-theoretic tools in cryptography, including for message
+authentication.
+2.1 Almost XOR-Universal Hash Functions
+Throughout the paper, we use capital letters to denote random
+variables and lower-case letters to denote specific values. For a set
+S, we write A←Sto denote that Ais chosen uniformly at random
+from S.
+Letm,n∈N,Kbe a finite set, and ϵ>0. Let H={ha:{0,1}m→
+{0,1}n|a∈K}.
+Definition 2.1.
+•His auniversal family of hash functions if∀x,x′∈{0,1}m:
+PrA←K[hA(x)=hA(x′)]≤2−n.
+•His anϵ-almost-universal family of hash functions if∀x,
+x′∈{0,1}m:
+PrA←K[hA(x)=hA(x′)]≤ϵ.
+•His anϵ-almost-XOR-universal ( ϵ-AXU) family of hash func-
+tions if∀x,x′∈{0,1}m,y∈{0,1}n:
+PrA←K[hA(x)⊕hA(x′)=y]≤ϵ.
+Definition 2.2.
+•His⊕-linear if∀x,x′∈{0,1}mand∀a∈K:
+ha(x⊕x′)=ha(x)⊕ha(x′).
+•Hisϵ-balanced if∀x,0∈{0,1}m,y∈{0,1}n:
+PrA←K[hA(x)=y]≤ϵ.
+Krawczyk [ 16] has shown that ϵ-balanceness is a necessary and
+sufficient condition for a ⊕-linear family of hash functions to be
+ϵ-AXU.
+Theorem 2.3 ([ 16]).IfHis⊕-linear, then Hisϵ-AXU if and only
+ifHisϵ-balanced.
+We use Theorem 2.3 as the main tool in deriving explicit bounds
+onϵfor the hash families presented in this paper.
+2.2 Cyclic Redundancy Check
+Cyclic Redundancy Check (CRC) is widely used for detecting ran-
+dom errors in data communication and storage [ 18]. Many wireless
+communication standards use CRC. For example, IEEE 802.15.4
+standard uses 16-bit CRC, LTE uses 24, 16 and 8-bit CRCs, and GSM
+uses 40-bit CRC.
+Given a polynomial д(s)of degree nover a finite field GF (2), a
+CRC for a message polynomial x(s)is computed as
+r(s)=x(s)·snmodд(s).
+197Lightweight Message Authentication for Constrained Devices WiSec ’18, June 18–20, 2018, Stockholm, Sweden
+The polynomial д(s)is called the generator polynomial of the CRC.
+The resulting codeword for x(s)is constructed as
+c(s)=x(s)·sn+r(s).
+A CRC with the generator polynomial of degree ndetects all
+burst errors of size nor less [ 19]. Error-detection is typically done
+by dividing the received codeword polynomial by the generator
+polynomial д(s)and checking if the result is zero. A non-zero result
+indicates an error. The CRC computation can be efficiently imple-
+mented in hardware using an LFSR [ 14] withд(s)as a connection
+polynomial.
+Traditional CRC is suitable for detecting random transmission
+errors. However, it can easily be defeated by a malicious adversary.
+Since the adversary knows which generator polynomial д(s)is
+used for computing the CRC, he/she may easily craft an error not
+detectable by the CRC. For example, an adversary may replace the
+original message x(s)by another message x′(s), encode x′(s)as
+usually into the codeword c′(s)=x′(s)·sn+r(s), where r(s)=
+x′(s)·snmodд(s), and submit c′(s). The receiver will be unable to
+distinguish the codeword c′(s)received from the adversary from a
+codeword received from a legitimate sender since both constitute
+valid codewords.
+3 TWOϵ-AXUHF FAMILIES
+In this section we introduce two new families of CRC-based ϵ-
+AXUHFs and perform their security analysis.
+In the sequel, we assume an implicit bijection between the nbit
+strings x∈{0,1}nand the degree- npolynomials д(s)=P
+0≤i<nzi·
+siover a finite field GF (2), so that the coefficients (z0, . . . , zn−1)of
+д(s)correspond to the bits of x.
+First we introduce some definitions.
+Definition 3.1. A polynomial over GF (2)isoddif it has a non-zero
+constant term.
+For example, д(s)=s+1is an odd polynomial, while д(s)=sis
+not.
+Definition 3.2. A polynomial over GF (2)isuniformly k-factored
+if it can be factored into k>1non-constant irreducible odd poly-
+nomials which all have the same degree.
+For example, д(s)=(s4+s+1) (s4+s3+1) (s4+s3+s2+s+1)
+is uniformly 3-factored.
+Definition 3.3. A polynomial over GF (2)isnon-uniformly k-
+factored if it can be factored into k>1non-constant irreducible
+odd polynomials which all have different degrees.
+For example, д(s)=(s2+s+1) (s3+s+1) (s4+s+1)is non-
+uniformly 3-factored.
+Next we define two families of hash functions.
+Definition 3.4 (Family HU).LetUn,kbe the set of all degree- n
+uniformly k-factored polynomials over GF (2). The family HUis
+defined as follows:
+HU={hд:{0,1}m→{0,1}n|д∈Un,k}
+where hд(x)is defined as the coefficients of the polynomial r(s)
+constructed as
+r(s)=x(s)·snmodд(s) (1)for any x∈{0,1}m.
+Definition 3.5 (Family HNU).LetNUn,kbe the set of all degree- n
+non-uniformly k-factored polynomials over GF (2). The family HNU
+is defined as follows:
+HNU={hд:{0,1}m→{0,1}n|д∈NUn,k}
+where hд(x)is defined as the coefficients of the polynomial r(s)
+constructed as
+r(s)=x(s)·snmodд(s) (2)
+for any x∈{0,1}m.
+The following Theorem shows that the HUandHNUfamilies
+areϵ-AXU.
+Theorem 3.6. The families HUandHNUareϵ-AXU for
+ϵ=(m+n)k
+2n−k. (3)
+Proof: HUandHNUfamilies are⊕-linear because modulo д(s)is
+a linear operation. Next we show that they are also ϵ-balanced.
+By Dfn. 3.4 and 3.5, for any non-zero degree- mpolynomial x(s)
+over GF (2), any degree- npolynomial д(s)inUn,korNUn,k, and
+anyy∈{0,1}n,hд(x)=yif and only if x(s)·snmodд(s)=y(s). In
+turn, x(s)·snmodд(s)=y(s)if and only if д(s)divides x(s)·sn−y(s).
+The polynomial d(s)=x(s)·sn−y(s)is a non-zero polynomial of
+degree less than or equal to m+n.
+LetIndenote the number of irreducible polynomials of degree n.
+Letnidenote the degree of the ith irreducible factor of a degree- n
+polynomial, so that n=P
+1≤i≤kni.
+Case 1:д(s)is non-uniformly k-factored.
+Because of the unique factorization property, any degree- npoly-
+nomial over GF (2)can contain no more than
+m+n−Pk
+j=1,j,inj
+ni=m+ni
+ni
+irreducible factors of degree ni, for any i∈{1,2, . . . , k}. Ifд(s)is
+non-uniformly k-factored, all its kfactors have different degrees.
+Therefore, the number of hash functions in the family HNUwhich
+map xintoyis less than:
+m+n1
+n1·m+n2
+n2·. . .·m+nk
+nk≤(m+n)k
+n1·n2·. . .·nk.
+On the other hand, there are In1·In2·. . .Inkways to construct д(s).
+Since there are2n−1
+n≤Inirreducible polynomials of degree n, we
+get
+2n−k
+n1·n2·. . .·nk≤In1·In2·. . .Ink.
+So, the probability that д(s)divides d(s)is at most(m+n)k
+2n−k. There-
+fore, by Dfn. 2.2, the family HNUisϵ-balanced for ϵ=(m+n)k
+2n−k.
+Since it is also⊕-linear, by Theorem 2.3, it is ϵ-AXU.
+Case 2:д(s)is uniformly k-factored. Then ni=n/kfor all i∈
+{1,2, . . . , k}.
+198WiSec ’18, June 18–20, 2018, Stockholm, Sweden Elena Dubrova, Mats Näslund, Göran Selander, and Fredrik Lindqvist
+There arek2n/k−1
+n≤In/kirreducible polynomials of degree n/k.
+Therefore, the size of the HUfamily is at least
+ N1+k−1
+k!
+=(N1+k−1)·(N1+k−2)·. . .·N1
+k!≥Nk
+1
+k!
+(4)
+where N1=k2n/k−1
+n.
+On the other hand, there are at most N2= (m+n)/(n/k)=
+k(m+n)/nirreducible factors of d(s)each of degree n/k. All distinct
+k-tuples of them give rise to a distinct reducible polynomial of
+degree n. So, the number of hash functions in the family HUwhich
+map xintoyis at most:
+ N2
+k!
+=N2·(N2−1)·. . .·(N2−k+1)
+k!≤Nk
+2
+k!.
+Thus the probability that д(s)divides d(s)is at most
+ϵ=(k(m+n)
+n)k
+(k2n/k−1
+n)k=(m+n)k
+2n−k.
+As in case 1, we can conclude that HUfamily isϵ-AXU forϵ=
+(m+n)k
+2n−k.
+□
+Next, we derive tighter bounds on ϵfor the case when the gen-
+erator polynomial д(s)is a product of two irreducible polynomials.
+Since the security of the families HUandHNUdrops with the
+growth of k, this case seems to be particularly interesting for prac-
+tical purposes.
+Lemma 3.7. Ifk=2, thenϵin Theorem 3.6 is given by
+ϵ=(m+n)2
+2n forHNU
+ϵ=(m+n) (2m+n)
+n(2n−3+2n/2−2 )forHU.
+Proof: Letд1(s)andд2(s)be the two irreducible factors of д(s)of
+degrees n1andn−n1, respectively. As in the proof of Theorem 3.6,
+we reason about divisibility of d(s)=x(s)·sn−a(s)byд(s)=
+д1(s)·д2(s).
+Suppose that d(s)contains pirreducible factors of degree n−n1.
+Then, because of the unique factorization property, d(s)contains
+at most
+(m+n)−p(n−n1)
+n1
+irreducible factors of degree n1. There are
+p((m+n)−p(n−n1))
+n1=−n−n1
+n1·p2+m+n
+n1·p
+distinct pairs of these factors and each pair will produce a distinct
+reducible polynomial of degree n. To find what is the largest number
+of hash functions in the families HUandHNU, we need to find
+which choice of pmaximizes the value of the quadratic function
+ap2+bp=−n−n1
+n1·p2+m+n
+n1·p=0. (5)
+This can be done by finding the x-coordinate of the vertex (max-
+imum point) of the parabola representing the function (5). It is
+known that x-coordinate of the vertex is located at the point −b/2a,
+which is in our case
+p=m+n
+2(n−n1).So, the value of the quadratic function is maximized if d(s)contains
+m+n
+2(n−n1)irreducible polynomials of degree n−n1and
+(m+n)−m+n
+2(n−n1)·(n−n1)
+n1=m+n
+2n1
+irreducible polynomials of degree n1.
+Suppose that
+m+n
+2(n−n1)≤In−n1andm+n
+2n1≤In1.
+Case 1: n1,n/2.
+One one hand, the largest number of hash functions in the family
+HNUwhich map xintoyis given by
+m+n
+2(n−n1)·m+n
+2n1=(m+n)2
+4n1(n−n1). (6)
+On the other hand, for any fixed n1, there are In1·In−n1ways to
+constructд(s). Since
+2n1−1
+n1·2n−n1−1
+n−n1≤In1·In−n1
+the probability that д(s)divides d(s)is at mostϵ=(m+n)2
+2n.
+Ifm+n
+2(n−n1)≥In−n1(orm+n
+2n1≥In1) then, there are not enough
+distinct polynomials of degree n−n1(orn1) to maximize the value
+of the quadratic function (5). So even less than (6) hash functions
+in the family HNUwhich map xintoy. Thus, the probability that
+д(s)divides d(s)is even smaller than ϵderived above.
+Case 2: n1=n/2.
+Ifn1=n/2, then d(s)can contain up to (m+n)/(n/2)=2(m+
+n)/n=Nirreducible factors of degree n/2. All distinct pairs of
+them produce a reducible polynomial of degree n. So, the largest
+number of hash functions in the family HUwhich map xintoyis
+given by: N
+2!
+=2(m+n)2
+n2−m+n
+n.
+On the other hand, if n1=n/2, there are
+In/2(In/2+1)
+2
+ways to construct д(s). Since there are
+2n/2−1
+n≤In/2
+irreducible polynomials of degree n/2, our solution space is there-
+fore larger than 2n−3+2n/2−2. Thus the probability that д(s)divides
+d(s)is at most
+ϵ=2(m+n)2−n(m+n)
+n(2n−3+2n/2−2 )=(m+n) (2m+n)
+n(2n−3+2n/2−2 ).
+□
+To give the reader at a glance view of security levels provided
+by different CRC-based ϵ-AXUHF families, in Table 1 we show
+values ofϵ(in logarithmic form) for different types of generator
+polynomials: non-uniformly 2-factored, uniformly 2-factored, irre-
+ducible [ 16] and reducible odd [ 10]. The values in the last columns
+are taken from [ 10] where they were calculated by a bounded ex-
+haustive search for messages of size up to 256 bits; "-" means that
+the result is not shown in [10].
+199Lightweight Message Authentication for Constrained Devices WiSec ’18, June 18–20, 2018, Stockholm, Sweden
+CRC Message−log2(ϵ)for different generator polynomials
+size size Non-uniformly Uniformly Irreducible Reducible
+n, bits m, bits 2-factored 2-factored [16] odd [10]
+32 64 18.83 20.09 24.42 15.33
+32 128 17.36 18.51 23.68 12.23
+32 256 15.66 16.74 22.83 9.65
+32 512 13.83 14.87 21.91 -
+32 1024 11.91 12.93 20.96 -
+64 64 50.00 52.42 56.00 40.77
+64 128 48.83 51.09 55.42 34.62
+64 256 47.36 49.51 54.68 28.98
+64 512 45.66 47.74 53.83 -
+64 1024 43.83 45.87 52.91 -
+128 64 112.83 115.42 119.42 98.62
+128 128 112.00 115.42 119.00 87.06
+128 256 110.83 114.09 118.42 75.90
+128 512 109.36 112.51 117.68 -
+128 1024 107.66 110.74 116.83 -
+Table 1: Comparison of security of different ϵ-AXUHFs.
+4 MESSAGE AUTHENTICATION
+It is known that ϵ-AXU hash functions can be combined with one-
+time pads to construct ϵ-secure MACs. Since we proved that HU
+andHNUfamilies are ϵ-AXU, this result applies to them directly.
+In this section we describe how the construction is usually done
+and discuss specifics of HUandHNUfamilies in this context.
+The idea of constructing authentication codes through hash
+functions belongs to Carter and Wegman [ 25]. Their approach was
+further investigated and refined by Brassed [ 5], Desmond [ 7] and
+Krawczyk [ 16]. Stinson [ 23] introduced a formal definition of almost
+strongly universal hash families which made possible considerably
+reducing the key length.
+Message authentication is typically defined in the following
+setting. There are two parties, Alice, A, and Bob, B, who share a
+secret key r∈K, where Kis a finite set. Awants to send a message
+x∈{0,1}mtoBalong with a tag t∈{0,1}nthat allows Bto verify
+that the message comes from A. To achieve this, Asends to B xand
+t:=Tag (r,x), where Tagis a function Tag:K×{0,1}m→{0,1}n.
+Breceives (x′,t′)and verifies that t′=Tag (r,x′).
+The security of a MAC can be defined in the context of the fol-
+lowing game Grparameterized by r∈K[8]. There are two players:
+a Challenger, C, who receives r∈Kas input and an adversary, Eve,
+E, who receives no input. Grhas the following three steps:
+(1)Echooses x∈{0,1}mand sends xtoC.
+(2)Ccomputes t:=Tag (r,x)and sends ttoE.
+(3)Eoutputs (x′,t′)∈{0,1}m×{0,1}n.
+Ewins Grifx′,xand Tag (r,x′)=t′.
+Definition 4.1. Letϵ>0. A function Tag:K×{0,1}m→{0,1}n
+isϵ-secure MAC if for every E
+Prr←K[Ewins Gr]≤ϵ.
+Theorem 4.2. LetH={ha:{0,1}m→{0,1}n|a∈K}be an
+ϵ-AXU hash function family. Then, for r=(a,b)∈K×{0,1}n, the
+function
+Tag (r,x):=ha(x)⊕bis aϵ-secure MAC with key size log2|K|+n.
+In case of HUandHNUfamilies, the key consists of the descrip-
+tion of a particular CRC generator polynomial д(s)and a one-time
+padb. For HUfamily,д(s)is drawn uniformly at random from
+the set Un,kof all possible degree- nuniformly k-factored poly-
+nomials over GF (2). For HNUfamily,д(s)is drawn uniformly at
+random from the set NUn,kof all possible degree- nnon-uniformly
+k-factored polynomials over GF (2). For both families, the pad bis
+drawn uniformly at random from {0,1}n.
+Note that in the attack scenario described above it is assumed that
+the adversary Egets access to a message and its authentication tag.
+Other attack scenarios are also possible, for example, the adversary
+may have an access to a verification oracle as well. In this case,
+the presented CRC-based ϵ-AXUHF families, as well as CRC-based
+ϵ-AXUHF families from [ 9,10,16], are susceptible to Ferguson’s
+attack [ 12] which reveals the CRC generator polynomial with the
+probability 2−n, where nis the degree of the polynomial. The access
+to an oracle is a reasonable assumption, for example, in a multicast2.
+Therefore, we do not recommend the use of CRC-based ϵ-AXUHFs
+with short generator polynomials.
+5 DETECTION OF RANDOM ERRORS
+It was shown in [ 10] that a CRC based on a reducible odd generator
+polynomial of degree n>1detects the same type of burst errors
+as a CRC based on an irreducible degree- ngenerator polynomial.
+Since both uniformly k-factored polynomials and non-uniformly
+k-factored polynomials are odd, MACs based on the presented ϵ-
+AXUHFs detect the same type of burst errors as a CRC based on an
+irreducible degree- ngenerator polynomial, namely all burst errors
+of size nor less.
+The ability to detect burst errors is important because burst
+errors are a dominant type of errors in data communication and
+storage [ 18]. Note, however, that two CRC-based ϵ-AXUHFs using
+different generator polynomials may have different capabilities for
+detecting multiple errors in non-adjacent bits. These capabilities
+depend on the code distance (minimal Hamming distance between
+any pair of codewords) of the underlying error-detecting codes.
+Two different generator polynomials of degree nmay result in
+codes with different code distances [15].
+6 IMPLEMENTATION DETAILS
+The computation of the presented CRC-based ϵ-AXUHFs is based
+on the same type of operations as the encoding/decoding of the CRC
+and therefore it retains most of its implementation simplicity. The
+moduloд(s)operation can be realized using an LFSR with feedback
+connections defined by the generator polynomial д(s). There are
+many references regarding the implementation, e.g. [ 18]. A differ-
+ence is that usually the generator polynomial of the traditional CRC
+is fixed in advance and therefore the LFSR that implements the en-
+coding/decoding has the corresponding connections hardwired. The
+presented cryptographic CRC requires an implementation in which
+the connections of the LFSR can be re-programmed, to support
+variable generator polynomials. Note that some non-cryptographic
+CRC implementations also use programmable connections because
+2Multicast is a type of communication where the information is addressed to many
+destinations simultaneously.
+200WiSec ’18, June 18–20, 2018, Stockholm, Sweden Elena Dubrova, Mats Näslund, Göran Selander, and Fredrik Lindqvist
+they need to support different CRC standards [ 4]. So, the techniques
+for implementing LFSRs with re-programmable connections are
+known.
+Note that in our security proof, it is assumed that truly random
+one time pads bof the size of the hash output are used for encrypting
+the hash. In most practical applications, however, the successive
+pads bwill be generated using a pseudorandom generator from a
+secret seed shared by the parties. For example, pads for the UIA2
+MAC of the 3G standard are generated by the SNOW3G stream
+cipher. In this case, the security of the presented authentication
+scheme reduces to the security of the pseudorandom generator in
+use.
+7 EFFICIENCY/SECURITY TRADE-OFF
+In this section, we quantify the trade-off between implementation
+efficiency and security provided by the presented approach for
+the case when the CRC generator polynomial is a product of two
+irreducible polynomials of the same degree.
+First, we evaluate penalty in security. For message size mand
+CRC size n, the security of the CRC with uniformly 2-factored gen-
+erator polynomials is by at most log2(2m+n)−loд2(n)+2bits
+smaller than the security of the CRC with irreducible generator
+polynomials. For example, for n=128andm=1024, the differ-
+ence is 6.09 bits. As the message size doubles, the difference grows
+roughly by 1 bit.
+Next, we quantify the energy cost of generating the random
+irreducible polynomials. Selecting an irreducible degree- npoly-
+nomial at random requires either selecting at random a degree- n
+polynomial ( O(n)time) and running a test for irreducibility ( Ω(n3),
+or selecting at random a degree- npolynomial from a database of
+irreducible degree- npolynomials (roughly 2n/nspace). Since for
+large nthe database approach is not feasible, we analyze the former
+approach.
+Suppose that we repeatedly choose at random a polynomial
+of degree nand then test whether it is irreducible until the one
+we find passes the test. About 1/nof all degree- npolynomials
+are irreducible. So, about niterations will suffice to find a degree-
+nirreducible polynomial on average. It follows that finding one
+irreducible polynomial of degree nand finding two irreducible poly-
+nomials of degree n/2takes the same number of iterations, n, on
+average. However, the iterations in the two cases take different
+time because the irreducibility test for a degree- npolynomial takes
+at least n3/(n/2)3=8times longer than the one for a degree- n/2
+polynomial. Therefore, the selection of one irreducible polynomial
+of degree ntakes 8 times longer computational time than the se-
+lection of two irreducible polynomials of degree n/2on average.
+The difference in energy consumption for the two computations is
+expected to be of the same order. Furthermore, since in the uplink
+scenario the selection of the generator polynomial for the CRC has
+to be done during key agreement, a longer selection process incurs
+a longer delay before the communication can start.
+8 CONCLUSION
+We introduced a lightweight message authentication scheme based
+on the CRC and performed a quantitative analysis of its security.9 ACKNOWLEDGEMENTS
+The first author was supported by the research grant No SM14-0016
+from the Swedish Foundation for Strategic Research. The second
+author performed the work while at Ericsson Research.
+REFERENCES
+[1]Mihir Bellare, Ran Canetti, and Hugo Krawczyk. 1996. Keying Hash Functions for
+Message Authentication. In Advances in Cryptology - CRYPTO’96, Neal Koblitz
+(Ed.). LNCS, Vol. 1109. Springer Berlin Heidelberg, 1–15.
+[2]Mihir Bellare, Joe Kilian, and Phillip Rogaway. 1994. The Security of Cipher
+Block Chaining. In Advances in Cryptology - CRYPTO’94, Yvo G. Desmedt (Ed.).
+LNCS, Vol. 839. Springer Berlin Heidelberg, 341–358.
+[3]Claude Berrou. 2011. Codes and turbo codes. Springer Science & Business Media.
+[4]Jesper Birch, Lars Gylling Christensen, and Morton Skov. 1992. A Programmable
+800 Mbit/s CRC Check/Generator Unit for LANs and MANs. Comput. Netw. ISDN
+Syst. 24, 2 (April 1992), 109–118.
+[5]Gilles Brassard. 1983. On Computationally Secure Authentication Tags Requiring
+Short Secret Shared Keys. In Advances in Cryptology, David Chaum, Ronald L.
+Rivest, and Alan T. Sherman (Eds.). Springer US, 79–86.
+[6]Richard P. Brent and Paul Zimmermann. 2008. Three Ways to Test Irreducibility.
+http://maths-people.anu.edu.au/∼brent/pd/MASCOS02t4.pdf.
+[7]Yvo Desmedt. 1986. Unconditionally Secure Authentication Schemes and Practical
+and Theoretical Consequences. In Advances in Cryptology - CRYPTO’85, Hugh C.
+Williams (Ed.). LNCS, Vol. 218. Springer Berlin Heidelberg, 42–55.
+[8]Yevgeniy Dodis. 2013. Randomness in Cryptography. http://cs.nyu.edu/ ∼dodis/
+randomness-in-crypto/.
+[9]Elena Dubrova, Mats Naslund, and Goran Selander. 2015. CRC-Based Message
+Authentication for 5G Mobile Technology. In Proceedings of 1st IEEE International
+Workshop on 5G Security.
+[10] Elena Dubrova, Mats Näslund, Göran Selander, and Fredrik Lindqvist. 2018. Mes-
+sage Authentication Based on Cryptographically Secure CRC without Polynomial
+Irreducibility Test. Cryptography and Communications 10 (March 2018), 383–399.
+Issue 2.
+[11] Ericsson. 2015. 5G security. www.ericsson.com/res/docs/whitepapers/ 5G-
+security.pdf.
+[12] Niels Ferguson. 2005. Authentication weaknesses in GCM. csrc.nist.gov/
+groups/ST/toolkit/BCM/documents/comments/CWC-GCM/Ferguson2.pdf.
+[13] Shuhong Gao and Daniel Panario. 1997. Tests and Constructions of Irreducible
+Polynomials over Finite Fields. In Foundations of Computational Mathematics,
+Felipe Cucker and Michael Shub (Eds.). Springer Berlin Heidelberg, 346–361.
+[14] S.W. Golomb. 1982. Shift Register Sequences. Aegean Park Press.
+[15] P. Koopman and T. Chakravarty. 2004. Cyclic redundancy code (CRC) polynomial
+selection for embedded networks. In Dependable Systems and Networks, 2004
+International Conference on. 145–154.
+[16] Hugo Krawczyk. 1994. LFSR-based Hashing and Authentication. In Proceedings
+of the 14th Annual International Cryptology Conference on Advances in Cryptology
+(CRYPTO’94). Springer-Verlag, London, UK, 129–139.
+[17] National Institute of Standards and Technology. 2015. FIPS PUB 202:
+SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions.
+http://nvlpubs.nist.gov/nistpubs/FIPS/ NIST.FIPS.202.pdf.
+[18] T.-B. Pei and C. Zukowski. 1992. High-speed parallel CRC circuits in VLSI. IEEE
+Transactions on Communications 40, 4 (Apr. 1992), 653 –657.
+[19] W.W. Peterson and D.T. Brown. 1961. Cyclic Codes for Error Detection. Proceed-
+ings of the IRE 49, 1 (Jan. 1961), 228 –235.
+[20] M. Rabin. 1981. Fingerprinting by random polynomials. Technical Report TR-15-81.
+Center for Research in Computing Technology, Harvard Univ., Cambridge.
+[21] Ishtiaq Rouf, Rob Miller, Hossen Mustafa, Travis Taylor, Sangho Oh, Wenyuan
+Xu, Marco Gruteser, Wade Trappe, and Ivan Seskar. 2010. Security and Privacy
+Vulnerabilities of In-car Wireless Networks: A Tire Pressure Monitoring System
+Case Study. In 19th USENIX Conference on Security. Berkeley, CA, USA, 21–21.
+[22] Statista. 2018. Internet of Things (IoT) connected devices installed base worldwide
+from 2015 to 2025. https://www.statista.com/statistics/471264/iot-number-of-
+connected-devices-worldwide/.
+[23] D. R. Stinson. 1994. Universal Hashing and Authentication Codes. Des. Codes
+Cryptography 4, 4 (Oct. 1994), 369–380.
+[24] W. Trappe, R. Howard, and R. S. Moore. 2015. Low-Energy Security: Limits and
+Opportunities in the Internet of Things. IEEE Security Privacy 13, 1 (2015), 14–21.
+[25] Mark N. Wegman and J. Lawrence Carter. 1981. New hash functions and their use
+in authentication and set equality. J. Comput. System Sci. 22, 3 (1981), 265–279.
+[26] Yang Yu. 2017. Evaluation of Cryptographic CRC in 65nm CMOS. M. Sc. Thesis,
+Royal Institute of Technology (KTH), Sweden.
+201

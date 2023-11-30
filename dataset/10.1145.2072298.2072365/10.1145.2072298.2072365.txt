@@ -1,0 +1,895 @@
+Contextual Image Search∗
+†
+Wenhao Lu†Jingdong Wang‡Xian-Sheng Hua‡Shengjin Wang†Shipeng Li‡
+†Tsinghua University, Beijing, P . R. China, {luwenhao, wsj}@ocrserv.ee.tsinghua.edu.cn
+‡Microsoft Research Asia, Beijing, P . R. China, {jingdw, xshua, spli}@microsoft.com
+ABSTRACT
+In this paper, we propose a novel image search scheme, contextual
+image search . Different from conventional image search schemes
+that present a separate interface (e.g., text input box) to allow users
+to submit a query, the new search scheme enables users to search
+images by only masking a few words when they are reading through
+Web pages or other documents. Rather than merely making use ofthe explicit query input that is often not sufﬁcient to express user’ssearch intent, our approach explores the context information to bet-ter understand the search intent with two key steps: query augment-
+ing and search results reranking using context, and expects to ob-
+tain better search results. Beyond contextual Web search, the con-text in our case is much richer and includes images besides texts.In addition to this type of search scheme, called contextual image
+search with text input , we also present another type of scheme,
+called contextual image search with image input , to allow users
+to select an image as the search query from Web pages or otherdocuments they are reading. The key idea is to use the search-to-annotation technique and the contextual textual query miningscheme to determine the corresponding textual query, to ﬁnally getsemantically similar search results. Experiments show that the pro-posed schemes make image search more convenient and the search
+results are more relevant to user intention.
+Categories and Subject Descriptors
+H.3.1 [ Information Storage and Retrieval ]: Content Analysis
+and Indexing; I.2.10 [ Artiﬁcial Intelligence ]: Vision and Scene
+Understanding
+General Terms
+Algorithms, Experimentation
+Keywords
+Image search, textual and visual context, contextual query augmen-
+tation, contextual reranking
+†Area Chair: Nicu Sebe.∗This work was performed at Microsoft Research Asia.
+Permission to make digital or hard copies of all or part of this work for
+personal or classroom use is granted w ithout fee provided that copies are
+not made or distributed for proﬁt or c ommercial advantage and that copies
+bear this notice and the full citation on the ﬁrst page. To copy otherwise, torepublish, to post on servers or to redist ribute to lists, requires prior speciﬁc
+permission and/or a fee.MM’11, November 28–December 1, 2011, Scottsdale, Arizona, USA.
+Copyright 2011 ACM 978-1- 4503-0616-4/11/ 11 ...$10.00.(a)
+(b)
+(c)
+Figure 1: Illustration of contextual image search with text input
+to remove the ambiguity of the query “apple”. (a) correspondsto the results from the raw query “apple”, (b) correspondsto the contextual search results in the context of introducingfruits, and the textual context includes fruit, stem, knobby ,a n d
+so on, and (c) corresponds to the contextual search results inthe context of introducing the Apple Inc., and the textual con-text include company ,logo, iphone ,a n ds oo n .
+1. INTRODUCTION
+Image search engines have been playing important roles for con-
+sumers to ﬁnd desired images. Our investigation shows that search
+queries are often issued when people are browsing Web pages andworking on emails, or other documents. In such cases, the contextof the query from the associated document is useful to describe
+user’s interest more clearly, e.g., disambiguate the query and hence
+help to capture the search intent. Better image search results arenaturally expected with the help of the context. In this paper, wepropose a novel image search scheme, contextual image search ,
+which enables users to issue a query by masking textual words or
+selecting an image in a document and then combines its context
+information to ﬁnd more relevant images in the case of text input
+and semantically similar images in the case of image input .B e -
+yond contextual Web search, the context in our case is richer and
+contains visual components, and hence contextual image search ismore challenging.
+Let’s look at several examples to illustrate how the context in-
+formation facilitates image search. On the one hand, the con-text is capable of removing the possible ambiguity of a textualquery. Given a query “apple” masked by a user, e.g., from http:
+//www.mahalo.com/apple-fruit , merely from the word,
+it is not clear whether it refers to a fruit or a product logo. With its
+context including fruit,stem ,knobby and so on, it is natural that the
+essential intent of the user is a fruit. The contextual image search
+results using the proposed technique are shown in Fig. 1(b).I n
+the context of the Web page, http://en.wikipedia.org/
+wiki/Apple_Inc. , including company ,logo,iphone a n ds oo n ,
+the query “apple” refers to the product logo, and the contextual im-
+age search results correspond to Fig. 1(c).
+513(a)
+(b)
+(c)
+Figure 2: Illustration of reranking image search results us-
+ing textual context to help ﬁnd images that better match theuser intent implied from the textual context. (a) correspondsto search results of “George Bush”, (b) shows the reranking re-sults using the context from the document describing jokes ofGeorge Bush, and the textual context includes joke,fool,prank,
+and so on, and (c) shows the results from one commercial im-
+age search engine with the query “Funny George Bush”. Theresults in (b) show that reranking using textual context canindeed take effect and even make the results better than theresults in (c) obtained from the explicit query “Funny GeorgeBush”.
+(a)
+(b)
+(c)
+Figure 3: Illustration of reranking image search results using
+visual context. (a) shows the visual context of “Queen Victoria”,
+(b) shows the image search results of “Queen Victoria” without
+contextual reranking, and (c) shows the image search resultsof “Queen Victoria” with visual contextual reranking, whichare more consistent with the visual context in (a).
+On the other hand, a user-masked query, even without ambigui-
+ties, may be insufﬁcient to express the search intent. For example,the words “George Bush”, masked by the user when he is read-ing the Web page whose content is relevant to jokes of George
+Bush, http://www.gwjokes.com/ , has large probability to
+(of course may not always) mean to search for funny images as
+thetextual context includes words such as joke,fool,prank ,a n d
+so on. Then using the context to rerank search results, called con-
+textual reranking , the corresponding reranking results will be more
+relevant to user intent, as shown Fig. 2(b). Compared the results
+with the manually-created query “Funny George Bush” in Fig. 2(c),
+the textually contextual reranking results look more satisfactory.
+As another illustration that context can help express the search
+intent more clearly, Figs. 3(a),3(b) and 3(c) show an example in
+which visual context for reranking takes effect when masking a tex-
+tual query, “Queen Victoria” from http://en.wikipedia.
+org/wiki/Queen_Victoria . The visual context from this
+page is shown in Fig. 3(a), which reﬂects the user interest on classic
+images. Image search results without the help of the visual contextand with its help are shown in Figs. 3(b) and3(c), respectively. It
+can be observed that the results in Fig. 3(c) are more consistent with
+the content of the document and the style of the visual contexts.
+Last, we present an example in Fig. 4to show that the context
+helps to return semantically similar image search results when animage is selected as the input from a Web page. Fig. 4(a) shows
+the selected image from http://www.istanbulvisions.
+com/religion.htm . Our scheme ﬁrst mines a few candidate
+queries from the surrounding texts of the duplicate search results(a)
+(b)
+(c)
+Figure 4: Illustration of contextual image search with image
+input. (a) corresponds to the selected image, (b) corresponds
+to the search results of the contextually determined textual
+query “Blue mosque”, (c) corresponds to the reranked searchresults using the selected image as the seed of similar images.
+(e.g., More sizes in Microsoft Bing image search and Google im-
+age search), and in this example, the candidate queries are “Blue
+mosque”, “Istanbul”, “Turkey travel”, “Istanbul turkey”, and then
+uses the textual context of the selected image, which includes thesentence, The mosque is one of several mosques known as the Blue
+Mosque for the blue tiles adorning the walls of its interior ,t od e -
+termine the textual query, which is “Blue mosque” in this example.
+Finally, the search results are shown in Fig. 4(b) and the reranked
+results with the selected image as the seed of similar images are
+s h o w ni nF i g . 4(c). In contrast, the More sizes feature in Microsoft
+Bing image search and Google image search can only return dupli-cated images. The similar features are not adoptable for only using
+image as the query input and it is not clear whether the perfor-
+mance is good when conducting similar image search on Microsoft
+Bing image search without text queries and on Google image searchwithout the help of the surrounding texts.
+To utilize context to make image search results more relevant
+to user intent, we propose two contextual image search schemes,
+with text input (masking textual words) mentioned in [19] and with
+image input (selecting an image). For the case of text input, it con-
+sists of the following steps. We ﬁr st extract the context associated
+with the user input from the document. The context consists of two
+types: textual context and visual context. Second, we explore thetextual context to remove the possible ambiguity for query augmen-tation. Third, the augmented query is used to perform ﬁrst-round
+image search using the text-based image search technique to get a
+bunch of images. Finally, the textual and visual context informa-tion is used to rerank the images to make the results more relevantto user intent. For the case of image input, we use the search-to-annotation technique to mine a few candidate textual queries andthen determine the ﬁnal textual queries using the textual context of
+the selected image. Of course, the powerful learning-to-(re)ranking
+algorithms can be easily combined into our system. But the pur-pose of this paper is to design a system that can be easily deployedbased on existing image search engines (e.g., Google’s more sizeand similar search).
+To summarize, this paper offers the following key contributions:
+•We propose a contextual image search system that performsimage search with the help of textual and visual contexts.
+•Forcontextual image search with text input , we propose a
+contextual query augmentation manner to remove the query
+ambiguity by using the textual context. Particularly, we use
+the context to help select the most probable augmented queryfrom the candidate augmented queries. Moreover we presenta contextual reranking way, which uses the context to reranksearch results, to make search results more relevant to userintent. Beyond contextual Web search, the visual context is
+additionally explored for reranking.
+514•We propose another search scheme contextual image search
+with image input ,i . e . ,s e l e c t i n ga ni m a g ef r o mt h eW e bp a g e
+as the query, to get semantically similar search results.
+2. RELATED WORK
+A lot of efforts have been conducted to improve image search
+by helping user more clearly indicate the search intent and making
+use of the search intent effectively [3, 9, 17]. Most of them focuson presenting interfaces to enable users to express the search intent
+more conveniently and more clearly, but they do not explore any
+context information for image search. This type of image schemes
+can be referred as image search without context . In the follow-
+ing, we review image search without context andimage search in
+context (but without using context), and then pose the promising
+scheme, image search with context .
+Image search without context
+The widely used commercial image search engines, including
+Google image search, Yahoo! image search and Microsoft Bingimage search, provide an explicit interface, a text input box ,t oe n -
+able users to issue textual queries, and then rely only on the inputto search the image database. However, a single textual query is
+frequently not sufﬁcient to clearly indicate the search intent.
+Some other image search engines provide features to allow users
+to upload or draw an image, i.e., issue a visual query, to illustrate
+the search intention visually. Tineye
+1enables users to update an
+image to trigger a content based image retrieval. Because of the
+gap between the image feature and the semantic content, such tech-
+niques succeed only in ﬁnding duplicate or near-duplicate images.
+An online similar image search engine2provides the feature of im-
+age search by sketch. However, merely using a visual example as
+the query for image search does not sufﬁce because it is not guar-anteed that visually similar images have similar semantic content.
+To exploit the above two schemes for image search together,
+Microsoft Bing image search provides the Similar images feature.
+First, a user may issue a textual query to get the text-based imagesearch results. Then, to help indicate the search intention moreclearly, the user may select an image from the search results that iscloser to what the user is interested in and use it to reorder the im-
+ages according to the visual similarities. But it still suffers from the
+semantic gap as it is not clear what in an example image is indeedthe search intention. The similar feature in Google image search
+seems to explore the surrounding text information to search similar
+images for the images in the database. However, it does not supportthe scenario of issuing a query in context that is not in the database,
+and it is not clear whether the performance is good, even supporting
+such a scenario.
+Besides, commercial image search engines provide explicit ﬁl-
+tersto help users to clarify the search intent into some scopes. For
+example, Google image search presents options to allow users toﬁnd images of different sizes, different types (e.g., face, photo, clip
+art, and line drawing), or different dominant colors. Microsoft Bing
+image search additionally provides options to ﬁnd images withfaces or head & shoulders.
+There are many other efforts on interactive query indication to
+improve image search. Relevance feedback [2, 11, 15, 26] is one
+of the most traditional techniques, which allows users to clarify
+the search intent by selecting a few positive and/or negative im-
+ages. A so-called CuZero system [27] is proposed to embrace thefrontier of interactive visual search for informed users, and speciﬁ-cally an interactive interface is presented to enable users to navigate
+1http://www.tineye.com
+2http://www.gazopa.comseamlessly in the concept space at-will and simultaneously while
+displaying the results corresponding to arbitrary permutations of
+multiple concepts in real time. The CueFlik system [6] allowsend-users to provide examples of images to quickly create theirown rules for reranking the images. An interactive image searchscheme [18, 24, 25] is proposed to help users ﬁnd desired imageswith the requirement on how the concepts or colors are spatially
+distributed.
+Image search in context
+One of the most common scenario s where users want to perform
+image search is reading or writing a document which make users
+be interested in some matters related to the document. Therefore,
+to facilitate image search for this scenario, image search engines,
+including Google image search, Microsoft Bing image search, andTineye, provide browser (such as IE and Firefox) plugins to en-able users to mask keywords or select animage in Web pages sothat an image search action can be performed without the neces-
+sity of issuing the query at the home page of an image search en-
+gine. Such schemes deﬁnitely accelerate image search. However,the very useful information besides the user input, called context,available from the document, is not explored for image search.
+Image search with contextThe concept “context” have different meanings in different applica-
+tion scenarios. For the scenario of object detection [4] in computervision, the context is usually used to describe the interaction of dif-ferent objects/concepts, for example, the co-occurrence of differentobjects in the similar scene. In the scenario of mobile search, the
+situation of performing image search, including location, time, ac-
+tion history, and search history, can be regarded as the context. Inthe scenario of personalized search, the personal information, in-cluding the personal interest, the search history and so on, are re-garded as the search context. In this paper, we regard the surround-ing textual and visual information of a query from the document as
+the context and focus on exploiting such context for image search,
+but it should be noted that the methodology in this paper can beapplied to image search with other types of contexts.
+Context information has other usages, e.g., user interests predic-
+tion [21] , media processing to bridge the sematic gap [7], in-image
+advertising [14], and image annotation using duplicate images [20].
+Context has also been explored for Web search [5, 8]. But the
+context is only limited in textual components, and the rich visualcontext is not exploited. Perhaps, the most related problem is con-textual image retrieval [22, 23], but it directly adopts the techniqueof textual context based Web search, without exploring the visualcontext. Moreover, we also support the image input for contextual
+image search.
+3. SYSTEM OVERVIEW
+The whole contextual image search system consists of two sub-
+systems: database construction system and ranking system. In the
+database construction system, an image database, which may be alocal database, or a global database that is crawled from the Inter-net, is built and organized as the search database. We extract thevisual feature for each image, a bag-of-visual-words (BoW) repre-sentation in our implementation, and its text description from the
+document holding this image, which is obtained using the context
+capturing scheme that is described later. Then, we build an in-dexing system that depends on the text description, which makesit efﬁcient to search images with a textual query given. Besides,each image is associated with a static rank, which is computed, forinstance, from the static rank of the Web page holding this image.
+The ranking system for contextual image search with text input
+515(a)
+text query
+context
+augmented queries
+2. contextual query augmentation1. context capturing
+3.  image search by textimage listimage databasesearch result4.  contextual reranking
+(b)image querycontext
+candidate queries
+2. search-to-annotation4.  image search by textimage database
+search results refined query3. contextual query identification1. context capturing
+Figure 5: System overview of contextual image search with (a) text input and (b) image input.
+is illustrated in Fig. 5(a). The typical input of this system is a few
+textual keywords masked by the user from a document. The output
+is a list of ranked images that are from the image database. The re-maining system consists of four modules: context capturing, con-textual query augmentation, image search by text, and contextualreranking.
+1.Context capturing is to ﬁnd a set of textual keywords, called
+textual context, and a set of images, called visual context,
+from the document, according to the spatial position of the
+query in the document.
+2.Contextual query augmentation is to use the context to reﬁne
+the query. The textual context is used to augment the query
+by removing the ambiguity.
+3.Image search by text is to search images using the augmented
+query based on the text-based image search technique.
+4.Contextual reranking aims to make use of both the textual
+and visual contexts to promote images that have similar con-texts with the query.
+The key novelty among the system lies in the second and fourth
+modules, which make use of context to improve the relevance ofimage search results.
+Contextual image search with image input in Fig. 5(b), different
+from text input, performs two different steps: search to annotation
+and contextual query identiﬁcation. Search to annotation aims to
+mine the candidate textual queries for the input image using the
+surrounding texts of the duplicate images of the input image ob-tained from the Web [20]. Contextual query identiﬁcation ,t h ek e y
+novelty of this scheme, exploits the surrounding texts of the inputimage and reﬁne the candidate textual queries to ﬁnally get the tex-
+tual queries.
+In addition, our system supports the hybrid query, e.g., a pair of
+masked words and selected image, from a document. In this case,
+the search is completed by performing the ﬁrst three step in our sys-tem with text input, and then doing visually similar image search,
+using the technique similar to “Similar images” in Microsoft Bing
+image search or “Similar” in Google image search. This is a naturalextension and we will not present detail discussion on it.
+3.1 Notations
+The document that the user is reading is denoted as D,a n di t
+may contain texts, images, and even videos. The raw textual query,masked by the user from D, is denoted as q, and the raw image
+query is denoted as q
+i. An image in the document is denoted as Ic.
+The context is denoted as C. It should be noted that the context
+may contain different types of components and will be described in
+detail later.
+An image in the database is denoted by Ik, and it is associated
+with a pair of features, a visual feature hv
+kand a textual feature
+ht
+k. We represent the image using the popular BoW representa-
+tion. To obtain a BoW representation, we extract a set of maxi-
+mally stable extremal regions (MSERs) [13] for each image, rep-
+resent each region by a scale-invariant feature transform (SIFT)descriptor [10], and then quantize each SIFT descriptor with thek-means algorithm [16]. The BoW representation for an image de-
+scription will lead to the beneﬁt that the fast indexing and retrievalalgorithms used in text search can be directly adopted for image re-trieval, which is shown in the video google technique [16]. The tex-tual feature of an image is obtained by using a vector space modelto describe its associated textual contexts, and such a textual fea-
+ture is widely used in existing commercial image search engines.
+4. CONTEXTUAL IMAGE SEARCH WITH
+TEXT INPUT
+The contextual image search problem can be formally formu-
+lated as follows. Given a query qand the associated document D,
+the goal is to order the images I={Ik}N
+k=1by computing rele-
+vance scores R={rk}N
+k=1of their visual and contextual informa-
+tion and with the query qand the document D. Mathematically, we
+deﬁne the relevance score as the probability of Ikconditioned on
+the query and its associated document,
+rk=P(Ik|q,D). (1)
+To formulate this conditional probability, we i ntroduce the interme-
+diate variables, an augmented query, ¯q∗, and a context, C∗,w h i c h
+are obtained from the user input and the document. Then Eqn. (1)
+can be written as follows,
+P(Ik|q,D)≈P(Ik|¯q∗,C∗). (2)
+This transformation is essentially based on the Bayesian estimation.
+The following equation will hold
+P(Ik|q,D)=/summationdisplay
+¯q,CP(Ik|¯q,C)P(¯q,C|q,D) (3)
+≈P(Ik|¯q∗,C∗), (4)
+ifP(¯q∗,C∗|q,D)is large enough. Here,
+(¯q∗,C∗) = arg max ¯q,CP(¯q,C|q,D). (5)
+For convenience, we may drop∗in the following description. With
+this decomposition, our problem can be solved in two steps: (1)
+processing the document to discover the context and the augmentedquery, and (2) ranking the images with the discovered context andaugmented query.
+To obtain the context and the augmented query, we transform the
+probability P(¯q,C|q,D)as follows,
+P(¯q,C|q,D)=P(¯q|C,q)P(C|q,D). (6)
+This factorization is reasonable because (1) the context is onlydependent on the input query and the document and (2) the aug-
+mented query can be approximately determined by the query and
+its context. Therefore, the process can be ﬁnished in two steps,context extraction, i.e., discovering the context C
+∗according to q
+andD, and contextual query augmentation, i.e., ﬁnding ¯q∗,s ot h a t
+P(¯q∗|C∗,q)is maximized.
+To evaluate P(Ik|¯q,C), we propose a two-step scheme. The ﬁrst
+step is to perform text-based image search using the augmented
+516query ¯q. The second step is to perform a reranking step by exploit-
+ing the context information. Essentially, the two-step scheme is
+equivalent to the following decomposition,
+P(Ik|¯q,C)∝P(¯q,C|Ik)P(Ik)=P(C|Ik)P(¯q|Ik)P(Ik).(7)
+Here,∝holds with ¯q,Cgiven. The terms, P(¯q|Ik)P(Ik), corre-
+sponds to the ﬁrst step, and the rank model of existing text-based
+image search engines is essentially equivalent to this model, withP(I
+k)being the static rank. The term, P(C|Ik), corresponds to
+the second step, contextual reranking.
+In summary, the implementation of our system consists of
+the following modules: context capturing ( P(C|D,q)), con-
+textual query augmentation ( P(¯q|C,q)), image search by text
+(P(¯q|Ik)P(Ik)), and contextual reranking ( P(C|Ik)). In the fol-
+lowing, we describe the four modules in detail.
+4.1 Context Capturing
+Context capturing aims to discover the visual and textual context
+for a query to rank images, as well as the context of an image for
+database construction. The textual and visual contexts, are denoted
+byCtandCv. The visual context of a query consists of a set of
+images from the same document and their local textual contexts
+Cv={Cv
+v,Ct
+v}.
+To extract the textual context of an image, we propose to use
+the vision-based page segmentation (VIPS) algorithm [1]. VIPS
+can extract the sematic structure of a Web page based on its visual
+representation. The VIPS algorithm ﬁrst extracts all the suitableblocks from the Document Object Model tree in html, and thenﬁnds the separators between these blocks, where the separatorsdenote the horizontal or vertical lines in a page visually crossingwithout blocks. Based on these separators, a Web page can be rep-
+resented by a semantic tree in which each leaf node corresponds to
+a block. In this way, contents with different topics are distinguishedas separate blocks in a Web page.
+The VIPS algorithm can be naturally used for surrounding text
+extraction. For an image, we ﬁnd the surrounding text from its
+corresponding block as a part of its textual context. Speciﬁcally,
+the textual context of an image includes C
+t={C1
+t,C2
+t,C3
+t}, with
+C1
+t,C2
+t,C3
+tcorresponding to image name and its description with
+a high weight, page title and document title with a middle weight,
+and other surrounding text with a low weight, respectively. The im-ages in the database are actually processed using the above scheme
+to extract their associated textual contexts.
+The extraction of textual context for masked keywords is rela-
+tively easy. Besides the page title and the document title, the neigh-
+boring words of the masked keywords are viewed as surroundingtexts, and used as a part of the textual context, called local context.In this case, the textual context includes C
+t={C2
+t,C3
+t}.
+4.2 Contextual Query Augmentation
+We propose to make use of the textual context to augment the
+textual query to remove possible ambiguities. The augmentedqueries for a textual query qcan be formed by combining qand
+the keywords from the textual context C
+t. It might be a solu-
+tion to use them as queries to search the images. However, ob-viously, augmented queries obtained in this way may not always be
+meaningful, and then the returned images may not be satisfactory.
+Therefore, rather than exploiting the textual context to directly aug-ment queries, we use them as a support to disambiguate the query.To this goal, we ﬁrst build a set of candidate augmented queries,Q={¯q
+1,¯q2,···,¯qn}, which can remove the ambiguities of the
+queryq. Then, we vote each augmented query in Qusing the con-
+textCt.The following presents a mathematical derivation and its imple-
+mentation algorithm. We ﬁnd an optimal augmented query, by
+checking the posterior of each candidate augmented query, giventhe context obtained from the document. Mathematically, the pos-terior can be computed as
+P(¯q|C
+t,q)=P(Ct|¯q,q)P(¯q|q)
+P(Ct|q)∝P(Ct|¯q,q)P(¯q|q), (8)
+whereP(Ct|¯q,q) is the likelihood of the augmented query with
+respect to the context Ct,a n dP(¯q|q)is the prior of the augmented
+query ¯q. The denominator P(Ct|q)can be ignored because it is
+independent on ¯qand hence is viewed as a constant.
+In our implementation, the prior is computed as
+P(¯q|q)=1/|Q|, (9)
+if¯q∈Q,a n dP(¯q|q)=0 if¯q/∈Q. This is reasonable because
+we have no any bias on the candidate augmented queries ¯qif no
+context support.
+The likelihood P(Ct|¯q,q) is used to evaluate the relevance be-
+tween the context Ctand¯q. To this end, we borrow the idea of
+evaluating the relevance between queries and documents. First,
+we extend the context to get ¯Ct, which is obtained by expanding
+the words in C, e.g., using synonyms, stemming, and so on [12].
+Then, we adopt the Okapi BM25 algorithm that is used by search
+engines to rank documents with a search query. Given a candidateaugmented query ¯qcontaining nterms{q,q
+1,q2,···,qn}, withq
+being the raw query and qibeing the augmented words, the BM25
+score between the extended context and this query is computed as
+score(¯q,C t)=/summationdisplayn
+i=1idf(qi)×tf(qi,¯Ct)×(k+1 )
+tf(qi,¯Ct)+k(1−b+b×ndl(Ct)),
+(10)
+wheretf(qi,¯Ct)is the term frequency of qiin¯Ct,idf(qi)is the
+inverse document frequency, ndl(Ct)=|Ct|/|˜Ct|is normalized
+textual context length, |Ct|and|˜Ct|indicate the context length
+ofCtand the average context length in the database, and kand
+bare two parameters and chosen as k=2.0andb=0.75in
+our implementation. The likelihood is calculated as P(Ct|¯q,q)∝
+score(¯q,C t). Then, the optimal augmented query is selected as
+¯q∗=a r gm a x
+¯qP(Ct|¯q,q)P(¯q|q) = arg max
+¯qscore(¯q,C t).(11)
+In the cases that P(Ct|¯q,q) for all ¯qhas the similar values or that
+P(Ct|¯q∗,q)is very small, i.e., the context is not enough to disam-
+biguate the query, we keep the original raw query, ¯q=q.
+4.3 Image Search by Text
+Given the augmented query, we perform text-based image search
+(Microsoft Bing image search in our implementation), by match-
+ing the augmented query with the textual context of each image inthe database. The text-based image search returns a list of images,ranked by the static score P(I
+k)and the relevances P(¯qt|Ik)be-
+tween the textual contexts of images and the query. Speciﬁcally,P(¯q
+t|Ik)=e x p [ s c o r e ( ¯ qt,Qk)], where the score is evaluated us-
+ing Eqn. (10).
+4.4 Contextual Reranking
+Contextual query augmentation explores only the texts in the tex-
+tual context that are related to the candidate augmented queries anduseful to disambiguate the query. The remaining texts, e.g., de-scribing the situation, and visual contextual, are also very impor-tant and useful for image ranking. In the example of Fig. 2,t h e
+words, joke in the textual context, can help promote funny images.
+517Therefore, this step, contextual reranking, aims to exploit the con-
+text information that presents hints on the search intent to reorder
+the results from text-based search so that top images are more con-sistent with the search intent.
+Contextual reranking is different from the previous work on vi-
+sual reranking. Visual reranking explores the visual similarities,
+reorders the visually similar images together, and at the same time
+the original order is kept as far as possible. Instead, contextual
+reranking aims to promote images that match the context better,and also wants to keep the original order as much as possible. Ofcourse, we may also explore the visual similarities for the contex-tual reranking. But we ﬁnd that the visual reranking does not makethe search results improved in our case, especially when the visual
+context takes effect. Therefore, in our implementation, we investi-
+gate only context for reranking.
+Textually contextual reranking
+Contextual reranking aims to evaluate the probability, P(C|I).W e
+decompose it into two terms, P(C|I)=P(C
+t|I)P(Cv|I),t o
+compute the reranking scores from the textual and visual contexts,
+respectively. Textually contextual reranking, to evaluate P(Ct|I),
+is conducted as follows. The textual context except the query re-
+lated context is helpful to describe the situation that may be of in-terest and is related to the search intent (as illustrated in Fig. 2). In
+our implementation, the score from the textual context is computedas the document similarity between the textual context and the textdescription of images in the search results, and speciﬁcally evalu-ated by the BM25 algorithm. The computation formula is similarto Eqn. (10). But differently, the score is computed between tworeduced contexts, which are obtained by discarding the augmented
+query related words in the original textual contexts, because the
+augmented query related textual words have been explored in con-textual query augmentation for text-based search and the remainingwords are useful for reranking. Suppose the similarity from textualcontext is denoted by sim
+t(Ct,Ik), The probability P(Ct|Ik)is
+computed as P(Ct|Ik)∝exp(sim t(Ct,Ik)).
+Visually contextual reranking
+Visually contextual reranking, corresponding to evaluate P(Cv|I),
+aims to promote the images that are similar to the images from the
+document that are relevant to the textual query. The similarity from
+the visual context can be evaluated from the bag-of-visual-words
+representation. Furthermore, to obtain better visual-words presen-tation, we perform an augmentation step, which is based on thefollowing observations. 1) The images in a document usually havesimilar semantic content if their local textual contexts are very rel-evant to the query, and 2) if each local feature in the bag-of-visual-
+word representation is homogeneously regarded and not differen-
+tiated, some local features that may be irrelevant to the semanticcontent, e.g., coming from the background, will inﬂuence the per-formance.
+In our implementation, we view each image as a document, and
+borrow the inverse document frequency (idf) technique to weight
+different visual words, which is often used in information retrieval
+and text mining to learn the weight for each word. First, we adopta textual context based ﬁlter scheme to ﬁlter out images whose se-mantic contents may not be relevant to the visual query. To this end,we compute the similarity of local textual context of each image in
+the document with the textual query. The similarity is also evalu-
+ated based on the BM 25 algorithm, similar to Eqn. (10). Then, ifthe similarity is larger than a threshold, the corresponding imagewill be counted for the idf computing. Speciﬁcally, the weight of avisual word is set as w
+i=1/idf(fi)withficorresponding to a vi-
+sual word, which is different from the conventional tf-idf weightingthat aims to remove the meaningless words, while we aim to ﬁnd
+the common pattern in the images, which is important for visual
+similarity computation in our case.
+After the augmentation step, we turn to compute the similarity
+score between visual contexts and each image Ikin the search re-
+sults from text-based image search. Suppose Ic
+iis an image in the
+ﬁltered visual context and its bag-of-words representation is writ-
+ten as a histogram vector hc
+i, then the similarity between Ic
+iandIk
+is computed as the weighted histogram intersection,
+sim v(Ic
+i,Ik)=/summationdisplay
+jmin(hc
+ij,hkj)wj. (12)
+Then, we compute the similarity between the visual context and an
+image in the search results by ﬁnding the largest one among thesimilarities between images in the ﬁltered visual context and theimage,
+sim
+v(Cv,Ik)=m a x Ii∈Cvsim v(Ic
+i,Ik)δ[Ii]. (13)
+Hereδ[Ii]is an indicator to show if Iilies in the ﬁltered vi-
+sual context. The probability P(Cv|Ik)is set as P(Cv|Ik)∝
+exp(sim v(Cv,Ik)).
+4.5 Overall Ranking
+For one image Ik, its probability conditi oned on the context and
+the augmented query can be computed by
+P(Ik|C,¯q)∝P(C|Ik)P(¯q|Ik)P(Ik) (14)
+=P(Ct|Ik)P(Cv|Ik)P(¯q|Ik)P(Ik) (15)
+∝exp [λ1sim t+λ2sim v+λ3score i]. (16)
+Here,P(Ik)=1 as we actually get the top 1000 images that have
+larger static ranks and do not regard their static ranks homoge-
+neously. sim t,sim vandscore icorrespond to the similarities from
+the textual context, the visual context, and text-based image search,respectively, and λ
+1,λ2,a n dλ3are their associated weights, to ad-
+just the degrees that we trust the three factors. λ1=0.2,λ2=0.2,
+andλ3=1 in our implementation.
+5. CONTEXTUAL IMAGE SEARCH WITH
+IMAGE INPUT
+The following investigates the search scenario in which an im-
+age is selected as the query. In this case, our experiment shows thatthe search results are good to ﬁnd duplicated images by performingCBIR if the bag-of-visual-words representation is used to describean image, which is also demonstrated in the “More sizes” feature
+in Microsoft Bing image search and Google image search. Instead,
+we propose to search semantically similar images rather than du-plicate images. The key idea of our approach is to mine the textualquery from the selected image. Our approach consists of four stepsas shown in Fig. 5(b), where the two key steps are search to an-
+notation and contextual query identiﬁcation. Search to annotation
+discovers the candidate textual queries using the technique [20],
+and contextual query reﬁnement identiﬁes the ﬁnal textual queriesusing the context to reﬁne the textual queries. Denote the selectedimage in this case as q
+i, and the formulation is as follows,
+q∗
+t=a r gm a x p(qt|qi,D) (17)
+=a r gm a x/summationdisplay
+Ct,˜qtp(qt|˜Qt,Ct)p(˜Qt|qi)p(Ct|qi,D)(18)
+≈arg maxp(qt|˜Q∗
+t,C∗
+t). (19)
+HereC∗
+t=a r gm a x p(C|qi,D)which corresponds to the context
+capturing step in Subsec. 4.1. ˜Q∗
+t=a r g m a x p(˜Qt|qi),w h i c hi s
+corresponding to search to annotation for candidate textual query
+518discovering. p(qt|˜q∗
+t,C∗
+t)corresponds to contextual query identi-
+ﬁcation.
+The search to annotation step for candidate textual query discov-
+ering is as follows. First, the duplicate images of the selected im-
+age is found from the Web images, e.g., using the technique similarto the “More sizes” feature in Microsoft Bing image search. Sec-ond, the surrounding texts of the obtained duplicated images are
+mined to get a list of candidate textual queries ˜Q
+∗
+tusing the tech-
+nique [20]. More details could be found from [20]. The ﬁnal textual
+queries could be obtained, from the candidate textual queries, ˜Q∗
+t,
+i.e.,q∗
+t∈˜Q∗t.W e e v a l u a t e p(qt|˜Q∗t,C∗
+t)using the Okapi BM25
+algorithm, to get the score score(˜qt,Ct). using Eqn. (10).
+In our system, we use the query that maximizes score(˜qt,Ct)as
+the ﬁnal textual query q∗
+t. Then, we use q∗
+tas the textual query to
+search images in text-based image search. As an optional step, we
+rerank the search results using the “Similar image” feature in Mi-crosoft Bing image search, by regarding the selected image fromthe user as the seed. It is not guaranteed that our approach can al-ways get the exact textual query. Hence, besides presenting the
+search results from q
+∗
+tto users, our system also presents a few
+images with other candidate textual queries, to give the chance to
+users to ﬁnd possible desired images if the textual query from ourapproach is not as expected from the users.
+6. EXPERIMENT
+This section presents quantitative and visual evaluation results
+forcontextual image search with text input . We only present vi-
+sual results for contextual image search with image input and do
+not present the quantitative evaluation because the comparison isnaturally clear and our scheme generates semantically similar im-
+ages while traditional CBIR only gets visually similar images or
+duplicated images.
+6.1 Setup
+In our experiment, we implement one instance of contextual im-
+age search, speciﬁcally for the Web page. To make our system
+useable, we crawled image search results with textual queries fromone existing commercial image search engine. There are 5000top search queries and their candidate augmented queries (about10000). For each query, we crawl about 1000 images, and totallywe got about 15,000,000 images. For each image, we analyze its
+Web page and get its context using the aforementioned context cap-
+turing scheme.
+Data set
+We collect the data set to evaluate contextual image search from the
+search logs that were recorded when users tried the proposed search
+system. Speciﬁcally, we present the system to the users, and showhow to use it to perform image search using the three examplesshown in Figs. 1,2and3. Then we allow the users to play with the
+system for about two hours. During the search process, we recordeach search session, including the Web page URL, and the selected
+query, into search logs. After all trials, we process the search logs
+and arrange search sessions together by merging the search sessionswith the same raw query as a group of search queries. Totally, wegot about 100 groups of search queries. On average, there are about4 individual search sessions for each group. We randomly sampled50 groups among them to build the ground truth for quantitative
+evaluation. These 50 groups of queries include different types, e.g.,
+famous person, site, and products.
+Ground truth
+The ground truth of the search results are built as follows. For
+each search session, we ask annotators to label the results: contex-tual image search result and image search result only with the rawquery. Besides the raw query, we also show the document to the
+annotators to allow annot ators to get familiar with the context. To
+differentiate different relevance degrees, we adopted a graded rele-
+vance scale, and use four levels from level 0 (the least relevant) tolevel 3 (the most relevant). We asked 5 users to judge each searchsession, and then selected the most frequent level as the ﬁnal level
+for each image. To avoid any bias on the labeling, those users were
+selected such that they have no special knowledge on image searchand are initially unknown about the proposed technique.
+Evaluation criteria
+To evaluate the performance, we use the normalized discounted cu-
+mulative gain (nDCG) measure. DCG measures the usefulness, or
+gain, of a document based on its position in the result list. Thegain is accumulated cumulatively from the top of the result list tothe bottom with the gain of each result discounted at lower ranks.Two assumptions of DCG measure are that highly relevant docu-
+ments are more useful when appearing earlier in a search engine
+result list (have higher ranks) and that highly relevant documentsare more useful than marginally relevant documents, which are inturn more useful than irrelevant documents. Comparing a searchengine performance from one query to the next cannot be consis-tently achieved using DCG alone, so the cumulative gain at each
+position (e.g., p) should be normalized across queries. This is done
+by sorting documents of a result list by the ground truth, produc-
+ing an ideal DCG at position p. Mathematically, nDCG at a rank
+positionpis calculated as
+nDCG(p)=D C G ( p)/iDCG(p), (20)
+DCG(p)=/summationdisplay
+p
+i=1ri/log2(i+1 ), (21)
+whereriis the graded relevance of the result at position i,a n d
+calculated as ri=2ci−1, withcithe groundtruth level of the
+image at position i,iDCG(p)is an ideal DCG at position p.T h e
+nDCG values for all queries can be averaged to obtain a measure of
+the average performance for many queries.
+6.2 Quantitative Evaluation
+Given the raw query, the context information can be used to dis-
+ambiguate the raw query to make search intention clearer or present
+more hints to make search intention more speciﬁc, by contextualquery augmentation and contextual reranking, respectively. In thefollowing, we compare the schemes, only using contextual queryaugmentation, only using contextual reranking, and using both thetwo schemes, with the baseline scheme that directly performs im-
+age search with the raw query.
+We report nDCG scores at different positions of the schemes,
+only contextual query augmentation, only contextual reranking,
+and the whole scheme, for image search. Here we present thescores for the ﬁrst 40 images because the investigation shows that
+users often only check the ﬁrst 40 images (i.e., the ﬁrst two pages
+of results). In addition, we also report the result of the baselinealgorithm, using the raw query for image search. The comparisonresults are shown in Fig. 6. From this ﬁgure, it can be observed
+that both contextual query augmentation and contextual rerankingcan individually make search results improved. To have a deeper
+view of contextual reranking, we also present the nDCG curves
+of reranking only with textual context or visual context, respec-tively. Wherein, the textual context only based approach is essen-tially equivalent to the mixture models in [22]. We can see that bothvisual and textual contexts can help improve the relevance.
+We also report the relative improvements of these schemes over
+the baseline algorithm at positions, {1, 5, 10, 20, 40}, which is
+5195 10 15 20 25 30 35 400.650.70.750.80.850.90.951
+  
+baseline
+only contextual query augmentation
+only contextual reranking
+contextual image search
+only textual contextual reranking
+only visual contextual reeranking
+Figure 6: The quantitative evaluation of contextual image
+search. The average nDCG curves at different positions of theschemes, only using contextual query augmentation, only us-
+ing contextual reranking, using both the two schemes, and the
+baseline algorithm without using the context, are presented.We can observe that context can help improve the performance.Particularly, the nDCG curves of reranking, with textual con-text and visual context, respectively, are also reported to illus-
+trate the effects of the two contexts.
+A
+ B
+ C
+ D
+ E
+1
+ 56.16
+ 47.94
+ 30.13
+ 18.83
+ 11.30
+5
+ 48.82
+ 44.97
+ 30.62
+ 20.87
+ 9.746
+10
+ 44.28
+ 40.93
+ 28.70
+ 20.20
+ 8.497
+20
+ 37.88
+ 34.04
+ 18.76
+ 12.94
+ 5.823
+40
+ 29.11
+ 26.22
+ 12.62
+ 8.873
+ 3.752
+Table 1: Relative improvements at positions {1, 5, 10, 20, 40}
+over the baseline scheme for ﬁve schemes: A - contextual imagesearch, B - only contextual query augmentation, C - only con-textual reranking D - only textual contextual reranking, and E- only visual contextual reranking. The unit is %.
+shown in Tab. 1. It can be observed that the proposed contextual
+image search scheme even gets about 50% improvement over the
+baseline scheme.
+6.3 Visual Results for Text Input
+This subsection presents visual results to illustrate the contextual
+image search performance. To show the effects of contextual query
+augmentation, textual contextual reranking, and visual contextual
+reranking, we report the results in three categories.
+Contextual query augmentation
+We present two visual comparison results shown in Fig. 7.T h eﬁ r s t
+example is about famous soccer stars, “Ronaldo”. The documents
+introducing these stars usually only use the name for conve-
+nience. We present two contextual search results, when maskingthe query Ronaldo from two Web pages, http://news.
+bbc.co.uk/sport2/hi/football/8529228.stmand
+http://www.telegraph.co.uk/sport/football/cris-
+tianoronaldo/7234785/Cristiano-Ronaldo-Manchester-
+United-return-possible.html , respectively. In the textual
+context from the former Web page includes Brazil , which suggests
+the search intent be “Ronaldo Brazil”3and the words, Cristiano
+andManchester , in the textual context from the latter Web page,
+3Actually, his full name is Ronaldo Lu ´s Nazário de Lima, but less
+used due to the complexity. Therefore, we use “Ronaldo Brazil” as
+the augmented query.
+(a) Results with the raw query “Ronaldo”.
+(b) Results with the augmented query “Ronaldo Brazil”. The tex-tual context includes Brazil and so on.
+(c) Results with the augmented query “Cristiano Ronaldo”. The
+textual context includes Cristiano ,Manchester and so on.
+(d) Results with the raw query “notebook”.
+(e) Results with the augmented query “notebook paper”. The tex-
+tual context includes paper ,notepad, writing a n ds oo n .
+(f) Results with the augmented query “laptop”. The textual context
+includes laptop, computer ,battery and so on.
+Figure 7: Visual illustration of contextual query augmentation.
+suggests the search intent be “Cristiano Ronaldo”. In another
+example, users masked the word “notebook” when reading the Webpages, http://en.wikipedia.org/wiki/Notebook ,
+http://www.consumeraffairs.com/news04/2006/08/dell_fire.html , and the queries are augmented as
+“notebook paper” and “laptop”, respectively, according to the
+context. The corresponding results are shown in Fig. 7.
+Textually contextual reranking
+The visual illustration of textually contextual reranking is
+presented in Fig. 8.F i g s . 8(a) and 8(b) show the image
+search results without contextual reranking and with contextual
+reranking, when masking a raw query “Cambridge England”from http://www.travelpod.com/travel-photo/
+flyin_bayman/castles_beer-06/1147366740/s-cambridge-punting.jpg/tpod.html . The tex-
+tual context of this query from the document contains the
+keywords river, boat and ﬂoating. Therefore, with tex-
+tually contextual reranking, the images with rivers are
+promoted as shown in Fig. 8(b). As another example
+shown in Figs. 8(c) and 8(d), a user may issue a raw
+text query “Michael Jordan” when reading the Web page,
+http://www.nba.com/jordan/mjslamdunk.html .
+The textual context of this query contains keywords like dunk
+andslam . As a result, images with these keywords (or expanded
+words) in its textual contexts, which have large probability to
+illustrate slam dunks of Michael Jordan, are promoted. The two
+examples show that the textual context can help ﬁnd images that
+are more consistent with user search intention.
+Visually contextual reranking
+We also show visual examples to illustrate visual context can
+also help clarify user search intention from the visually con-
+textual reranking. The example in Fig. 3has shown that
+520(a) Results of “Cambridge England” without contextual reranking.
+(b) Results of “Cambridge England” with textual contextual rerank-
+ing. The textual context contains river, boat andﬂoating.
+(c) Results of “Michael Jordan” without contextual reranking.
+(d) Results of “Michael Jordan” with textual contextual reranking.
+The textual context contains dunk andslam .
+Figure 8: Visual illustration of textually contextual reranking.
+(a) Irrelevant
+ (b) Irrelevant
+ (c) Relevant
+Figure 9: Image context for “Tower bridge”. With the ﬁltering
+scheme based on the relevance of the local textual context withthe query, images in (a) and (b) are ﬁltered out, and the imagein (c) is left for visually contextual reranking.
+visual context is helpful to ﬁnd images that are more rele-
+vant to users. Here, we present another example with thequery “Tower bridge” from http://www.the-pass.co.uk/
+ArticleDetails.asp?ArticleID=123 . Its visual context
+is shown in Fig. 9, and with the ﬁltering scheme based on the rel-
+evance of the local text context with the query, only the image
+in Fig. 9(c) is used for visual contextual reranking. The image
+search results without contextual reranking and with visually con-
+textual reranking are shown in Figs. 10(a) and10(b) .F r o mt h et w o
+ﬁgures, we can see that the images with tower bridge under the
+night are ranked on the top after visual contextual reranking, which
+is more reasonable as the user, reading the document about tower
+bridge describing the scene under the night, may be more interestedin such images.
+6.4 Visual Results for Image Input
+In the following, we show the visual results of
+our contextual image search scheme with image in-put. Fig. 12shows the search results when a user se-
+lects the image shown in Fig. 11(a) as the search input
+from
+http://arthistory.about.com/b/2009/05/05/the-
+artists-the-argument-the-epee-and-the-ear.htm .T h e
+candidate textual queries from the surrounding texts of the dupli-cated images of the selected image are Van gogh andBandaged
+ear. However, the surrounding text of the selected image and
+its name only contain Van gogh , not Bandaged ear . Hence,
+our scheme determines the ﬁnal query as “Van gogh”, and thecorresponding search results are shown in Fig. 12(a) . As an option,
+the user may select to see the reranking results with the selected
+(a) Results of “Tower bridge” without contextual reranking.
+(b) Results of “Tower bridge” with visually contextual reranking,
+which are more consistent with the visual context in Fig. 9.
+Figure 10: Visual illustration of visually contextual reranking.
+image as the seed, which are shown in Fig. 12(b) . From the results,
+the user can see different versions of the selected image.
+Fig. 13shows another case when a user reads the Web page about
+Olympic http://www.kentsport.org/london2012/
+groups_arts_nov08.asp and becomes interested in the
+image in it shown in Fig. 11(b) . By analyzing the surrounding
+texts of the duplicated images, we extract three candidate textual
+queries, barcelona ,barcelona olympics ,a n d olympic mascot .
+As the textual context of this selected image contains many
+occurrences of olympic mascot , the best textual query determined
+from the context would be “olympic mascot”. The corresponding
+search results are shown in Fig. 13(a) . Here, the name of the
+selected image, “barca_mascot.jpg”, suggests barcelona olympics
+would be another textual query. Hence, our scheme in this casealso suggests this to the user as an option and the corresponding
+results are shown in Fig. 13(b) .
+6.5 User Study
+We conducted user studies to show that the proposed contextual
+image search is very convenient and helpful for users to perform
+image search. We recruit 30 volunteers, students from universitycampus and our research lab, to take part in the user study. Theirgrades vary from freshman to graduate grade 3. Their ages rangefrom 19 to 24. All participants are Web image search engine users.
+We ﬁrst present a question to them. The question is about the
+situations where an image search action is triggered from their ex-periences. The answers show that there are three major situationsto trigger users to perform image search: famous sites and peoplewhen reading documents, interesting objects heard or seen fromother way, and meaningful things demanded in their work. The
+answers show that the proposed contextual image search scheme
+will make image search very convenient for users as image searchactions often take place when reading documents.
+Then, we allow them to use three image search engines: exist-
+ing commercial image search engine with a text query input box,
+reduced contextual image search without using contexts, and our
+contextual image search. After using them about three hours, theygive us the feedbacks on using them. The feedbacks show that 1)the latter two schemes for image search make them search imagemore efﬁcient and convenient, and 2) search results of contextualimage search are more satisfactory and most of them match their
+search intention very well although the intention is not indicated in
+the issued raw query.
+7. CONCLUSION
+In this paper, we present a contextual image search scheme that
+uses the context to better understand the search intent and expectbetter image search results. The context information, including thesurrounding text, other main text information and the images, isﬁrst extracted from the document where the query is generated. We
+present two contextual image search cases, text input and image
+521(a)
+ (b)
+Figure 11: Image inputs for contextual image search.
+(a)
+(b)
+Figure 12: Visual results of contextual image search with the
+image input shown in Fig. 11(a) . (a) corresponds to the search
+results of the contextually determined textual query “Van
+gogh”, (b) corresponds to the reranked search results using the
+selected image as the seed of similar images.
+input. The former case makes use of contexts to help augment the
+queries and rerank the search results. The later case exploits the
+textual contexts to determine a textual query to ﬁnally get seman-
+tically similar images rather than duplicate images. The experi-mental results and user studies justify that the proposed contextualimage search scheme is very helpful and effective.
+In the future, we will develop more general contextual image
+search, including mobile image search with wider contexts (e.g.,
+position, time, and history). Moreover, we will extend contextualimage search to contextual video search by applying the proposedmethodology and investigating extra video contexts.
+8. REFERENCES
+[1] D. Cai, S. Yu, J.-R. Wen, and W.-Y . Ma. Vips: a vision-based
+page segmentation algorithm. Technical Report
+MSR-TR-2003-79, Microsoft, 2003.
+[2] J. Cui, F. Wen, and X. Tang. Intentsearch: interactive on-line
+image search re-ranking. In ACM Multimedia , pages
+997–998, 2008.
+[ 3 ] R .D a t t a ,D .J o s h i ,J .L i ,a n dJ .Z .W a n g .I m a g er e t r i e v a l :
+Ideas, inﬂuences, and trends of the new age. ACM Comput.
+Surv. , 40(2), 2008.
+[ 4 ] S .K .D i v v a l a ,D .H o i e m ,J .H a y s ,A .A .E f r o s ,a n d
+M. Hebert. An empirical study of context in object detection.
+InCVPR, pages 1271–1278, 2009.
+[5] L. Finkelstein, E. Gabrilovich, Y . Matias, E. Rivlin, Z. Solan,
+G. Wolfman, and E. Ruppin. Placing search in context: the
+concept revisited. ACM Trans. Inf. Syst. , 20(1):116–131,
+2002.
+[6] J. Fogarty, D. S. Tan, A. Kapoor, and S. A. J. Winder.
+Cueﬂik: interactive concept learning in image search. In
+CHI, pages 29–38, 2008.
+[7] R. Jain. Multimedia information retrieval: watershed events.
+InMultimedia Information Retrieval , pages 229–236, 2008.
+[8] R. Kraft, C.-C. Chang, F. Maghoul, and R. Kumar. Searching
+with context. In WWW, pages 477–486, 2006.
+[9] M. S. Lew, N. Sebe, C. Djeraba, and R. Jain. Content-based
+multimedia information retrieval: State of the art and
+challenges. TOMCCAP , 2(1):1–19, 2006.(a)
+(b)
+Figure 13: Visual results of contextual image search with the
+image input shown in Fig. 11(b) . (a) corresponds to the search
+results of the contextually determined textual query “OlympicMascot”, (b) corresponds to the search results of the secondpossible textual query “Barcelona olympics”.
+[10] D. G. Lowe. Distinctive image features from scale-invariant
+keypoints. International Journal of Computer Vision ,
+60(2):91–110, 2004.
+[11] Y . Luo, W. Liu, J. Liu, and X. Tang. Mqsearch: image search
+by multi-class query. In CHI, pages 49–52, 2008.
+[12] C. D. Manning, P. Raghavan, and H. Schütze. Introduction to
+Information Retrieval . Cambridge University Press, 2008.
+[13] J. Matas, O. Chum, M. Urban, and T. Pajdla. Robust wide
+baseline stereo from maximally stable extremal regions. In
+BMVC , 2002.
+[14] T. Mei, X.-S. Hua, and S. Li. Contextual in-image
+advertising. In ACM Multimedia , pages 439–448, 2008.
+[15] Y . Rui and T. S. Huang. A novel relevance feedback
+technique in image retrieval. In ACM Multimedia (2) , pages
+67–70, 1999.
+[16] J. Sivic and A. Zisserman. Efﬁcient visual search of videos
+cast as text retrieval. IEEE Trans. Pattern Anal. Mach. Intell. ,
+31(4):591–606, 2009.
+[17] A. W. M. Smeulders, M. Worring, S. Santini, A. Gupta, and
+R. Jain. Content-based image retrieval at the end of the early
+years. IEEE Trans. Pattern Anal. Mach. Intell. ,
+22(12):1349–1380, 2000.
+[18] J. Wang and X.-S. Hua. Interactive image search by color
+map. ACM TIST , 3(1):26, 2012.
+[19] J. Wang, W. Lu, X.-S. Hua, S. Wang, and S. Li. Contextual
+image search. Technical report, MSR-TR-2010-84, 2010.
+[20] X.-J. Wang, L. Zhang, X. Li, and W.-Y . Ma. Annotating
+images by mining image search results. IEEE Trans. Pattern
+Anal. Mach. Intell. , 30(11):1919–1932, 2008.
+[21] R. W. White, P. Bailey, and L. Chen. Predicting user interests
+from contextual information. In SIGIR , pages 363–370,
+2009.
+[22] X. Xing, Y . Zhang, and B. Gong. Mixture model based
+contextual image retrieval. In CIVR, pages 251–258, 2010.
+[23] X. Xing, Y . Zhang, and M. Han. Query difﬁculty prediction
+for contextual image retrieval. In ECIR , pages 581–585,
+2010.
+[24] H. Xu, J. Wang, X.-S. Hua, and S. Li. Image search by
+concept map. In SIGIR , pages 275–282, 2010.
+[25] H. Xu, J. Wang, X.-S. Hua, and S. Li. Interactive image
+search by 2d semantic map. In WWW, pages 1321–1324,
+2010.
+[26] R. Yan, A. Natsev, and M. Campbell. Multi-query interactive
+image and video retrieval: theory and practice. In CIVR,
+pages 475–484, 2008.
+[27] E. Zavesky and S.-F. Chang. Cuzero: embracing the frontier
+of interactive visual search for informed users. In Multimedia
+Information Retrieval , pages 237–244, 2008.
+522

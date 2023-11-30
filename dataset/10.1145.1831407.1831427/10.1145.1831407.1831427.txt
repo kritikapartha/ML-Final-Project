@@ -1,0 +1,1148 @@
+72    communication S of the acm    |  OcTOber 2010  |  VOL . 53  |  nO. 10review articles
+Peer-t O-Peer (P2P) c OMPU tinG has attracted 
+significant interest in recent years, originally sparked 
+by the release of three influential systems in 1999: 
+the Napster music-sharing system, the Freenet anonymous data store, and the SETI@home volunteer-based scientific computing projects. Napster, for 
+instance, allowed its users to download music 
+directly from each other’s computers via the Internet. Because the bandwidth-intensive music downloads 
+occurred directly between users’ computers, Napster 
+avoided significant operating costs and was able to offer its service to millions of users for free. Though unresolved legal issues ultimately sealed Napster’s 
+fate, the idea of cooperative resource sharing among 
+peers found its way into many other applications.
+More than a decade later, P2P technology has gone 
+far beyond music sharing, anonymous data storage, or scientific computing; it now enjoys significant research attention and increasingly widespread use in open software communities and industry alike. 
+Scientists, companies, and open-software organizations use BitTorrent to distrib-
+ute bulk data such as software updates, 
+data sets, and media files to many 
+nodes;5 commercial P2P software al-
+lows enterprises to distribute news 
+and events to their employees and cus-
+tomers;29 millions of people use Skype 
+to make video and phone calls;1 and 
+hundreds of TV channels are available 
+using live streaming applications such 
+as PPLive,17 CoolStreaming,38 and the 
+BBC’s iPlayer.4
+The term P2P has been defined in 
+different ways, so we should clarify 
+what exactly we mean by a P2P system. 
+For the purposes of this article, a P2P system is a distributed system with the 
+following properties:
+High degree of decentralization. 
+The peers implement both client and 
+server functionality and most of the system’s state and tasks are dynami-
+cally allocated among the peers. There 
+are few if any dedicated nodes with centralized state. As a result, the bulk 
+of the computation, bandwidth, and 
+storage needed to operate the system 
+are contributed by participating nodes.
+Self-organization. Once a node is 
+introduced into the system (typically by providing it with the IP address of a 
+participating node and any necessary Peer-to-Peer 
+SystemsDoi:10.1145/1831407.1831427
+Within a decade, P2P has proven to be  
+a technology that enables innovative new 
+services and is used by millions of people 
+every day. 
+BY RoDRiGo Ro DRiGueS anD Pete R DRuScheL
+ key insights
+  P2P leverages the computing resources 
+of cooperating users to achieve scalability and organic growth, thus lowering the deployment barrier for innovative new services.
+  originally invented for music/data 
+sharing and volunteer computing, P2P systems now enjoy widespread commercial and non-commercial use in content distribution, i PtV, and i P 
+telephony.
+  the strength of P2P—its independence 
+of dedicated infrastructure and centralized control—is also its weakness, as it presents new technical, commercial, and legal challenges.
+  P2P technology may turn out to be most valuable as a low-cost deployment vector for experimental, innovative services; those services that prove to be commercially viable can be subsequently combined with centralized, infrastructure-based components.
+iLLustration by Marius wat Zcredit t K
+OcTOber 2010  |  VOL . 53  |  nO. 10  |  communication S of the acm     7374    communication S of the acm    |  OcTOber 2010  |  VOL . 53  |  nO. 10review articles
+key material), little or no manual con-
+figuration is needed to maintain the 
+system.
+Multiple administrative domains. 
+The participating nodes are not owned and controlled by a single organiza-
+tion. In general, each node is owned 
+and operated by an independent indi-
+vidual who voluntarily joins the system.
+P2P systems have several distinctive 
+characteristics that make them inter-esting:
+Low barrier to deployment. Be-
+cause P2P systems require little or no dedicated infrastructure, the upfront 
+investment needed to deploy a P2P ser-
+vice tends to be low when compared to client-server systems.
+Organic growth. Because the re-
+sources are contributed by partici-pating nodes, a P2P system can grow 
+almost arbitrarily without requiring 
+a “fork-lift upgrade” of existing infra-structure, for example, the replace-
+ment of a server with more powerful 
+hardware.
+Resilience to faults and attacks. P2P 
+systems tend to be resilient to faults because there are few if any nodes that 
+are critical to the system’s operation. 
+To attack or shut down a P2P system, an attacker must target a large propor-
+tion of the nodes simultaneously.
+Abundance and diversity of re-
+sources. Popular P2P systems have 
+an abundance of resources that few organizations would be able to afford 
+individually. The resources tend to be 
+diverse in terms of their hardware and software architecture, network attach-
+ment, power supply, geographic loca-
+tion and jurisdiction. This diversity re-duces their vulnerability to correlated 
+failure, attack, and even censorship.
+As with other technologies (for ex-
+ample, cryptography), the properties of 
+P2P systems lend themselves to desir-able and undesirable use. For instance, 
+P2P systems’ resilience may help citi-
+zens avoid censorship by a totalitar-ian regime; at the same time, it can be 
+abused to try and hide criminal activity 
+from law enforcement agencies. The 
+scalability of a P2P system can be used 
+to disseminate a critical software up-date efficiently at a planetary scale, but 
+can also be used to facilitate the illegal 
+distribution of copyrighted content.
+Despite having acquired a negative 
+reputation for some of its initial pur-poses, P2P technologies are increas-ingly being used for legal applications 
+with enormous business potential, and 
+there is consensus about their ability to lower the barrier for the introduction of 
+innovative technologies. Nevertheless, 
+P2P technology faces many challenges. 
+The decentralized nature of P2P sys-
+tems raises concerns about manage-ability, security, and law enforcement. 
+Moreover, P2P applications are affect-
+ing the traffic experienced by Internet service providers (ISPs) and threaten to 
+disrupt the current Internet econom-
+ics. In this article, we briefly sketch im-
+portant highlights of the technology, 
+its applications, and the challenges it faces.
+applications
+Here, we discuss some of the most suc-
+cessful P2P systems and also mention 
+promising P2P systems that have not yet received as much attention. 
+Sharing and distributing files. Pres-
+ently, the most popular P2P applica-
+tions are file sharing (for example, 
+eDonkey) and bulk data distribution (for example, BitTorrent). 
+Both types of systems can be viewed 
+as successors of Napster. In Napster, users shared a subset of their disk 
+files with other participants, who were 
+able to search for keywords in the file 
+names. Users would then download 
+any of the files in the query results di-rectly from the peer that shared it.
+Much of the content shared by Nap-
+ster users was music, which led to copy-right infringement lawsuits. Napster 
+was found guilty and had to shut down 
+its services. Simultaneously, a series of similar P2P systems appeared, most 
+notably Gnutella and FastTrack (better 
+known by one of its client applications, 
+Kazaa). Gnutella, unlike Napster, has 
+no centralized components and is not operated by any single entity (perhaps 
+in part to make it harder to prosecute).
+The desire to reduce the download 
+time for very large files lead to the de-sign of BitTorrent,
+10 which enables a 
+large set of users to download bulk data quickly and efficiently. The system uses 
+spare upload bandwidth of concurrent downloaders and peers who already 
+have the complete file (either because 
+they are data sources or have finished 
+the download) to assist other down-
+loaders in the system. Unlike file-shar-ing applications, BitTorrent and other 
+P2P content distribution networks do 
+not include a search component, and users downloading different content 
+are unaware of each other, since they 
+form separate networks. The protocol is widely used for disseminating data, 
+software, or media content.
+Streaming media. An increasingly 
+popular P2P application is streaming 
+media distribution and IPTV (deliver-ing digital television service over the 
+Internet). As in file sharing, the idea is 
+to leverage the bandwidth of partici-pating clients to avoid the bandwidth 
+costs of server-based solutions.
+Streaming media distribution has 
+stricter timing requirements than downloading bulk data because data 
+must be delivered before the playout 
+deadline to be useful.
+Example systems include academic 
+efforts with widespread adoption such as PPLive
+17 and CoolStreaming,38 and 
+commercial products such as BBC’s iPlayer
+4 and Skinkers LiveStation.29
+Telephony. Another major use of 
+P2P technology on the Internet is for making audio and video calls, popular-
+ized by the Skype application. Skype exploits the resources of participating 
+nodes to provide seamless audiovisual 
+connectivity to its users, regardless 
+of their current location or type of In-
+ternet connection. Peers assist those without publicly routable IP addresses 
+to establish connections, thus working 
+around connectivity problems due to firewalls and network address transla-
+tion, without requiring a centralized 
+infrastructure that handles and for-
+wards calls. Skype reported 520 million 
+registered users at the end of 2009.
+Volunteer computing. A fourth im-
+portant P2P application is volunteer computing. In these systems, users do-nate their spare CPU cycles to scientific 
+computations, usually in fields such as 
+astrophysics, biology, or climatology. The first system of this type was SETI@
+home. Volunteers install a screen saver 
+that runs the P2P application when 
+the user is not active. This application 
+downloads blocks containing obser-vational data collected at the Arecibo 
+radio telescope from the SETI@home 
+server. Then the application analyzes this data, searching for possible radio 
+transmissions, and sends the results 
+back to the server.review articles
+OcTOber 2010  |  VOL . 53  |  nO. 10  |  communication S of the acm     75The success of SETI@home and 
+similar projects led to the develop-
+ment of the BOINC platform,3 which 
+has been used to develop many cycle-sharing P2P systems in use today. At 
+the time of this writing, BOINC has more than half a million active peers 
+computing on average 5.42 petaFLOPS 
+(floating-point operations per sec-
+ond). For comparison, a modern PC 
+performs on the order of a few tens of GFLOPS (about five orders of magni-
+tude fewer), and the world’s fastest su-
+percomputer as of August 2010 has a performance of about 1.76 petaFLOPS.
+Other applications. Other types of 
+P2P applications have seen significant 
+use, at least temporarily, but have not 
+reached the same levels of adoption as the systems we describe here. Among 
+them are applications that leverage 
+peer-contributed disk space to pro-vide distributed storage. Freenet
+9 aims 
+to combine distributed storage with 
+content distribution, censorship resis-
+tance, and anonymity. It is still active, but the properties of the system make 
+it difficult to estimate its actual use. 
+MojoNation
+36 was a subsequent project 
+for building a reliable P2P storage sys-
+tem, but it was shut down after proving 
+unable to ensure the availability of data due to unstable membership and other 
+problems.
+P2P Web content distribution net-
+works (CDNs) such as CoralCDN
+16 and 
+CoDeeN35 were deployed as research 
+prototypes but gained widespread use. In these systems, a set of cooperating 
+users form a network of Web caches and name servers that replicates Web 
+content as users access it, thereby re-
+ducing the load on servers hosting pop-
+ular content. During its peak usage, 
+CoralCDN received up to 25 million hits per day from one million unique 
+IP addresses.
+Many more P2P systems have been 
+designed and prototyped, but either were not deployed publicly or had 
+small deployments. Examples include 
+systems for distributed data monitor-
+ing, management and mining,
+26,37 mas-
+sively distributed query processing,19 
+cooperative backup,11 bibliographic 
+databases,33 serverless email,24 and ar-
+chival storage.23
+Technology developed for P2P ap-
+plications has also been incorporated 
+into other types of systems. For in-stance, Dynamo,13 a storage substrate 
+that Amazon uses internally for many of its services and applications, uses 
+distributed hash tables (DHTs), which we will explain later. Akamai’s NetSes-
+sion
+a client uses P2P downloads to 
+increase performance and reduce the cost of delivering streaming content. 
+Even though these systems are con-trolled by a single organization and 
+thus do not strictly satisfy our defini-
+tion of a P2P system, they are based on 
+P2P technology. 
+While P2P systems are a recent in-
+vention, technical predecessors of P2P systems have existed for a long time. 
+Early examples include the NNTP and SMTP news and mail distribution sys-
+tems, and the Internet routing system. 
+Like P2P systems, these are mostly 
+decentralized systems that rely on re-
+source contributions from their par-ticipants. However, the peers in these 
+systems are organizations and the pro-
+tocols are not self-organizing.
+While the earliest and most visible 
+P2P systems were mainly file-sharing applications, current uses of P2P tech-nology are much more diverse and 
+include the distribution of data, soft-
+ware, media content, as well as Inter-
+net telephony and scientific comput-
+ing. Moreover, an increasing number of commercial services and products 
+rely on P2P technology.
+how Do P2P Systems Work?
+Here, we sketch some of the most im-
+portant techniques that make P2P sys-
+tems work. We discuss fundamental 
+architectural choices like the degree of centralization and the structure of the 
+overlay network. As you will see, one of 
+the key challenges is to build an over-lay with a routing capability that works 
+well in the presence of a high mem-
+bership turnover (usually referred to as churn), which is typical of deployed 
+P2P system.
+28 We then present solu-
+tions to specific problems addressed in the context of P2P systems: application 
+state maintenance, application-level node coordination, and content distri-
+bution.
+Note that our intention in this pre-
+sentation is to provide representative 
+a See Akamai NetSession Interface Overview at 
+http://www.akamai.com/html/misc/akamai_
+client/netsession_interface.html/.While the earliest 
+and most visible P2P systems were mainly file-sharing applications, current uses of P2P technology are much more diverse and include the distribution of data, software, media content, as well as internet telephony 
+and scientific computing.76    communication S of the acm    |  OcTOber 2010  |  VOL . 53  |  nO. 10review articles
+examples of the most interesting tech-
+niques rather than try to be exhaustive 
+or precise about a particular system or 
+protocol.
+Degree of centralization. We can 
+broadly categorize the architecture of P2P systems according to the presence 
+or absence of centralized components 
+in the system design.
+Partly centralized P2P systems have 
+a dedicated controller node that main-tains the set of participating nodes and controls the system. For instance, Nap-
+ster had a Web site that maintained the 
+membership and a content index; early 
+versions of BitTorrent have a “tracker,” 
+which is a node that keeps track of the set of nodes uploading and download-
+ing the same content, and periodically 
+provides nodes with a set of peers they can connect to;
+10 the BOINC platform for volunteer computing has a site that maintains the membership and as-signs compute tasks;
+3 and Skype has 
+a central site that provides log-in, ac-
+count management, and payment.
+Resource-intensive operations like 
+transmitting content or computing ap-plication functions do not involve the 
+controller. Like general P2P systems, 
+partly centralized P2P systems can 
+provide organic growth and abundant resources. However, they do not neces-
+sarily offer the same scalability and re-
+silience because the controller forms a potential bottleneck and a single point 
+of failure and attack. Partly centralized 
+P2P systems are relatively simple and 
+can be managed by a single organiza-
+tion via the controller.
+Decentralized P2P system. In a de-
+centralized P2P system, there are no dedicated nodes that are critical for the 
+operation of the system. Decentralized 
+P2P systems have no inherent bottle-necks and can potentially scale very 
+well. Moreover, the lack of dedicated 
+nodes makes them potentially resilient to failure, attack, and legal challenge.
+In some decentralized P2P systems, 
+nodes with plenty of resources, high 
+availability and a publicly routable IP 
+address act as supernodes. These su-pernodes have additional responsi-
+bilities, such as acting as a rendez-vous 
+point for nodes behind firewalls, stor-ing state or keeping an index of avail-
+able content. Supernodes can increase 
+the efficiency of a P2P system, but may 
+also increase its vulnerability to node 
+failure.
+Overlay maintenance. P2P systems 
+maintain an overlay network, which can be thought of as a directed graph G 
+= (N,E), where N is the set of participat-
+ing computers and E is a set of overlay 
+links. A pair of nodes connected by a link in E is aware of each other’s IP ad-
+dress and communicates directly via the Internet. Here, we discuss how dif-
+ferent types of P2P systems maintain 
+their overlay.
+In partly centralized P2P systems, 
+new nodes join the overlay by connect-ing to the controller located at a well-known domain name or IP address 
+(which can be, for instance, hardcoded 
+in the application). Thus, the overlay 
+initially has a star-shaped topology 
+with the controller at the center. Ad-ditional overlay links may be formed 
+dynamically among participants that 
+have been introduced by the controller.
+In decentralized overlays, newly 
+joining nodes are expected to obtain, through an outside channel, the net-work address (for example, IP address 
+and port number) of some node that 
+already participates in the system. The 
+address of such a bootstrap node can 
+be obtained, for instance, from a Web site. To join, the new node contacts the 
+bootstrap node.
+We distinguish between systems 
+that maintain an unstructured or a structured overlay network.
+Unstructured overlays. In an unstruc-
+tured P2P system, there are no con-
+straints on the links between different nodes, and therefore the overlay graph 
+does not have any particular structure. 
+In a typical unstructured P2P system, figure 1. an example KBR implementation. 
+O | 2160 –1
+node 65a1fc invokes 
+Kbr with the key d46a1c, producing a route to the 
+responsible node 
+d462ba via a sequence 
+of nodes whose ids 
+share increasingly 
+longer prefixes with 
+the key.d462ba
+d4213f
+d13da3
+65a1fc
+figure 2. Locating objects in unstructured overlays.
+?Sr
+I
+ insertion path
+ Floodi = inserting node 
+s = Querying node 
+r = rendezvous nodenode I adds and 
+advertises the green object by inserting pointers to the green object on all nodes along a random walk through the overlay. When node S tries to locate the green object, it floods a query through the overlay. When the query reaches node r, r returns the address of I.review articles
+OcTOber 2010  |  VOL . 53  |  nO. 10  |  communication S of the acm     77a newly joining node forms its initial 
+links by repeatedly performing a ran-
+dom walk through the overlay starting 
+at the bootstrap node and requesting a link to the node where the walk termi-
+nates. Nodes acquire additional links 
+(for example, by performing more ran-
+dom walks) whenever their degree falls 
+below the desired minimum; they re-fuse link requests when their current 
+degree is at its maximum.
+The minimum node degree is typi-
+cally chosen to maintain connectiv-ity in the overlay despite node failures 
+and membership churn. A maximum 
+degree is maintained to bound the 
+overhead associated with maintaining overlay links.
+Structured overlays. In a structured 
+overlay, each node has a unique identi-fier in a large numeric key space, for ex-
+ample, the set of 160-bit integers. Iden-
+tifiers are chosen in a way that makes them uniformly distributed in that 
+space. The overlay graph has a specific 
+structure; a node’s identifier deter-
+mines its position within that structure 
+and constrains its set of overlay links.
+Keys are also used when assign-
+ing responsibilities to nodes. The key space is divided among the par-ticipating nodes, such that each key is 
+mapped to exactly one of the current 
+overlay nodes via a simple function. 
+For instance, a key may be mapped to 
+the node whose identifier is the key’s closest counterclockwise successor in 
+the key space. In this technique the key 
+space is considered to be circular (that is, the id zero succeeds the highest id 
+value) to account for the fact that there 
+may exist keys greater than all node identifiers.
+The overlay graph structure is cho-
+sen to enable efficient key-based rout-
+ing. Key-based routing implements 
+the primitive KBR(n
+0, k). Given a start-
+ing node n0 and a key k, KBR produces 
+a path, that is, a sequence of overlay 
+nodes that ends in the node respon-
+sible for k. As will become clear in sub-
+sequent sections, KBR is a powerful 
+primitive.
+Many implementations of key-
+based routing exist.18,27,32 In general, 
+they strike a balance between the amount of routing state required at 
+each node and the number of forward-ing hops required to deliver a message. 
+Typical implementations require an amount of per-node state and a num-
+ber of forwarding hops that are both 
+logarithmic in the size of the network.
+Figure 1 illustrates an example of 
+a key-based routing scheme. Node 
+65a1fc invokes KBR with the key d46a1c, producing a route via a se-
+quence of nodes whose ids share in-
+creasingly longer prefixes with the key. Eventually the message reaches the 
+node with id d462ba, which has suffi-
+cient knowledge about its neighboring 
+nodes to determine that it is respon-
+sible for the target key. Though not depicted, the reply can be forwarded 
+directly to the invoking node.
+Summary. We have seen how the 
+overlay network is formed and main-tained in different types of P2P sys-
+tems. In partly centralized P2P sys-tems, the controller facilitates the 
+overlay formation.
+In other P2P systems, overlay main-
+tenance is fully decentralized. Com-
+pared to an unstructured overlay net-work, a structured overlay network 
+invests additional resources to main-
+tain a specific graph structure. In re-turn, structured overlays are able to 
+perform key-based routing efficiently.
+The choice between an unstructured 
+and a structured overlay depends on 
+how useful key-based routing is for the application, and also on the frequency 
+of overlay membership events. As we 
+will discuss, key-based routing can re-liably and efficiently locate uniquely 
+identified data items and maintain 
+spanning trees among member nodes. However, maintaining a structured 
+overlay in a high-churn environment 
+has an associated cost, which may not 
+be worth paying if the application does 
+not require the functionality provided by key-based routing.
+Some P2P systems use both struc-
+tured and unstructured overlays. A recent (“trackerless”) version of Bit-
+Torrent, for instance, uses key-based 
+routing to choose tracker nodes, but 
+builds an unstructured overlay to dis-
+seminate the content.
+Distributed state. Most P2P systems 
+maintain some application-specific distributed state. Without loss of gen-erality, we consider that state as a col-
+lection of objects with unique keys. 
+Maintaining this collection of state objects in a distributed manner, that 
+is, providing mechanisms for object placement and locating objects, are 
+key tasks in such systems.
+Partly centralized systems. In partly 
+centralized P2P systems, an object is 
+typically stored at the node that insert-
+ed the object, as well as any nodes that have subsequently downloaded the ob-
+ject. The controller node maintains in-
+formation about which objects exist in the system, their keys, names and oth-
+er attributes, and which nodes are cur-
+rently storing those objects. Queries 
+for a given key, or a set of keywords that 
+match an object’s name or attributes, are directed to the controller, which re-
+sponds with a set of nodes from which 
+the corresponding object(s) can be downloaded.
+Unstructured systems. As in partly 
+centralized systems, content is typi-cally stored at the node that introduced 
+the content to the system, and repli-
+cated at other downloaders. To make 
+it easier to find content, some systems 
+place copies of (or pointers to) an in-serted object on additional nodes, for 
+instance, along a random walk path 
+through the overlay.
+To locate an object, a querying 
+node typically floods a request mes-sage through the overlay. The query 
+can specify the desired object by its 
+key, metadata, or keywords. A node that receives a query and has a match-
+ing object (or a pointer to a matching 
+object), responds to the querying node. Figure 2 illustrates this process. In this 
+case, node I inserts an object into the 
+system and holds its only copy, but in-
+serts pointers to the object on all nodes 
+along a random walk that ends in node 
+R. When node S tries to locate the ob-
+ject, it floods a query, first, to all nodes that are at a distance of one hop, then to all nodes two hops away. In the last 
+step the query reaches node R, which 
+returns the address of I.
+Often, the scope of the flood (that is, 
+the maximal number of hops from the 
+querying nodes that a flood message 
+is forwarded) is limited to trade recall 
+(the probability that an object that ex-ists in the system is found) for overhead 
+(the number of messages required by 
+the flood). An alternative to flooding is for the querying node to send a request 
+message along a random walk through 
+the overlay.
+Gnutella was the first example of a 
+decentralized, unstructured network78    communication S of the acm    |  OcTOber 2010  |  VOL . 53  |  nO. 10review articles
+that used flooding to locate content in 
+a file sharing system.
+Structured overlays. In structured 
+overlays, distributed state is main-tained using a distributed hash table 
+(DHT) abstraction. The DHT has the same put/get interface as a convention-
+al hash table. Inserted key/value pairs 
+are distributed among the participat-ing nodes in the structured overlay us-
+ing a simple placement function. For 
+instance, that function can position replicas of the key/value pair on the set 
+of r nodes whose identifiers succeed 
+the key in the circular key space. Note that in our terminology, the values 
+correspond to the state objects main-tained by the system.
+Given this replica placement policy, 
+the DHT’s put and get operations can be implemented using the KBR primi-tive in a straightforward manner. To 
+insert (put) a key/value pair, we use 
+the KBR primitive to determine the re-
+sponsible node for the key k and store 
+the pair on that node, which then prop-
+agates it to the set of replicas for k. To 
+look up (get) a value, we use the KBR primitive to fetch the value associated with a given key. The responsible node 
+can respond to the fetch request or for-
+ward it to one of the nodes in the rep-
+lica set. Figure 3 shows an example put 
+operation, where the value is initially pushed to the node responsible for key k, which is discovered using KBR, and 
+this node pushes the value to its three 
+immediate successors.
+When a DHT experiences churn, 
+pairs have to be moved between nodes as the mapping of keys to nodes chang-
+es. To minimize the required network 
+communication, large data values are typically not inserted directly into a 
+DHT; instead, an indirection pointer is 
+inserted under the value’s key, which points to the node that actually stores 
+the value.
+DHTs are used, for instance, in file 
+sharing networks such as eDonkey, 
+and also in some versions of BitTor -
+rent.
+Summary. Unstructured overlays 
+tend to be very efficient at locating widely replicated objects, while KBR-
+based techniques can reliably and ef-
+ficiently locate any object that exists in the system, no matter how rare it 
+may be. Put another way, unstructured 
+overlays are good at finding “hay” while 
+structured overlays are good at find-
+ing “needles.” On the other hand, un-structured networks support arbitrary 
+keyword-based queries, while KBR-
+based systems directly support only key-based queries.
+Distributed coordination. Frequent-
+ly, a group of nodes in a P2P application 
+must coordinate their actions without 
+centralized control. For instance, the set of nodes that replicate a particu-
+lar object must inform each other of 
+updates to the object. In another ex-ample, a node that is interested in re-
+ceiving a particular streaming content 
+channel may wish to find, among the nodes that currently receive that chan-
+nel, one that is nearby and has available 
+upstream network bandwidth. We will 
+look at two distinct approaches to this 
+problem: epidemic techniques where information spreads virally through 
+the system, and tree-based techniques 
+where distribution trees are formed to spread the information.
+We focus only on decentralized 
+overlays, since coordination can be ac-
+complished by the controller node in 
+partly centralized systems.
+Unstructured overlays. In unstruc-
+tured overlays, coordination typically relies on epidemic techniques. In these protocols, information is spread 
+through the overlay in a manner simi-
+figure 4. an example KBR tree.
+groupIdGc
+b
+AThe Kbr routes from group 
+member nodes A, b , and c 
+to G (the node responsible for the group key) form a spanning tree rooted at G.figure 3. inserting a value into a Dht .
+put (key , value)The key/value pair is replicated on the node responsible for the key (reached via Kbr) and its three successors.review articles
+OcTOber 2010  |  VOL . 53  |  nO. 10  |  communication S of the acm     79lar to the way an infection spreads in 
+a population: the node that produced 
+the information sends it to (some of) 
+its overlay neighbors, who send it to (some of) their neighbors, and so on. 
+This method of dissemination is very 
+simple and robust. As in all epidemic 
+techniques, there is a trade-off be-
+tween the speed of information dis-semination and overhead. Moreover, if 
+a given piece of information is of inter-
+est only to a subset of nodes and these nodes are widely dispersed within the 
+overlay, then the information ends up 
+being needlessly delivered to all nodes.
+A more efficient way to coordinate 
+the actions among a group of nodes is to form a spanning tree among the 
+nodes. The spanning tree is embedded 
+in the overlay graph, using a decentral-ized algorithm for spanning tree for-
+mation. This tree can then be used to 
+multicast messages to all members, or to compute summaries (for example, 
+sums, averages, minima, or maxima) of 
+state variables within the group. How-
+ever, this added coordination efficien-
+cy must be balanced against the over-head of maintaining the spanning tree 
+in the unstructured overlay network.
+Structured overlays. In structured 
+overlays, spanning trees among any group of overlay nodes can be formed 
+and maintained very efficiently us-
+ing the KBR primitive, making trees 
+the preferred method of coordination in these overlays. To join a spanning 
+tree, a node uses KBR to route to a 
+unique key associated with the group. The resulting union of the paths from 
+all group members form a spanning 
+tree rooted at the node responsible for the group’s key. This KBR tree is then 
+used to aggregate and disseminate state associated with the group, and to 
+implement multicast and anycast. Fig-
+ure 4 illustrates an example KBR tree formed by the union of the KBR routes 
+from nodes A, B, and C to the key cor-
+responding to the group id. This tree is 
+rooted at node G, which is the respon-
+sible node for that key.
+Because a join message terminates 
+as soon as it intercepts the tree, group membership maintenance is decen-tralized, that is, the arrival or departure 
+of a node is noted only by the node’s 
+parent and children in the tree. As a result, the technique scales to large 
+numbers of groups, as well as large and highly dynamic groups.
+Summary. The epidemic techniques 
+typically used for coordination in un-
+structured overlays are simple and ro-bust to overlay churn, but they may not 
+scale to large overlays or large numbers 
+of groups, and information tends to 
+propagate slowly. Spanning trees can 
+increase the efficiency of coordination, but maintaining a spanning tree in an 
+unstructured overlay adds costs.
+The additional overhead for main-
+taining a structured overlay is propor-
+tional to the churn in the total overlay 
+membership. Once that overhead is 
+paid, KBR trees enable efficient and 
+fast coordination among potentially numerous, large and dynamic sub-
+groups within the overlay.
+content Distribution
+Another common task in P2P sys-
+tems is the distribution of bulk data or streaming content to a set of inter-
+ested nodes. P2P techniques for con-
+tent distribution can be categorized 
+as tree-based (where fixed distribution 
+trees are formed either with the aid of a structured overlay or embedded in 
+an unstructured overlay), or swarming 
+protocols (which have no notion of a fixed tree for routing content and usu-
+ally form an unstructured overlay). Due 
+to space constraints, we focus on the 
+swarming protocols popularized by the 
+BitTorrent protocol.
+10
+In swarming protocols, the content 
+is divided into a sequence of blocks, 
+and each block is individually multi-
+cast to all overlay nodes such that dif-ferent blocks are disseminated along 
+different paths.
+The basic operation of a swarming 
+protocol is simple: once every swarm-
+ing interval (say, one second), overlay neighbors exchange information indi-
+cating which content blocks they have 
+available. (In streaming content dis-tribution, only the most recently pub-
+lished blocks are normally of interest.) 
+Each node intersects the availability in-
+formation received from its neighbors, 
+and then requests a block it does not already have from one of the neighbors 
+who has it.
+It is important that blocks are well 
+distributed among the peers, to ensure neighboring peers tend to have blocks 
+they can swap and that blocks remain available when some peers leave the unstructured 
+overlays are good at 
+finding “hay,” while structured overlays are good at finding “needles.”80    communication S of the acm    |  OcTOber 2010  |  VOL . 53  |  nO. 10review articles
+system. To achieve such a distribu-
+tion, the system can randomize both 
+the choice of block to download and 
+the choice of a neighbor from whom to request the block. In one possible 
+strategy, a node chooses to download 
+the rarest block among all blocks held 
+by its overlay neighbors.
+10
+The best known and original 
+swarming protocol for bulk content distribution is BitTorrent.
+10 Examples 
+of swarming protocols used for stream-ing content include PPLive
+17 and the 
+original version of CoolStreaming.38
+challenges
+Much of the promise of P2P systems 
+stems from their independence of ded-
+icated infrastructure and centralized control. However, these very proper-
+ties also expose P2P systems to some 
+unique challenges not faced by other 
+types of distributed systems. Moreover, 
+given the popularity of P2P systems, they become natural targets for misuse 
+or attack. Here, we give an overview of 
+challenges and attacks that P2P sys-tems may face, and corresponding de-
+fense techniques. As you will see, some 
+of the issues have been addressed to 
+varying degrees, and others remain 
+open questions.
+Controlling membership. Most P2P 
+systems have open or loosely controlled membership. This lack of strong user identities allows an attacker to popu-
+late a P2P system with nodes under 
+his control, by creating many distinct identities (such action was termed a 
+Sybil attack
+15). Once he controls a large 
+number of “virtual” peers, an attacker can defeat many kinds of defenses 
+against node failure or misbehavior, for example, those that rely on replica-
+tion or voting. For instance, an attacker 
+who wishes to suppress the value asso-
+ciated with some key k from a DHT can 
+add virtual nodes to the system until 
+he controls all of the nodes that store 
+replicas of the value. These nodes can 
+then deny the existence of that key/value pair when a get operation for key 
+k is issued.
+Initial proposals to address Sybil 
+attacks required proof of work (for ex-
+ample, solving a cryptographic puzzle or downloading a large file) before a 
+new node could join the overlay.
+15,34 
+While these approaches limit the rate 
+at which an attacker can obtain iden-tities, they also make it more difficult for legitimate users to join. Moreover, an attacker with enough resources or 
+access to a botnet can still mount Sybil 
+attacks.
+Another solution requires certified 
+identities,
+7 where a trusted author-
+ity vouches for the correspondence 
+between a peer identity and the corre-
+sponding real-world entity. The disad-vantage of certified identities is that 
+a trusted authority and the necessary 
+registration process may be impracti-
+cal or inappropriate in some applica-
+tions.
+Protecting data. Another aspect of 
+P2P system robustness is the availabil-ity, durability, integrity, and authentic-ity of the data stored in the system or 
+downloaded by a peer. Different types 
+of P2P systems have devised different 
+mechanisms to address these prob-
+lems.
+Integrity and authenticity. In the case 
+of DHTs, data integrity is commonly verified using self-certifying named ob-
+jects. DHTs take advantage of the fact 
+that they have flexibility in the choice 
+of the keys for values stored in the DHT. By setting key=hash(value) during 
+the put operation, the downloader can verify the retrieved data is correct by 
+applying the cryptographic hash func-
+tion to the result of the get operation and comparing it to the original key. 
+Systems that store mutable data and 
+systems that allow users to choose ar-bitrary names for inserted content can 
+instead use cryptographic signatures 
+to protect the integrity and authentic-
+ity of the data. However, such systems 
+require an infrastructure to manage the cryptographic keys.
+Studies show that systems that do 
+not protect the integrity of inserted data (including many file sharing sys-
+tems) tend to be rife with mislabeled 
+or corrupted content.
+8,22 One possible 
+approach to counter the problem of 
+content pollution is for peers to vote on 
+the authenticity of data. For example, a voting system called Credence was de-
+veloped by researchers and used by sev-
+eral thousands of peers in the Gnutella 
+file sharing network.
+34 However, the 
+problem remains challenging given the possibility of Sybil attacks to defeat 
+the voting.
+Availability and durability. The next 
+challenge is how to ensure the avail-much of the promise 
+of P2P systems 
+stems from their independence of dedicated infrastructure and centralized control. however, these 
+very properties also expose P2P systems to some unique challenges not faced by other types of distributed systems.review articles
+OcTOber 2010  |  VOL . 53  |  nO. 10  |  communication S of the acm     81ability and durability of data stored in 
+a P2P system. Even in the absence of 
+attacks, ensuring availability can prove 
+difficult due to churn. For a data object to be available, at least one node that 
+stores a replica must be online at all 
+times. To make sure an object remains 
+available under churn, a system must 
+constantly move replicas to live nodes, which can require significant network 
+bandwidth. For this reason, a practical 
+P2P storage system cannot simultane-ously achieve all three goals of scalable 
+storage, high availability, and resil-
+ience to churn.
+6
+Another challenge is that the long-
+term membership of a P2P storage 
+system (that is, the set of nodes that 
+periodically come online) must be non-decreasing to ensure the durability 
+of stored data. Otherwise, the system 
+may lose data permanently, since the 
+storage space available among the re-
+maining members may fall below that required to store all the data.
+Incentives. Participants in a P2P 
+system are expected to contribute re-sources for the common good of all 
+peers. However, users don’t necessarily 
+have an incentive to contribute if they 
+can access the service for free. Such us-
+ers, called free riders, may wish to save their own disk space, bandwidth, and 
+compute cycles, or they may prefer not 
+to contribute any content in a file-shar-ing system.
+Free riding is reportedly widespread 
+in many P2P systems. For instance, in 2000 and 2001, studies of the Gnutella 
+system found a large fraction of free 
+riders.
+2,28 More recently, a study of a 
+DHT used in the eMule file-sharing 
+system found large clusters of peers 
+(with more than 10,000 nodes) that had modified their client software to 
+produce the same node identifier for 
+all nodes, which means these nodes 
+are not responsible for any keys.
+31
+The presence of many free riders re-
+duces the resources available to a P2P system, and can deteriorate the quality 
+of the service the system is able to pro-vide to its users. To address this issue, 
+incentive schemes have been incorpo-
+rated in the design of P2P systems.
+BitTorrent uses a tit-for-tat strat-
+egy, where to be able to download a file from a peer, a peer must upload anoth-
+er part of the same file in return, or risk 
+being disconnected from that peer.
+10 This provides a strong incentive for us-
+ers to share their upload bandwidth, 
+since a peer that does not upload data will have poor download performance. 
+A number of other incentive mecha-
+nisms have been proposed, which all try to tie the quality of the service a peer 
+receives to how much that peer con-
+tributes.
+12,25
+Managing P2P systems. Whether 
+P2P systems are easier to manage than 
+other distributed systems is an open 
+question.
+On the one hand, P2P systems adapt 
+to a wide range of conditions with re-spect to workload and resource avail-
+ability, they automatically recover 
+from most node failures, and partici-pating users look after their hardware 
+independently. As a result, the burden 
+associated with the day-to-day opera-tion of P2P systems appears to be low 
+compared to server-based solutions, 
+as evidenced by the fact that graduate 
+students have been able to deploy and 
+manage P2P systems that attract mil-lions of users.
+16
+On the other hand, there is evi -
+dence that P2P systems can experience 
+widespread disruptions that are diffi -
+cult to manage. For instance, on Aug. 
+16, 2007, the Skype overlay network 
+collapsed and remained unavailable 
+for several days. The problem was re -
+portedly triggered by a Microsoft Win -
+dows Update patch that caused many of the peers to reboot around the same 
+time, causing a lack of resources that, 
+combined with a software bug, pre -
+vented the overlay from recovering.
+30 
+This type of problem may indicate 
+the lack of centralized control over 
+available resources and participating nodes makes it difficult to manage 
+systemwide disruptions when they 
+occur. However, more research and 
+long-term practical experience with 
+deployed systems is needed to settle this question.
+Some of the challenges P2P systems 
+face (for example, data integrity and authenticity) are largely solved, while 
+others (for example, membership con-
+trol and incentives) have partial solu-
+tions that are sufficient for important 
+applications. However, some problems remain wide open (for example, data 
+durability and management issues). 
+Progress on these problems may be necessary to further expand the range of applications of P2P technology.
+Peer-to-Peer and iSPs
+Internet service providers have wit-
+nessed the success of P2P applications with mixed feelings. On one hand, P2P 
+is fueling demand for network band-
+width. Indeed, P2P accounts for the 
+majority of bytes transferred on the 
+Internet.
+29 On the other hand, P2P traf-
+fic patterns are challenging certain as-
+sumptions that ISPs have made when 
+engineering their networks and when pricing their services.
+To understand this tension, we 
+must consider the Internet’s structure 
+and pricing. The Internet is a roughly 
+hierarchical conglomeration of in-dependent network providers. Local 
+ISPs typically connect to regional ISPs, 
+who in turn connect to (inter-)national backbone providers. ISPs at the same 
+level of the hierarchy (so-called peer 
+ISPs) may also exchange traffic directly. 
+In particular, the backbone providers 
+are fully interconnected.
+Typically, peer ISPs do not charge 
+each other for traffic they exchange di-rectly, but customers pay for the bits they send to their providers. An excep-
+tion is residential Internet connections 
+that are usually offered at a flat rate by ISPs.
+This pricing model originated at a 
+time when client-server applications 
+dominated the traffic in the Internet. 
+Commercial server operators pay their ISPs for the bandwidth used, who in 
+turn pay their respective providers. 
+Since residential customers rarely op-erate servers (in fact, their terms of 
+use do not allow them to operate com-
+mercial servers), it was reasonable to 
+assume they generate little upstream 
+traffic, keeping costs low for local ISPs and enabling them to offer flat-rate 
+pricing.
+With P2P content distribution ap-
+plications, however, residential P2P nodes upload content to each other. 
+Unless the P2P nodes happen to con-nect to the same ISP or to two ISPs that 
+peer directly with each other, the up-
+loading node’s ISP must forward the 
+data to its own provider. This incurs 
+costs that the ISP cannot pass on to its flat-rate customers.
+20 As a result of 
+this tension, some ISPs have started to 
+traffic shape and even block BitTorrent 
+traffic.14 Whether network operators82    communication S of the acm    |  OcTOber 2010  |  VOL . 53  |  nO. 10review articles
+should be required to disclose such 
+practices, and if they should be allowed 
+at all to discriminate among different 
+traffic types is the subject of an ongo-ing debate.
+Independent of the outcome of this 
+debate, the tension will have to be re-
+solved in a way that allows P2P applica-
+tions to thrive while ensuring the prof-itability of ISPs. A promising technical 
+approach is to bias the peer selection 
+in P2P applications toward nodes con-nected to the same ISP or to ISPs that 
+peer with each other.
+20 Another solu-
+tion is for ISPs to change their pricing model.
+A more fundamental tension is 
+that some ISPs view many of the cur-rently deployed P2P applications as 
+competing with their own value-added 
+services. For instance, ISPs that offer 
+conventional telephone service may view P2P VoIP applications as competi-
+tion, and cable ISP may view P2P IPTV 
+applications as competing with their own IPTV services. In either case, such 
+ISP’s market share in the more profit-
+able value-added services is potentially 
+diminished in favor of carrying more 
+plain bits.
+In the long term, however, ISPs will 
+likely benefit, directly and indirectly, from the innovation and emergence of new services that P2P systems enable. 
+Moreover, ISPs may find new revenue 
+sources by offering infrastructure sup-port for successful services that initial-
+ly developed as P2P applications.
+conclusion
+In this article, we have sketched the promise, technology, and challenges 
+of P2P systems. As a disruptive technol-
+ogy, P2P creates significant opportuni-ties and challenges for the Internet, in-
+dustry, and society. Arguably the most 
+significant promise of P2P technology 
+lies in its ability to significantly lower 
+the barrier for innovation. But the great strength of P2P, its independence of 
+dedicated infrastructure and central-
+ized control, may also be its weakness, as it creates new challenges that must 
+be dealt with through technical, com-
+mercial, and legal means.
+One possible outcome is that P2P 
+will turn out to be especially valuable as a proving ground for new ideas and 
+services, in addition to keeping its role 
+as a platform for grassroots services that enable free speech and the unreg-ulated exchange of information. Ser-
+vices that turn out to be popular, legal, 
+and commercially viable may then be transformed into more infrastructure-
+based, commercial services. Here, 
+ideas from P2P systems may be com-
+bined with traditional, centralized ap-
+proaches to build highly scalable and dependable systems. 
+References
+1. about skype: 100 billion skype-to- skype Minutes 
+served; http://about.skype.com/2008/02/100_
+billion_skypetoskype_minut.html.
+2. adar, e. and huberman, b.a. Free riding on gnutella. 
+First Monday 5 , 10 ( oct. 2000).
+3. anderson, d.P. boinc : a system for public-resource 
+computing and storage. in Proceedings of the 
+5th IEEE/ACM International workshop on Grid 
+Computing (2004), 4–10.
+4. bbc  news. one million viewers use iPlayer. http: //
+news.bbc.co.uk/2/hi/technology/7187967.stm.
+5. bittorrent (protocol). wikipedia; http://en.wikipedia.
+org/wiki/ bittorrent_(protocol)# adoption.
+6. blake, c. and rodrigues, r. high availability, scalable 
+storage, dynamic peer networks: Pick two. in 
+Proceedings of the 9th workshop on Hot Topics in 
+Operating Systems (May 2003).
+7. castro, M., druschel, P., ganesh, a., rowstron, a. 
+and wallach, d.s. security for structured peer-
+to-peer overlay networks. in Proceedings of the 
+5th Symposium on Operating Systems Design and Implementation (dec. 2002).
+8. christin, n., weigend, a.s. and chuang, J. content 
+availability, pollution and poisoning in file sharing 
+peer-to-peer networks. in Proceedings of the 6th ACM 
+Conference on Electronic Commerce (June 2005).
+9. clarke, i., sandberg, o., wiley, b. and hong, t.w. 
+Freenet: a distributed anonymous information 
+storage and retrieval system. in Proceedings of 
+the Designing Privacy Enhancing Technologies—
+International workshop on Design Issues in 
+Anonymity and unobservability (July 2000).
+10. cohen, b. incentives build robustness in bittorrent. 
+in Proceedings of the 1st International workshop on 
+Economics of P2P Systems (June 2003).
+11. cox, L.P. Murray, c.d. and noble, b.d. Pastiche: 
+Making backup cheap and easy. in Proceedings of 
+the 5th Symposium on Operating Systems Design and Implementation (dec. 2002).
+12. cox, L.P. and noble, b.d. samsara: honor among 
+thieves in peer-to-peer storage. in Proceedings of 
+the 19th ACM Symposium on Operating Systems 
+Principles (oct. 2003).
+13. decandia, g., hastorun, d., Jampani, M., Kakulapati, 
+g., Lakshman, a., Pilchin, a., sivasubramanian, s., 
+Vosshall, P. and Vogels, w. dynamo: amazon’s highly 
+available key-value store. in Proceedings of the 21st 
+ACM Symposium on Operating Systems Principles (oct. 2007).
+14. dischinger, M., Mislove, a. haeberlen, a. and 
+gummadi, K.P. detecting bittorrent blocking. in 
+Proceedings of the 8th Internet Measurement 
+Conference (oct. 2008).
+15. douceur, J. the sybil attack. in Proceedings of 
+the First International workshop on Peer-to-Peer 
+Systems (Mar. 2002).
+16. Freedman, M.J., Freudenthal, e. and Mazières, d. 
+democratizing content publication with coral. in 
+Proceedings of the 1st uSENIX Symposium on 
+Networked Systems Design and Implementation (Mar. 2004).
+17. hei, X., Liang, c., Liang, J., Liu, y. and ross, K. w. 
+insights into PPLive: a measurement study of a 
+large-scale P2P iPtV system. in Proceedings of 
+the 15th International world wide web Conference, 
+IPTV workshop (May 2006).
+18. hildrum, K., Kubiatowicz, J. d., rao, s. and Zhao, b.y. 
+distributed object location in a dynamic network. in 
+Proceedings of the 14th Annual ACM Symposium on Parallel Algorithms and Architectures (2002), 41–52.
+19. huebsch, r., hellerstein, J.M., Lanham, n., Loo, b.t, 
+shenker, s. and stoica, i. Querying the internet 
+with P ier. in Proceedings of the 29th International Conference on Very Large Data Bases (sept. 2003).
+20. Karagiannis, t., rodriguez, P., and Papagiannaki, K. 
+should internet service providers fear peer-assisted 
+content distribution? in Proceedings of the Internet 
+Measurement Conference (oct. 2005).
+21. Li, b., Xie, s., Qu, y., Keung, g., Lin, c., Liu, J. and 
+Zhang, X. inside the new coolstreaming: Principles, 
+measurements and performance implications. in 
+Proceedings of INFOCOM (2008).
+22. Liang, J., Kumar, r., Xi, y. and ross, K. w. Pollution 
+in P2P file sharing systems. in Proceedings of 
+INFOCOM (Mar. 2005).
+23. Maniatis, P., roussopoulos, M., giuli, t.J., rosenthal, 
+d.s.h. and baker, M. the LocKss peer-to-peer 
+digital preservation system. ACM Transactions on 
+Computer Systems 23 , 1 (2005), 2–50.
+24. Mislove, a. Post, a. haeberlen, a. and druschel, 
+P. experiences in building and operating eP ost, a 
+reliable peer-to-peer application. in Proceedings of 
+the 1st ACM SIGOPS/EuroSys European Conference 
+on Computer Systems (apr. 2006).
+25. nandi, a., ngan, t-w.J, singh, a., druschel, P. 
+and wallach, d.s. scrivener: Providing incentives 
+in cooperative content distribution systems. 
+in Proceedings of the ACM/IFIP/ uSENIX 6th 
+International Middleware Conference (nov. 2005).
+26. renesse, r.V, birman, K.P. and Vogels, w. astrolabe: 
+a robust and scalable technology for distributed 
+system monitoring, management, and data mining. 
+ACM Transactions on Computer Systems 21 , 2 
+(2003), 164–206.
+27. rowstron, a. and druschel, P. Pastry: scalable, 
+distributed object location and routing for large-
+scale peer-to-peer systems. in Proceedings of the 
+IFIP/ACM International Conference on Distributed Systems Platforms (nov. 2001).
+28. saroiu, s., gummadi, P.K., and gribble, s.d. 
+a measurement study of peer-to-peer file 
+sharing systems. in Proceedings of the SPIE/
+ACM Conference on Multimedia Computing and 
+Networking (Jan. 2002).
+29. skinkers: enterprise communication management; 
+http://www.skinkers.com/ about_us/ about_ skinkers.
+30. skype: what happened on august 16; http://
+heartbeat.skype.com/2007/08/what_happened_on_august_16.html.
+31. steiner, M., biersack, e.w. and ennajjary, t. actively 
+monitoring peers in K ad. in Proceedings of the 6th 
+International workshop on Peer-to-Peer Systems 
+(Feb. 2007).
+32. stoica, i., Morris, r., Karger, d., Kaashoek, M.F. 
+and balakrishnan, h. chord: a scalable peer-to-
+peer lookup service for internet applications. in 
+Proceedings of SIGCOMM ’01 , (aug. 2001).
+33. stribling, J. Li, J., councill, i.g., Kaashoek, M.F. 
+and Morris, r. overcite: a distributed, cooperative 
+citeseer. in Proceedings of the 3rd Symposium on 
+Networked Systems Design and Implementation (May 2006).
+34. walsh, K. and sirer, e.g. experience with an object 
+reputation system for peer-to-peer filesharing. in 
+Proceedings of the 3rd Symposium on Networked 
+Systems Design and Implementation (May 2006).
+35. wang, L., Park, K., Pang, r., Pai, V. s., and Peterson, 
+L. reliability and security in the codeen content 
+distribution network. in Proceedings of the 
+uSENIX 2004 Annual Technical Conference (June 
+2004).
+36. wilcox- o’hearn, b. experiences deploying a large-
+scale emergent network. in Proceedings of the 1st 
+International workshop on Peer-to-Peer Systems 
+(Mar. 2002).
+37. yalagandula, P. and dahlin, M. a scalable distributed 
+information management system. in Proceedings of 
+SIGCOMM ’04 (2004).
+38. Zhang, X., Liu, J., Li, b. and yum, t-s.P. 
+coolstreaming/ don et: a data-driven overlay 
+network for peer-to-peer live media streaming. in 
+Proceedings of INFOCOM ’05 (2005).
+Rodrigo Rodrigues (rodrigo@mpi-sws.org) is a tenure-
+track faculty member at the Max Planck institute for 
+software s ystems (MPi-sws), where he heads the 
+dependable systems group.
+Peter Druschel (druschel@mpi-sws.org) is the founding 
+director of the Max Planck institute for software 
+systems (MP i-sws ), where he heads the distributed 
+systems group.
+© 2010 acM 0001-0782/10/1000 $10.00

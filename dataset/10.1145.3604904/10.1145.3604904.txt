@@ -1,0 +1,863 @@
+76Information-Theoretic Approachesto Differential Privacy
+AYŞE ÜNSAL andMELEKÖNEN ,Digital SecurityDepartment, EURECOM,France
+This tutorial studies relations between differential privacy and various information-theoretic measures by
+using several selective articles. In particular, we present how these connections can provide new interpreta-
+tionsfortheprivacyguaranteeinsystemsthatdeploydifferentialprivacyinaninformation-theoreticframe-
+work. Accordingly, the tutorial delivers an extensive summary on the existing literature that makes use of
+information-theoretic measures and tools such as mutual information, min-entropy, Kullback-Leibler diver-
+gence, and rate-distortion function for quantification and characterization of differential privacy in various
+settings.
+CCS Concepts: • Security and privacy →Information-theoretic techniques ;Privacy-preserving pro-
+tocols;
+AdditionalKeyWordsandPhrases:Differentialprivacy,mutualinformation,relativeentropy,rate-distortion
+theory, min-entropy,leakage
+ACM Reference format:
+Ayşe Ünsal and Melek Önen. 2023. Information-Theoretic Approaches to Differential Privacy. ACM Comput.
+Surv.56, 3, Article 76(October 2023), 18 pages.
+https://doi.org/10.1145/3604904
+1 INTRODUCTION
+Over the past decade, machine learning (ML) algorithms have found application in a vast and
+rapidly growing number of systems for analyzing and classifying large amounts of data. Despite
+the improvement and comfort that was brought to our daily lives by applications that employ
+these algorithms, they also gave cause for concern in terms of security and data privacy due to
+their undesired consequences. The increasing popularity of ML techniques opened the door for
+attackers, especially when these techniques were deployed to be used in critical areas such as
+intrusion detection, autonomous driving, or healthcare. In particular, an adversary may look for
+means to modify the model, misclassify some inputs, and consequently succeed in unauthorized
+cyber access, car accidents, or even health problems. It is not unrealistic to imagine the scenario,
+whereaself-drivingcarcausesanaccidentduetoignoringastopsign,whichthroughtampering
+by anadversarywasmade to looklike aparkingsign.
+Inadditiontothesecurityaspectofsuchanattack,user-dataprivacyisalsopronetoviolations
+in this problem. Such data is considered as highly sensitive,since it contains information on loca-
+tion that could lead to the discovery of personal habits and may enable vehicle identification. In
+Authors’ address: A. Ünsal (corresponding author) and M. Önen, Digital Security Department, EURECOM, Campus
+SophiaTech, 450Route desChappes,Biot 06410,France; emails:{ayse.unsal, melek.onen}@eurecom.fr.
+Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee
+provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and
+the full citation on the first page. Copyrights for components of this work owned by others than the author(s) must be
+honored.Abstractingwithcreditispermitted.Tocopyotherwise,orrepublish,topostonserversortoredistributetolists,
+requires prior specific permission and/or a fee.Request permissions from permissions@acm.org .
+© 2023Copyrightheld bytheowner/author(s). Publicationrights licensed toACM.
+0360-0300/2023/10-ART76$15.00
+https://doi.org/10.1145/3604904
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:2 A. Ünsal andM.Önen
+general,thehighqualityandhighaccuracyofMLpredictionsstronglydependonthecollectionof
+largedatasets.Suchalarge-scaledatacollectiongivescauseforprivacyconcernsandmakesusers
+vulnerable to fraudulent use of personal information. When individuals willingly share some of
+their personal data with an Internet service, statistical independence of the representation of the
+data and the actual individual is a desired quality of the underlying system. At least from a con-
+ceptualperspective,ameasureofthisindependencerelatestotheamountofprivacyanindividual
+canexpectfromthesystem.However,itispossibletosuccessfullyde-anonymizeorre-identifythe
+owner of the data as proven by a number of studies as follows [ 19,33,40,45]. For instance, Face-
+book and Cambridge Analytica are real-life examples of massively used online services, which
+were proven to be a threat to privacy of individuals back in 2010, when Cambridge Analytica
+acquiredagreatnumberofFacebookusers’dataforthepurposeofusingtherightpoliticaladver-
+tisement. More recently, it was discovered that Pegasus spyware has been used for reading text
+messages,trackingcallsandlocations,andaccessingthetargeteddevice’scameraandmicrophone
+inmanyversionsofApple’siOSandAndroid[ 8].Thesefewexamplesofprivacyrights’violations
+makeit clearthatprotectingtheprivacyof personaldata isa major concernin today’sworld.
+In order to address data-privacy requirements in such contexts, two application methods are
+used in current systems, namely, local and global privacy. In local privacy methods, individuals
+publish a private version of their own information, as is the case of a social networking website.
+Global privacy methods make use of a trusted (central) server or curator that publishes private
+queryresponsesrelatedtoagroupofindividuals.Acommoncharacteristicofbothapproachesis
+that data is typically coded using some randomizing function prior to its publication. Differen-
+tial privacy (DP)[13] is a stochastic measure of privacy that is now used in conjunction with
+ML algorithms while managing large datasets to ensure data privacy of individual users. It has
+furthermore been used to develop practical methods for protecting private user data when they
+provide information to the ML system. In these cases, the use of a DP measure aims to preserve
+the accuracy of the ML model without incurring a cost of the privacy of individual participants.
+An embedded application in Google’s Chrome Web Browser [ 20], a Census Bureau project called
+OntheMAP[ 29],LinkedIn,andApple’siOS11areonlyafewexamplesofreal-lifeapplicationsthat
+havealreadydeployedDPtoaddressandovercomethisvulnerabilityofusersintermsofprivacy
+ofpersonalinformation.
+Fig.1. Differential privacy.A mechanism or a randomized function of a
+dataset is called differentially private if the ab-
+sence or presence of any participant’s data has
+a negligible impact on the output of the mech-
+anism when any of the participants decides to
+submitorequivalentlyremovetheirdatafroma
+statistical dataset. This idea is roughly depicted
+in Figure 1. In some sense, DP is a notion of
+robustness against such changes in the dataset.
+The degree of this change is measured and de-
+terminedbyanadjustableprivacyparameter(or
+theprivacybudget)andtheamountofthechangethatanysingleargumenttothesystemreflects
+on its output is called the sensitivity of the system. The major challenge is to offset the accuracy
+of the output of a statistical dataset against the level of the privacy protection guaranteed to the
+participants.Indeed,noisierdataresultsinastrongerlevelofprivacyduetoincreasedrandomness
+andthisreflectsas areductioninaccuracyoftheoutput.
+Timeliness and necessityof the tutorial: DP raises great interest among researchers,particularly
+from computer science and statistics circles, who contributed to what we already know about
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:3
+this strong mathematical formulation of privacy. There are several detailed surveys of what is
+knowntodayregardingDPfromtheperspectiveofcomputerscientistsandstatisticians[ 14,16,18].
+Morerecently,alsoresearchersininformationtheory/electricalengineeringcirclescontributedto
+the literature on the subject. However, a full information-theoretic understanding of DP and its
+information-theoretic connections with other trustworthy features are still lacking. This tutorial
+providesa selectivesummaryofwhatweknowregardingtherelationshipbetweenDPandinforma-
+tiontheorytoenableinformationtheorists,primarily,tobuilduponthattoproducefundamental
+formulations andlimits of privacyin varioussettings.
+On the relevance of information-theoretic connections with DP: Originally, the use of the mutual
+information functional as a privacy metric dates back to [ 28] for studying the domain of genome
+privacy prior to the existence of DP. Even though there are different opinions on the form of the
+exact relation, a number of studies relate the (conditional [ 9] or unconditional [ 32,43]) mutual
+information between the entries of the dataset and the query response to DP, which could be in-
+terpretedasameasureofutilityaswellasofprivacy.Undercertainconditions,differentialprivacy
+and themutual information DP ,h a v ep r o v e nt ob ee q u a li n[ 9] where the authors redefine well-
+knowninformation-theoreticquantitiesasprivacyconstraint.Overall,amutualinformation-based
+approach to DP will allow many rules and properties that apply to the mutual information func-
+tional to be carried on to DP leaving no room for ambiguity regarding the essence of the privacy
+guarantee. Furthermore, in [ 9], the mutual information-based DP removes the requirement for
+neighborhood among datasets and strengthens the original definition. Hereafter, we enlist possi-
+ble directions of research where the information-theoretic connections with DP is pertinent. The
+reader should note that the following list is exemplary and non-exhaustive. Some items will be
+studiedin detailwithinthecontentof thistutorialin furthersections.
+—Cryptography: A major example is the connection with semantic security via an
+information-theoretic approach. [ 7] proves an equivalence between a mutual information-
+based DP constraint and semantic security where a maximization is taken over database
+distributions. Additionally, [ 44] introduces a new data-privacy protection model that aims
+toachieve Dalenius’goal aswellastohavebetterutility.Theprivacychannelcapacityresults
+areobtainedthroughdirecttranslationsofwell-knowninformation-theoreticapproachesto
+DP.Inparticular,theparalleldrawnbetweentheinformationprivacymodelandthemultiple-
+accesschannelmakesagreatpromisefortheuseofaninformation-theoreticframeworkto
+quantify theprivacyguaranteethatadifferentially privatesystemcan provideto itsusers.
+—Security: [41] presented an application of the so-called Kullback-Leibler DP [ 9]( t ob ed e -
+fined later) for detecting misclassification attacks in differentially private Laplace mecha-
+nisms. Accordingly, the corresponding distributions of relative entropy are considered as
+thedifferentiallyprivatenoisewithandwithouttheadversary’sadvantageinordertoestab-
+lish the relationship between the impact of the attack and the detection of the adversary as
+a function of the sensitivity and the privacy budget of the mechanism. Besides adversarial
+classification, information-theoretic approaches for bounding the communication complex-
+ityofcomputingafunction,whichoriginallyusescombinatorialmeasures[ 35],canalsobe
+applied to DP. Information complexity [ 4] is a lower bound on communication complexity
+thatisobtainedusingShannon’smutualinformationandreferstotheminimumamountof
+informationthatacommunicationprotocolleaksaboutitsusers’inputs.[ 30]introducesan
+upperboundontheinformationcostofatwo-partydifferentiallyprivateprotocolusingthe
+sameapproachthatwillbestudiedindetailinSection 4.[27],ontheotherhand,coversthe
+privacy of physical layer for a two-receiver broadcast channel through analyzing connec-
+tionsbetweenadifferentialprivacy-basedmetrictophysicallayersecrecy.Accordingly,the
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:4 A. Ünsal andM.Önen
+authors show that for the privacy of anonymous communication networks in the case of a
+degraded two-user broadcast channel, differentially private receiver-message unlinkability
+isequivalentuptoaconstanttoseveralsecrecymetrics.Finally,[ 27]presentstherateregion
+ofthe(ϵ,δ)-differentiallyprivatereceiver-messageunlinkabilitysatisfyingstrongsecrecy.
+—ML: Probably approximately correct (PAC) learning theory, which composes the math-
+ematical framework of ML, is related to differentially private learning by using the mutual
+information function in [ 31]. Accordingly, the author establishes an information-theoretic
+connectionbetweentheGibbsestimator,whichgivestheminimumofPAC-Bayesianbounds,
+and the exponential mechanisms to show that the Gibbs estimator minimizes the expected
+empiricalriskand themutualinformation betweenthesample andthepredictor.
+—Quantumcomputation: Therealsohasbeenaseriousefforttowardbuildingconnections
+betweenquantumcomputationandDP[ 1,24,39,46].Someworksbuildthebridgebetween
+the two via quantum information theory that draws Shannon information theory, quantum
+mechanics, and computer science together. Quantum DP is originally defined in [ 46]f o r
+adaptation of DP to quantum information processing. [ 24] focuses on quantum DPy using
+aninformation-theoreticframework,whichistranslatedintoquantumdivergence.
+Outline:Section2providesnecessarypreliminariesfromtheliteratureonDP.Introductorypre-
+liminariesarefollowedbynovelmetricsderivedthroughinformation-theoreticmeasuresforquan-
+tifyingprivacyguaranteeofdifferentiallyprivatemechanismsinSection 3alongwiththeirorder-
+ing and comparisons. Section 4presents upper bounds on information cost and maximal leakage
+based on Shannon entropy as well as min-entropy in differentially private mechanisms. In Sec-
+tion5, we discuss the connections between DP and source-coding theory, in addition to an exem-
+plaryresultonadversarialclassificationindifferentiallyprivatemechanismsfromarate-distortion
+perspective. To conclude, in Section 6, we point out possible research directions on information-
+theoreticapproachestoDP forfuturework.
+2 PRELIMINARIES
+ThissectionisreservedforareviewofsomeimportantpreliminariesfromtheDPyliterature.We
+beginwithdefiningthenotion ofneighborhoodof datasetsandthesensitivityof DP.
+Definition2.1. Twodatasets xand˜xarecalled neighbors,if thefollowing equalityholds:
+d(x,˜x)=1, (1)
+whered(.,.)denotestheHamming or l1distancebetweenthedatasets[ 16].
+Definition 2.1considers symmetry among neighbors in terms of the size of the dataset as de-
+picted in Figure 2. This is further relaxed to include the datasets, where neighborhood is due to
+theadditionorremovalofarecordasshowninFigure 1.Inbothcases,neighborsdifferinasingle
+row.
+Definition2.2. Globalsensitivity,denotedby s,ofafunction(oraquery) q:D→Rkisthesmall-
+estpossibleupperboundonthedistancebetweentheimagesof qwhenappliedtotwoneighboring
+datasetsxand˜x.Thismeans thatthe l1distanceis boundedasfollows: /bardblq(x)−q(˜x)/bardbl1≤s[15].
+Basically,sensitivityofadifferentiallyprivatemechanismofDefinition 2.2isthetightestupper
+boundontheimagesofaquery(amappingfunction)forneighbors.Itisafunctionofthetypeofthe
+queryhavinganoppositerelationshipwiththeprivacy,sincehighersensitivityofthequeryrefers
+toastrongerrequirementforprivacyguarantee;consequentlymorenoiseisneededtoachievethat
+guarantee.
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:5
+Fig.2. Symmetricneighborhood of differential privacy.The original definition of DP makes use
+of this notion of neighborhood between
+datasets. An informal definition is depicted
+in Figure 2. Accordingly, a mechanism M
+is said to be differentially private if for
+any two neighboring datasets, correspond-
+ing outputs of the mechanism, Outputs 1
+and 2, are indistinguishable. In other words,
+the output of a differentially private mecha-
+nismisexpectedtobehaveinthesameway
+whether or not one contributes to the dataset with their data. The following formal definition of
+DPintroducedandstudiedbyDworketal.invariouspublications[ 13,14,16]clarifiesthemathe-
+maticalmeaningof indistinguishabilityof theoutputscorrespondingtoneighboringdatasets.
+Definition 2.3 ( (ϵ,δ)-DP).A randomized algorithm Mis(ϵ,δ)-differentially private if ∀S⊆
+Ranдe(M)and∀x,˜xthatareneighborswithinthedomain of M,thefollowing inequalityholds.
+Pr[M(x)∈S]≤Pr[M(˜x)∈S]eϵ+δ. (2)
+For two DP measures ϵ1-DP andϵ2-DP where ϵ1,ϵ2>0,ϵ1-DP/followsequalϵ2-DP denotes that ϵ1-DP is a
+stronger privacy metric than ϵ2-DP. Analogous to Definition 2.3, there are two other cases of DP
+whereeitheroftheprivacyparameters, ϵorδ,equalszero.Theorderingofthesethreecasesfrom
+thestrongesttotheweakestprivacymetricis asfollows:
+ϵ-DP/followsequal(ϵ,δ)-DP/followsequalδ-DP. (3)
+Dwork’s original definition of DP in Definition 2.3emanates from a notion of statistical indis-
+tinguishabilityof twodifferent probabilitydistributionsgiven bythenext definition.
+Definition 2.4 (Statistical Closeness). Two probability distributions P1andP2are said to be
+(ϵ,δ)-close denoted by P1(ϵ,δ)≈P2over the measurable space (Ω,F)iff the following inequali-
+tieshold.
+P1(A)≤eϵP2(A)+δ,∀A∈F, (4)
+P2(A)≤eϵP1(A)+δ,∀A∈F. (5)
+SomeimportantpropertiesofstatisticalclosenessarerecalledherethatwillbeusedinSection 3
+to proveequalitybetweenmutualinformation functionaland DP.
+—Property1:Statisticalclosenesshasthefollowing relationwithKLdivergence.
+P1(ϵ,0)≈P2=⇒D(P1||P2)≤min{ϵ,ϵ2}
+D(P2||P1)≤min{ϵ,ϵ2}.(6)
+Notethat,theright-handsidesoftheinequalitiesaregiven in nats.
+—Property2:Due toPinsker’sinequality,we alsohave
+D(P1||P2)≤ϵnats=⇒P1(0,√ϵ/2)≈P2. (7)
+—Property3:For any ϵ/prime<ϵandδ/prime=1−(eϵ/prime+1)(1−δ)
+eϵ+1,wehave thefollowingrelation.
+P1(ϵ,δ)≈P2=⇒P1(ϵ/prime,δ/prime)≈P2. (8)
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:6 A. Ünsal andM.Önen
+2.1 HowtoObtain ϵ-a n d(ϵ,δ)-DP?
+A differentially private mechanism is named after the probability distribution of the perturbation
+appliedontothequeryoutput,intheglobalsetting.Inthefollowing,weremindthereaderofthe
+Laplace distribution and introduce Laplace and Gaussian mechanisms. The Laplace distribution,
+alsoknownasthedoubleexponentialdistribution,withlocationparameter μandscaleparameter
+bis definedby
+Lap(x;μ,b)=1
+2be−|x−μ|
+b, (9)
+whereits mean equalsits locationparameter μand itsvarianceis 2 b2.
+Definition2.5. Laplacemechanism[ 15] fora function(ora query) q:D→Rkisdefinedby
+M(x,q(.),ϵ)=q(x)+(Z1,...,Zk), (10)
+whereZi∼Lap(b=s/ϵ),i=1,...,kdenotei.i.d.Laplacerandomvariables.
+Definition 2.6. Gaussian mechanism [ 15] is defined for a function (or a query) q:D→Rkas
+follows:
+M(x,q(.),ϵ,δ)=q(x)+(Z1,...,Zk), (11)
+whereZi∼N(0,σ2),i=1,...,kdenote i.i.d. Gaussian random variables with the variance σ2=
+2s2log(1.25/δ)
+ϵ2.
+Theorem2.7([ 16]).For anyϵ,δ∈(0,1),theGaussianmechanismsatisfies (ε,δ)-DP.
+Remark. AsanalternativetoLaplacianperturbationappliedonthequeryoutputthatresultsin
+(ϵ,0)-DP,Gaussiannoiseprovidesamorerelaxedprivacyguarantee,thatis, (ϵ,δ)-DP.However,in
+some cases, the application of Gaussian noise becomes more useful. Vector-valued Laplace mech-
+anisms require the use of l1sensitivity whereas the vector-valued Gaussian mechanism allows l1
+orl2sensitivity, where l2sensitivity is defined as max x,˜x/bardblq(x)−q(˜x)/bardbl2≤s, for neighboring x
+and˜x. Dependent on the query function, when the l2sensitivity is significantly lower than the l1
+sensitivity,theGaussianmechanismrequiresmuchlessnoise.
+Remark(TheOptimal ϵ-differentiallyPrivateMechanism). Anaturalquestionthatcomestomind
+isifwecandobetterthantheLaplacemechanism.Theworkin[ 23]improvestheLaplacemecha-
+nismof[15]bycharacterizingthefundamentaltradeoffbetweenthedifferentiallyprivatemecha-
+nism’sprivacyandutilitytodefinean optimalϵmechanism.Accordingly,[ 23,Theorem1]shows
+that such a mechanism is obtained by applying a staircase-shaped probability distribution as the
+perturbation on real and integer-valued query functions in the low-privacy regime (i.e., when ϵ
+is large). The Laplace mechanism outperforms the optimal (ϵ,0)mechanism in the high-privacy
+regime.
+3 SHANNONINFORMATION AND RELATIVEENTROPY ASA PRIVACY
+CONSTRAINT
+This first main part of the tutorial is dedicated to the presentation of information-theoretic quan-
+titiesadaptedto beusedasprivacyconstraintin systemsthatdeploy (ϵ,δ)-differentialprivacy.
+Definition 3.1 ( ϵ–Mutual Information–DP [ 9]).For a dataset Xn=(X1,...,Xn)with the cor-
+responding ML output Yaccording to the randomized mechanism represented by M=PY|Xn,
+mutualinformationdifferentialprivacy (MI-DP) isdefinedas
+sup
+i,PXnI(Xi;Y|X−i)≤ϵnats, (12)
+whereX−i={X1,...,Xi−1,Xi+1,...,Xn}denotesthedatasetentriesexcluding Xi.
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:7
+Theϵ–MI-DP definition of Cuff et al. in [ 9] combines the Shannon information with the no-
+tionofidentifiability ,whichisdefinedusingtheBayesianapproachonindistinguishabilityof the
+neighboring datasets. Accordingly, a mechanism Msatisfiesϵidentifiability for some positive
+andrealϵifthefollowinginequalityholdsforanyneighboringentries x,˜x∈Dnandanyoutput
+y∈Dn.
+PX|Y(x|y)≤eϵPX|Y(˜x|y). (13)
+Bothϵ–MI-DPand ϵidentifiabilityaresubjecttotheimplicitstrongadversaryassumption[ 9](also
+called the informed adversary in [15]) where the adversary has the knowledge of all but a single
+entryinadatasetandaimstodiscoverthelastone.TheconditioninEquation( 13)suggeststhatfor
+smallvaluesof ϵ,neighboringdatasetsareindistinguishablebasedontheposteriorprobabilitiesof
+theoutput.Thisiswhatmakesithardtoassociatetherepresentationofthedataandthedataowner,
+whichtranslatestore-identification.Anotherlineofworkin[ 43]definestheMI-baseddifferential
+privacyasalossysource-codingproblemwithoutthemaximizationtakenoverallpossibledataset
+distributions. Definition 3.1differs from the information-theoretic definitions of original DP by
+incorporatingthatnoassumptionsaremadeonpriordatasetdistributions.Maximizationoverall
+possible input distributions in Equation ( 12) assures that the DP is a property of the mechanism
+resemblingthewell-known formula of theShannoncapacity.
+Next, weremind thereaderof theso-called KL DP.
+Definition3.2( ϵ-KLDP[9]).Arandomizedmechanism PY|Xguarantees ϵ–KLDP,ifthefollow-
+inginequalityholds forallitsneighboringdatasets xand˜x,
+D(PY|X=x||PY|X=˜x)≤eϵ. (14)
+3.1 Main Result
+Using information-theoretic quantities to study privacy may not be a brand new approach,
+nonetheless, the following result draws the strongest link between the two areas. Ordering and
+equivalenceof ϵ–MI-DP andDP isgiven byTheorem 3.3.
+Theorem3.3([ 9]).Thefollowing chainofinequalitiesholds:
+ϵ-DP/followsequalϵ–MI-DP/followsequal(ϵ,δ)-DP. (15)
+Conditionedonthecardinalityoftheinput XiortheoutputYofthedifferentiallyprivatemechanisms,
+anequivalenceisachievedbetween ϵ–MI-DP and (ϵ,δ)-DP. Then,we have
+ϵ–MI-DP=(ϵ,δ)-DP. (16)
+The case(ϵ,δ)-DP/followsequalϵ–MI-DP depends onthecardinalitybound min{|Y|,maxi|Xi|}.
+T h es k e t c ho ft h ep r o o fo fT h e o r e m 3.3[9].As is well known, (un/conditional) MI can be repre-
+sented as a function of relative entropy. The proof of Theorem 3.3starts off by proving an even
+more powerful chain of in/equalities among all three variations ϵ-,(ϵ,δ)-, andδ-DP, MI-DP, and
+theKL DP.Thechainof inequalitiesin Equation( 15)is expandedoutasfollows.
+ϵ-DP(a)
+/followsequalKL-DP(b)
+/followsequalϵ-MI-DP(c)
+/followsequalδ-DP(d)=(ϵ,δ)-DP. (17)
+Equation ( 17) shows that an ϵ-DP mechanism also guarantees ϵ–MI-DP. Relations (a) and (b) in
+Equation( 17)aretheresultsofProperty1ofstatisticalclosenessgivenbyDefinition 2.4.Ordering
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:8 A. Ünsal andM.Önen
+in(b) isachievedas follows:
+D(PY|Xn=xn||PY|X−i=x−i)=D/parenleftBig
+PY|Xn=xn||E/bracketleftBig
+PY|Xi=˜X,X−i=x−i/bracketrightBig/parenrightBig
+(18)
+≤E/bracketleftBig
+D(PY|Xn=xn||PY|X−i=˜X,X−i=x−i)/bracketrightBig
+(19)
+≤ϵnats (20)
+for˜X∼PXi|X−i=x−iandx−idenotesaninstanceof X−i.Thus,inEquation( 18)weusePY|X−i=x−i=
+E[PY|Xi=˜X,X−i=x−i]. The steps in Equations ( 19) and (20), respectively follow due to Jensen’s in-
+equalityandthedefinitionof MIbasedon relativeentropy,thatis,
+I(Xi;Y|X−i)=E/bracketleftBig
+D(PY|Xn=¯Xn||PY|X−i=¯X−i)/bracketrightBig
+(21)
+where¯Xn∼PXn. Ordering( c)thatstates ϵ–MI-DP/followsequalδ-DP isa consequenceof Lemma 3.4.
+Lemma3.4([ 9]).Thefollowingstatementissatisfiedwithrespecttotherelationbetween ϵ−MI-DP
+and(δ)-DP.
+ϵ–MI-DP=⇒(0,√
+2ϵ)-DP. (22)
+Equation( 22)istightenedas ϵ–MI-DP=⇒(0,δ/prime)-DPforϵ∈[0,ln2]forδ/prime=1−2h−1(ln2−ϵ)and
+h−1denotes theinverse of thebinaryentropy function.
+Lastly, ordering ( d) in Equation ( 17) is due to Property 3 given by Definition 2.4.T h er e a d e ri s
+referredto [ 9,Section3.3]for thefullproof.
+Remark. Themajorstrengthof ϵ–MI-DPoverotheralternativeMI-baseddefinitionsofDPlies
+inthe maximization taken over all possible input distributions to capture the fact that
+differentialprivacydoesnotrequireaparticulardistributionoftheinput. Moreover,from
+astochasticperspective,conditionalMIreflectsthestrongadversaryassumptionofDPandestab-
+lishesanothermajorstrengthof ϵ–MI-DPthatisbasedonDwork’sstandarddefinitionofdifferen-
+tial privacy that originally stems from this assumption. Conditioning on the remaining entries of
+the dataset in ϵ–MI-DP demonstrates that the adversary has the knowledge of the entire dataset
+exceptforoneentry,whichwastransmittedimplicitlybyusingthenotionofneighboringdatasets
+in the original stochastic definition of DP. From a practical point of view, another major strength
+of Definition 3.1lies in the ability to transfer information-theoretic rules and properties defined
+forShannoninformation andrelatedmeasuresonto DP.
+Nextpartprovidessomeofthewell-knowninformation-theoreticrulesthatalsoapplytoDPas
+aconsequenceof MI-DPand theorderingin Equation( 17).
+3.2 Composabilityof ϵ−MI-DP via Information-Theoretic Rules
+Thispartisdedicatedtosomeofthewell-knownpropertiesofMIthatarenowdirectlyapplicable
+onϵ−MI-DP.
+—BoundingtheconditionalMI:If Xisindependentof Z,thenthefollowinginequalityholds.
+I(X;Y|Z)≥I(X;Y). (23)
+—Consequence of data processing inequality: If X→Y→Zform a Markov chain in that
+order,thatis, XandZareconditionallyindependentgiven Y,thenthefollowinginequality
+holds.
+I(X;Y|Z)≤I(X;Y). (24)
+—Chainrule:
+I(X;Y,Z)=I(X;Z)+I(X;Y|Z). (25)
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:9
+—Independence: If the differentially private mechanism M=PY|Xnsatisfiesϵ–MI-DP where
+{Xi}n
+i=1aremutually independent,thenthefollowing chainof inequalitieshold.
+sup
+i,PXnI(Xi;Y)≤sup
+i,PXnI(Xi;Y|X−i)≤ϵ. (26)
+Some of the fundamental rules of MI enlisted above are transferred onto DP as a result of The-
+orem3.3. Several important properties of DP are straightforward to prove in this MI-based ap-
+proach.Next,weprovethecompositiontheoremofDPwiththeaidoftheseproperties.Originally,
+composability—animportantpropertyof (ϵ,0)-DP—statesthatanumberofqueriesunderDPalso
+collectively satisfiesDP wheretheprivacybudget of thecollectionis scaled proportionallyto the
+number of queries [ 17,25]. Corollary 3.5is a reflection of the composition theorem for (ϵ,0)-DP
+ontoϵ−MI-DP,whichshowsthatthecomposabilitycanbedefinedandprovenusinginformation-
+theoreticquantitiesand theircorrespondingproperties.
+Corollary3.5(Compositionof ϵ−MI-DP[9]).Forrandomizedmechanisms Mj=PYj|Xnthat
+individually satisfy ϵ−MI-DP with kconditionally independent outputs {Y1,...,Yk}given the input
+{X1,...,Xn}, the collection of kmechanismsMk=PYk|Xnalso satisfies ϵ−MI-DP with the privacy
+parameter/summationtextk
+jϵj.
+Proof. For any PXnandi, the collection of PYk|Xnsatisfiesϵ−MI-DP, which is bounded as
+follows:
+I(Xi;Y|X−i)=m/summationdisplay
+l=1I(Xi;Yl|X−i,Yl−1) (27)
+≤m/summationdisplay
+l=1I(Xi;Yl|X−i). (28)
+Equation( 27)followsduetothechainrulegivenbyProperty3inSection 3.2.ThestepinEquation
+(28) uses a propertyof the data-processinginequality (Property 2 in Section 3.2) due to the condi-
+tionalindependencebetween XiandYl−1givenYl.Finally,Equation( 29)substitutesDefinition 3.1
+as given below.
+I(Xi;Y|X−i)≤m/summationdisplay
+l=1ϵjnats. (29)
+/square
+Thisresultcompletesthefirstmain partofthetutorial.
+4 INFORMATION-THEORETIC BOUNDS ON DP
+In this section, we review four selective publications [ 2,6,12,30] that present upper bounds on
+the performance of differentially private mechanisms using different metrics. We begin with the
+two-partydifferentialprivacyin thedistributedsettingin theupcomingpart.
+4.1 Bounding theInformation Cost
+Contrarily to the common client-server setting where the server answers queries of clients based
+onitsaccesspolicy,inthetwo-partydistributedsettingpartiesexecutetheiranalysisonjointdata
+wheretheaimistoprovideatwo-sidedprivacyguaranteeforeachparty’sdata.Insuchasetting,
+each side sees the protocol/mechanism as a differentially private version of the other side’s input
+data.Informationcostofatwo-userDPmodelinsuchasettingreferstotheamountofinformation
+gatheredfromeachparty’sinputsusingtheexchangedmessages.Inordertoprovetheusefulness
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:10 A. Ünsal andM.Önen
+andpracticalityofDP,McGregoretal.characterizein[ 30]afundamentalconnectionbetweenthe
+informationcostandDP.Accordingly,theauthorspresentanupperboundontheinformationcost
+ofsuchamechanismbydefiningthecostastheMIbetweentheinputsandtherandomtranscript
+ofthemechanismdenoted Π(.,.),whichsimplyisthesequencesofexchangedmessagesbetween
+thetwoparties.
+Definition 4.1 (Information Cost). For two inputs XandYof a two-party mechanism Mwith
+probabilitydistribution P, theinformationcostof themechanismisdefined as
+IcostP(M)=I(X,Y;Π(X,Y)). (30)
+For a finite alphabet Σ, the two-party ϵ-DP mechanismM(x,y)withx,y∈Σnand every dis-
+tribution Pdefined on Σn×Σn, the information cost of this mechanism satisfies the upper bound
+IcostP(M)≤3ϵn. (31)
+For the special case of Σ={0,1}andPis the uniform distribution, the bound in Equation ( 31)i s
+improvedto 1 .5ϵ2n[30, Proposition4.3].
+Derivation of the upper bounds. For the two-party random input denoted by T=
+(X1,...,Xn,Y1,...,Yn)and independentsample T/primefromtheuniformdistribution P,w eh a v e
+I(Π(T);T)=H(Π)−H(Π|T)
+=E(t,π)←(T,Π(T))logPr[Π[T]=π|T=t]
+Pr[Π[T]=π](32)
+≤2(log2e)ϵn. (33)
+Equation( 33)isequivalenttotheright-handsideofEquation( 31)andobtainedusingthefollowing
+intervalforany tandt/prime.
+e(−2ϵn)≤Pr[Π(t)=π]
+Pr[Π(t/prime)=π]≤e(2ϵn). (34)
+Theimprovement is achievedbysetting Σ={0,1}for a uniformdistribution Pasfollows.
+I(T;Π(T))=/summationdisplay
+i∈[2n]I(Ti;Π(T)|T1···Ti−1) (35)
+=/summationdisplay
+i∈[2n]H(Ti|T1···Ti−1)−H(Ti|Π(T)T1···Ti−1) (36)
+≤/summationdisplay
+i∈[2n](1−H(eϵ/2)) (37)
+≤/summationdisplay
+i∈[2n]ϵ2
+2ln2. (38)
+ThefirstterminEquation( 36)equals1sinceeach Tiisindependentanduniformin P.Duetothe
+DPpropertyandtheBayesrule,wehave ∀t1,...,ti−1,πtheratioconfinedintheinterval (e−ϵ,eϵ)
+asgiven by
+e−ϵ≤Pr[Ti=0|T1,...,Ti−1=t1,...,ti−1,Π[T]=π]
+Pr[Ti=1|T1,...,Ti−1=t1,...,ti−1,Π[T]=π]≤eϵ. (39)
+Accordingly,thesecondterminEquation( 36)isboundedbytheentropyinEquation( 37).Finally,
+inEquation( 38),thebaseofthelogarithmischangedandsummedover2 ntermstogetlog2(e)ϵ2n.
+[10]presentsanadaptationoftheupperboundinEquation( 31)totheMIbetweenthedistribution
+overtheinputsofan ϵ-differentiallyprivatemechanismandthemechanism’soutputbyreplacing
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:11
+the second party’s input with a constant to obtain the same behavior of 3 ϵn.A c c o r d i n g l y ,f o ra
+queryq:(Z+)d→Rk,a nϵ-differentially private mechanism M:(Z+)d→P(Rk)and a dataset
+sizeofn,theMII(X;M(X))isupperboundedby3 ϵn.Boundingthesizeofthedatasetby n,allows
+the input distribution to be narrowed down to X∈[n]dfor [n]={0,1,...,n}. This results in the
+directapplicationoftheupperbound( 31)byMcGregoretal.whenthesecondparty’sinputisset
+to bea constant.
+Remark. Equation( 31)boundstheinformationcostasafunctionoftheprivacybudgetofaDP
+mechanism and combined with [ 5], the result signifies that any mechanism that satisfies DP can
+be compressed. Additionally, well-known bounds for the information cost in various settings can
+be employed tocharacterizethegapbetweentheoptimaland computationalDPmechanisms.
+4.2 UpperBound on Maximal Leakage
+[12] is one of the first examples of the line of work that modeled the problem of defining the op-
+timal mapping of the input data to a privatized output in order to determine the privacy-utility
+tradeoffbyusingrate-distortiontheory.Additionally,theauthorscompareDPwiththemaximum
+informationleakagetoprovethatDPdoesnotgrantprivacywithregardtoaverageandmaximal
+leakage. Their model is designed as a noiseless communication channel between two parties to
+transmit a number of measurements denoted Y∈Yto the receiving end, as well as a set of vari-
+ablesX∈Xthatisrequiredtoremainprivatetothesender. XandYfollowthejointdistribution
+(Y,X)∼pY,X(y,x),(y,x)∈Y×X.
+ϵ-informationprivacy isdefinedasfollowsinthesenseofadifferentiallyprivatemechanismas
+astrongeralternativetoDwork’soriginaldefinition.Accordingly, ϵ-informationprivacycaptures
+thefundamentalaimofprivacyofresistingtonotablechangeintheconditionalpriorandposterior
+probabilitiesofthefeaturesgiven theoutput.
+Definition 4.2 ([ 21]).A privacy-preserving mapping defined by the transition probability
+pY|X(.|.)for a setoffeatures X=(X1,...,Xn)whereXi∈X,y∈Yprovidesϵ-DP
+e−ϵ≤pX|Y(x|y)
+pX(x)≤eϵ(40)
+for ally∈Y:pY(y)>0if∀x⊆Xn.
+Definition 4.2isusedfor boundingthe maximal(information)leakage defined by
+max
+y∈YH(X)−H(X|Y=y). (41)
+Maximalleakagereferstothemaximumcostgainachievedbytheadversaryusingasingleoutput.
+Themain resultof [ 12] connecting ϵ-information privacytoDP isgiven bythenext theorem.
+Theorem 4.3 (Upper Bound on Maximal Leakage of Differential Privacy [ 12]).If a
+privacy-preserving mapping pY|X(.|.)isϵ-information private for some supp(pY)=Y,t h e ni tp r o -
+vides at least 2ϵ-DPand themaximalleakage isat mostϵ
+ln2.
+Proof. Forneighbors x1andx2,we havefor pY|X(.|.)anda subset B⊆Y
+Pr[Y∈B|X=x1]
+Pr[Y∈B|X=x2]=Pr[X=x1|Y∈B]Pr[X=x2]
+Pr[X=x2|Y∈B]Pr[X=x1](42)
+≤e2ϵ. (43)
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:12 A. Ünsal andM.Önen
+TheboundingstepinEquation( 43)isaresultofDefinition 2.3.Themaximumamountofinforma-
+tionthatisleakedfrom ϵ-informationprivatemappingEquation( 41)isboundedas given below.
+H(X)−H(X|Y=y)=/summationdisplay
+x∈XnpX|Y(x|y)pY(y)log/parenleftBiggpX|Y(x|y)
+pX(x)/parenrightBigg
+(44)
+(i)
+≤/summationdisplay
+x∈Xn,y∈YpX|Y(x|y)pY(y)logeϵ(45)
+(ii)=lneϵ
+ln2. (46)
+Step (i) results from applying the upper bound of Definition 4.2and from changing the range of
+thesum.Instep(ii),thebaseofthelogarithmicfunctionischangedandthesummation equalsto
+1,thusweget ϵ/ln2. /square
+4.3 UpperBound onMaximal Leakage Based onMin-Entropy
+This part presents the review of an upper bound on the maximal leakage of ϵ-DP by [6]. The
+distinctionoftheworkstemsfromusing min-entropy ratherthanShannonentropy.Theultimate
+goal of [6] is to compare and formally characterize connections between DP and information-
+theoreticleakage.Themaincontributionisestablishingsuchaconnectionbyupperboundingthe
+informationleakage in termsof DPyas afunctionof theprivacybudget.
+[6] justifies the use of min-entropy by its association to strong security guarantees. For Xand
+Y,respectivelydenotingtheinputandoutputtoaprobabilisticprogramandtheconditionaldistri-
+bution,PY|Xis characterized by the program’s semantics and composes an information-theoretic
+channelbetween XandY.Inthissetting,theadversaryaimstoinferthevalueof Xuponreception
+oftheoutput Y. Theunconditionalmin-entropy H∞(X)ofXisdefinedby
+H∞(X)=−logmax
+xPX(x), (47)
+whereastheconditionalmin-entropy H∞(Y|X)ofPY|Xyields
+H∞(Y|X)=−log/summationdisplay
+yPY(y)max
+xPX|Y(x,y). (48)
+The min-entropy–based leakage denoted by Lis the difference between H∞(X)andH∞(Y|X)de-
+pending on both the channel PY|Xand the input distribution PX. Min-entropy–based maximal
+leakageML(PY|X)isgiven by
+ML(PY|X)=max
+PX(H∞(X)−H∞(Y|X)). (49)
+For channels of a single bit of range, that is, when Ranдe(X)=Ranдe(Y)={0,1},[6, Theorem 3]
+statesthatforan ϵ-differentially privatechannel PY|X, themaximal leakageis upperboundedby
+ML(PY|X)≤log2eϵ
+1+eϵ. (50)
+TheboundinEquation( 50)isproventoapplytochannelsofarbitraryfiniterangein[ 6,Corollary
+1].Accordingly, thechannel PY|Xissummarized in Table 1for/summationtextn
+ipi=/summationtextn
+iqi=1.
+Foranϵ-differentiallyprivatechannel P¯Y|X,wheretheoutput ¯Yisdefinedovertherange {0,1},
+the leakage of PY|Xand that of P¯Y|Xcoincide. Similarly, for the channel P¯Y|Xwe have the fol-
+lowing matrix of probabilities for I={i|pi≤qi}.I nT a b l e 2,¯pand¯qrespectively denote the
+sumsover Ias/summationtext
+i/nelementIpiand/summationtext
+i∈Iqi.Hence,theirrespectivecomplementsyield1 −¯p=/summationtext
+i∈Ipiand
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:13
+Table 1. The Channel PY|Xwith
+X={0,1}andY={y1,y2,...,yn}
+PY|XY=y1···Y=yn
+X=0p1···pn
+X=1q1···qn
+Table 2. TheChannel P¯Y|X
+withX,¯Y={0,1}
+P¯Y|X¯Y=0¯Y=1
+X=0¯p1−¯p
+X=1¯q1−¯q
+1−¯q=/summationtext
+i/nelementIqi. Plugging in [ 6, Theorem 3] with the definition of min-entropy–based maximal
+leakage,theequivalenceof ML(PY|X)andML(P¯Y|X)isproven by
+ML(PY|X)=log/summationdisplay
+ymax
+xPY|X(y,x) (51)
+=log(¯p+¯q) (52)
+sinceEquation( 52)isML(P¯Y|X).
+Additionally, ϵ-DPofthechannel PY|Xguaranteesthat qi≤eϵforevery i∈Iandthus, ¯q≤eϵ¯p.
+Thesame appliesto pi≤eϵforevery i/nelementI.
+4.4 Information-Theoretic Post-processingof Differential Privacy
+The post-processingproperty is one of the important features of DP and ensures that the privacy
+protectionofadifferentiallyprivatemechanismisnotaffectedbyarbitrarycomputationsapplied
+onthemechanism’soutput[ 16].Inotherwords,itisimpossibleto undotheprivacyguaranteeof
+DPbypost-processingthedata.Moreformally,ifthemechanism M:N|X|→Rsatisfies(ϵ,δ)-DP,
+for any arbitrarymapping f:R→R/prime,f◦M:N|X|→R/primealso satisfies (ϵ,δ)-DP.
+AsimplerversionoftheproblemofinvestigatingtheconnectionbetweenDPandmin-entropy
+leakage in [ 6] is initiated by [ 2,3] for an individual rather than the entire universe of databases.
+In [2,3], the authors consider a model where information leakage is used to measure the amount
+of information that an attacker can learn about the database that also allows one to quantify the
+utility of the query via min-entropy. Applying Bayesian post-processing on the differentially pri-
+vateoutputofthemechanism,itisshownthattheutilityfunctioniscloselyrelatedtoconditional
+min-entropy and tothemin-entropy leakage.
+5 DP AS A SOURCE-CODINGPROBLEM
+Several works study the connection between DP and (lossy) source coding from various aspects
+[12,32,34,36,43,47] and some tailored the rate-distortion theory to identify a tradeoff between
+privacy and distortion. [ 12] is one of the first examples that model DP using a rate-distortion
+perspective establishing a tradeoff between privacy and utility. The authors set the amount of
+informationobtainedbytheadversary(i.e.,theleakage)asthecostgainandminimizeitsubjectto
+asetofutilityconstraints,whichreflecttheroleofthedistortionfunctionintheoriginalsettingof
+therate-distortiontheory.Ontheotherhand,in[ 43],thedistortionbetweentheinputandoutput
+of the mechanismis used to determine the number of rows that differ and it is minimized subject
+to three different privacy metrics, in order to establish how many rows need to be modified to
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:14 A. Ünsal andM.Önen
+preserve the privacy guarantee. Accordingly, the distortion is defined as the Hamming distance
+dbetween the input and output of a dataset as d:Dn×Dn→N. The contribution of [ 43]i s
+to demonstrate a connection between identifiability, DP, and themutual-information privacy
+(MIP) that is defined by I(X;Y)for the input Xand output Y. The privacy-distortion problem of
+[43]isd efinedasf ol l o ws.
+min
+PY|XI(X;Y), (53)
+s.t.E[d(X,Y)]≤D, (54)
+/summationdisplay
+y∈DnpY|X(y|x)=1,∀x∈Dn, (55)
+pY|X(y|x)≥0,∀x,y∈Dn. (56)
+The main objective of [ 43] is to investigate and explain the relation between identifiability, DP,
+and MIP in order to compare them. The authors show that there exists a privacy mechanism that
+minimizesboth I(X;Y)andtheidentifiability.The privacy-distortionfunction denotedas ϵ∗(D)
+referstothesmallestDPlevelforagivenmaximumallowabledistortion D.TheMI-basedprivacy
+level isboundedas follows:
+ϵ∗(D)≤ϵ≤ϵ∗(D)+2ϵX, (57)
+wherethemaximal priorprobabilitydifferenceis
+ϵX=max
+x,˜x∈Dn:x∼˜xlnpX(x)
+pX(˜x)(58)
+forneighboringdatasets xand˜x.ThisMI-basedmechanismsatisfies ϵ-DP.Inlightof[ 9,Theorem
+1], which is visited in Section 3, the exact relation and ordering between conditional MI and DP
+aretodayknown.
+[36]studiestheconvergenceofthesourcedistributionestimatetotheactualdistributionbased
+on the output from a locally differentially private mechanism. The fundamental difference in this
+settingstemsfromthefactthattheDPnoisethatisappliedoneachuser’sdatalocally,removesthe
+requirementforanotionofneighborhoodbetweendatasets.Inthemodelof[ 36],thesource{Xi}
+followsadiscretedistribution Pandthemechanism MreferstotheapplicationoflocalDPnoise
+onni.i.d. source symbols that outputs the privatized observations {Yi}following the distribution
+Q,t h a ti s ,PM. The goal of the legitimate observer is to estimate the source distribution Pusing
+the noisy outputs {Yi}s u b j e c tt oe i t h e ro f f-divergence, mean-squared error (MSE), or total
+variation as the fidelity criteria. At the same time, an adversary aims to discover some source
+samplesXi. The authors present upper and lower bounds on their formulation of the tradeoff
+betweenDP leveland fidelity lossbasedontheaforementionedthreelossfunctions.
+5.1 An AdaptationtoAdversarial Classification
+Introducing adversarial examples to ML systems is a specific type of sophisticated and powerful
+attack, whereby additional (sometimes specially crafted) or modified inputs are provided to the
+systemwiththeintentofbeingmisclassifiedbythemodelaslegitimate.Adversarialclassification
+is one possible defense proposed to correctly detect adversarial examples that aim to fool the
+classifierthatdetectsoutliers.In[ 41,42],DPisweaponizedbytheadversaryinordertoensureto
+remain undetected. In addition to the statistical approach using hypothesis testing to establish a
+threshold of detection for the adversary as a function of the privacy budget, [ 42] also introduces
+anoriginaladaptationoflossy sourcecodingto upperboundtheimpactof theattack.
+In this setting, the adversary not only wants to discover the data but also aims to harm the
+differentially private mechanism by modifying the released information without being detected.
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:15
+Thistradeoffbetweentwoconflictinggoalsofadversaryisremodeledviatherate-distortiontheory
+balancingtheadversary’sadvantageandthesecurityoftheGaussianDPmechanism.Accordingly,
+the MI between the input and output of a communication channel in the original rate-distortion
+problem is now replaced by the datasets before and after the alteration applied by the adversary
+thatareconsideredasneighbors,wheretheabsolutedifferencebetweenthetwocorrespondstothe
+impactoftheattack.Neighboringinputvectors Xn={X1,...,Xn}and˜Xn={X1,...,Xi,...,Xn+
+Xadv}are assumed to be i.i.d. following the Gaussian distribution with the parameters N(0,σ2
+Xi)
+with the difference of a single record denoted Xadv∼N(0,σ2
+adv). The query function takes the
+aggregationofthisdatasetas q(X)=/summationtextn
+iXiandtheDPmechanismaddsGaussiannoise Zonthe
+queryoutputleadingtothenoisyoutputinthefollowingform, M(X,q(.),ϵ,δ)=Y=/summationtextn
+iXi+Z.
+An adversary adds a single record denoted Xadvto this dataset. The modified output of the DP
+mechanismbecomes/summationtextn
+iXi+Xadv+Z.
+Theorem 5.1. The privacy-distortion function for a dataset Xnand Gaussian mechanism as de-
+fined byDefinition ( 2.6)i s
+P(s)=1
+2log/parenlefttpA
+/parenleftbtAfn/parenlefttpA
+/parenleftbtA1+n/productdisplay
+iσ2
+Xi/s2/parenrighttpA
+/parenrightbtA/parenrighttpA
+/parenrightbtA, (59)
+fors∈[0,/producttextn
+iσ2
+Xi]andzeroelsewhere. σXidenotesthestandarddeviationof Xifori=1,...,n,and
+fnissomeconstant dependent onthesizeofthedataset n.
+The sketch of the proof proceeds as follows. The MI between the datasets before and after the
+attackisderived asfollows:
+I(Xn;˜Xn)=h(˜Xn)−h(˜Xn|Xn) (60)
+≥1
+2n/summationdisplay
+i=1log/parenleftBig
+(2πe)σ2
+Xi/parenrightBig
+−1
+2log/parenleftBig
+2πes2/parenrightBig
+(61)
+=1
+2log/parenlefttpA
+/parenleftbtA(2πe)n−1n/productdisplay
+iσ2
+Xi/s2/parenrighttpA
+/parenrightbtA. (62)
+Corollary 5.2. The second-order statistics of the additional data inserted into the dataset by the
+adversary isupper bounded as follows:
+σ2
+Xadv≤1
+(2πe)n−1⎡⎢⎢⎢⎢⎣s2
+1−s2/σ2
+Xn⎤⎥⎥⎥⎥⎦(63)
+fors2=σ2
+zϵ2
+2log(1.25/δ)andn≥2.
+Wehavethefollowingconsideringtheneighborthatincludes Xadvhasnow(n+1)entriesover
+nrows as˜Xn={X1,X2,...,Xn+Xadv}.Accordingly, thesecondexpansionis derivedon Xnas
+I(Xn;˜Xn)=h(Xn)−h(Xn|˜Xn) (64)
+≤n/summationdisplay
+i=11
+2log(2πe)nσ2
+Xi−1
+2log/parenleftBig
+(2πe)nσ2
+Xadv/parenrightBig
+(65)
+≤1
+2logn−1/productdisplay
+i=1σ2
+Xi/parenlefttpA
+/parenleftbtA1+σ2
+Xn
+σ2
+Xadv/parenrighttpA
+/parenrightbtA(66)
+leading to the upper bound in Equation ( 63). Due to the adversary’s attack, in the first term of
+Equation ( 65), we add up the variances of (n+1)Xi’s including Xadv. Since Equation ( 62)≥
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:16 A. Ünsal andM.Önen
+Equation( 66),weobtaintheupperboundinCorollary 5.2ForthedetailedderivationofEquations
+(62)and (66),thereader isreferredto[ 42].
+Remark. ThesecondexpansionoftheMIbetweenneighboringdatasetsderivedinEquation( 66),
+can be related to the well-known rate-distortion function of the Gaussian source that, orig-
+inally, provides the minimum possible transmission rate for a given distortion balancing (mostly
+fortheGaussiancase)thesquared-errordistortionwiththesourcevariance.CombiningEquation
+(62) with Equation ( 66) characterizes the privacy-distortion tradeoff of the Gaussian mechanism
+andboundstheimpactoftheadversary’smodificationontheoriginaldatainordertoavoiddetec-
+tioninsomesense calibrating theadversary’sattacktothesensitivityofthedifferentiallyprivate
+mechanism.
+6W H A T ELSEDOWEWANTTO LEARN?
+Asconvenientandpracticalasitis,usinginformation-theoreticquantitiesasprivacyconstraintis
+not fully exploited. This final part is reserved for concluding the tutorial by pointing out possible
+researchdirectionson information-theoreticapproachestoDP for thefuture.
+In particular, for classification of adversarial examples in differentially private mechanisms
+whereadversariesmayseekforwaystoharmthesystemsviamodifyingtheMLmodelandmisclas-
+sifying to model inputs, the source-coding theory could provide new insights in the DP measure
+itself. A great majority of the existing information theory literature benefits from source-coding
+theoryforquantifyingtheprivacyguaranteeorfordeterminingtheleakageasalreadymentioned
+in Section 5.[36] stands out in the way the rate-distortion perspective is translated for DP where
+various fidelity criteria is set to determine how fast the empirical distribution converges to the
+actualsourcedistribution.Thisapproachcouldbeextendedfordetectionofadversarialexamples
+attackingdifferentiallyprivatemechanismsbeyondthework[ 41],wheretheauthorspresentedan
+application of the KL DP for detecting misclassification attacks in Laplace mechanisms. The cor-
+respondingdistributionsofrelativeentropyareconsideredasthedifferentiallyprivatenoisewith
+and without the adversary’s advantage. The essential distinction that has to be made as relating
+DPtoMIisthatthemutualinformationrequiresaninputdistribution.DP,ontheotherhand,isa
+characteristicofthemappingfunctionappliedontheinput.Consequently,thequerymechanism,
+hencethesensitivity,shouldplayaroleindefiningthefidelitycriterionastranslatingtheadversar-
+ialclassificationintoarate-distortionproblemsimilarlyto[ 42].Ultimately,thisapproachinspired
+by rate-distortion theory could be generalized beyond misclassification attacks for various types
+of attacks in order to determine and manipulate limits of the impact and detection probability of
+an attack, and to formally characterize a tradeoff between the two. Moreover, by casting DP for
+adversarialclassificationintoasource-codingproblem,information-theoretictoolscouldbeused
+toconstruct explicitcodingstrategies forprivacypreservationinanomaly detection.
+Furthermore,information-theoreticquantitiescouldshedlightonconnectionsbetweenDPand
+othertrustworthyfeaturesofMLalgorithmssuchasfairnessandrobustness.Variousworksshow
+pairwise connections of DP with robustness [ 11,26,37,38] and fairness [ 22]. The knowledge on
+these relations of DP with these properties are yet to be explored from an information-theoretic
+perspective.
+REFERENCES
+[1] Scott Aaronson and Guy N. Rothblum. 2019. Gentle measurement of quantum states and differential privacy. In Pro-
+ceedings of the 51st Annual ACM SIGACT Symposium on Theory of Computing (STOC’19) . Association for Computing
+Machinery,New York, NY,322–333. https://doi.org/10.1145/3313276.3316378
+[2] Mário S. Alvim, Miguel E. Andrés, Konstantinos Chatzikokolakis, Pierpaolo Degano, and Catuscia Palamidessi. 2012.
+Differential privacy: On the trade-off between utility and information leakage. Formal Aspects of Security and Trust .
+Springer,Berlin,39–54.
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.Information-Theoretic Approaches toDifferential Privacy 76:17
+[3] MárioS.Alvim,KonstantinosChatzikokolakis,PierpaoloDegano,andCatusciaPalamidessi.2010.Differentialprivacy
+versus quantitativeinformationflow. arXiv:1012.4250. https://arxiv.org/abs/1012.4250
+[4] Z.BarYossef,T.S.Jayram,R.Kumar,andD.Sivakumar.2004.Aninformationstatisticsapproachtodatastreamand
+communicationcomplexity. Journal ofComputer and SystemSciences 68,4(June2004),702–732.
+[5] B. Barak, M. Braverman, X. Chen, and A. Rao. 2010. How to compress interactive communication. In 42nd ACM
+Symposium on Theory ofComputing . ACM, NewYork, NY, 67–76.
+[6] G.BartheandB.Köpf.2011.Information-theoreticboundsfordifferentiallyprivatemechanisms.In ComputerSecurity
+Foundations Symposium . IEEE, New York, NY, 191–204.
+[7] M.Bellare,S.Tessaro,andA.Vardy.2012.Semanticsecurityforthewiretapchannel. AdvancesinCryptology-CRYPTO .
+Springer, Berlin,294–311.
+[8] A. Chawla.2021.PegasusSpyware—‘A Privacy Killer’.(July 2021).SSRN.
+[9] P.CuffandL.Yu.2016.Differentialprivacyasamutualinformationconstraint.In CCS2016.AssociationforComput-
+ingMachinery, New York, NY, 43–54.
+[10] A.De.2012.Lowerboundsindifferentialprivacy.In TheoryofCryptographyConference .InternationalAssociationfor
+Cryptologic Research, 321–338.
+[11] M. Du, R. Jia, and D. Song. 2020. Robust anomaly detection and backdoor attack detection via differential privacy. In
+International ConferenceonLearning Representations (ICLR’20) .
+[12] F. du Pin Calmon and N. Fawaz. 2012. Privacy against statistical inference. In 50th Annual Allerton Conference . IEEE,
+New York, NY, 1401–1408.
+[13] C.Dwork. 2006.Differentialprivacy. Automata, Languages andProgramming . Springer,Berlin,1–12.
+[14] C. Dwork. 2008. Differential privacy: A survey of results. In International Conference on Theory and Applications of
+Models ofComputation (TAMC’08) ,LectureNotes inComputerScience, Vol. 4978.Springer, Berlin,1–19.
+[15] C. Dwork, F. McSherry, K. Nissim, and A. Smith. 2006. Calibrating noise to sensitivity in private data analysis. In
+Theory ofCryptography Conference .InternationalAssociation for Cryptologic Research,265–284.
+[16] C.DworkandA.Roth.2014.Thealgorithmicfoundationsofdifferentialprivacy. FoundationsandTrendsinTheoretical
+Computer Science 9(2014),211–407.
+[17] C. Dwork, G. N. Rothblum, and S. Vadhan. 2010. Boosting and differential privacy. In 51st Annual Symposium on
+Foundations ofComputer Science (FOCS’10) .IEEE ComputerSociety, NW Washington, DC,51–60.
+[18] C. Dwork and A. Smith. 2010. Differential privacy for statistics: What we know and what we want to learn. Journal
+ofPrivacy andConfidentiality 1,2(2010),135–154.
+[19] K.E.Emam,E.Jonker,L.Arbuckle,andB.Malin.2011.Asystematicreviewofre-identificationattacksonhealthdata.
+PlosOnePMC 6,12(2011),1–12.
+[20] U. Erlingsson, V. Pihur, and A. Korolova. 2014. RAPPOR: Randomized aggregatable privacy-preserving ordinal re-
+sponse. In ACMSIGSAC Conferenceon Computerand Communications . ACM, NewYork, NY, 1054–1067.
+[21] A.Evfimievski,J.Gehrke,andR.Srikant.2003.Limitingprivacybreachesinprivacypreservingdatamining.In 22nd
+ACMSymposium on Principles ofDatabase Systems .ACM, New York, NY, 211–222.
+[22] Ferdinando Fioretto, Cuong Tran, Pascal Van Hentenryck, and Keyu Zhu. 2022. Differential privacy and fairness in
+decisionsandlearningtasks:Asurvey.In Proceedingsofthe31stInternationalJointConferenceonArtificialIntelligence
+(IJCAI’22) , Lud De Raedt (Ed.). International Joint Conferences on Artificial Intelligence Organization, 5470–5477.
+https://doi.org/10.24963/ijcai.2022/766 Survey Track.
+[23] Q. Geng and P. Viswanath. 2014. The optimal mechanism in differential privacy. In IEEE International Symposium on
+Information Theory . IEEE, NewYork, NY, 2371–2375.
+[24] C. Hirche, C. Rouzé, and D. S. França. 2023. Quantum differential privacy: An information theory perspective.
+arXiv:2202.10717.Retrievedfrom https://arxiv.org/abs/2202.10717 .
+[25] P. Kairouz, S. Oh, and P. Viswanath. 2015. The composition theorem for differential privacy. In 32nd International
+ConferenceonMachine Learning . JMLR,Inc.andMicrotome Publishing,4037–4049.
+[26] M. Lecuyer, V. Atlidakis, R. Geambasu, D. Hsu, and S. Jana. 2019. Certified robustness to adversarial examples with
+differentialprivacy.In IEEESymposium on Security and Privacy . 1054–1067.
+[27] P. H. Lin, C. Kuhn, T. Strufe, and E. A. Jorswieck. 2019. Physical layer privacy in broadcast channels. In 2019 IEEE
+International Workshopon Information Forensics andSecurity (WIFS’19) . IEEE, 1–6.
+[28] Z. Lin, M. Hewett, and R. B. Altman. 2002. Using binning to maintain confidentiality of medical data. In AMIA 2002
+Annual Symposium Proceedings . 454–458.
+[29] A. Machanavajjhala, D. Kifer, J. Abowd, J. Gehrke, and L. Vilhuber. 2008. Privacy: Theory meets practice on the map.
+InIEEE24th International ConferenceonData Engineering . IEEE, New York, NY, 277–286.
+[30] A. McGregor, I. Mironov, T. Pitassi, O. Reingold, K. Talwar, and S. Vadhan. 2010. The limits of two-party differen-
+tial privacy. In 51st Annual Symposium on Foundations of Computer Science (FOCS’10) . IEEE Computer Society, NW
+Washington,DC,81–90.
+ACM ComputingSurveys, Vol. 56,No. 3,Article76.Publicationdate:October2023.76:18 A. Ünsal andM.Önen
+[31] D. J. Mir. 2012. Differentially-private learning and information theory. In International Workshop on Privacy and
+Anonymityin theInformation Society PAIS .ACM,New York, NY,206–210.
+[32] D. J. Mir. 2012. Information theoretic foundations of differential privacy. In International Symposium of Foundations
+onPractice ofSecurity . Springer, Berlin,374–381.
+[33] A. Narayanan and V. Shmatikov. 2008. Robust de-anonymization of large sparse datasets. In IEEE Symposium on
+Security and Privacy . IEEE, NewYork, NY, 111–125.
+[34] A. Padakandla, P. R. Kumar, and W. Szpankowski. 2020. Trade-off between privacy and fidelity vie Ehrhart theory.
+IEEETransactions onInformation Theory 66,4(Apr.2020),2549–2569.
+[35] D. Pankratov. 2015. Communication Complexity and Information Complexity . Ph.D. Dissertation. The University of
+Chicago.
+[36] A.PastoreandM.Gastpar.2021.Locallydifferentiallyprivaterandomizedresponsefordiscretedistributionlearning.
+Journal on Machine Learning Research 22(July2021),1–56.
+[37] NhatHaiPhan,MyT.Thai,HanHu,RuomingJin,TongSun,andDejingDou.2020.Scalabledifferentialprivacywith
+certified robustness in adversarial learning. In Proceedings of the 37th International Conference on Machine Learning
+(ICML’20) .JMLR.org,Article 712,12pages.
+[38] Rafael Pinot, Florian Yger, Cedric Gouy-Pailler, and Jamal Atif. 2019. A unified view on differential privacy and ro-
+bustness to adversarial examples. In Workshop on Machine Learning for CyberSecurity at ECMLPKDD 2019 .https:
+//hal.science/hal-02892170 .
+[39] Makhamisa Senekane, Mhlambululi Mafu, and Benedict Molibeli Taele. 2017. Privacy-preserving quantum machine
+learning using differential privacy. In 2017 IEEE AFRICON (2017 IEEE AFRICON: Science, Technology and Innovation
+for Africa, AFRICON2017) , Darryn R. Cornish (Ed.). Institute of Electrical and Electronics Engineers, Inc.,1432–1435.
+https://doi.org/10.1109/AFRCON.2017.8095692
+[40] L. Sweeney. 2002. k-anonymity: A model for protecting privacy. International Journal of Uncertainty, Fuzziness and
+Knowledge-Based Systems 10,5(2002),557–570.
+[41] A. Ünsal and M. Önen. 2021. A statistical threshold for adversarial classification in Laplace mechanisms. In IEEE
+InformationTheory Workshop2021 . IEEE, New York, NY, 1–6.
+[42] Ayşe Ünsal and Melek Önen. 2022. Calibrating the attack to sensitivity in differentially private mechanisms. Journal
+ofCybersecurity and Privacy 2,4(2022),830–852. https://doi.org/10.3390/jcp2040042
+[43] W. Wang, L. Ying, and J. Zhang. 2016. On the relation between identifiability, differential privacy and mutual infor-
+mationprivacy. IEEETransactions onInformationTheory 62,9(Sep. 2016),5018–5029.
+[44] G. Wu, X. Xia, and Y. He. 2021. Achieving Dalenius’ Goal of Data Privacy with Practical Assumptions. (May 2021).
+https://arxiv.org/abs/1703.07474v5 .
+[45] H. Zang and J. Bolot. 2011. Anonymization of location data does not work: A large-scale measurement study. In
+Proceedings of theInternational ConferenceonMobileComputing and Networking 17 . ACM,New York, NY,145–156.
+[46] LiZhouandMingshengYing.2017.Differentialprivacyinquantumcomputation.In 2017IEEE30thComputerSecurity
+FoundationsSymposium (CSF’17) (2017),249–262.
+[47] S. Zhou, K. Ligett, and L. Wasserman. 2009. Differential privacy with compression. In IEEE International Symposium
+onInformation Theory (ISIT’09) . IEEE, NewYork, NY, 2718–2722.
+Received 13 April 2022; revised 27 March 2023; accepted 2May 2023
+ACMComputingSurveys, Vol. 56,No.3,Article 76.Publicationdate:October2023.

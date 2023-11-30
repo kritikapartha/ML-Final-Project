@@ -1,0 +1,1579 @@
+Multi-Factor Password-Authenticated Key Exchange
+Douglas Stebila1Poornaprajna Udupi2Sheueling Chang3
+1Information Security Institute
+Queensland University of Technology
+Brisbane, Queensland, Australia
+Email: douglas@stebila.ca
+2Sun Microsystems Laboratories
+Santa Clara, California, United States
+Email: poornaprajna.udupi@sun.com
+3Email: sheueling.shantz@gmail.com
+Abstract
+We consider a new form of authenticated key
+exchange which we call multi-factor password-
+authenticated key exchange, where session establish-
+ment depends on successful authentication of multiple
+short secrets that are complementary in nature, such
+as a long-term password and a one-time response, al-
+lowing the client and server to be mutually assured of
+each other's identity without directly disclosing pri-
+vate information to the other party.
+Multi-factor authentication can provide an en-
+hanced level of assurance in higher-security scenarios
+such as online banking, virtual private network access,
+and physical access because a multi-factor protocol is
+designed to remain secure even if all but one of the
+factors has been compromised.
+We introduce a security model for multi-factor
+password-authenticated key exchange protocols, pro-
+pose an ecient and secure protocol called MFPAK,
+and provide a security argument to show that our pro-
+tocol is secure in this model. Our security model is an
+extension of the Bellare-Pointcheval-Rogaway secu-
+rity model for password-authenticated key exchange
+and accommodates an arbitrary number of symmetric
+and asymmetric authentication factors.
+Keywords: multi-factor authentication, passwords,
+key exchange, cryptographic protocols
+1 Introduction
+Phishing and spyware are two of the major security
+problems on the Internet today. Phishing, or server
+impersonation, occurs when a malicious server con-
+vinces a user to reveal sensitive personal informa-
+tion, such as a username and password, to a mali-
+cious server instead of the real server. Additionally,
+many users' computers are compromised with spy-
+ware, which can record users' keystrokes (and thus
+passwords) and transmit this information to a mali-
+cious party. These attacks are possible not because
+of the break of any cryptographic protocol but be-
+cause of externalities such as social engineering and
+software bugs.
+In theory, these attacks can be addressed in part
+by using trusted cryptographic devices that can store
+private keys and perform cryptographic operations,
+but such devices are dicult to deploy and use. Years
+Copyright c2010, Australian Computer Society, Inc. This pa-
+per appeared at the Australasian Information Security Confer-
+ence (AISC), Brisbane, Australia. Conferences in Research and
+Practice in Information Technology (CRPIT), Vol. 105, Colin
+Boyd and Willy Susilo, Ed. Reproduction for academic, not-for
+prot purposes permitted provided this text is included.of experience have shown that passwords are a much
+more popular and easy-to-use form of authentication,
+but are more susceptible to phishing and spyware at-
+tacks. In this work, we focus on the use of passwords
+for authentication, since they are easier for users to
+use and carry between computers than long private
+keys.
+Phishing can be combated by protocols that pro-
+vide strong, easy-to-use server-to-client authentica-
+tion. Password-authenticated key exchange (PAKE)
+can make server-to-client authentication easier and
+resistant to oine dictionary attacks, and addition-
+ally provides a secure key for encryption.
+Spyware is more dicult to defend against. If
+a user's computer is compromised by passive spy-
+ware that records keystrokes and occasionally trans-
+mits this information to an attacker's server, then the
+use of one-time passwords may be eective, since a
+previously used one-time password can not be used
+again. Active spyware { that frequently communi-
+cates with the attacker's server and actively alters
+the user's computer { is nearly impossible to defend
+against without additional trusted hardware.
+To reduce the damage caused by compromising an
+authentication factor, many organizations with high
+security requirements { such as nancial institutions,
+governments, and corporate virtual private networks
+(VPNs) { are deploying multi-factor authentication,
+which depends on a variety of attributes, or factors.
+The factors could include: a long-term password, a
+set of one-time passwords, a private key, or a biomet-
+ric. To be eective in practice, factors should have
+dierent, complementary natures of compromise. For
+example, one-time passwords cannot all be compro-
+mised unless one obtains the sheet of paper listing
+all the one-time passwords or the device generating
+the one-time passwords, whereas a biometric read by
+a trusted device (such as a secure ngerprint reader)
+should not be able to be reproduced without the pres-
+ence of the person in question (or at least their nger).
+Contributions. Our goal is to design a framework
+for multi-factor authentication protocols that pro-
+vides exibility in the number and nature of factors.
+Protocols secure in this framework should provide
+strong mutual authentication, convey the authenti-
+cation secrets in a secure manner, and remain secure
+even if all but one of the authentication factors is
+compromised. The authentication secrets can be low-
+entropy secrets, such as passwords. Using multiple
+low-entropy secrets can allow for passwords that may
+have dierent modes of compromise, such as a mem-
+orized long-term password and a one-time password
+generated from a hardware device or transmitted over
+a mobile phone text message.
+First, we dene a security model which is an exten-
+CRPIT Volume 105 - Information Security 2010
+56sion of the Bellare-Pointcheval-Rogaway model (Bel-
+lare et al. 2000) for PAKE. Our model allows for an
+arbitrary number of authentication factors, which can
+be either symmetric or asymmetric. Our security def-
+inition formalizes the notion that a multi-factor pro-
+tocol should remain secure even if all but one of the
+factors has been compromised.
+Next, we present an ecient multi-factor proto-
+col that is secure in this model under standard cryp-
+tographic assumptions in the random oracle model.
+Our protocol combines facets of the PAK protocol
+(MacKenzie 2002) for symmetric factors and the
+PAK-Z+ protocol (Gentry et al. 2005) for asymmet-
+ric factors. We discuss how many dierent types of
+factors { long-term passwords, one-time passwords,
+biometrics, and even private keys { can be used in
+our protocol.
+Our work diers from previous work in PAKE
+because it uses multiple authentication factors and
+maintains security even if some are compromised.
+Others have considered some aspects of multi-factor
+authentication, but these have either used at least
+one factor that is a long cryptographic secret (Yang
+et al. 2006, Park & Park 2004, Yoon & Yoo 2006,
+Pointcheval & Zimmer 2008), or have not pro-
+vided strong server-to-client authentication resistant
+to man-in-the-middle attacks.
+Outline. The rest of our paper proceeds as follows.
+In Section 2, we describe the security model for multi-
+factor PAKE. In Section 3, we present our protocol
+MFPAK and discuss its eciency; we show through
+a formal analysis that the MFPAK protocol is secure
+and discuss how various types of factors can be used.
+Section 4 concludes the paper with what we believe
+are interesting directions for future research. Ap-
+pendix A presents the one of the cases for our security
+proof for the MFPAK protocol; the rest appear in the
+full version of the paper (Stebila et al. 2009).
+1.1 Related work
+Password-authenticated key exchange was rst intro-
+duced by Bellovin and Merritt in 1992 (Bellovin &
+Merritt 1992) as the encrypted key exchange (EKE)
+protocol, in which the client and server shared the
+plaintext password and exchanged encrypted infor-
+mation to allow them to derive a shared session key.
+A later variant by Bellovin and Merritt, Augmented
+EKE (A-EKE) (Bellovin & Merritt 1993), removed the
+requirement that the server have the plaintext pass-
+word, instead having a (non-trivial) one-way trans-
+formation of the password, which alone is not su-
+cient to impersonate the user. The former is called
+asymmetric password-based protocol, because both
+client and server share the same plaintext password
+(or a trivial transformation of it), whereas the latter
+is called asymmetric. The dominant model for the
+security of PAKE protocols was proposed by Bellare,
+Pointcheval, and Rogaway (Bellare et al. 2000) and
+extended by Gentry, MacKenzie, and Ramzan (Gen-
+try et al. 2005) to accommodate asymmetric proto-
+cols.
+Many PAKE protocols have been developed, in-
+cluding PAK (Boyko et al. 2000, MacKenzie 2002) and
+PAK-Z+ (Gentry et al. 2005) which are relevant to
+our construction. Although universally composable
+constructions are attractive to consider when com-
+bining primitives, the existing work on universally
+composable PAKE (Canetti et al. 2005) is only sym-
+metric, not asymmetric, and thus unsuitable for our
+approach.
+A number of two-factor authentication schemes
+have been proposed that rely on a short password
+and a long cryptographic secret (Park & Park 2004,
+Yang et al. 2006, Yoon & Yoo 2006). Pointcheval andZimmer (Pointcheval & Zimmer 2008) presented a
+multi-factor authentication scheme using a password,
+a long cryptographic secret, and biometric data; their
+scheme has a formal security argument in a variant of
+the BPR model that shares some features with ours.
+There are also non-cryptographic approaches to
+multi-factor authentication, but these do not provide
+as strong protection for the authentication factors.
+In a multi-channel system, the second factor is de-
+livered over a separate channel (for example, via an
+SMS text message on a mobile phone), which the user
+then inputs into their web browser along side their
+password. In a multi-layer system, software installed
+on the server evaluates additional attributes such as
+an HTTP cookie, IP address, and browser identica-
+tion string to heuristically analyze whether the user
+is likely to be authentic. Some multi-layer systems
+try to oer additional reassurance to the user of the
+server's identity by presenting the user with a cus-
+tomized image or string. While these multi-channel
+and multi-layer approaches can oer some increased
+assurance, they can be defeated by non-cryptographic
+means such as sophisticated man-in-the-middle at-
+tacks and spyware, and have been shown to be easily
+ignored by users (Schecter et al. 2007).
+2 Security for multi-factor protocols
+In a multi-factor PAKE protocol, multiple authen-
+tication secrets of complementary natures, such as
+a long-term password and a one-time password, are
+used. We support two general types of authentication
+factors: symmetric and asymmetric.
+The authentication secrets must be used in a way
+that the client can convince the server that it knows
+all the authentication secrets, and that the server can
+convince the client that it knows all the authenti-
+cation secrets: this provides mutual authentication.
+However, the protocol must be carefully designed to
+not reveal any information about the authentication
+secrets to a passive or even active adversary.
+Secure communications often involve both authen-
+tication and encryption so, in addition to providing
+authentication, we want protocols that establish an
+ephemeral shared secret key between client and server
+that can be used, for example, for bulk encryption.
+Informal security criteria. The general security
+criteria we use for multi-factor PAKE is that the pro-
+tocol should remain secure even if all but one authen-
+tication factor is known to an adversary. We identify
+four security properties such a protocol should have:
+1. Strong multi-factor server-to-client authentica-
+tion: without knowledge of all of the authentica-
+tion factors, a server cannot successfully convince
+a client of its identity.
+2. Strong multi-factor client-to-server authentica-
+tion: without knowledge of all of the authentica-
+tion factors, a client cannot successfully convince
+a server of its identity.
+3. Authentication secrets protected: no useful in-
+formation about the authentication secrets is re-
+vealed during the authentication process.
+4. Secure session key establishment: at the end
+of the protocol, an honest client and an honest
+server end up with a secure shared session key
+suitable for bulk encryption if and only if the
+mutual authentication is successful; otherwise no
+session is established.
+2.1 Security model
+We dene a model for the security of multi-factor
+PAKE that allows one to argue that a protocol is se-
+cure by giving upper bounds on the probability that
+an adversary can break server-to-client or client-to-
+server authentication, or determine the session key
+Proc. 8th Australasian Information Security Conference (AISC 2010), Brisbane, Australia
+57established; the authentication secrets are protected
+from oine dictionary attacks as well.
+This model is an extension of the model for PAKE
+proposed by Bellare, Pointcheval, and Rogaway (Bel-
+lare et al. 2000) and modied by Gentry, MacKenzie,
+and Ramzan (Gentry et al. 2005). The model allows
+for an arbitrary number of authentication factors, and
+each factor can be either symmetric or asymmetric.
+Participants. In this model, each interacting party
+is either a client or a server, is identied by a unique
+xed length string, and the identier is a member
+of either the set Clients orServers, respectively, with
+Parties =Clients _[Servers.
+Each authentication factor can be one of two types:
+symmetric orasymmetric. Suppose there are nfac-
+tors; letIsdenote the indices of symmetric factors and
+Iadenote the indices of asymmetric factors. For each
+client-server pair ( C;S)2ClientsServers,nauthen-
+tication factors exist. The `th authentication factor
+pw`
+C;Sis chosen uniformly at random from the set
+Passwords`and is stored by the client. For symmetric
+factors, the server also stores pw`
+C;S; for asymmet-
+ric factors, the server stores a verier pw`
+C;S, which
+is some non-trivial transformation of pw`
+C;S. (The
+notion of \non-trivial transformation" will be clear
+in the freshness denition below, but intuitively the
+transformation should be such that compromise of the
+verier alone should not be sucient to impersonate
+the user without performing a dictionary attack.)
+Execution of the protocol. During execution, a
+party may have multiple instances of the protocol run-
+ning. Each instance iof a partyU2Parties is treated
+as an oracle denoted by U
+i.
+In a protocol, there is a sequence of messages,
+called ows, starting with a ow from the client in-
+stance, responded to by a server instance, and so on.
+After some number of ows, an instance may accept,
+at which point it hold a session key sk,partner id pid,
+and session id sid. Subsequently, it may terminate.
+Two instances C
+iand S
+jare said to be partnered if
+they both accept, hold ( pid;sid;sk) and (pid0;sid0;sk0),
+respectively, with pid=S,pid0=C,sid=sid0, and
+sk=sk0, and no other instance accepts with session
+id equal to sid. Alternatively, an instance may reject
+at any point in time, meaning it is no longer accepted
+or terminated.
+Queries allowed. The protocol is determined by
+how participants respond to inputs from the environ-
+ment, and the environment is considered to be con-
+trolled by the adversary, which is formally a proba-
+bilistic algorithm that issues queries to a challenger
+which simulates parties' oracle instances. For a pro-
+tocolP, the queries that the adversary can issue are
+dened as follows (where clear by the setting, we may
+omit the subscript P):
+ExecuteP(C;i;S;j ): Causes client instance C
+i
+and server instance S
+jto faithfully execute pro-
+tocolPand returns the resulting transcript.
+SendP(U;i;M ): Sends message Mto user in-
+stance U
+i, which faithfully performs the appro-
+priate portion of protocol Pbased on its current
+state and the message M, updates its state as
+appropriate, and returns any resulting messages.
+TestP(U;i): If user instance U
+ihas accepted,
+then the following happens: the challenger
+choosesb2Rf0;1g; ifb= 1, then return the ses-
+sion key of U
+i, otherwise return a random string
+of the same length as the session key. This query
+may only be asked once.RevealSKP(U;i): If user instance U
+ihas ac-
+cepted, then returns session key skheld by U
+i.
+RevealFactor P(C;S;`): Returns the `th factor
+pw`
+C;Sheld by client Cwith server S.
+RevealFactorV P(S;C;`): If `is an asymmetric
+factor: returns the `th factor's verier pw`
+C;Sheld
+by serverSwith client C.
+The RevealFactor andRevealFactorV queries model
+the adversary learning the authentication secrets,
+which corresponds to weak corruption in the Bellare-
+Pointcheval-Rogaway model. We do not allow the ad-
+versary to modify stored authentication secrets (also
+called strong corruption).
+Denition 2.1 (Freshness) An instance U
+iwith
+partner idU0isfresh in the `th factor (with forward-
+secrecy) if and only if none of the following events
+occur:
+1. a RevealSK(U;i )query occurs;
+2. a RevealSK(U0;j)query occurs, where U0
+jis the
+partner instance of U
+i, if it exists;
+3. ifU2Clients: RevealFactor (U;U0;`)(and/or
+RevealFactorV (U0;U;`)if the`th factor is asym-
+metric) occurs before the Test query, and
+Send(U;i;M )occurs for some string M;
+4. ifU2Servers: RevealFactor (U0;U;`)occurs be-
+fore the Test query, and Send(U;i;M )occurs for
+some string M.
+This notion of freshness accommodates the idea that
+an instance should remain fresh even if all but one
+of the authentication factors has been fully compro-
+mised. If an instance is fresh in all of its factors, then
+it is also fresh in the original notion of freshness for
+PAKE.
+Adversary's goals. For session key security , the
+goal of an adversary is to guess the bit bused in the
+Test query of an instance that is fresh in at least one
+of its factors; this corresponds to the ability of an ad-
+versary to distinguish the session key from a random
+string of the same length. Let Succake-f`
+P (A) be the
+event that the adversary Amakes a single Test query
+to some fresh in the `th factor instance U
+ithat has
+accepted andAeventually outputs a bit b0, where
+b0=bandbis the randomly selected bit in the Test
+query. The ake-f` advantage ofAattackingPis de-
+ned to be Advake-f`
+P (A) = 2 Pr
+Succake-f`
+P (A)
+ 1.
+We can dene similar notions for client-to-server,
+server-to-client, and mutual authentication. For the
+security experiments involving authentication, the
+Testquery is prohibited. We dene Advc2s-f`
+P (A) to be
+the probability that a server instance S
+jwith partner
+idCterminates without having a partner oracle be-
+fore the RevealFactor query in point 4 of the denition
+of freshness in the `th factor. We dene Advs2c-f`
+P (A)
+to be the probability that a client instance C
+iwith
+partner idSterminates without having a partner or-
+acle before the Reveal queries in point 3 of the deni-
+tion of freshness in the `th factor. Finally, we dene
+Advma-f`
+P(A) = maxfAdvc2s-f`
+P (A);Advs2c-f`
+P (A)g.
+We overload the Adv(and corresponding Pr(Succ))
+notation: AdvN
+P(t;q se;qex;qro) = maxAfAdvN
+P(A)g,
+where the maximum is taken over all adversaries run-
+ning in time at most t, making at most qseandqex
+queries of type SendPandExecuteP, respectively, and
+at mostqrorandom oracle queries.
+Denition 2.2 (Secure multi-factor protocol)
+Letbe a security parameter. A protocol Pis
+CRPIT Volume 105 - Information Security 2010
+58asecure multi-factor password authenticated key
+agreement protocol if there exists a negligible (in )
+and small constants `,`2f1;:::;ng, such that,
+for all polynomially-bounded adversaries A,
+Advake-f`
+P (A)8
+>>><
+>>>:`qse
+jPasswords`j+ ;
+if the`th factor is symmetric,
+`((1 b`
+co)qse+b`
+coqro)
+jPasswords`j+ ;
+if the`th factor is asymmetric,
+and the corresponding bound applies for Advma-f`
+P (A),
+where, for asymmetric factors `,b`
+co= 1 ifAmakes
+aRevealFactorV (;;`)query and 0 otherwise.
+Intuitively, this notion of security says that any
+polynomially-bounded adversary can only do negli-
+gibly better than doing an online dictionary attack at
+any unknown factors and can gain no advantage by
+doing an oine dictionary attack. Ideally, `would
+be 1, indicating the adversary can only rule out one
+password with each online guess; however, a protocol
+can still be secure as long as `is small compared to
+jPasswords`j.
+Since an instance that is fresh in all of its factors
+is also fresh in the original ake notion of PAKE, we
+have that
+Advake
+P(A) min
+`2f1;:::;ngn
+Advake-f`
+P (A)o
+:
+By providing bounds for each factor, we can pro-
+vide greater granularity in relating the security of
+factors to their risks of compromise. For example,
+lower entropy factors (represented by smaller values
+ofjPasswords`j) may be physically distributed and se-
+cured in dierent ways than higher entropy factors, or
+may be used for a shorter period of time. This con-
+trasts with the approach of (Pointcheval & Zimmer
+2008), in which there is a single notion of freshness
+and a single bound over all factors.
+2.2 Using one-time passwords
+The model presented in Section 2.1 uses long-term
+authentication secrets that do not change over time.
+However, multi-factor authentication may include a
+factor that varies, such as a one-time password. Such
+a factor may be the response to a challenge, or may
+vary with time. The benet of a one-time password
+is that the compromise of a single one-time password
+should not aect the security for a dierent one-time
+password. One-time passwords oer some protection
+against passive spyware, as previously compromised
+one-time passwords are useless.
+Although at rst glance it may seem impracti-
+cal for a user to store a large number of passwords,
+this is actually quite practical and is already being
+done in the real world: for example, some Euro-
+pean banks issue paper lists of one-time passwords
+to users (Nordea Bank 2009), and corporations issue
+hardware devices for pseudorandomly generating one-
+time passwords for virtual private network (VPN) ac-
+cess (RSA Security Inc. 2009) or electronic commerce
+(Blizzard Entertainment 2009). Even though a user
+may be carrying as much data as in a cryptographic
+key, one-time passwords oer usability benets: car-
+rying a cryptographic key requires a hardware inter-
+face or carefully managed private key les, whereas
+one-time passwords can be easily entered in only a
+few keystrokes.
+Abdalla et al. (Abdalla et al. 2005) present a
+protocol for the use of one-time passwords in an au-
+thenticated key exchange protocol but do not alterthe security model from the standard BPR setting.
+Paterson and Stebila (Paterson & Stebila 2009) do
+present an alteration to the BPR security model that
+accommodates the compromise of previous (and fu-
+ture) one-time passwords and we apply their ideas to
+allow for symmetric factors using one-time passwords
+as follows.
+Adjusting the model. We can alter the security
+denition of a multi-factor protocol to allow a sym-
+metric factor that corresponds to a one-time pass-
+word by applying the ideas of Paterson and Stebila
+(Paterson & Stebila 2009). Let `be the index of a
+symmetric factor for which we wish to use one-time
+passwords. Let Indices`be the set of indices of one-
+time passwords, and let ch2Indices`. When a party
+is activated, they are activated with the index of the
+one-time password to use for that instance; a party
+can only be activated once for each ch2Indices`. Let
+fpw`
+C;S;chgbe the set of one-time passwords between
+CandS, indexed by ch; each such password is cho-
+sen uniformly at random from Passwords`. We add an
+additional parameter chto the RevealFactor query:
+RevealFactor P(C;S; ch;`): Returns the `th factor
+pw`
+C;Schheld by client Cwith server Sfor one-
+time password indexed by ch.
+The denition of freshness in the `th factor of U
+iis
+adjusted as well, replacing points 3 and 4 in Deni-
+tion 2.1 with:
+3. ifU2Clients: RevealFactor (U;U0;ch;`) occurs
+before the Test query, and Send(U;i;M ) occurs
+for some string M, where chis the index of the
+one-time password with which U
+iwas activated;
+4. ifU2Servers: RevealFactor (U0;U;ch;`) occurs
+before the Test query, and Send(U;i;M ) occurs
+for some string M, where chis the index of the
+one-time password with which U
+iwas activated.
+The denitions of authentication are adjusted analo-
+gously as well.
+Paterson and Stebila go on to show that any se-
+cure PAKE protocol can be used in the natural way to
+build to a secure one-time PAKE protocol, by using
+the one-time password in place of the password. This
+holds even when the one-time passwords are pseudo-
+randomly generated or time-dependent. This means
+that our MFPAK protocol in the next section can eas-
+ily accommodate one-time passwords as authentica-
+tion factors.
+3MFPAK: a multi-factor password-
+authenticated key exchange protocol
+MFPAK is the rst PAKE protocol that uses multiple
+low-entropy authentication factors. It allows for an
+arbitrary number of factors which can be asymmetric
+or symmetric, and these factors can be independently
+changed as users need to change their passwords. Our
+approach is much more ecient, in terms of number
+of expensive operations, than the na ve approach of
+combining existing PAKE protocols as black boxes:
+we add no expensive operations for each additional
+symmetric factor, and only one additional expensive
+operation (signature generation/verication) for each
+party for each asymmetric factor.
+3.1 Design ideas
+We designed MFPAK by considering two existing one-
+factor protocols as our building blocks: the asymmet-
+ric password protocol PAK-Z+ for asymmetric fac-
+tors, and the symmetric password protocol PAK for
+symmetric factors. These two protocols are simi-
+lar in structure which allows us to gain some e-
+ciency improvements. All factors are tightly inte-
+Proc. 8th Australasian Information Security Conference (AISC 2010), Brisbane, Australia
+59grated into the authentication and key exchange pro-
+cesses. The underlying session key agreement comes
+from a hashed Die-Hellman construction. Authen-
+tication for asymmetric factors is done using a digital
+signature scheme, while for symmetric factors it is
+done using hash functions.
+Shielded ephemeral key. One of the main eciency
+and security gains in the MFPAK protocol comes in
+the rst ow from the client to the server. In this ow,
+the client shields its ephemeral public key by multi-
+plying it by (the hash of) each factor. The client is
+made to commit to those values, thereby preventing
+a malicious client from making an oine dictionary
+attack later on. Moreover, the server must use the
+same values to unshield the client's ephemeral public
+key or Die-Hellman key agreement will fail, thereby
+committing the server to its choice of values. By do-
+ing this multiple shielding operation, the client and
+server achieve mutual authentication, the client saves
+expensive operations compared to running multiple
+protocols separately, and the authentication secrets
+are protected.
+Digital signature for asymmetric factors. Authen-
+tication for asymmetric factors comes from using a
+digital signature scheme, where the (short) authen-
+tication secret is used to shield the digital signature
+private key which is stored on the server. During
+the login stage of the protocol, the server returns the
+shielded private key, which the client can unwrap only
+if she knows the correct password. The client uses the
+private key to perform a signing operation which the
+server veries using the public key. This allows for
+asymmetry: the compromise of the server's database
+is not enough to impersonate the client to the server
+without a dictionary attack. This technique, as used
+inPAK-Z+ (Gentry et al. 2005), is an instantiation
+of the generic technique proposed by Gentry et al.
+(Gentry et al. 2006) for asymmetric password-based
+authentication. It is important to note that the dig-
+ital signature scheme is not used in its normal sense
+with published or certied public keys, but simply as
+a convenient asymmetric construction.
+Hash function for symmetric factors. The hash of
+a symmetric factor is stored on the server. The server
+proves its knowledge of a symmetric factor by hashing
+it with the session key; the client does the same.
+3.2 Protocol specication
+The MFPAK protocol, like many other protocols, con-
+tains two stages: a user registration stage, completed
+once per client-server pair, and a login stage, com-
+pleted each time a user attempts to login. For conve-
+nience in presentation of the login stage, we assume
+there is at least one symmetric factor and one asym-
+metric factor; however, the protocol can be altered in
+the natural way to deal with exclusively symmetric
+or exclusively asymmetric factors. The number and
+type of factors are xed and publicly known.
+Ingredients and notation. Letbe a cryptographic
+security parameter. The notation z2RZdenotes an
+elementzselected uniformly at random from a set
+Z. Angle brackets hidenote a list, and jjdenotes
+concatenation. The protocol operates over a nite
+cycle group Gof orderq, generated by g, for which
+the Computational Die-Hellman (CDH) assumption
+holds. The function Acceptable() tests whether an el-
+ement is in G(or, for eciency reasons, a group con-
+tainingG; see (MacKenzie 2002, x4)). It makes use of
+a number of random hash functions based on random
+oracles (Bellare & Rogaway 1993): H1mapsf0;1g
+to group elements (such as (Coron & Icart 2009) for
+hashing into elliptic curve groups), while all other
+hash functions Himapf0;1gtof0;1g. We also em-
+ploy a signature scheme S= (Gen; Sign; Verify ) that
+is existentially unforgeable under chosen message at-tacks (Goldwasser et al. 1988). Let (v;V ) Gen(1),
+wherevis a private key and Vis the correspond-
+ing public key. Recall that pw`
+C;Sdenotes client C's
+password for server Sfor the`th factor, and pw`
+C;S
+denotes the corresponding value held by the server,
+which may be equal to pw`
+C;Sfor symmetric factors
+and is some non-trivial transformation of pw`
+C;Sfor
+asymmetric factors.
+The user registration stage ofMFPAK is given in
+Figure 1. This stage should be completed over a pri-
+vate, authentic channel. The user registration stage
+can be altered in the obvious way to have authentica-
+tion secrets chosen by the server and supplied to the
+client, if necessary.
+The login stage ofMFPAK is given in Figure 2.
+This stage can be completed over a public, untrusted
+channel. A client Cinitiates the login stage with a
+serverS.
+3.3 Nature of the factors
+The MFPAK protocol can accommodate a wide vari-
+ety of authentication secrets using either symmetric
+or asymmetric factors, as we note below. Our ap-
+proach oers improved functionality compared with
+the nave way of combining multiple authentication
+secrets by simply concatenating them into one long
+string: with concatenation, one cannot easily com-
+bine passwords that change over time (symmetric fac-
+tors) with long-term passwords (asymmetric factors)
+because the server does not store the plaintext pass-
+word.
+Long-term passwords. Long-term passwords are
+best accommodated as an asymmetric factor, but can
+be treated asymmetrically as well. Since long-term
+passwords do not change frequently (or at all), we
+should reduce the damage that can be caused by com-
+promise of the server database containing data for
+these factors. Although we can never prevent dic-
+tionary attacks against the server's database, we can
+raise the amount of work an attacker needs to do by
+using asymmetric factors.
+One-time passwords. One-time passwords are usu-
+ally best accommodated as symmetric factors. Asym-
+metric factors could be used, but the costs for asym-
+metric factors may not be worth it for one-time pass-
+words. It may be more ecient to generate one-
+time passwords from a seed using a challenge-response
+mechanism or a time-dependent generator. For fac-
+tors that employ a challenge-response mechanism, an
+initial message from the server to the client convey-
+ing the challenge can be added to the beginning of
+the login stage of the protocol.
+Cryptographic keys. Although our primary moti-
+vation has been the use of short strings as authentica-
+tion secrets so users can easily carry their authentica-
+tion secrets between computers, there is nothing pre-
+venting a password-based protocol from using high-
+entropy secrets (that is, cryptographically large keys)
+as opposed to low-entropy secrets. We can directly
+use a cryptographic key as pw`
+C;Sin either the sym-
+metric or asymmetric case. In the asymmetric case, it
+would be possible to further streamline the protocol
+by having the user store the private key v`from the
+digital signature scheme, and adjust the remainder of
+the protocol as follows: set pw`
+C;S v`; in the regis-
+tration stage, the server stores pw`
+C;S h`; 1
+`;V`i;
+in the login stage, the server omits steps 15 and 16
+for this factor and the client omits steps 22{25 for
+this factor. We recommend, however, that situations
+using exclusively cryptographically large keys should
+consider traditional authenticated key exchange pro-
+tocols as the security models (Canetti & Krawczyk
+CRPIT Volume 105 - Information Security 2010
+60MFPAK User Registration
+ClientC ServerS
+for`2f1;:::;ng:
+1. store pw`
+C;S2RPasswords`
+2.` H1(C;S;`; pw`
+C;S)
+for`2Ia:
+3. (v`;V`) RGen(1)
+4.v0
+` H2(C;S;`; pw`
+C;S)v`
+5.v00
+` H3(`;v`)
+6.C;f `g;fV `g;fv0
+`g;fv00
+`g             !
+for`2Is:
+7. store pw`
+C;S h`; 1
+`i
+for`2Ia:
+8. store pw`
+C;S h`; 1
+`;V`;v0
+`;v00
+`i
+Figure 1: The user registration stage of the MFPAK protocol.
+2001, LaMacchia et al. 2007) are stronger and oer re-
+sistance to ephemeral key leakage in addition to static
+key leakage.
+Biometrics. Pointcheval and Zimmer (Pointcheval
+& Zimmer 2008) describe in detail the use of biomet-
+ric templates in an authenticated key exchange pro-
+tocol. They use secure sketches and fuzzy extractors
+to safely see if two biometric templates match.
+An alternative approach is to use fuzzy vaults ,
+which were introduced by Juels and Sudan (Juels &
+Sudan 2002). They allow a secret to be embedded in a
+vault which is locked by a set of fuzzy values, such as
+the minutiae of a ngerprint. Fuzzy vaults could for
+example be used in a multi-factor protocol as follows:
+the user receives the fuzzy vault, uses her biometric to
+unlock the vault, and then uses the embedded secret
+value as another factor in the multi-factor protocol.
+Because of the privacy issues surrounding biomet-
+rics, we are not suggesting that biometrics na vely
+be used in our construction immediately, as there are
+numerous issues to consider. For example, should the
+fuzzy vault be transmitted unencrypted or encrypted
+under the session key derived from the other factors?
+Should the secret embedded in the vault contain error
+correcting information, as suggested in (Juels & Su-
+dan 2002), or not? (We think not, as error correcting
+information allows an oine \dictionary" attacker to
+detect whether it has the right input, whereas lack of
+error correction information would ideally mean the
+attacker needs to do an online \dictionary" attack.)
+The use of biometrics in authenticated key exchange
+merits further study.
+3.4 Eciency
+In many e-commerce and online banking situations,
+the performance-limiting factor is the number of con-
+nections a server can handle, and this is in turn lim-
+ited by the number of expensive operations required
+by the cryptographic protocol. MFPAK can increase
+security without a substantial additional computa-
+tional burden on the server.
+Figure 3 compares the number of expensive op-
+erations (group exponentiations and signature gener-
+ation / verication) performed by a na ve combina-
+tion of PAK and PAK-Z+ versus the MFPAK proto-
+col.MFPAK has a xed overhead of two group expo-
+nentiations each on client and server side. For each
+symmetric factor, there are no additional expensive
+operations (only multiplications and hashes, not ex-
+ponentiations); for each asymmetric factor, there is
+one additional expensive operation on each side (sig-
+nature generation by the client, signature verication
+by the server). This makes MFPAK much more ef-
+cient, in terms of number of expensive operations,
+than if one were to make a multi-factor scheme sim-ply by running PAK andPAK-Z+ in parallel indepen-
+dently.
+3.5 Security analysis
+The main idea of the security argument is that, if one
+factor, say the `th factor, remains uncompromised,
+then the diculty of breaking MFPAK is related to
+the diculty of breaking the corresponding one of ei-
+ther PAK (for a symmetric factor) or PAK-Z+ (for an
+asymmetric factor), each which is in turn related to
+solving the Computational Die-Hellman problem.
+For both symmetric and asymmetric factors, we
+describe a procedure (specied by a modier M)
+to transform an adversary Aagainst MFPAK with
+the`th factor uncompromised into an adversary A
+against the corresponding one of the two underly-
+ing protocols (PAK and PAK-Z+, respectively). The
+transformations are such that, if the oracle instance
+inMFPAK against which the Test query is directed
+is fresh in the `th factor, then the corresponding or-
+acle instance is also fresh in the corresponding at-
+tack on PAK (resp., PAK-Z+). This is possible be-
+cause of the design of the MFPAK protocol: it essen-
+tially runs both PAK andPAK-Z+ together while still
+capturing the security of each independently. This
+design characteristic allows the relatively straightfor-
+ward (although lengthy) security argument.
+Our formal argument proceeds by considering four
+cases, two corresponding to an asymmetric factor be-
+ing uncompromised and two corresponding a symmet-
+ric factor being uncompromised. The cases are:
+1. Asymmetric factor uncompromised, U2
+Clients: no RevealFactor MFPAK (U;U0;`) or
+RevealFactorV MFPAK (U0;U;`) query.
+2. Asymmetric factor uncompromised, U2
+Servers: no RevealFactor MFPAK (U0;U;`) query.
+3. Symmetric factor uncompromised, U2Clients:
+noRevealFactor MFPAK (U;U0;`) query.
+4. Symmetric factor uncompromised, U2Servers:
+noRevealFactor MFPAK (U0;U;`) query.
+These four cases are combined probabilistically to
+give the overall result. The details are provided in
+Appendix A. Throughout, we assume passwords are
+uniformly distributed. The resulting security state-
+ment is as follows:
+Theorem 3.1 Letbe a security parameter. Let G
+be a nite cyclic group generated by gand letSbe a
+signature scheme. Let Abe an adversary that runs
+in time polynomial in , and makes at most qseand
+qexqueries of type Send andExecute, respectively, and
+at mostqroqueries to the random oracle. If `is an
+asymmetric factor, then let bco= 1 ifAmakes a
+RevealFactorV (;;`)query to a server, and 0 other-
+wise. Then MFPAK is a secure multi-factor PAKE
+Proc. 8th Australasian Information Security Conference (AISC 2010), Brisbane, Australia
+61MFPAK Login
+ClientC ServerS
+1.x2RZq
+2.X gx
+for`2f1;:::;ng:
+3.` H1(C;S;`; pw`
+C;S)
+4.m XQn
+`=1`
+5.C;m      !
+6. reject if:Acceptable(m)
+7. y2RZq
+8. Y gy
+for`2Is:
+9. lookup h`; 1
+`i pw`
+C;S
+for`2Ia:
+10. lookuph`; 1
+`;V`;v0
+`;v00
+`i pw`
+C;S
+11. X mQn
+`=1 1
+`12.  Xy
+13. sid hC;S;m;Yi
+14. k H4(sid;; 1;:::;n)
+for`2Ia:
+15. a0
+` H5(sid;;`;`)
+16. a` a0
+`v0
+`
+17.Y;k;fa`g;fv00
+`g       
+18. Yx
+19. sid hC;S;m;Yi
+20. reject if k6=H4(sid;; 1;:::;n)
+21.k0 H6(sid;; 1;:::;n)
+for`2Ia:
+22.a0
+` H5(sid;;`;`)
+23.v0
+` a0
+`a`
+24.v` H2(C;S;`; pwC;S;` )v0
+`
+25. reject if v00
+`6=H3(`;v`)
+26.s` Signv`(sid)
+27.k0;fs`g      !
+28. reject if k06=H6(sid;; 1;:::;n)
+for`2Ia:
+29. reject if :VerifyV`(sid;s`)
+30. sk H7(sid;; 1;:::;n) sk H7(sid;; 1;:::;n)
+Figure 2: The login stage of the MFPAK protocol.
+OperationPAK&PAK-Z+ MFPAK
+Client Server Client Server
+exponentiations 2jIsj+ 2jIaj2jIsj+ 2jIaj 2 2
+signature generation jIaj 0jIaj 0
+signature verication 0jIaj 0jIaj
+total 2jIsj+ 3jIaj2jIsj+ 3jIaj2 +jIaj2 +jIaj
+Figure 3: Comparison of expensive operations for combined PAK &PAK-Z+ and MFPAK.
+protocol, with
+Advake-f`
+MFPAK (A)8
+>>><
+>>>:16((1 b co)qse+bcoqro)
+jPasswords`j+ ;
+if the`th factor is symmetric,
+4qse
+jPasswords`j+ ;
+if the`th factor is asymmetric,
+whereis a negligible function of , and=jClientsj
+jServersj; a similar bound exists for Advma-f`
+MFPAK (A).
+As with any formal security argument, a proof of
+security does not imply security against all forms of
+attack. A protocol may be vulnerable to attack meth-
+ods not described by the security model. Nonetheless,
+a security proof is valuable as a heuristic that the pro-
+tocol is resistant to at least some types of attacks.
+4 Conclusion and future work
+We have presented a security model for multi-factor
+password-authenticated key exchange protocols that
+can accommodate an arbitrary number of factors. Wehave provided a security argument showing that our
+new protocol, MFPAK, is secure in this model. Our
+multi-factor authentication protocol oers enhanced
+authentication protection through the use of comple-
+mentary factors, such as a long-term password and
+a one-time challenge/response. The construction is
+quite ecient in terms of the number of operations
+per factor; for example, a two-factor version of our
+protocol using a long-term password and one-time
+challenge/response has the same eciency as the one-
+factor protocol PAK-Z+. The protocol remains secure
+even if all but one of the authentication factors is fully
+known to an adversary. Our multi-factor protocol is
+resistant to man-in-the-middle and impersonation at-
+tacks, providing enhanced authentication in the face
+of more complex threats like phishing.
+Other recent work in the eld of PAKE protocols
+has focused on protocols where the sequence of ows
+ts existing network protocols such as SSL/TLS. An
+open question is to design a provably secure multi-
+factor PAKE protocol with support for asymmetric
+factors that ts within the message ow of SSL/TLS.
+Additionally, multi-factor protocols supporting an
+CRPIT Volume 105 - Information Security 2010
+62arbitrary number of factors could be designed where
+some factors are optional and the number of factors
+used corresponds to diering levels of access depend-
+ing on the application situation: one factor could be
+used for read-only access, two factors for small-value
+transactions, and three factors for large-value trans-
+actions.
+An interesting future direction would be to fur-
+ther investigate the use of biometric information in
+a multi-factor authenticated key exchange protocol.
+We have outlined some ideas involving fuzzy vaults,
+but consideration of the privacy and security require-
+ments requires further research.
+Acknowledgements
+This research performed while D.S. was at the Uni-
+versity of Waterloo and S.C. was at Sun Microsys-
+tems Laboratories. D.S. was supported in part by an
+NSERC Canada Graduate Scholarship. The authors
+gratefully acknowledge helpful discussions with Alfred
+Menezes, Bodo M oller, Michele Mosca, and Berkant
+Ustaoglu, and appreciate the feedback of anonymous
+referees.
+References
+Abdalla, M., Chevassut, O. & Pointcheval, D. (2005), One-
+time verier-based encrypted key exchange, in (Vaude-
+nay 2005), pp. 47{64. Full version available as URL:
+http://www.di.ens.fr/mabdalla/papers/ACP05-letter.pdf
+Bellare, M., Pointcheval, D. & Rogaway, P. (2000), Authen-
+ticated key exchange secure against dictionary attacks, in
+(Preneel 2000), pp. 139{155.
+Bellare, M. & Rogaway, P. (1993), Random oracles are practi-
+cal: a paradigm for designing ecient protocols, in Proc. 1st
+ACM Conference on Computer and Communications Secu-
+rity (CCS) (1993), ACM, pp. 62{73.
+Bellovin, S. M. & Merritt, M. (1992), Encrypted key exchange:
+Password-based protocols secure against dictionary attacks,
+inProceedings of the 1992 IEEE Computer Society Confer-
+ence on Research in Security and Privacy, IEEE.
+Bellovin, S. M. & Merritt, M. (1993), Augmented encrypted
+key exchange: a password-based protocol secure against dic-
+tionary attacks and password le compromise, in Proc. 1st
+ACM Conference on Computer and Communications Secu-
+rity (CCS) (1993), pp. 244{250.
+Blizzard Entertainment (2009), Blizzard authenticator.
+URL: http://eu.blizzard.com/support/article.xml?locale=
+enGB&articleId=28152
+Boyko, V., MacKenzie, P. & Patel, S. (2000), Provably se-
+cure Password-Authenticated Key exchange using Die-
+Hellman, in (Preneel 2000), pp. 156{171. Full version avail-
+able as URL: http://eprint.iacr.org/2000/044
+Canetti, R., Halevi, S., Katz, J., Lindell, Y. & MacKenzie,
+P. (2005), Universally composable password-based key ex-
+change, in R. Cramer, ed., Advances in Cryptology { Proc.
+EUROCRYPT 2005 , Vol. 3494 of LNCS, Springer, pp. 404{
+421.
+Canetti, R. & Krawczyk, H. (2001), Analysis of key-
+exchange protocols and their use for building secure
+channels, in B. Ptzmann, ed., Advances in Cryptol-
+ogy { Proc. EUROCRYPT 2001, Vol. 2045 of LNCS,
+Springer, pp. 453{474. Full version available as URL:
+http://eprint.iacr.org/2001/040
+Coron, J.-S. & Icart, T. (2009), A random oracle into elliptic
+curves. URL: http://eprint.iacr.org/2009/340
+Gentry, C., MacKenzie, P. & Ramzan, Z. (2005), PAK-Z+.
+Contribution to the IEEE P1363-2000 study group for Fu-
+ture PKC Standards.
+URL: http://grouper.ieee.org/groups/1363/WorkingGroup
+/presentations/pakzplusv2.pdfGentry, C., MacKenzie, P. & Ramzan, Z. (2006), A method
+for making password-based key exchange resilient to server
+compromise, in C. Dwork, ed., Advances in Cryptology {
+Proc. CRYPTO 2006 , Vol. 4117 of LNCS, Springer, pp. 142{
+159.
+Goldwasser, S., Micali, S. & Rivest, R. L. (1988), A digital sig-
+nature scheme secure against adaptive chosen-message at-
+tacks, SIAM Journal on Computing 17(2), 281{308.
+Juels, A. & Sudan, M. (2002), A fuzzy vault scheme, in Proc.
+IEEE International Symposium on Information Theory
+(ISIT) 2002 , IEEE Press, p. 408. Full version available as
+URL: http://www.rsa.com:80/rsalabs/node.asp?id=2061
+LaMacchia, B., Lauter, K. & Mityagin, A. (2007), Stronger
+security of authenticated key exchange, inW. Susilo, J. K.
+Liu & Y. Mu, eds, First International Conference on Prov-
+able Security (ProvSec) 2007, Vol. 4784 of LNCS, Springer,
+pp. 1{16.
+MacKenzie, P. (2002), The PAK suite: Protocols for password-
+authenticated key exchange, Technical Report 2002-46, DI-
+MACS Center, Rutgers University.
+URL: http://dimacs.rutgers.edu/TechnicalReports/
+abstracts/2002/2002-46.html
+Nordea Bank (2009), Netbank security.
+URL: http://www.nordea.ee/Private+customers/E-
+channels++Netbank/Netbank/Netbank+Security/
+936612.html
+Park, Y. M. & Park, S. G. (2004), Two factor authenticated key
+exchange (TAKE) protocol in public wireless LANs, IEICE
+Transactions on Communications E87-B(5), 1382{1385.
+Paterson, K. G. & Stebila, D. (2009), One-time-
+password-authenticated key exchange. URL:
+http://eprint.iacr.org/2009/430
+Pointcheval, D. & Zimmer, S. (2008), Multi-factor authenti-
+cated key exchange, in S. M. Bellovin & R. Gennaro, eds,
+Applied Cryptography and Network Security (ACNS) 2008 ,
+Vol. 5037 of LNCS, Springer, pp. 277{295.
+Preneel, B., ed. (2000), Advances in Cryptology { Proc. EU-
+ROCRYPT 2000 , Vol. 1807 of LNCS, Springer.
+RSA Security Inc. (2009), RSA SecurID.
+URL: http://www.rsa.com/node.aspx?id=1156
+Schecter, S., Dhamija, R., Ozment, A. & Fischer, I. (2007),
+The emperor's new security indicators: An evaluation of
+website authentication and the eect of role playing on us-
+ability studies, in Proc. IEEE Symposium on Security and
+Privacy (S&P) 2007, IEEE Press, pp. 51{65.
+Stebila, D., Udupi, P. & Chang, S. (2009), Multi-factor
+password-authenticated key exchange (full version).
+URL: http://eprint.iacr.org/2008/214
+Vaudenay, S., ed. (2005), Public Key Cryptography (PKC)
+2005, Vol. 3386 of LNCS, Springer.
+Yang, G., Wong, D. S., Wang, H. & Deng, X. (2006), For-
+mal analysis and systematic construction of two-factor au-
+thentication scheme (short paper), in P. Ning, S. Qing &
+N. Li, eds, Proc. 8th International Conference on Infor-
+mation and Communications Security (ICICS) 2006 , Vol.
+4307 of LNCS, Springer, pp. 82{91. Full version available as
+URL: http://eprint.iacr.org/2006/270
+Yoon, E.-J. & Yoo, K.-Y. (2006), An optimized two factor au-
+thenticated key exchange protocol in PWLANs, inV. N.
+Alexandrov, G. D. van Albada, P. M. Sloot & J. Don-
+garra, eds, Computational Science { ICCS 2006, Vol. 3992
+ofLNCS, Springer, pp. 1000{1007.
+Proc. 8th Australasian Information Security Conference (AISC 2010), Brisbane, Australia
+63A Security analysis
+This section contains the details of the security anal-
+ysis supporting Theorem 3.1.
+It is helpful to be able to refer to the action of
+a party upon receipt of a message. We use the no-
+tation ClientActioni PandServerActioni Pto
+refer to the portion of the protocol Pperformed
+by the client or server, respectively, after the ith
+ow. Thus, MFPAK as described in Figure 2 spec-
+iesClientAction0 MFPAK ,ServerAction1 MFPAK ,
+ClientAction2 MFPAK , and ServerAction3 MFPAK
+A.1 Ingredients
+Computational Die-Hellman assumption.
+MFPAK operates over a nite cycle group Gfor which
+the Computational Die-Hellman (CDH) assump-
+tion holds. Let Gbe a nite cyclic group of or-
+derq, letgbe a generator of G, and let texpbe
+the time it takes to perform an exponentiation in
+G. Let Acceptable :G! ftrue; falseg such that
+Acceptable(z ) =trueif and only if z2G, whereGis
+a specied abelian group which has Gas a subgroup.
+For two values XandY, dene DH(X;Y ) =Xy, if
+Acceptable(X ) andY=gy, or DH(X;Y ) =Yx, if
+Acceptable(Y ) andX=gx. LetAbe a probabilis-
+tic algorithm with input ( G;g;X;Y ) that outputs a
+subset ofG, and dene
+Advcdh
+G;g(A) = Pr (DH(X;Y )2A(G;g;X;Y ) :
+(x;y)2RZq;X=gx;Y=gy):
+Let Advcdh
+G;g(t;n) = max AfAdvcdh
+G;g(A)gwhere the
+maximum is taken over all algorithms running in time
+tand outputting a subset of size at most n. The CDH
+assumption is that, for any probabilistic polynomial
+time algorithmA,Advcdh
+G;g(A) is negligible.
+Random hash functions. MFPAK makes use of a
+number of random hash functions based on random
+oracles (Bellare & Rogaway 1993). A random hash
+functionH:f0;1g!f0; 1gkis constructed by se-
+lecting each bit of H(x) uniformly at random and
+independently for every x2f0; 1g. We make use
+of a number of independent random hash functions
+H1;H2;:::, which can be constructed from a single
+random hash function Hby settingH`(x) =H(`jjx).
+Constructing a hash function that outputs elements
+of a group instead of f0;1gis also possible and ef-
+cient, and in fact all of the hash functions used in
+MFPAK are into the group G.
+Signature scheme. MFPAK makes use of a sig-
+nature schemeS= (Gen; Sign; Verify ) that is exis-
+tentially unforgeable under chosen message attacks
+(Goldwasser et al. 1988). Let ( v;V) Gen(1),
+wherevis a private key and Vis the correspond-
+ing public key. Let tGenbe the runtime of Gen(1),
+andtsigbe the runtime of Sign and Verify . A forger
+Fis given a public key Vand must forge signa-
+tures; it can query an oracle that returns Signv(m)
+for any messages mof its choice. It succeeds if it can
+output a forgery (m; ) such that VerifyV(m; ) =
+true, where mwas not queried to the signing or-
+acle. Let Succeu-cma
+S;(F) = Pr(F succeeds), and
+Succeu-cma
+S;(t;q Sign) = maxF
+Succeu-cma
+S;(F)	
+where
+the maximum is taken over all forgers running in
+timetand making at most qSignqueries to the sign-
+ing oracle. A signature scheme Sisexistentially un-
+forgeable under chosen message attacks (eu-cma) if,
+for any probabilistic polynomial time algorithm F,
+Succeu-cma
+S;(F) is negligible.A.2 Case 1: Attacking a client instance,
+asymmetric factor uncompromised
+This case addresses impersonation of the server when
+the instance being attacked is a client instance and
+the uncompromised `th factor is asymmetric.
+The modierMrst uniformly at random guesses
+U2RClients andU02RServers as its guess of who
+the adversaryAwill end up attacking. If the attacker
+ends up attacking the pair of users the modier has
+guessed, then we will show how to transform the at-
+tack into an attack on PAK-Z+.
+Let GuessCS be the event that the modier M
+correctly guesses UandU0. Then
+Pr(GuessCS) = Pr(( Ucorrect)^(U0correct)) (1)
+1
+jClientsjjServersj: (2)
+For this case, we assume that
+no RevealFactor MFPAK (U;U0;`) or
+RevealFactorV MFPAK (U0;U;`) query is issued
+againstM: this case models server imper-
+sonation in the `th factor, which is why no
+RevealFactorV MFPAK (U0;U;`) query is allowed.
+Furthermore, no RevealFactor MFPAK (U;U0;`) is
+allowed because an adversary can easily recover the
+verier pw`
+U;U0from the secret pw`
+U;U0and one
+interaction with U0.
+The modierMdoes the following to convert an
+MFPAK adversaryAinto a PAK-Z+ adversary A.
+Password preparation. For each ( C;S;`)2
+ClientsServersf1;:::;ngnf(U;U0;`)g,Msets
+pw`
+C;S2RPasswords`and constructs the correspond-
+ingpw`
+C;S. Of all the authentication secrets, only
+pw`
+U;U0andpw`
+U;U0remain unknown to Mat this
+point. Compute the corresponding `, for`6=`, and
+set Qn
+`=1;`6=``.
+Instantiation of PAK-Z+ simulator. We instan-
+tiate the PAK-Z+ simulator SPAK-Z+ with the
+following random oracles: H
+i(C;S; pwC;S) :=
+Hi(C;S;`;pwC;S) fori= 1;2;H
+3(v) :=H3(`;v);
+H
+4(hC;S;m;Yi;; 1)
+:=H 4(hC;S;m;Yi;; 1;:::;;:::; n)
+k`2Ia;`6=`H5(hC;S;m;Yi;;`;`) ;
+H
+5(hC;S;m;Yi;; 1) := H5(hC;S;m
+;Yi;;`;); andH
+7(hC;S;m;Yi;; 1) :=
+H7(hC;S;m;Yi;; 1;:::;;:::; n).1These
+`starred' functions are independent random oracles
+if the corresponding unstarred functions are. The
+above construction is possible since f`g`6=`and
+are xed and known to Mbecause of the guesses
+made at the beginning of this case. By using a
+concatenation of random oracles, the PAK system
+computes the values we need in M's handling of
+Execute andSend queries.
+Further,SPAK-Z+ is instantiated with the following
+signature scheme (Gen; Sign;Verify):
+Sign
+v(hC;S;m;Yi) := Signv(hC;S;m;Yi)
+Verify
+V(hC;S;m;Yi;s) := VerifyV(hC;S;m;Yi;s):
+Since the transformation that sends hC;S;m;Yi7!
+hC;S;m;Yiis just a permutation, it follows that
+(Gen; Sign;Verify) is an eu-cma signature scheme
+whenever (Gen; Sign; Verify ) is.
+1Note that we do not need to instantiate H
+6because this oracle
+is not used by PAK-Z+.
+CRPIT Volume 105 - Information Security 2010
+64M's handling of A's queries. The modierMper-
+forms the following modications to the queries of A.
+The main goal is for Mto simulate all queries except
+for ones that are related to the UandU0guessed
+at the beginning of the case: these queries are passed
+to the underlying PAK-Z+ simulator SPAK-Z+ .
+RevealFactor (C;S;`) :
+1. If (C;S;`)6= (U;U0;`):
+Return pw`
+C;S.
+2. If (C;S;`) = ( U;U0;`):
+Reject; if this query occurs, then M's guess of
+UandU0at the beginning of this case was
+incorrect.
+RevealFactorV (S;C;`) :
+1. If (C;S;`)6= (U;U0;`):
+Return pw`
+C;S.
+2. If (C;S;`) = ( U;U0;`):
+Reject; if this query occurs, then M's guess of
+UandU0at the beginning of this case was
+incorrect.
+Test(U;i):
+1. IfU=U:
+Send a Test PAK-Z+ (U;i) query to PAK-Z+ simu-
+latorSPAK-Z+ and return the result to A.
+2. IfU6=U:
+Reject; if this query occurs, then M's guess of
+Uat the beginning of this case was incorrect.
+RevealSK(U;i ):
+1. IfU=UorU=U0:
+Send a RevealSK PAK-Z+ (U;i) query to PAK-Z+
+simulatorSPAK-Z+ and return the result to A.
+2. Otherwise:
+Return skfor instance U
+i.
+Execute(C;i;S;j ):
+1. If (C;S )6= (U;U0):
+Mperforms Execute MFPAK (C;i;S;j ) with all the
+values it has and returns the transcript.
+2. If (C;S ) = (U;U0):
+Mwill use the PAK-Z+ simulator SPAK-Z+ to
+obtain a transcript for this query.
+(a) Send an Execute PAK-Z+ (C;i;S;j ) query to
+SPAK-Z+ and receivehC;m;Y;k;a;v00;si.
+(b) Set ^m m.
+(c) Set ^k02Rrange(H 6).
+(d) Extract ^kas the rst component of k.
+(e) Extractfa0
+`g`2Ia;`6=`from the remaining
+jIaj 1 components of k.
+(f) Computefa`g`2Ia;`6=`.
+(g) Seta` a.
+(h) Setv00
+` v00.
+(i) Computefs`g`2Ia;`6=`.
+(j) Sets` s.
+(k) ReturnhC;^m;Y; ^k;fa`g;fv00
+`g;^k0;fs`gito
+A.
+Send(U;i;M ):
+IfMis not a valid protocol message in a meaning-
+ful sequence, then reject as would be done in MFPAK.
+1. IfM=h\start";Siand (U;S )6= (U;U0):
+Perform ClientAction0 MFPAK and return
+hU;mi.
+2. IfM=h\start";Siand (U;S ) = (U;U0):
+(a) Send a Send PAK- Z+(U;i;M ) query to
+SPAK-Z+ and receivehU;mi.
+(b) Set ^m m.
+(c) ReturnhU;^mi.
+3. IfM=hC;miand (C;U )6= (U;U0):
+Perform ServerAction1 MFPAK and return
+hY;k;fa`g;fv00
+`gi.4. IfM=hC;miand (C;U ) = (U;U0):
+(a) Set ^m m 1.
+(b) Send a Send PAK-Z+ (U;i;hC;^mi) query to
+SPAK-Z+ and receivehY;k;a;v00i.
+(c) Extract ^kas the rst component of k.
+(d) Extractfa0
+`g`2Ia;`6=`from the remaining
+jIaj 1 components of k.
+(e) Computefa`g`2Ia;`6=`.
+(f) Seta` a.
+(g) Setv00
+` v00.
+(h) ReturnhC;^m;Y; ^k;fa`g;fv00
+`gi.
+5. IfM =hY;k;fa`g;fv00
+`giand (U;U0)6=
+(U;U0), whereU0is the partner of U:
+Perform ClientAction2 MFPAK and return
+hk0;fs`gi.
+6. IfM =hY;k;fa`g;fv00
+`giand (U;U0) =
+(U;U0), whereU0is the partner of U:
+(a) Verifyfv00
+`g`2Ia;`6=`.
+(b) Set ^k0 kk`2Ia;`6=`a0
+`.
+(c) Send a Send PAK-Z+ (U;i;hY;^k;a`;v00
+`i)
+query toSPAK-Z+ and receivehsi.
+(d) Set ^k02Rrange(H 6) and store.
+(e) Computefs`g`2Ia;`6=`.
+(f) Sets` s.
+(g) Returnh^k0;fs`gi.
+7. IfM=hk0;fs`giand (U0;U)6= (U;U0), where
+U0is the partner of U:
+Perform ServerAction3 MFPAK .
+8. IfM=hk0;fs`giand (U0;U) = (U;U0), where
+U0is the partner of U:
+(a) Reject if k0is not the same as the ^k0gener-
+ated in Case 6 above.
+(b) Verifyfs`g`2Ia;`6=`.
+(c) Send a Send PAK-Z+ (U;i;hs`i) query to
+SPAK-Z+ .
+Dierences from MFPAK simulator. We must now
+analyze the dierences between a true MFPAK simu-
+lator and the view presented to the MFPAK adversary
+Aby the modierM.
+First we note that the distributions of generated
+passwords exactly match the MFPAK specications.
+Furthermore, all the generated passwords exactly
+match the PAK-Z+ specications.
+Next, we note that M's handling of A's queries
+precisely matches what an MFPAK simulator would
+do except in a small number of cases. The mes-
+sages received from and forwarded from the use of
+thePAK-Z+ simulator SPAK-Z+ can by inspection be
+seen to match what the MFPAK simulator would do
+becauseSPAK-Z+ is using the specially constructed
+random oracles H
+i. The dierences between Mand
+what a true MFPAK simulator would do are as follows:
+RevealFactor (C;S;`) when (C;S;`) =
+(U;U0;`), RevealFactorV (S;C;`) when
+(C;S;`) = ( U;U0;`), and Test(U;i) when
+U6=U:
+The modierMrejects here, while a true
+MFPAK simulator should not. If Mcorrectly
+guessedUandU0at the beginning of this
+case, then none of these queries would occur,
+for if one did then the instance in which a Test
+query is directed to U
+iwould not be fresh in
+the`th factor.
+Execute(C;i;S;j ) when (C;S ) = (U;U0),
+Send(U;i;M ) whenM =hY;k;a;v00iand
+(U;U0) = (U;U0), whereU0is the partner
+ofU, and Send(U;i;M ) whenM=hk0;siand
+(U;U0) = (U0;U), whereU0is the partner of
+U:
+Proc. 8th Australasian Information Security Conference (AISC 2010), Brisbane, Australia
+65The modierMgenerated a random value ^k0
+for this instance instead of generating k0=
+H6(sid;; 1;:::;n). SinceH6is a random or-
+acle, this substitution is distinguishable by the
+adversaryAif and only ifAqueriesH6on the
+arguments sid;; 1;:::;n. But if that occurs,
+thenAmust know `. These are the same in-
+puts to the H
+7oracle used to compute the ses-
+sion key in the PAK-Z+ simulation SPAK-Z+ , so
+the same adversary could distinguish the output
+ofTest PAK- Z+(U;i) received fromSPAK-Z+ . The
+latter event corresponds to the event Succake
+PAK-Z+ ,
+and so the substitution is distinguishable with
+probability at most Pr( Succake
+PAK-Z+ (A)).
+LetDist 1jGuessCS be the event that the simulation
+Mis distinguishable from a real MFPAK simulator
+fromA's perspective given that the modier correctly
+guessedUandU0at the beginning of this case.
+Then Pr(Dist 1jGuessCS)3 Pr(Succake
+PAK-Z+ (A)) by
+the argument above.
+Result for case 1. LetU2Clients,U02Servers
+and let E1be the event that neither
+RevealFactor MFPAK (U;U0;`) nor
+RevealFactorV MFPAK (U0;U;`) occurs. The in-
+stance involving U;U0inSPAK- Z+is fresh if and
+only if the corresponding instance in Mis fresh in
+the`th factor. Thus, if event E1occurs and event
+GuessCS occurs, then, whenever Awins againstM,
+Awins againstSPAK-Z+ , except with probability at
+most Pr(Dist 1jGuessCS). Therefore,
+Pr
+Succake-f`
+M (t;q se;qex;qro)jE1;GuessCS
+Pr
+Succake
+PAK-Z+ (t0;qse;qex;q0
+ro)
+;
+whereq0
+ron(qro+z+ 6q ex+ 4q se),t0t+n(qro+
+1)texp+qex(3texp+jIajtsig) +qse(2nt exp+jIajtsig), and
+z= minfqse+qex;jClientsjjServersjg. Moreover,
+Pr
+Succake-f`
+MFPAK (t;q se;qex;qro)jE1;GuessCS
+ Pr
+Succake-f`
+M (t;q se;qex;qro)jE1;GuessCS
+Pr(Dist 1jGuessCS):
+Combining these two expressions yields the following
+result:
+Lemma A.1 LetU2Clients,U02Servers, and
+suppose that neither
+RevealFactor MFPAK (U;U0;`) nor
+RevealFactorV MFPAK (U0;U;`)occurs (which is
+event E1). Then
+Pr
+Succake-f`
+MFPAK (t;q se;qex;qro)jE1;GuessCS
+4 Pr
+Succake
+PAK-Z+ (t0;qse;qex;q0
+ro)
+;
+whereq0
+ron(qro+z+ 6q ex+ 4q se),t0t+n(qro+
+1)texp+qex(3texp+jIajtsig) +qse(2nt exp+jIajtsig), and
+z= minfqse+qex;jClientsjjServersjg, and a similar
+bound exists for Advs2c-f`
+MFPAK .
+A.3 Remaining cases
+The remaining cases are as follows:
+2. Asymmetric factor uncompromised, U2
+Servers: no RevealFactor MFPAK (U0;U;`) query.
+3. Symmetric factor uncompromised, U2Clients:
+noRevealFactor MFPAK (U;U0;`) query.4. Symmetric factor uncompromised, U2Servers:
+noRevealFactor MFPAK (U0;U;`) query.
+The proofs for each of these cases proceed in an
+analogous manner. For case 2, the modier simulates
+anMFPAK system to the adversary using an underly-
+ingPAK-Z+ system and assuring that the underlying
+system remains fresh. For cases 3 and 4, the modier
+simulates an MFPAK system to the adversary using an
+underlying PAK system and assuring that it remains
+fresh.
+The details for these three cases appear in the full
+version of the paper (Stebila et al. 2009).
+A.4 Overall result
+By combining cases 1 and 2, we can obtain a result for
+instances that are fresh in the `th factor when that
+factor is asymmetric, and by combining cases 3 and 4
+we can obtain a result for instances that are fresh in
+the`th factor when that factor is symmetric.
+For the ake-f `advantage for an asymmetric factor,
+we have
+Pr
+Succake-f`
+MFPAK (t;q se;qex;qro)
+jClientsjjServersj
+8 Pr (Succ PAK-Z+ (t0;qse;qex;q0
+ro));
+wheret0t+n(qro+ 1)t exp+qex(3texp+jIajtsig) +
+qse(3texp+jIajtsig),q0
+ron(qro+z+ 6q ex+ 5q se), and
+z= maxfq se+qex;jClientsjjServersjg.
+For the ake-f` advantage for a symmetric factor,
+we have
+Pr
+Succake-f`
+MFPAK (t;q se;qex;qro)
+jClientsjjServersj
+2 Pr (Succ PAK(t00;qse;qex;q00
+ro));
+whereq00
+ron(2q ro+ 1 + 4z+ 6q ex+ 5q se),t00t+
+zjIajtGen+(q ro+1)t exp+qex(3texp+jIajtsig)+qse(3texp+
+jIajtsig), andz= maxfq se+qex;jClientsjjServersjg.
+In each case, a similar bound applies for Advma-f`
+MFPAK .
+Substituting the security statements for PAK
+(MacKenzie 2002, Thm. 6.9) and PAK-Z+ (Gentry
+et al. 2005, Thm. 5.1) and simplifying the expres-
+sions, we obtain the following theorem describing the
+security of MFPAK:
+Theorem A.2 LetGbe a nite cyclic group gener-
+ated bygand letSbe a signature scheme with secu-
+rity parameter . LetAbe an adversary that runs
+in timetand makes at most qseandqexqueries of
+type Send and Execute, respectively, and at most qro
+queries to the random oracle. Let bco= 1ifAmakes
+aRevealFactorV (;;`)query to a server, and 0 other-
+wise. Then MFPAK is a secure multi-factor password-
+authenticated key exchange protocol, with
+Advake-f`
+MFPAK (A)8
+>>><
+>>>:16((1 b co)qse+bcoqro)
+jPasswords`j+;
+if the`th factor is symmetric,
+4qse
+jPasswords`j+ ;
+if the`th factor is asymmetric,
+where= 8q seAdvcdh
+G;g(t0;q02
+ro)+6qseSucceu-cma
+S;(t0;qse)+
+5(q se+qex)(qro+qse+qex)
+jGjand=jClientsjj Serversj, for t0=
+t+(zjIaj+8(q02
+ro+jIajqse+jIajqex))texp,q0
+ro=n(2q ro+
+4z+ 6q ex+ 5q se), andz= maxfqse+qex;jClientsj
+jServersjg; a similar bound exists for Advma-f`
+MFPAK (A).
+CRPIT Volume 105 - Information Security 2010
+66

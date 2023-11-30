@@ -1,0 +1,509 @@
+A2A-API: A Prototype for Biomedical Information Retrieval
+Research and Benchmarking
+Maciej Rybinski
+CSIRO Data61
+Sydney, Australia
+maciek.rybinski@csiro.auLiam Watts
+CSIRO Data61
+Sydney, Australia
+liam.watts@csiro.auSarvnaz Karimi
+CSIRO Data61
+Sydney, Australia
+sarvnaz.karimi@csiro.au
+ABSTRACT
+Finding relevant literature is crucial for biomedical research
+and in the practice of evidence-based medicine, making
+biomedical search an important application area within the
+field of information retrieval. This is recognised by the broader
+IR community, and in particular by the organisers of Text Re-
+trieval Conference (TREC) as early as 2003. While TREC pro-
+vides crucial evaluation resources, to get started in biomedi-
+cal IR one needs to tackle an important software engineering
+hurdle of parsing, indexing, and deploying several large doc-
+ument collections. Moreover, many newcomers to the field
+often face a steep learning curve, where theoretical concepts
+are tangled up with technical aspects. Finally, many of the
+existing baselines and systems are difficult to reproduce.
+We aim to alleviate all three of these bottlenecks with the
+launch of A2A-API. It is a RESTful API which serves as an
+easy-to-use and programming-language-independent inter-
+face to existing biomedical TREC collections. It builds upon
+A2A, our system for biomedical information retrieval bench-
+marking, and extends it with additional functionalities. Apart
+from providing programmatic access to the features of the
+original A2A system—focused principally on benchmarking—
+A2A-API supports biomedical IR researchers in development
+of systems featuring reranking and query reformulation com-
+ponents. In this demonstration, we illustrate the capabilities
+of A2A-API with comprehensive use cases.
+CCS CONCEPTS
+•Applied computing →Health informatics; • Information
+systems →Evaluation of retrieval results; Chemical and
+biochemical retrieval.
+KEYWORDS
+Clinical trials search; Precision medicine; Medical information
+retrieval; Learning-to-rank; Evidence-based medicine
+Permission to make digital or hard copies of all or part of this work for personal
+or classroom use is granted without fee provided that copies are not made
+or distributed for profit or commercial advantage and that copies bear this
+notice and the full citation on the first page. Copyrights for components of this
+work owned by others than ACM must be honored. Abstracting with credit is
+permitted. To copy otherwise, or republish, to post on servers or to redistribute
+to lists, requires prior specific permission and/or a fee. Request permissions
+from permissions@acm.org.
+SIGIR ’22, July 11–15, 2022, Madrid, Spain
+© 2022 Association for Computing Machinery.
+ACM ISBN 978-1-4503-8732-3/22/07. . . $15.00
+https://doi.org/10.1145/3477495.3531667ACM Reference Format:
+Maciej Rybinski, Liam Watts, and Sarvnaz Karimi. 2022. A2A-API: A
+Prototype for Biomedical Information Retrieval Research and Bench-
+marking. In Proceedings of the 45th International ACM SIGIR Conference
+on Research and Development in Information Retrieval (SIGIR ’22), July
+11–15, 2022, Madrid, Spain. ACM, New York, NY, USA, 5 pages.
+https://doi.org/10.1145/3477495.3531667
+1 MOTIVATION
+Deployment of an information retrieval (IR) evaluation pipeline
+requires hardware resources and working knowledge of not
+only methods, but also tools (e.g., Solr [ 1], or Terrier [ 9]) and
+libraries to utilise these tools in one’s preferred programming
+language. Moreover, all the overhead required to download
+and index benchmarking collections and to set up an evalu-
+ation pipeline is necessary just to run the baselines, but the
+bulk of research activity is focused away from these prelim-
+inary tasks (e.g., this often is the case in research on neural
+reranking). Although preprocessing of source documents and
+indexing can be largely seen as a one-off effort, maintenance
+of multiple large evaluation collections on a local machine can
+be cumbersome. For instance, just the literature indices for
+the TREC Clinical Decision Support and Precision Medicine
+tracks require over 125 GB of storage space, without includ-
+ing the source documents. Moreover, replicating these basic
+steps across the IR research community could lead to rela-
+tively poor research reproducibility. Not having the publicly
+accessible common baselines and a programmatic interface
+to interact with the test collection means that research out-
+comes cannot be shared as end-to-end executable code. That
+is, impractical sharing of the source data is needed instead,
+leading to the overhead problem mentioned above.
+We address these problems in the context of biomedical IR
+research by launching A2A-API—a REST interface to interact
+with commonly used biomedical IR collections. A2A-API
+allows researchers to access strong traditional baselines and
+build upon them to create end-to-end experiments with query
+reformulation and learning-to-rank elements.
+2 RELATED SYSTEMS
+There are a number of open-source information retrieval
+systems available, such as Lucene, Solr, Elasticsearch and
+Terrier [ 9]. As mentioned earlier, using such search engines
+for evaluations requires knowledge of indexing, querying,
+ranking and evaluations. There are some efforts to alleviate
+this effort by providing toolkits and APIs for benchmarking,
+Demo Paper
+ 
+SIGIR ’22, July 11–15, 2022, Madrid, Spain
+3318evaluation, or furthering research in other fields that may
+require an initial search stage. We list the most relevant here.
+Apples to Apples (A2A). A2A-API is built on the shoulders
+of the A2A system developed since 2018 [ 3,7,18]. A2A is
+a web-based system for benchmarking. It provides access
+to a number of indices and document and query processing
+methods through a web GUI at a2a.csiro.au. It provides search
+results and evaluations in the form of downloadable files.
+The API we introduce here is a step towards making the
+system usable in a programmatic setup. It also introduces
+more datasets, evaluation of user-specified rankings, and
+convenience calls for downloading document contents which
+are especially important in learning to rank and in neural
+reranking training. These were not practical through the web
+GUI. This system has also been customised for clinical trials
+search through the Science2Cure system [17].
+Anserini and Pyserini. Anserini [ 22] is a toolkit that aims
+to facilitate research in information retrieval with the goal
+of making it easy to create practical search applications. It is
+built on Apache Lucene and provides a git repository to allow
+its users to index document collections of their choice and
+makes available some of the bag-of-words ranking options.
+Pyserini [ 5] is a Python package over Anserini. It provides
+a superset of features in Anserini, including dense and hybrid
+retrieval capabilities. There are two major differences between
+our system and Pyserini: (1) we remove the need to store
+indices on the user side, reducing the need for large storage
+required for indices; and (2) we provide searching capability
+over all the biomedical collections from TREC which, to date,
+is missing from Pyserini.
+NCBI APIs. Biomedical literature, including MEDLINE ci-
+tations are all indexed in PubMed and accessible through the
+Web GUI and APIs. The National Center for Biotechnology
+Information (NCBI) provides a number of APIs1to facilitate
+access to its resources for developers. While useful, the op-
+tion of choosing a desired document processing, querying, or
+ranking function is not available for these APIs.
+IR_datasets. IR_datasets [ 6] provides data access abstrac-
+tions similar to those of A2A-API for many of the same bench-
+marking datasets (and many others, outside of biomedical do-
+main). The key differences between A2A-API and IR_datasets
+are: (1) A2A-API is deployed as a RESTful interface, thus
+being language independent, and allows interaction with the
+supported datasets without having to download the source
+data, and (2) A2A-API provides parameterisable baselines
+for the supported datasets (BM25/DFR, optionally with RM3
+for query reformulation). The drawbacks of the setup we
+propose are discussed in the Limitations section.
+3 DATASETS
+A2A-API allows for experimentation with biomedically-themed
+TREC ad hoc retrieval collections, including:
+1https://www.ncbi.nlm.nih.gov/home/develop/api/ (Accessed 14 Feb 2022)•TREC Genomics 2004–2005 [2]: an ad hoc literature
+retrieval task; topics represent information needs of
+biomedical researches and search is carried out over a
+snapshot (1994–2003) of PubMed which is biomedical
+literature abstracts and metadata; comprising over 4.5M
+documents.
+•TREC Clinical Decision Support (CDS) 2014–2016 [13,
+16,20]: a literature retrieval task for matching patients
+with clinically relevant information; search is carried
+out over a 2014 snapshot of PubMed Central, consisting
+of over 733K full-text biomedical articles with topics
+representing hypothetical patients (either with a full
+description of the medical case, or an abbreviated sum-
+mary). Topics are categorised into three broader types,
+representing common information needs in clinical de-
+cision support scenarios: diagnosis, treatment, tests.
+The 2016 task uses an updated corpus (a 2016 snapshot
+of over 1.25M full-text documents), and topics contain
+a representation of the patient via a clinical note.
+•TREC Precision Medicine (PM) 2017–2020 [11,12,14,
+15]: 2017–2018 editions of the PM track establish litera-
+ture and clinical trials retrieval subtasks, while PM 2020
+focuses exclusively on literature search. The literature
+task uses snapshots of PubMed datasets (so, scientific
+abstracts; snapshots updated in 2017 and 2019, with
+over 26M and 29M documents, respectively), while
+the clinical trials retrieval uses snapshots of clinical-
+trials.gov database (2017/2019 snapshots with 241K
+and 306K trials, respectively). The topics are semi-
+structured patient profiles representing cancer patients;
+each topic contains information such as cancer type, its
+mutation, and demographic data.
+•TREC-COVID Complete (2020) [10]: a biomedical lit-
+erature retrieval task on a July 16 2020 snapshot of
+COVID-19 Open Research Dataset (CORD [ 21]) with
+over 191K documents (scientific literature); topics con-
+sist of query-question-narrative representations of in-
+formation needs that clinicians, researchers, and policy
+makers may have had at a relatively early stage of the
+COVID-19 pandemic.
+•TREC Clinical Trials 2021: a clinical trial retrieval task
+on a 2021 snapshot of clinicaltrials.gov database with
+over 375K documents; topics are descriptions of syn-
+thetic patients and act as a proxy for extracts from
+electronic health records.
+Additionally, we facilitate access to judgments and docu-
+ments of a clinical trials search dataset compiled using TREC
+CDS 2014-2015 topics by Koopman & Zuccon (2016) [ 4]. Of
+note, this dataset has been set up in A2A-API with a later
+snapshot of the clinicaltrials.gov corpus (corresponding to
+that of TREC PM 2017). Hence, the evaluation results can not
+be directly compared to those presented in the original paper.
+However, human judgments and document representations
+can still be used as a training dataset for reranking systems
+for the TREC Clinical Trials 2021 task (see the demonstration
+and use cases section for details).
+Demo Paper
+ 
+SIGIR ’22, July 11–15, 2022, Madrid, Spain
+3319Figure 1: Architecture of the A2A system.
+A summary of the dataset information is presented in
+Table 1. All the corpora of the TREC collections are repre-
+sented in A2A-API through inverted Solr indices. A detailed
+description of the indexing approach can be found in our
+previous work presenting the online Web GUI version of the
+A2A system [18].
+4 A2A-API SYSTEM AND CALLS
+The architecture of the system is presented in Figure 1. At
+its core, A2A-API is a REST interface to the A2A online
+application [18].
+A2A-API supports the following calls:
+•bm25/<task> (GET, POST: file, ARGS: k1,b,t): retrieves
+a JSON structure representing an evaluated BM25 base-
+line for a given task. A POST request here can be used
+to upload a user-modified version of the topic file,
+which is useful for query reformulation; optional pa-
+rameters are k1 and b, which are BM25 hyperparame-
+ters and t, which can be used to specify an alternative
+query template.
+•bm25_rm3/<task> (GET, POST: file, ARGS: k1,b,t,mu,
+k,alpha ,m): identical to a bm25 call, but incorporates
+a pseudo-relevance feedback model RM3; additional
+parameters mu,k,alpha , and mare RM3 parameters
+for smoothing, document cutoff, interpolation with
+original query (uniform) term weights, and vocabulary-
+size cutoff, respectively.
+•dfr/<task> (GET, POST: file, ARGS: c,t): retrieves a
+JSON structure representing an evaluated DFR base-
+line, with Laplacian after effect and H2 normalisation,
+for a given task. A POST request can be used to upload
+a user-modified version of the topic file for query refor-
+mulations; optional parameters are c, which is a DFR
+hyperparameter and t, which can be used to specify an
+alternative query template.
+•dfr_rm3 (GET, POST: file, ARGS: c,t,mu,k,alpha ,
+m): identical to a dfr call, but incorporates a pseudo-
+relevance feedback model RM3; additional parametersmu,k,alpha , and mare RM3 parameters for smooth-
+ing, document cutoff, interpolation with original query
+(uniform) term weights, and vocabulary-size cutoff,
+respectively.
+•doc/<task>/<doc_id> (GET): retrieves a JSON dictio-
+nary representing a specific document (given by doc_id)
+from a specific task.
+•eval/<task> (POST: file): retrieves a JSON structure rep-
+resenting an evaluation result (i.e., a TRECEval output)
+for a given task and result file.
+•qrels/<task> (GET): retrieves a JSON list of human
+judgments used for evaluation in a given task.
+•qrel_docs/<task> (GET): retrieves a ZIP compressed
+JSON dictionary of all indexed fields of all documents
+with a corresponding human judgement within a spec-
+ified task; it is a convenience call for bulk retrieval of
+labeled training data for a specific dataset.
+•result_docs/<task> (POST: file, ARGS: k): for a given
+task, retrieves a JSON dictionary of all indexed fields of
+documents present in the user-specified TREC-formatted
+results file; the k parameter specifies the per-topic num-
+ber of documents for which the data is fetched (with a
+default value of 200); it is a convenience call to support
+reranking at inference time.
+•topics/<task> (GET): retrieves a JSON structure repre-
+senting topics of a given task.
+5 DEMONSTRATION AND USE CASES
+A2A-API is publicly accessible at a2a.csiro.au/api. Together
+with the web interface, we publish a repository of examples2,
+which are referenced further in this section. Calls formulated
+as GET requests can be evaluated either programmatically,
+or through a web browser or curl command. An example of
+a formed request is https://a2a.csiro.au/api/bm25/ct2017,
+which retrieves a BM25 baseline with default parameters
+for the TREC PM 2017 clinical trials task. Users can specify
+optional parameters.3Both the resulting ranking and eval-
+uations are returned. A simple Python-based walk-through
+of all the API calls is presented in Example 1 of the GitHub
+repository. Of note, although we use Python in our examples
+presented here, the deployment of A2A-API as a REST service
+makes it programming-language-independent.
+Supported task IDs correspond to TREC tasks for respec-
+tive years (see Table 1) and include: genomics2004, genomics2005,
+cds2014 (default query template is ‘$description’), cds2015
+(‘$description’), cds2016 (‘$description’), abs2017 (TREC PM
+abstract retrieval; default query ‘$gene $disease’), abs2018
+(‘$gene $disease’), abs2019 (‘$gene $disease’), ct2017 (TREC
+PM clinical trial retrieval; default query ‘$gene $disease’),
+ct2018 (‘$gene $disease’), ct2019 (‘$gene $disease’), pm2020
+(default query ‘$gene $disease $treatment’), ct2021, ct2021_eligible
+(evaluation against binarised judgments), covid (default query
+‘$query $question $narrative’). The task ID to retrieve qrels
+2https://github.com/csiromed/a2a-api-examples
+3For example, https://a2a.csiro.au/api/bm25/ct2017?b=1&k1=1&t=($disease)
+^2($gene)^5 uses b=1 and k1=1 as BM25 parameters and user-specified
+boosting for the topic gene and disease fields.
+Demo Paper
+ 
+SIGIR ’22, July 11–15, 2022, Madrid, Spain
+3320Dataset Year # docs Corpus # topics # judgments
+TREC Genomics 2004 4,591,008 MEDLINE 50 8,268
+2005 4,591,008 MEDLINE 50 39,958
+TREC Clinical Decision Support 2014 732,456 PubMed Central 30 37,949
+2015 732,456 PubMed Central 30 37,807
+2016 1,255,260 PubMed Central 30 37,707
+TREC Precision Medicine 2017 26,739,225 PubMed 30 22,642
+241,006 ClinicalTrials.gov 30 13,019
+2018 26,739,225 PubMed 50 22,429
+241,006 ClinicalTrials.gov 50 14,188
+2019 29,135,813 PubMed 40 18,316
+306,238 ClinicalTrials.gov 40 12,996
+2020 29,135,813 PubMed 40 17,366
+TREC-COVID Complete 2020 191,175 CORD-19 50 69,318
+TREC Clinical Trials 2021 375,580 ClinicalTrials.gov 75 35,832
+Koopman & Zuccon (2016)[4]∗2016 241,006 ClinicalTrials.gov 60 3,870
+Table 1: The datasets indexed in A2A and available through the API. Note that∗uses TREC PM 2017 Clinical Trials corpus.
+or documents from the dataset proposed by Koopman and
+Zuccon [4] is sigir_ct.
+Research scenarios supported by A2A, in general, fall on
+any fragment of a workflow, where the user downloads ar-
+tifacts (qrels/documents) of one of the datasets supported
+by the API to create a reranking training process or a query
+reformulation logic to be evaluated against another dataset.
+For example, a user may be interested in training a reranking
+model on TREC PM clinical trials task from 2017 and compar-
+ing its effect with a custom query expansion method on the
+2018 edition of the same task. The basic structure for such a
+workflow is illustrated in Example 2 in the GitHub repository
+and represented briefly in the following snippet:
+import requests
+### **************** RERANKER TRAINING ****************************
+## Get qrel data and document content for docs present in the qrels
+x = requests.get('https://a2a.csiro.au/api/qrels/ct2017')
+qrels=x.json()
+x = requests.get('https://a2a.csiro.au/api/qrel_docs/ct2017')
+qrel_docs=unzip_and_read_json(x)
+x = requests.get('https://a2a.csiro.au/api/topics/ct2017')
+topics=x.json()
+# Data wrangling and training logic:
+reranker=prepare_data_and_train_reranker(qrels, qrel_docs, topics)
+### **************** QUERY REFORMULATION **************************
+###
+## Get topics (queries) for a given task (here ct2021)
+x = requests.get('https://a2a.csiro.au/api/topics/ct2018')
+topics=x.json()
+# Query reformulation logic:
+new_topic_file=query_reformulation(topics)
+### **************** RERANKING (inference) ************************
+## Get a baseline result
+x = requests.get('https://a2a.csiro.au/api/bm25/ct2018')
+bm25_baseline=x.json()
+## Save it to disk
+bm25_data=to_trec(bm25_baseline['rankings'], run_id='ct2018_raw_bm25')
+## Get document data for top k(=20) documents in the baseline ranking
+files = {'file': open('ct2018_raw_bm25.results','rb')}
+x = requests.post('https://a2a.csiro.au/api/result_docs/ct2018?k=20', files=files)
+bm25_docs=x.json()
+topics = requests.get('https://a2a.csiro.au/api/topics/ct2018').json()
+# Reranking logic:
+reranked_output=rerank_and_save_trec_output(bm25_data, bm25_docs, topics)
+### **************** EVALUATIONS (reranking vs reformulation) ***********
+files = {'file': open(reranked_output,'rb')}x = requests.post('https://a2a.csiro.au/api/eval/ct2018', files=files)
+reranked_results=x.json()
+files = {'file': open(new_topic_file,'rb')}
+x = requests.post('https://a2a.csiro.au/api/dfr/ct2018?t=$disease', files=files)
+reformulated_results=x.json()
+# ... user can go on to plot the results, do statistical testing, etc.
+The above snippet can be used as a stub for implementation
+of reranking and reformulation experiments with biomedical
+IR test collections. It provides the layout of an easy-to-follow
+pipeline with clear points for inserting the user-specified logic.
+A full implementation of a reranking experiment on the TREC
+Clinical Trials 2021 collection with training on the sigir_ct
+dataset is available in Example 3 in the GitHub repository. It
+implements training and testing of a Mono-T5 [ 8] reranker
+using Huggingface library.4
+The pipeline-like structure of the code examples illustrate
+the functionality of A2A-API, but implies repeated down-
+loads of the data with tweaks to the experimental settings.
+In a more realistic scenario, a user could download all the
+data needed for their experiment and save it locally once, to
+then plug it into the workflow. A2A-API is then used again
+at the evaluation stage. An implementation to illustrate this
+difference is presented in Example 4, which runs an experi-
+ment similar to that of Example 3, but with the API overhead
+limited in repeated runs. Moreover, this example uses a BERT-
+based model, thus providing an end-to-end implementation
+of one of our BERT-based reranking systems submitted to
+TREC 2021 Clinical Trials track [ 19] (which highlights A2A-
+API’s applicability to experiment reproducibility).
+6 PATH TO IMPACT
+A2A-API facilitates biomedical IR research by providing a
+platform-independent programmatic interface to multiple
+evaluation collections, that can be used either as a source of
+4https://huggingface.co/docs/transformers (Accessed 22 Feb 2022)
+Demo Paper
+ 
+SIGIR ’22, July 11–15, 2022, Madrid, Spain
+3321training data, or to benchmark new retrieval systems. Ad-
+ditionally, the system provides baselines and an evaluation
+interface. A2A-API can also be used to create readily repro-
+ducible research artifacts (e.g., end-to-end TREC runs, which
+do not require sharing of large data files, nor access to indices
+for reproducibility).
+We maintain A2A-API as a public service. Depending on
+the interest in the community, we may release programming-
+language-specific wrappers for the API’s functionalities.
+7 LIMITATIONS
+A2A-API has limitations for IR research focused on dense
+retrieval. The API does not expose the complete corpora of
+the respective test collections. However, it can still be used
+to evaluate systems and provide baselines (i.e., BM25, DFR
+and RM3 are available, and strong neural reranking baselines
+can be implemented easily, as shown in examples), and as an
+access point to existing, biomedically-themed training data.
+Due to the size of the judgment pool and length of the
+individual documents, qrel_docs calls for CDS tracks can be
+prone to timing out, depending on the network traffic. We
+can provide alternative ways of access upon request.
+Acknowledgement
+This work is supported by by the CSIRO Precision Health
+Future Science Platform (PH FSP) and Data61. Liam Watts
+is an intern at CSIRO’s Data61 and developed the use cases
+presented here.
+REFERENCES
+[1] Apache. 2016. http://lucene.apache.org/solr/. [Version: 6.0.1].
+[2]William Hersh and Ellen Voorhees. 2009. TREC Genomics Special Issue
+Overview. Information Retrieval 12, 1 (2009), 1–15.
+[3]Sarvnaz Karimi, Vincent Nguyen, Falk Scholer, Brian Jin, and Sara Fala-
+maki. 2018. A2A: Benchmark Your Clinical Decision Support Search. In
+SIGIR. Ann Arbor, MI, 1277–1280.
+[4]Bevan Koopman and Guido Zuccon. 2016. A test collection for matching
+patients to clinical trials. In Proceedings of the 39th International ACM SIGIR
+conference on Research and Development in Information Retrieval. 669–672.
+[5]Jimmy Lin, Xueguang Ma, Sheng-Chieh Lin, Jheng-Hong Yang, Ronak
+Pradeep, and Rodrigo Nogueira. 2021. Pyserini: A Python Toolkit for
+Reproducible Information Retrieval Research with Sparse and Dense
+Representations. In SIGIR. 2356—-2362.
+[6]Sean MacAvaney, Andrew Yates, Sergey Feldman, Doug Downey, Ar-
+man Cohan, and Nazli Goharian. 2021. Simplified Data Wrangling withir_datasets. In Proceedings of the 44th International ACM SIGIR Conference
+on Research and Development in Information Retrieval. 2429–2436.
+[7]Vincent Nguyen, Sarvnaz Karimi, and Brian Jin. 2019. An Experimentation
+Platform for Precision Medicine. In SIGIR. Paris, France, 1357–1360.
+[8]Rodrigo Nogueira and Kyunghyun Cho. 2019. Passage Re-ranking with
+BERT. arXiv:1901.04085 (2019). arXiv:1901.04085 [cs.IR]
+[9]Iadh Ounis, Gianni Amati, Vassilis Plachouras, Ben He, Craig Macdonald,
+and Douglas Johnson. 2005. Terrier Information Retrieval Platform. In
+ECIR, Vol. 3408. 517–519.
+[10] Kirk Roberts, Tasmeer Alam, Steven Bedrick, Dina Demner-Fushman,
+Kyle Lo, Ian Soboroff, Ellen Voorhees, Lucy Lu Wang, and William Hersh.
+2020. TREC-COVID: Rationale and Structure of an Information Retrieval
+Shared Task for COVID-19. The Journal of the American Medical Informatics
+Association 27, 9 (2020), 1431–1436.
+[11] Kirk Roberts, Dina Demner-Fushman, Ellen Voorhees, William R. Hersh,
+Steven Bedrick, Alexander Lazar, and Shubham Pant. 2017. Overview of
+the TREC 2017 Precision Medicine Track. In TREC. Gaithersburg, MD.
+[12] Kirk Roberts, Dina Demner-Fushman, Ellen M. Voorhees, Steven Bedrick,
+and William R Hersh. 2020. Overview of the TREC 2020 Precision
+Medicine Track. In TREC.
+[13] Kirk Roberts, Dina Demner-Fushman, Ellen M. Voorhees, and William R.
+Hersh. 2016. Overview of the TREC 2016 Clinical Decision Support Track.
+InTREC. Gaithersburg, MD.
+[14] Kirk Roberts, Dina Demner-Fushman, Ellen M. Voorhees, William R.
+Hersh, Steven Bedrick, and Alexander J. Lazar. 2018. Overview of the
+TREC 2018 Precision Medicine Track. In TREC. Gaithersburg, MD.
+[15] Kirk Roberts, Dina Demner-Fushman, Ellen M. Voorhees, William R.
+Hersh, Steven Bedrick, Alexander J. Lazar, Shubham Pant, and Funda
+Meric-Bernstam. 2019. Overview of the TREC 2019 Precision Medicine
+Track. In TREC. Gaithersburg, MD.
+[16] Kirk Roberts, Matthew S. Simpson, Ellen Voorhees, and William R. Hersh.
+2015. Overview of the TREC 2015 Clinical Decision Support Track. In Text
+REtrieval Conference. Gaithersburg, MD.
+[17] Maciej Rybinski, Sarvnaz Karimi, and Aleney Khoo. 2021. Science2Cure:
+A Clinical Trial Search Prototype. In Proceedings of the 44th International
+ACM SIGIR Conference on Research and Development in Information Retrieval.
+2620–2624.
+[18] Maceij Rybinski, Sarvnaz Karimi, Vincent Nguyen, and Cecile Paris. 2020.
+A2A: A platform for research in biomedical literature search. BMC Bioin-
+formatics 21, 572 (2020).
+[19] Maciej Rybinski, Vincent Nguyen, and Sarvnaz Karimi. 2021. CSIROmed
+Team Report of TREC 2021 Clinical Trials track: Experiments with BERT
+Reranking Methods. In TREC. Online.
+[20] M. Simpson, E. Voorhees, and W. Hersh. 2014. Overview of the TREC
+2014 Clinical Decision Support Track. In TREC. Gaithersburg, MD.
+[21] Lucy Lu Wang, Kyle Lo, Yoganand Chandrasekhar, Russell Reas,
+Jiangjiang Yang, Darrin Eide, Kathryn Funk, Rodney Kinney, Ziyang
+Liu, William Merrill, Paul Mooney, Dewey Murdick, Devvret Rishi,
+Jerry Sheehan, Zhihong Shen, Brandon Stilson, Alex D. Wade, Kuansan
+Wang, Chris Wilhelm, Boya Xie, Douglas Raymond, Daniel S. Weld,
+Oren Etzioni, and Sebastian Kohlmeier. 2020. CORD-19: The Covid-
+19 Open Research Dataset. In ACL NLP-COVID Workshop. Online. https:
+//arxiv.org/abs/2004.10706
+[22] Peilin Yang, Hui Fang, and Jimmy Lin. 2017. Anserini: Enabling the Use
+of Lucene for Information Retrieval Research. In SIGIR. Tokyo, Japan,
+1253–1256.
+Demo Paper
+ 
+SIGIR ’22, July 11–15, 2022, Madrid, Spain
+3322

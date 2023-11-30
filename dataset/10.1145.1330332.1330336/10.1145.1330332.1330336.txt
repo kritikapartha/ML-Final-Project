@@ -1,0 +1,2091 @@
+8Provably Secure Timed-Release Public Key
+Encryption
+JUNG HEE CHEON
+Seoul National University, Korea
+and
+NICHOLAS HOPPER, YONGDAE KIM and IVAN OSIPKOV
+University of Minnesota - Twin Cities
+A timed-release cryptosystem allows a sender to encrypt a me ssage so that only the intended
+recipient can read it only after a speciﬁed time. We formaliz e the concept of a secure timed-release
+public-key cryptosystem and show that, if a third party is re lied upon to guarantee decryption
+after the speciﬁed date, this concept is equivalent to ident ity-based encryption; this explains the
+observation that all known constructions use identity-bas ed encryption to achieve timed-release
+security. We then give several provably-secure constructi ons of timed-release encryption: a generic
+scheme based on any identity-based encryption scheme, and t wo more efﬁcient schemes based on
+the existence of cryptographically admissible bilinear ma ppings. The ﬁrst of these is essentially
+as efﬁcient as the Boneh-Franklin Identity-Based encrypti on scheme, and is provably secure and
+authenticated in the random oracle model; the ﬁnal scheme is not authenticated but is provably
+secure in the standard model (i.e., without random oracles) .
+Categories and Subject Descriptors: E.3 [ Data ]: Data Encryption— Public Key Cryptosystems
+General Terms: Security, Theory
+Additional Key Words and Phrases: timed-release, authenti cated encryption, key-insulated
+encryption
+ACM Reference Format:
+Cheon, J. H., Hopper, N., Kim, Y., and Osipkov, I. 2008. Prova bly secure timed-release public key
+encryption. ACM Trans. Inf. Syst. Secur. 11, 2, Article 8 (Ma y 2008), 44 pages. DOI = 10.1145/
+1330332.1330336. http://doi.acm.org/10.1145/1330332. 1330336.
+Authors’ addresses: J.H. Cheon, Seoul National University , Korea; email: jhcheon@shu.4c.kr;
+N. Hopper, Y. Kim, University of Minnesota - Twin Cities; ema il:{hopper, kyd }@cs.umn.edu;
+I. Osipkov, Microsoft Corp.; email: ivan.osipkov@microso ft.com.
+Y. Kim and I. Osipkov were partly supported by NSF Career Gran t CNS-0448423 and by
+The Intelligent Storage Consortium at the Digital Technolo gy Center, University of Minnesota.
+J. H. Cheon was supported by Korea Telecom.
+Permission to make digital/hard copy of all or part of this ma terial without fee for personal or
+classroom use provided that the copies are not made or distri buted for proﬁt or commercial advan-
+tage, the ACM copyright/server notice, the title of the publ ication, and its date appear, and notice
+is given that copying is by permission of the ACM, Inc. To copy otherwise, to republish, to post
+on servers, or to redistribute to lists requires prior speci ﬁc permission and/or a fee. Permission
+may be requested from Publications Dept., ACM, Inc., 2 Penn P laza, Suite 701, New York, NY
+10121-0701, USA, fax +1 (212) 869-0481, or permissions@acm .org.
+c/circlecopyrt2008 ACM 1094-9224/2008/05–ART8 $5.00 DOI: 10.1145/13303 32.1330336. http://doi.acm.org/
+10.1145/1330332.1330336.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 2· J. H. Cheon et al.
+1. INTRODUCTION
+The goal of timed-release cryptography is to “send a message into the future.”
+One way to do this is to encrypt a message such that the receive r cannot de-
+crypt the ciphertext until a speciﬁc time in the future. Such a primitive would
+have many practical applications; a few examples include pr eventing a dishon-
+est auctioneer from prior opening of bids in a sealed-bid auc tion [Rivest et al.
+1996], preventing early opening of votes in e-voting scheme s, fair exchange,
+release of classiﬁed information, and delayed veriﬁcation of a signed document,
+such as electronic lotteries [Syverson 1998] and check cash ing. The problem of
+timed-release cryptography was ﬁrst mentioned by [May 1993 ] and then dis-
+cussed in detail by [Rivest et al. 1996].
+Let us assume that Alice wants to send a message to Bob such tha t Bob
+will not be able to open it until a certain time. Previous solu tions fall into two
+categories:
+—Time-lock puzzles: Alice encrypts her message so that Bob needs to perform
+non-parallelizable computation without stopping for the r equired time to de-
+crypt it. If Alice accurately predicts Bob’s computing reso urces between now
+and the desired time, then Bob recovers the message.
+—Trusted decryption agents: Alice encrypts a message such that Bob needs
+some secret value, published by a trusted agent on the requir ed date, in
+order to decrypt the message. Once the agent releases the inf ormation, Bob
+can decrypt the message.
+The ﬁrst approach puts considerable computational overhea d on the message
+receiver, which makes it undesirable for real-life scenari os. In addition, know-
+ing the computational complexity of decryption, while givi ng us a lower bound
+on the computing time Bob may need to decrypt the message, doe s not guar-
+antee that the plaintext will be available at a certain date. Still, this ap-
+proach is widely used for speciﬁc applications [Boneh and Na or 2000; Belare
+and Goldwasser 1996; Syverson 1998; Garay and Pomerance 200 2, 2003].
+The agent-based approach, on the other hand, relieves Bob fr om performing
+nonstop computation, sets the date of decryption precisely and does not re-
+quire Alice to have information on Bob’s capabilities. This comes at a price,
+though: the agents have to be trusted and they have to be avail able at the
+designated time.
+In this article we concentrate on schemes that use such “decr yption agents.”
+We formalize this notion of a secure timed-release encrypti on scheme and show
+that it is equivalent to the notion of strongly key-insulate d encryption [Dodis
+et al. 2002]; when there is no a priori bound on the number of ti me periods,
+this notion is, in turn, known to be equivalent to identity-b ased encryption,
+or IBE [Bellare and Palacio 2002]. We also give several prova bly-secure con-
+structions of timed-release public-key encryption, inclu ding the ﬁrst provably-
+secure generic construction in the literature, and the ﬁrst efﬁcient scheme that
+is provably secure in the standard model, that is, without ra ndom oracles.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 3
+Our results also cast new light on several previous schemes t hat appear in
+the literature: each can be seen as an adaptation of a known ke y-insulated
+encryption scheme. For example, Rivest et al. [1996] propos e that the agent
+could encrypt messages on request with a secret key which wil l be published
+on a designated date by the agent, or the agent can precompute pairs of
+public/private keys, publish all public keys and release th e private keys on
+the required days; these exactly ﬁt known key-insulated sch emes appearing
+in the literature. The scheme of Crescenzo et al. [1999] esse ntially replaces
+publication of the key with publication of the message, requ iring the receiver
+to engage in a conditional oblivious transfer protocol with the agent to de-
+crypt the message. In Chen et al. [2002], the authors propose d to use Boneh
+and Franklin’s IBE scheme [Boneh and Franklin 2003] for time d-release en-
+cryption: essentially, the scheme replaces the identity in an IBE scheme with
+the time of decryption. Similar proposals appear in Marco Ca sassa Mont and
+Sadler [2003] and Blake and Chan [2005].
+While some of the above proposals contain informal proofs of security, none
+of them consider and/or give a formal treatment of the securi ty properties of
+timed-release public key encryption (or TR-PKE). The ﬁrst f ormal treatments
+of TR-PKE security were displayed in Cheon et al. [2004] and t hen strength-
+ened in Cheon et al. [2006]. Independently, Cathalo et al. [2 005] introduce
+another notion of timed-release security and argue that it i s not implied
+by key-insulated encryption; however, this seems to be a sid e effect of an
+overly-restrictive model in which a user must commit to a spe ciﬁc decryption
+agent before choosing his public key.
+Authentication for Timed-Release Encryption. Many of the applications of
+timed-release cryptography mentioned above require some f orm of authentica-
+tion as well. For example, if there is no authentication of bi ds in a sealed-bid
+auction, any bidder may be able to forge bids for others, or fo rce the auction
+to fail by submitting an unreasonably high bid. In this artic le, we consider
+the security properties required by these applications and develop formal se-
+curity conditions for a Timed-Release Public Key Authentic ated Encryption
+(TR-PKAE) scheme.
+One avenue for developing a TR-PKAE scheme would be composin g
+an unauthenticated TR-PKE scheme with either a signature sc heme or a
+(non-timed-release) PKAE scheme. Although such construct ions are possible,
+we note that the details of this composition are not trivial; examples from An
+[2001] and Dodis and Katz [2005] illustrate that naive const ructions can fail
+to provide the expected security properties. Additionally , we note that such
+schemes are likely to suffer a performance penalty relative to a scheme based
+on a single primitive. Thus, besides introducing a generic c onstruction, we
+also introduce a provably secure construction of a TR-PKAE s cheme that is
+essentially as efﬁcient as previous constructions of non-authenticated TR-PKE
+schemes [Chen et al. 2002; Marco Casassa Mont and Sadler 2003 ; Blake and
+Chan 2005].
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 4· J. H. Cheon et al.
+2. DEFINITIONS
+In this section we review security deﬁnitions that will be us ed in the article. In
+addition, we introduce new deﬁnitions, namely, those of tim ed-release public
+key encryption (TR-PKE) and authenticated TR-PKE (TR-PKAE ).
+Identity Based Encryption . Formally, we deﬁne an IBE scheme IBES to be a
+tuple of four randomized algorithms:
+—Setup IBE(1k), which given input 1k(the security parameter), produces pub-
+lic parameters πIBE, which include hash functions, message and ciphertext
+spaces among others. In addition, master secret δIBEis generated which is
+kept conﬁdential by the central authority.
+—Extract IBE(πIBE,δIBE,I), given public parameters πIBE, master secret δIBE
+and identity I∈{0,1}∗, outputs a secret key skI. The I(together with πIBE)
+serves as the public key corresponding to identity I.
+—Encrypt IBE(πIBE,I,m) computes the ciphertext cdenoting the encryption for
+identity Iof message mwith public parameters πIBE.
+—Decrypt IBE(πIBE,skI,/hatwidec) outputs the plaintext corresponding to /hatwidecif decryption
+is successful or the special symbol “fail” otherwise.
+For consistency, we require that Decrypt IBE(πIBE,skI,Encrypt IBE(πIBE,I,m)) =
+m, for all valid ( I,skI), (πIBE,δIBE), and m.
+We use the IND-ID-CCA notion of security for and IBE scheme [B oneh
+and Franklin 2003]. Brieﬂy, in this case, an adversary may ad aptively ask
+for secret keys corresponding to arbitrary identities, and may also ask for
+decryption of any ciphertext using any identity. Eventuall y the adversary
+presents a “challenge identity” and a pair of “challenge pla intexts” and is
+given the encryption of one of these plaintexts under the cha llenge identity.
+The adversary may then continue to ask for secret keys and dec ryptions,
+except that it cannot query for the secret key of the challeng e identity or
+for decryption of the challenge ciphertext under the challe nge identity. The
+adversary wins if it can correctly guess which of the challen ge ciphertexts was
+encrypted by the challenger, and the scheme is secure if no po lynomial time
+adversary wins with an advantage non-negligibly greater th an one half.
+Public Key Encryption . A public key encryption system PKE consists of
+three algorithms:
+—KeyGen PKE, which on input 1k, outputs public/private key pair ( pk,sk). The
+public key also includes public parameters needed for encry ption/decryption.
+—Encrypt PKE, which on input of pkand message m, outputs ciphertext c.
+—Decrypt PKE, which on input of ciphertext /hatwidecand private key sk, outputs either
+some message /hatwidemor failure symbol.
+For consistency, it is required that Decrypt PKE(sk,Encrypt PKE(pk,m)) =m, for
+all valid ( pk,sk) and m.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 5
+We make use of a PKE that is IND-CCA2 secure against adaptive a dversary
+as described in Bellare et al. [1998]. Brieﬂy, the challenge r generates a pub-
+lic/private key pair and gives the public key to the adversar y. The adversary
+is allowed to query for the decryption of any ciphertext usin g the private key.
+In the challenge step, the adversary produces a pair of chall enge plaintexts
+and is given the encryption of one of the pair. The adversary w ins if, given the
+ability to query the decryption of any message but the challe nge ciphertext, it
+can correctly guess which of the two plaintexts was encrypte d in the challenge
+step.
+We note that given a secure IBES, we can easily obtain a secure PKE. For
+that purpose, each user simply runs IBES’s Setup IBEand Extract IBE, using an
+arbitrary identity I, to obtain its public key and private key (i.e., the master
+secret key in IBES). The identity Ialong with IBES’s public parameters
+serves as user’s public key, while the master secret key serv es as the private
+key. A straightforward argument shows that if IBES is IND-ID -CCA secure
+then the corresponding PKE is IND-CCA2 secure. However, sin ce in practical
+applications we expect one to use more efﬁcient PKE construc tions, we make
+use of separate IBE and PKE schemes in this article.
+Digital Signatures and Labels. In addition to the above primitives, we will
+also use signature schemes. We start with review of standard signatures ﬁrst.
+A signature scheme DS consists of three algorithms:
+—SigGen, which on input 1k, outputs signing/veriﬁcation key pair ( SK,V K).
+The V K also includes also public parameters such as the message spa ce
+among others.
+—Sig, which on input SKand message m, outputs signature σ.
+—Ver, which on input message m, signature σand V K, outputs either true
+or false.
+For consistency, it is required that for every valid pair ( SK,V K) and message
+m, Ver VK(m,SigSK(m)) =true. We will use the notion of strong unforgeability
+under adaptive chosen plaintext attacks (SUF-CMA). Brieﬂy , the challenger
+generates a ( SK,V K) pair and gives the V Kto the adversary. The adversary
+is given signatures σ1,σ2,. . . ,σ qon adaptively chosen messages m1,m2,. . ., mq
+and outputs a pair ( m,σ). The adversary wins if ( m,σ) is a valid message
+signature pair and is not equal to any pair ( mi,σi).
+Beside standard signatures, we will also use one-time signatures which are
+deﬁned analogously, except that in SUF-CMA the adversary is allowed to make
+only one query. Any public-key signature that is SUF-CMA sec ure is also a
+secure one-time signature. However, the opposite is obviou sly not true and
+one-time signatures are generally much more efﬁcient.
+We can also add public labels to IBE and PKE encryption/decry ption mecha-
+nisms, which are bound in a nonmalleable way to the ciphertex t [Shoup 2004]
+while preserving security. In effect, ciphertext generati on additionally takes
+as input a label, which becomes part of the ciphertext. When d ecrypting, one
+applies not only the decryption key but also the public label . The IND-ID-CCA
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 6· J. H. Cheon et al.
+and IND-CCA2 games can be modiﬁed in a natural way to take labe ls into
+account.
+2.1 Timed-Release Public Key Encryption (TR-PKE)
+In this section we formalize the functionality and security requirements
+for a timed-release public key encryption system. These req uirements are
+meant to capture the implicit security requirements not add ressed in previ-
+ous work [May 1993; Rivest et al. 1996; Chen et al. 2002; Marco Casassa Mont
+and Sadler 2003; Blake and Chan 2005]; in particular they do n ot address the
+authentication requirements, which we add in Section 2.3. I nformally, we can
+think of any principal in a TR-PKE system as ﬁlling one or more of three roles.
+The timed-release agent —or TiPuS (TImed-release PUblic Server)—publishes
+a timed-release public key and releases “tokens” that allow decryption of mes-
+sages encrypted for the current time at regular intervals. T hereceiver pub-
+lishes a public key that allows others to encrypt messages so that only he can
+decrypt them, using a secret key that he keeps private, and th e appropriate
+timed-release token. The sender uses the receiver’s public key and the TiPuS
+public key to encrypt messages that can later be decrypted at the time of his
+choice.
+2.1.1 Functional Requirements. Formally, we deﬁne a timed-release
+public-key encryption system Ŵto be a tuple of ﬁve randomized algorithms:
+—Setup, which given input 1k(the security parameter), produces public pa-
+rameters πg, which include hash functions, message, and ciphertext spa ces
+among others.
+—TRSetup, which on input πg, produces a pair ( δ,π tr) where δis amaster secret
+andπtrthe corresponding timed-release public parameters. This s etup is
+carried out by TiPuS which keeps the master secret key conﬁde ntial, while
+all other parameters are public. We denote the combined publ ic parameters
+ofπgandπtrbyπ.
+—KeyGen, given public parameters πg, outputs a pair of secret key and public
+key ( sk,pk).
+—TG( π,δ, T) computes the token tknTcorresponding to time Tusing ( δ,π).
+This functionality is performed by TiPuS which publishes tknTat time T.
+—Encrypt( π,pk,m,T) computes the timed-release ciphertext cdenoting the
+encryption of message musing public key pk, public parameters πand time
+encoding T.
+—Decrypt( π,sk,/hatwidec,tknT) outputs the plaintext corresponding to /hatwidecif decryption
+is successful or the special symbol “fail” otherwise.
+For consistency, we require that Decrypt( π,sk,Encrypt( π,pk,m,T),TG
+(π,δ, T)) = m, for all valid ( pk,sk), (π,δ),T, and m. Unlike the functional
+requirements speciﬁed in Cathalo et al. [2005], we explicit ly separate the func-
+tions TRSetup and KeyGen, allowing a user to generate keys in dependent of
+any timed-release server. This allows the sender to choose w hich servers to
+trust during encryption.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 7
+Fig. 1. TR-PKE security experiments for the IND-CCA2 and IND -RTR-CCA2 games.
+2.1.2 Security. It is standard to require that the PKE cryptosystem be
+secure against adaptive chosen-ciphertext (IND-CCA2) att ack [Rackoff and
+Simon 1991; Bellare et al. 1998; An 2001]. Ideally, in a TR-PK E, the timed-
+release agent should not be able to read messages intended fo r third-party
+recipients. To that effect, we require that IND-CCA2 securi ty against a third
+party is provided even when the master secret is given to the a dversary. We
+model this attack by a slightly modiﬁed IND-CCA2 game, shown in Figure 1.
+Here, in addition to adaptively choosing two “challenge pla intexts” that the
+adversary will need to distinguish between, he also adaptiv ely chooses a “chal-
+lenge time” for which his challenge ciphertext will be decry pted; he wins when
+he can tell whether his challenge ciphertext is an encryptio n of his ﬁrst or sec-
+ond plaintext for the challenge time, given access to a decry ption oracle and
+the master secret key of the TiPuS.
+The timed-release functionality is provided by the token-g enerating in-
+frastructure (i.e., TiPuS). Not knowing the corresponding token is what
+keeps the receiver from decrypting ciphertext until a desig nated time. To
+effect secure timed-release, any TR-PKE cryptosystem must provide conﬁ-
+dentiality against the receiver itself until the correspon ding token is made
+available. We model this property by the IND-RTR-CCA2 game, shown in
+Figure 1; in this game, we modify the basic IND-CCA2 game by al lowing the
+adversary to adaptively choose the receiver’s public key pk∗and time T∗for
+the challenge. Instead of access to the timed-release secre t, the adversary
+is given access to arbitrary tokens tknT, where T/ne}ationslash=T∗, and a decryption
+oracle Decrypt∗(π,δ,·,·,·) which computes Decrypt( π,·,·,TG(π,δ,·)). The
+adversary may thus compute the decryption of any ciphertext for any time,
+except the challenge ciphertext in the challenge time T∗with chosen public
+keypk∗. We say a timed-release public-key cryptosystem Ŵis secure if every
+polynomial time adversary Ahas negligible advantages AdvIND−CCA2
+A,Ŵ(k) and
+AdvIND−RTR−CCA2
+A,Ŵ(k).
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 8· J. H. Cheon et al.
+2.2 Strongly Key-Insulated Public Encryption
+Key-insulated public key encryption was introduced by Dodi s et al. [2002,
+2003] and Bellare and Palacio [2002] to address the problem o f computer intru-
+sion. The key idea is to break up the lifetime of a public key in to periods, and
+split the decryption key between the user (say, a mobile devi ce) and a trusted
+“helper” (say, a desktop server) to satisfy the following pr operties:
+—Sequential Key Updates : At the beginning of each time period, the helper
+securely transmits a “helper secret key” hsk ito the user, which he combines
+with his previous key, usk i−1, to obtain a secret key usk ithat will decrypt
+messages encrypted during time period i.
+—Random Access Key Updates : Given any usk iandhsk j, the user can compute
+usk j. This is useful for error recovery and it also allows the user to decrypt
+old messages.
+—User Compromise : An adversary who is given access to ( usk i,hsk i) for several
+time periods icannot break the encryption for a new time period.
+—Helper Compromise : An adversary given only hskcannot break the encryp-
+tion scheme.
+Combining the results of Bellare and Palacio [2002] and Dodi s and Katz
+[2005], one obtains that the existence of secure SKIE-OTRU i s a necessary
+and sufﬁcient condition for the existence of secure IBE. Bri eﬂy, a SKIE-OTRU
+scheme consists of the following algorithms: KG, which gene rates a triple
+(pk,usk 0,hsk) of public key, initial user secret key, and master helper ke y;
+HKU, which computes a stage i helper secret key hsk igiven ( pk,hsk,i); UKU,
+which computes the stage i user secret key usk igiven i,pk,hsk i,usk i−1; RUKU,
+which computes the stage i user secret key usk igiven i,j,pk,hsk i,usk j,∀i≥
+1,j≥0; Enc, which produces a ciphertext corresponding to mto be decrypted
+in stage i, given ( pk,m,i); and Dec, which, given ( i,pk,usk i,c) attempts to de-
+crypt a ciphertext for stage i. Intuitively, hskis given to a “helper,” who will
+securely transmit, at the beginning of each stage i, the secret hsk ito the user.
+The user can then compute usk i, delete any old usk’s in his possession, and
+useusk ito decrypt messages sent to him during stage i. The RUKU algorithm
+facilitates error recovery and allows for decryption of old ciphertexts.
+A SKIE (and SKIE-OTRU) scheme is considered CCA-secure with optimal
+threshold if two conditions hold: (1) (IND-KIE-CCA2) given access to pk, a de-
+cryption oracle, and pairs ( hsk i,usk i) of his choosing, an adversary cannot break
+the IND-CCA2 security of the encryption scheme for a stage jfor which he has
+not been given hsk j; and (2) (IND-S-CCA2) given pk,hsk, and a decryption
+oracle, an adversary cannot break the IND-CCA2 security of t he encryption
+scheme for any stage [Dodis et al. 2002, 2003; Bellare and Pal acio 2002]. The
+idea of separation of the timed-release master and user secr ets in a TR-PKE
+very closely parallels the notions of helper and user secret s in a key-insulated
+cryptosystem; and both involve a “time period” parameter fo r encryption and
+decryption. Furthermore, the two security conditions for a SKIE scheme, in
+which either user keys or helper keys are assumed to be compro mised, closely
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 9
+Fig. 2. TR-PKAE experiments for the IND-KC-CCA2 and IND-RTR -KC-CCA2 games.
+resemble the TR-PKE conditions IND-CCA2 and IND-RTR-CCA2 d eveloped
+here.
+2.3 Authenticated TR-PKE (TR-PKAE)
+The notion of authenticated encryption has been explored in depth in An [2001]
+and Abdalla et al. [2001]. In this section we adapt these deﬁn itions to give
+formal security and functionality requirements for a TR-PK AE scheme.
+2.3.1 Basic Cryptosystem. The syntactic deﬁnition of a TR-PKAE scheme
+is essentially the same as that of a TR-PKE scheme with the add ition of the
+sender’s public and secret key. Namely, the types of Setup, T RSetup, KeyGen
+and TG stay the same, but Encrypt and Decrypt are modiﬁed to ta ke into ac-
+count sender’s keys:
+—Encrypt( π,ska,pkb,m,T) returns an authenticated timed-release ciphertext
+cdenoting the encryption from sender Ato receiver Bofmfor time T.
+—Decrypt( π,pka,skb,/hatwidec,tknT) outputs plaintext /hatwidemif both decryption and au-
+thentication are successful and the special symbol “fail” o therwise.
+The consistency requirement is modiﬁed to require that, for all valid ( pka,ska),
+(pkb,skb), (π,δ),T, and m, Decrypt( π,pka,skb,Encrypt( π,ska,pkb,m,T),
+TG(π, δ, T))=m.
+2.3.2 Security.
+Conﬁdentiality. The conﬁdentiality requirements of a TR-PKAE are es-
+sentially the same as the conﬁdentiality requirements of a T R-PKE; except
+that we make the conservative assumption that the third part y (in the case of
+IND-CCA2) or the receiver (in the case of IND-RTR-CCA2) has c ompromised
+the sender’s secret key. This results in two new notions, IND -KC-CCA2 and
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 10· J. H. Cheon et al.
+IND-RTR-KC-CCA2, which we deﬁne formally in Figure 2. As bef ore, we say
+that a TR-PKAE scheme provides conﬁdentiality if every poly nomial time ad-
+versary has negligible advantage, as deﬁned in Figure 2.
+As in the case of TR-PKE, the difference between IND-KC-CCA2 and
+IND-RTR-KC-CCA2 is in reversal of adversary roles. In IND-R TR-KC-CCA2,
+the goal is to ensure security against the receiver itself pr ior to the designated
+time.
+Ciphertext (Plaintext) Forgery. For authentication properties of TR-PKAE,
+we concentrate on ciphertext forgery (plaintext forgery is deﬁned analogously).
+We consider two types of ciphertext forgery: third-party forgery (TUF-CTXT),
+by an adversary that does not know the sender’s and receiver’ s private keys
+but knows the master secret; and forgery by the ciphertext receiver (RUF-
+CTXT) [An 2001]. If the TR-PKAE is not secure against TUF-CTX T then the
+scheme cannot claim authentication properties since a thir d party may be able
+to forge new (perhaps decrypting to junk) ciphertexts betwe en two users. If
+a TR-PKAE is not secure against RUF-CTXT, then the scheme doe s not pro-
+vide non-repudiation1and furthermore, if the receiver’s private key is compro-
+mised, the attacker can impersonate any sender to this recei ver. We introduce
+the following games to model unforgeability (see Figure 3).
+Receiver Unforgeability (RUF-CTXT and RUF-TR-CTXT). We introduce two
+notions of receiver unforgeability: RUF-CTXT in which the r eceiver cannot
+forge ciphertext to himself for any time and a weaker timed-r elease notion
+of RUF-CTXT, called RUF-TR-CTXT, which requires that the re ceiver should
+not be able to forge ciphertext to himself for a future date. T he notion RUF-
+TR-CTXT has two important implications: (1) the receiver sh ould discard any
+ciphertexts received past decryption dates if his private k ey may be compro-
+mised; and (2) the receiver may be able to prove to a third part y that a cipher-
+text was generated by the alleged sender if he can produce a pr oof of ciphertext
+existence prior to the decryption date. The game in Figure 3 i s an enhance-
+ment of the RUF-CTXT condition proposed by An [2001] to allow adaptive ad-
+versarial behavior: The receiver is not given access to the t oken for a single,
+adaptively-chosen challenge time period; in addition, the adversary can choose
+any receiver public key in the encryption queries. We say tha t a TR-PKAE
+encryption is secure against RUF-TR-CTXT, if every polynom ial-time adver-
+sary Ahas negligible advantage, AdvRUF-TR-CTXT
+A,Ŵ(k), against the challenger in
+the RUF-TR-CTXT game. The game for RUF-CTXT is a natural simp liﬁcation
+of RUF-TR-CTXT in which the receiver obtains the master secr et (and thus
+the token queries are no longer required).
+Third-Party Unforgeability (TUF-CTXT). In addition to timed-release re-
+ceiver unforgeability, we also require a time-independent third-party unforge-
+ability (TUF-CTXT) condition, which allows us to separate t imed-release func-
+tionality from PKAE. Thus, in the TUF-CTXT game deﬁned in Fig ure 3, the
+1Since the receiver can generate the ciphertext allegedly co ming from another user to himself, the
+receiver will not be able to prove to anybody that ciphertext was generated by the alleged sender
+even if all secret information is disclosed.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 11
+Fig. 3. TR-PKAE security experiments for the TUF-CTXT and RU F-TR-CTXT games.
+master key is given to the adversary. We say that a TR-PKAE sch emeŴis
+secure against TUF-CTXT if every polynomial time adversary Ahas negligible
+advantage, AdvTUF-CTXT
+A,Ŵ (k), ink.
+3. STRONGL Y KEY -INSULATED PUBLIC ENCRYPTION AND TIMED RELE ASE
+Despite similarities between SKIE-OTRU and TR-PKE notions mentioned be-
+fore, there is a key difference between them. In the SKIE-OTR U setting, a
+helper is associated with at most one user, and cooperates ex clusively with
+that user, whereas in the TR-PKE setting, it is assumed that m any users may
+use the services of the TiPuS server, but the interaction bet ween each user and
+the server will be minimal. This results in several operatio nal differences: 1)
+User and Master Key Generation : in a TR-PKE scheme, they are generated in-
+dependently, whereas in a SKIE-OTRU they are generated join tly; 2) Dissem-
+ination of secrets per time period : a SKIE scheme must use a secure channel
+to send the hsk ito only one user, whereas the tokens generated by a TiPuS
+are assumed to be publicly disseminated; 3) Security notion of “user compro-
+mise” : a SKIE scheme’s notion of “user compromise” is limited to ch osen time
+periods and the keys are generated by the victim, whereas in T R-PKE’s notion
+the attacker is the user herself and she can generate her publ ic key adaptively
+(perhaps without necessarily knowing the corresponding se cret key) in order
+to break timed-release conﬁdentiality. The following theo rem shows that de-
+spite these differences, these notions are essentially equ ivalent. Below we
+provide a sketch of the proof and refer the reader to Appendix 7.2 for more
+details.
+THEOREM 3.1. There exists a (chosen-ciphertext) secure timed-release p ub-
+lic key encryption scheme if and only if there exists a secure strongly key-
+insulated public-key encryption scheme with optimal thres hold that allows
+random-access key updates.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 12· J. H. Cheon et al.
+More precisely, given a SKIE-OTRU, PKE2and one-time signature DS one, we
+can construct a TR-PKE with the following properties:
+—Given an IND-CCA2 adversary Aagainst TR-PKE, we can construct al-
+gorithms B1andB2with run-time O(Time (A))such that AdvIND-CCA2
+A,TR-PKE(k)≤
+1
+2AdvSUF-CMA
+B1,DSone(k) +AdvIND-CCA2
+B2,PKE(k).
+—Given an IND-RTR-CCA2 adversary Aagainst TR-PKE, we can construct al-
+gorithms B1andB2with run-time O(Time (A))such that AdvIND-RTR-CCA2
+A,TR−PKE(k)≤
+1
+2AdvSUF-CMA
+B1,DSone(k) +AdvIND-KIE-CCA2
+B2,SKIE-OTRU(k).
+Conversely, given a TR-PKE scheme, we can construct a SKIE-O TRU with
+the following properties:
+—Given an IND-S-CCA2 adversary Aagainst SKIE-OTRU, we can construct
+an algorithm Bwith run-time O(Time (A))such that AdvIND-S-CCA2
+A,SKIE-OTRU(k)≤
+AdvIND-CCA2
+B,TR-PKE(k).
+—Given an IND-KIE-CCA2 adversary Aagainst SKIE-OTRU, we
+can construct an algorithm Bwith run-time O(Time (A))such that
+AdvIND-KIE-CCA2
+A,SKIE-OTRU(k)≤AdvIND-RTR-CCA2
+B,TR-PKE(k).
+PROOF . (Sketch) Suppose we have a secure TR-PKE scheme Ŵ= (Setup,
+TRSetup, TG, Encrypt, Decrypt). We construct a SKIE-OTRU sc heme from
+Ŵas follows. Set KG(1k) = (( π,pk),sk,δ), where ( π,δ)←TRSetup(1k) and
+(pk,sk)←KeyGen( π); HKU(( π,pk),δ,i) =tkni, where tkni←TG(π,δ,i); UKU( i,
+(π,pk),tkni,(sk,tkni−1)) = ( sk,tkni); RUKU( i,j,(π,pk),tkni,(sk,tkn j)) = ( sk,
+tkni); Enc(( π,pk),m,i) = c, where c←Encrypt( π,pk,m,i); and set Dec( i,
+(π,pk),(sk,tkni),c) = Decrypt( π,sk,c,tkni). This scheme essentially makes the
+TiPuS server in TR-PKE scheme Ŵinto a helper for an SKIE-OTRU scheme.
+It is easy to see that this scheme must be a secure SKIE-OTRU sc heme.
+Suppose an IND-S-CCA2 attacker given access to spk= (π,pk),hsk=δand
+a decryption oracle can break the scheme; then it is easy to se e that such an
+adversary can also be used to mount an IND-CCA2 attack on Ŵ, since these
+are exactly the resources given to an adversary in the IND-CC A2 game. Like-
+wise, an IND-KIE-CCA2 adversary who can break the scheme giv en access
+tospk= (π,pk), selected ( usk i,hsk i) = (sk,tkni) pairs, and a decryption oracle
+can easily be used to mount an IND-RTR-CCA2 attack on Ŵ: when the SKIE
+adversary makes a corruption request for stage i, the corresponding IND-RTR-
+CCA2 adversary queries its TG oracle for tkniand can forward ( sk,tkni) to the
+SKIE adversary since the IND-RTR-CCA2 adversary gets skas an input; all
+other queries made by the SKIE adversary can be passed direct ly to the cor-
+responding oracles of the IND-RTR-CCA2 adversary. The secu rity reduction
+statements follow trivially.
+Now suppose we have a secure SKIE-OTRU scheme /Sigma1. If/Sigma1has the addi-
+tional property that KG can be implemented as two independen t keying al-
+gorithms that generate ( pkh,hsk) and ( pku,usk), then it is straightforward to
+2The PKE can be constructed from the SKIE-OTRU.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 13
+transform /Sigma1into a TR-PKE scheme. Since we would not expect this property
+to hold in general, we work around this problem as follows. We know that by
+the existence of /Sigma1there also exists an ordinary chosen-ciphertext secure PKC
+/Pi1= (PKGen ,PKEnc ,PKDec).
+The idea behind our construction is that TRSetup will sample
+(spk,hsk,usk 0)←/Sigma1.KG(1k) and set π=spkandδ= (hsk,usk 0); KeyGen will
+sample ( pk,sk)←/Pi1.PKGen(1k) and output ( pk,sk). TG( π,δ,i) will compute
+hsk i= HKU( spk,hsk,i) and then use usk 0and hsk ito compute tkni=usk i=
+RUKU( i,0,spk,usk 0,hsk i). Encryption and decryption will use the multiple-
+encryption technique of Dodis and Katz [2005] with one-time signature scheme
+DSone3. Applying the results of Dodis and Katz [2005], an IND-CCA2 a ttack on
+this scheme reduces to an IND-CCA2 attack on /Pi1, while an IND-RTR-CCA2
+attack (even when receiver chooses its public key adaptivel y) on this scheme
+reduces to an IND-KIE-CCA2 attack on /Sigma1.
+4. GENERIC CONSTRUCTIONS OF TR-PKE AND TR-PKAE
+We note that the previous theorem essentially gives a generi c construction
+of TR-PKE based on a SKIE-OTRU scheme. Note that since, as men tioned
+previously, SKIE-OTRU and IBE have been shown to be equivale nt, this gives
+a generic construction using any IBE scheme as well. Here we e laborate on
+this construction and show how to turn it into TR-PKAE.
+The main idea of the generic TR-PKE (TR-PKE gen) construction is to com-
+bine a PKE scheme4and IBE using multiple encryption. Note that naive
+multiple encryption fails to provide adaptive chosen-ciph ertext security as was
+shown in Dodis and Katz [2005]. More speciﬁcally, suppose th at messages are
+encrypted ﬁrst for the receiver and then for the time. Then th e time server, in
+the IND-CCA2 game, can win by removing the outer layer of encr yption on the
+challenge ciphertext, re-encrypting for another time, and querying the decryp-
+tion of this ciphertext. Similarly, if messages are ﬁrst enc rypted for the time
+and then for the receiver, the receiver can win in the IND-RTR -CCA2 game
+with a similar strategy.
+Thus we need to be careful when combining encryptions and wil l use the ap-
+proach to IND-CCA2 multiple encryption proposed by Dodis an d Katz [2005].
+As in the proof of Theorem 3.1, the resulting encryption sche me will be se-
+cure against IND-CCA2 and IND-RTR-CCA2 attacks. One can ext end the
+TR-PKE gento obtain TR-PKAE gen, the generic TR-PKAE. For that purpose,
+one can use the Encrypt-then-Sign approach [An 2001], where the TR-PKE gen
+ciphertext is signed by the sender using SUF-CMA secure digi tal signature
+scheme DS.
+3Speciﬁcally, to encrypt message mfor time T, we: (1) pick s1←U|m|, and set s2=m⊕s1,
+(2) pick signing and veriﬁcation keys ( SK,VK) for the one-time signature scheme DS one, (3) let
+c1=/Sigma1.EncVK(spk,s1,T),c2=/Pi1.PKEncVK(pk,s2), and (4) output ( VK,c1,c2,Sig(VK,(T,c1,c2))).
+Decryption follows the scheme of Dodis and Katz [2005], exce pt that c1is decrypted using tknT=
+uskT.
+4Which may or may not be derived from the IBE scheme used.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 14· J. H. Cheon et al.
+Fig. 4. The TR-PKAE genscheme.
+Due to similarity of TR-PKE genand TR-PKAE genconstructions, below we
+immediately jump to the TR-PKAE genconstruction. By removing sender’s sig-
+nature from the TR-PKAE genmechanism, we immediately obtain the corre-
+sponding TR-PKE gen.
+4.1 TR-PKAE gen: Generic TR-PKAE
+The generic construction is shown in Figure 4. The approach i s to use IBE
+for construction of timed-release encryption (TRE) and the n encrypt the mes-
+sage using multiple encryption that combines TRE and PKE, wh ich results in
+non-authenticated version. To obtain TR-PKAE, we remark th at requiring the
+sender to simply sign the ciphertext will not produce an IND- KC-CCA2 or IND-
+RTR-KC-CCA2 secure scheme since in these games the adversar y has access
+to the sender’s secret key and thus may be able to generate a ne w signature
+on the challenge ciphertext and submit this modiﬁed challen ge ciphertext to
+the decryption oracle; in the end, the adversary is able to de crypt the chal-
+lenge ciphertext. To deal with this slight complication, pr ior to generation of
+the one-time signature, the sender signs the concatenation of the intermedi-
+ate ciphertext, the one-time veriﬁcation key and the receiv er’s public key. The
+one-time signature is then computed on the intermediate cip hertext and the
+sender’s signature—this ensures that the adversary will ne ed to compute an-
+other one-time signature with the same veriﬁcation key in th e previous attack.
+THEOREM 4.1.1. The generic TR-PKAE genscheme is secure against IND-
+KC-CCA2, IND-RTR-KC-CCA2, TUF-CTXT and RUF-CTXT provided that the
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 15
+one-time signature scheme is SUF-CMA-secure, PKE is IND-CC A2-secure, IBE
+is IND-ID-CCA-secure and DS is SUF-CMA-secure.
+More precisely, given an IBE, PKE5, signature mechanism DS and one-time
+signature DS one, we can construct a TR-PKAE with the following properties:
+—Given an IND-KC-CCA2 adversary Aagainst TR-PKAE, we can construct al-
+gorithms B1andB2with run-time O(Time (A))such that AdvIND-KC-CCA2
+A,TR-PKAE(k)≤
+1
+2AdvSUF-CMA
+B1,DSone(k) +AdvIND-CCA2
+B2,PKE(k).
+—Given an IND-RTR-KC-CCA2 adversary Aagainst TR-PKAE, we can
+construct algorithms B1andB2with run-time O(Time (A))such that
+AdvIND-RTR-KC-CCA2
+A,TR-PKAE(k)≤1
+2AdvSUF-CMA
+B1,DSone(k) +AdvIND-ID-CCA
+B2,IBE(k).
+—Given a RUF-CTXT adversary Aagainst TR-PKAE that makes q eencryption
+queries, we can construct algorithms B1andB2with run-time O(Time (A))
+such that AdvRUF-CTXT
+A,TR-PKAE(k)≤qe·AdvSUF-CMA
+B1,DSone(k) +AdvSUF-CMA
+B2,DS(k).
+—Given a TUF-CTXT adversary Aagainst TR-PKAE that makes q eencryption
+queries, we can construct algorithms B1andB2with run-time O(Time (A))
+such that AdvTUF-CTXT
+A,TR-PKAE(k)≤qe·AdvSUF-CMA
+B1,DSone(k) +AdvSUF-CMA
+B2,DS(k).
+PROOF . The proofs of IND-KC-CCA2 and IND-RTR-KC-CCA2 are very sim -
+ilar to the [SKIE-OTRU ⇒TR-PKE] proof of Theorem 3.1 (found in full in
+Appendix 7.2) and, thus, here we concentrate on the main idea s.
+To show that the scheme is secure against IND-KC-CCA2, whene ver adver-
+saryAmakes a decryption query, we decrypt s1using the IBE master secret
+(after having veriﬁed the signatures) and forward c2for decryption to the PKE
+oracle. During the challenge phase, we pick s1at random, compute c1and
+submit s2,1=m1⊕s1ands2,2=m2⊕s1along with V Kas the challenge parame-
+ters to the PKE challenger which encrypts one of s2,i. We return the resulting
+complete ciphertext (with all required signatures) to A. Now suppose that the
+adversary submits a ciphertext (different from the challen ge one) for decryp-
+tion after the challenge. If the V Kin the submitted ciphertext is the same as
+in the challenge, then either the adversary submits the chal lenge ciphertext
+(which is an invalid query) or he breaks SUF-CMA of the one-ti me signature
+scheme (in which case we return a random bit to PKE challenger ). Otherwise,
+since V Kis different from the challenge one, we can use the PKE decryp tion
+oracle without being forced to submit the challenge ciphert ext that was re-
+turned by the PKE challenger. If Acan guess which message was encrypted,
+then we automatically guess which message was encrypted by t he PKE during
+the challenge, thus breaking IND-CCA2 security of PKE. Noti ng that, in case
+of SUF-CMA break, we win against the PKE with probability 1/2 , the stated
+reductions follow.
+To show that the scheme is secure against IND-RTR-KC-CCA2, n ote that 1)
+the token queries correspond to Extract queries in underlyi ng IBE, and 2) for
+decryption queries we can use (to decrypt s1) the IBE decryption oracle (where
+s2can be decrypted using the private key provided by the advers ary). Also, dur-
+ing the challenge, we submit corresponding challenge to IBE similarly to the
+5The PKE can be constructed from the IBE.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 16· J. H. Cheon et al.
+IND-KC-CCA2 approach. Once again, if after the challenge th e (valid) decryp-
+tion query submitted by the adversary has the same V Kas in the challenge,
+then we break the SUF-CMA of the one-time signature (in which case we re-
+turn a random bit). Otherwise, we can use the IBE decryption o racle even
+after the challenge. If the adversary manages to guess corre ctly which mes-
+sage was encrypted in the challenge, we automatically guess which message
+was encrypted by the IBE challenger, thus breaking IND-ID-C CA security of
+IBE. Reduction analysis stays the same as in the previous cas e.
+The proofs of RUF-CTXT and TUF-CTXT are straightforward. Si nce RUF-
+CTXT security automatically implies TUF-CTXT [An 2001], we are left with
+a proof of RUF-CTXT security, where the adversary knows the t imed-release
+secret but no longer knows the sender’s secret key. The adver sary has access
+to the encryption oracle where he can submit any m,Tand pkb. In the end, he
+returns the secret receiver key sk∗
+b, time T∗, and ciphertext c∗, which should
+contain the sender’s authentication. If the adversary mana ges to generate a
+new sender’s signature in the returned ciphertext (either w ith the new input
+or a different signature with one of the inputs used during en cryption queries),
+then we break the SUF-CMA security of the DS. Otherwise, the V K∗,T∗,c∗
+1,
+c∗
+2,c∗
+3, and pk∗
+bin the returned ciphertext should be the same as in one of the
+ciphertexts returned by the encryption oracle. Thus, if the returned ciphertext
+is different from the ones returned by the encryption oracle , the adversary
+has to break SUF-CMA of the one-time signature in order to win . The stated
+reductions follow easily.
+4.2 TR-PKE gen: Generic TR-PKE
+To obtain generic TR-PKE gen, we can simply remove the parts in the TR-
+PKAE gendescription where the sender signs with his secret key, i.e. , users
+no longer have to generate their signing/veriﬁcation keys, and we remove c3
+from the construction while leaving everything else intact . The proofs and the
+reductions stay the same as in TR-PKAE gen, with obvious modiﬁcations.
+THEOREM 4.2.1. The generic TR-PKE genconstruction is secure against
+IND-CCA2 and IND-RTR-CCA2 attacker provided that the IBE is IND-ID-
+CCA-secure, PKE is IND-CCA2-secure and the underlying one- time signature
+is SUF-CMA-secure.
+5. TR-PKAE BF: TR-PKAE BASED ON A SINGLE PRIMITIVE
+The generic construction TR-PKAE genprovides TR-PKAE with all required se-
+curity. However, below we show how to construct a TR-PKAE tha t satisﬁes all
+of the above security requirements with the exception that R UF-CTXT is re-
+placed by RUF-TR-CTXT, which is based on a single primitive a nd is nearly as
+efﬁcient as BF-IBE scheme [Boneh and Franklin 2003]. We argu e that in prac-
+tical applications RUF-TR-CTXT is sufﬁcient since the ciph ertexts are submit-
+ted before designated time. Moreover, it is desirable for mo dern authenticated
+encryption to have one primitive that achieves the desired s ecurity proper-
+ties [Boyen 2003]: such solutions generally allow for a more efﬁcient scheme,
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 17
+tighter security bounds and more stringent security. We sta rt with a review of
+the Bilinear Difﬁe-Hellman Problem.
+5.1 Bilinear Difﬁ e-Hellman Problem
+LetG1andG2be two abelian groups of prime order q. We will use additive
+notation for the group operation in G1(where aPdenotes Padded atimes for
+P∈G1,a∈Zq) and multiplicative notation for G2(gadenotes the gmultiplied
+atimes for g∈G2,a∈Zq). Let e:G1×G1→G2be an admissible bilinear
+map [Boneh and Franklin 2003]. The properties of the groups a nd construc-
+tions of eare explained in detail in [Boneh and Franklin 2003].
+LetGbe a Bilinear Difﬁe-Hellman (BDH) Parameter Generator [Boneh and
+Franklin 2003], i.e. a randomized algorithm that takes posi tive integer input k,
+runs in polynomial time in kand outputs prime q, descriptions of G1,G2of or-
+derq, description of admissible bilinear map e:G1×G1→G2along with poly-
+nomial deterministic algorithms for group operations and ecomputations. The
+advantage of algorithm Ain solving the computational BDH Problem (BDHP)
+forGis deﬁned as follows:
+Advcbdh
+A,G(k) = Pr[/an}bracketle{tq,G1,G2,e/an}bracketri}ht←G(1k),P←RG1,a,b,c←RZ∗
+q:
+A(q,G1,G2,e,P,aP,b P,cP) =e(P,P)abc] (1)
+We say that Gsatisﬁes the computational BDH Assumption if for any ran-
+domized polynomial-time algorithm Aand any polynomial f∈Z[x] we have
+Advcbdh
+A,G(k)<1/f(k) for sufﬁciently large k.
+The advantage of algorithm Ain solving the decisional BDHP [Boneh and
+Boyen 2004] for Gis deﬁned as follows:
+Advdbdh
+A,G(k) =|Pr[A(q,G1,G2,e,P,aP,b P,cP,e(P,P)abc) = 0]
+−Pr[A(q,G1,G2,e,P,aP,b P,cP,T) = 0]| (2)
+where the probabilities are taken over the experiment that d raws/an}bracketle{tq,G1,
+G2,e/an}bracketri}ht←G(1k);P←RG1;a,b,c←RZ∗
+q; and T←RG2.
+We say that Gsatisﬁes the decisional BDH (DBDH) Assumption if for any
+randomized polynomial-time algorithm Aand any polynomial f∈Z[x] we have
+Advdbdh
+A,G(k)<1/f(k) for sufﬁciently large k.
+We also introduce a decisional tripartite Difﬁe-Hellman (d ecisional TDHP)
+problem. A similar problem in the asymmetric setting was int roduced in
+Laguillaumie et al. [2005]. In this problem the adversary is given once again
+the parameters generated by G, random aP,b P,cP∈G1andT∈G1. The ad-
+versary has to decide if T=abcP . Even though decisional Difﬁe-Hellman is
+easy in G16, it is still hard to compute ab P and the bilinear map appears to be
+of little help in making the decision in TDHP. The advantage o f algorithm A
+in solving the decisional TDHP for Gis deﬁned as follows:
+Advdtdh
+A,G(k) =|Pr[A(q,G1,G2,e,P,aP,b P,Q,ab Q) = 0]
+−Pr[A(q,G1,G2,e,P,aP,b P,Q,T) = 0]| (3)
+6Given random aP,b P,Q∈G1, one can check if Q=ab P by verifying equality e(aP,b P) =e(Q,P).
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 18· J. H. Cheon et al.
+where the probabilities are taken over the experiment that d raws
+(q,G1,G2,e)←G(1k);P,Q←RG1;a,b←RZ∗
+q; and T←RG1.
+We say that Gsatisﬁes the decisional TDH (DTDH) Assumption if for any
+randomized polynomial-time algorithm Aand any polynomial f∈Z[x] we have
+Advdtdh
+A,G(k)<1/f(k) for sufﬁciently large k.
+Note that DTDH assumption is stronger than DBDH. Namely, har dness
+of DTDH problem easily implies hardness of DBDH problem. The converse,
+however, is unknown.
+Before we move on to the constructions, we must make a few ﬁnal remarks.
+First, computational BDHP is harder than decisional BDHP. S econd, hardness
+of computational BDHP automatically implies hardness of th e computational
+Difﬁe-Hellman problem (CDHP) in G1andG2. Also, hardness of the discrete
+logarithm problem (DLP) in G1implies hardness of DLP in in G2[Menezes
+et al. 1993]. However, we must remind the reader that the deci sional Difﬁe-
+Hellman problem is easy in G1.
+5.2 Description of the Scheme
+LetGbe a BDH Parameter Generator . Figure 5 gives a complete description of
+our construction.7The symmetric encryption scheme used is a straightforward
+adaptation of the Fujisaki-Okamoto scheme [Fujisaki and Ok amoto 1999]. We
+brieﬂy demonstrate the consistency of the scheme before mov ing on to security
+considerations. Given ciphertext c=/an}bracketle{tQ1,Q2,σ⊕K,m⊕H5(σ)/an}bracketri}htcomputed
+using ska,pkbandT, we note that in the corresponding Decrypt computations
+we have 1) /hatwideK=Ksince e(Q2+pka,sPT+skb·Q1) =e(r2P+skaP,sPT+skb·r1PT)
+=e([r2+ska]P,[s+r1·skb]PT) =e([s+r1·skb]P,[r2+ska]PT) =e(Ppub+r1·
+pkb,[r2+ska]PT), 3) as in Fujisaki-Okamoto, it follows that /hatwideσ=σ,/hatwidem=m
+and 4) Q1=H3(/hatwideσ,/hatwidem)PTand Q2=H4(/hatwideσ,/hatwidem)P. Thus the original plaintext
+is retrieved.
+5.3 Security of the Scheme
+The following security results apply to TR-PKAE bm. The hash functions are
+modeled as random oracles [Bellare and Rogaway 1995]. Below we sketch
+the main ideas used in the proofs of IND-RTR-KC-CCA2 (receiv er timed-
+release conﬁdentiality) and RUF-TR-CTXT (receiver timed- release unforge-
+ability), and refer the reader to Appendix A for full details . The proofs of
+IND-KC-CCA2 and TUF-CTXT are more straightforward and are g iven in Ap-
+pendix B. First, we note the conﬁdentiality properties of th e proposed scheme.
+THEOREM 5.3.1. [IND-RTR-KC-CCA2] Let Abe an IND-RTR-KC-CCA2
+adversary that makes q ddecryption queries, q 2queries to H 2and q tokqueries
+to TG. Assume that Ad vIND-RT R-KC-CCA 2
+A,T R-PK A E bm(k)≥ǫ. Then there exists an al-
+7As in Boneh and Franklin [2003], we can weaken the surjectivi ty assumption on hash function
+H1. The security proofs and results will hold true with minor mo diﬁcations. We skip the details
+and refer the reader to Boneh and Franklin [2003].
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 19
+Fig. 5. The TR-PKAE bmscheme.
+gorithm Bthat solves computational BDHP with advantage Ad vcbdh
+B,G(k)≥
+1
+4q2·max( q2,qd)/bracketleftBig
+ǫ
+e·(1+qtok)/bracketrightBig3
+and running time O(Time (A)), where e = 2.71828 ....
+PROOF . Below we sketch the main idea of the proof. Let a′P,b′P,c′Pbe
+the BDH parameters and our goal is to compute e(P,P)a′b′c′.Since the ad-
+versary should know the sender’s private key, we set ska=a∈Z∗
+qand
+make it public. Let us write the bilinear map in the challenge ciphertext as
+e(Ppub+r1·pkb,(r2+a)PT) =e(Ppub+r1·pkb,r2PT)·[e(Ppub,PT)e(pkb,Q1)]a.
+Note that, given a, anyone can compute the part [ e(Ppub,PT)e(pkb,Q1)]a. On
+the other hand, when we examine e(Ppub+r1·pkb,r2PT), we note that we can
+use the adversary to solve a useful problem only if we do not kn ow either r1or
+r2during the challenge. However, even if the adversary manage s to compute
+the bilinear map (which we could not compute), it may not be tr ivial to extract
+pkbfrom the bilinear map with the goal of solving BDHP. Let us set Ppub=
+sP=b′Pand suppose during the challenge time Twe set PT=c′P(essentially
+the only time for which we cannot compute token sPT). Let us choose r1in the
+normal way, but set Q2=r2P=a′P. Then the interesting portion of the chal-
+lenge bilinear map becomes e(Ppub+r1·pkb,r2PT) =e(b′P,a′c′P)e(pkb,r2PT)r1.
+Note that even if the adversary manages to compute this value we still cannot
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 20· J. H. Cheon et al.
+get rid of pkb. However, let us run the simulation once again with the same
+random tapes, except that 1) the simulator’s random tape cha nges right after
+the challenge ciphertext has been generated, and 2) in the ch allenge ciphertext
+everything stays the same as in the previous simulation exce pt that r1is a dif-
+ferent random number. Then if the adversary manages to compu te a challenge
+bilinear map again, we will obtain the value of e(b′P,a′c′P)e(pkb,r2PT)r′
+1where
+r1/ne}ationslash=r′
+1. Using e(b′P,a′c′P)e(pkb,r2PT)r1ande(b′P,a′c′P)e(pkb,r2PT)r′
+1, we can
+easily extract e(b′P,a′c′P) and thus solve the BDHP.
+THEOREM 5.3.2. [IND-KC-CCA2] Let Abe an IND-KC-CCA2 adversary
+that makes q 2queries to H 2. Assume that Ad vIND-KC-CCA 2
+A,T R-PK A E bm(k)≥ǫ. Then
+there exists an algorithm Bthat solves computational BDHP with advantage
+Advcbdh
+B,G(k)≥2ǫ
+q2and running time O(Time (A)).
+The proposed protocol also satisﬁes the authentication pro perties speciﬁed
+in the previous section, i.e., TUF-CTXT and RUF-TR-CTXT.
+THEOREM 5.3.3. [RUF-TR-CTXT] Let Abe a RUF-TR-CTXT adversary
+that makes q eencryption queries, q 2queries to H 2, and q tokqueries to TG,
+and let Ad vRUF-T R-CT X T
+A,T R-PK A E bm(k)≥ǫ. Then there exists an algorithm Bwith com-
+putational BDHP advantage Ad vcbdh
+B,G(k)≥ǫ
+2·q2·qe·e·(1+qtok)and running time
+O(Time (A)), where e = 2.71828 ....
+PROOF . Below we sketch the main idea of the proof. Let a′P,b′P,c′Pbe the
+BDH parameters and our goal is to compute e(P,P)a′b′c′. Suppose the adver-
+sary manages to compute correctly a bilinear map using the ad aptively cho-
+sen receiver’s secret key band time T. In this case, it can compute the bi-
+linear map e(Ppub+r1·b P,(r2+ska)PT), where now the adversary no longer
+knows ska. Let us rewrite the bilinear map as e(Ppub+r1·b P,(r2+ska)PT) =
+e(Ppub,skaPT)·[e(Ppub,r2PT)·e(Q2+pka,Q1)b]. The second part of the bilin-
+ear map is easily computed using information provided by the adversary and
+the actual value of r2(obtained from the random oracles). To solve BDHP we
+can use the ﬁrst part e(Ppub,skaPT) to our advantage by setting Ppub=b′P,
+pka=a′Pand PT=c′P(as before, essentially the only time we cannot com-
+pute token sPT). In that case, if the adversary computes the bilinear map, w e
+automatically obtain the value e(b′P,a′c′P),i.e., the solution to BDHP.
+THEOREM 5.3.4. [TUF-CTXT] Let Abe a TUF-CTXT adversary that makes
+qeencryption queries and q 2queries to H 2, and let Ad vTUF-CT X T
+A,T R-PK A E bm(k)≥ǫ. Then
+there exists an algorithm Bwith computational BDHP advantage Ad vcbdh
+B,G(k)≥
+ǫ
+2·qe·q2and running time O(Time (A)).
+6. TR-PKE STD: TR-PKE IN THE STANDARD MODEL
+The generic TR-PKE genconstruction can be shown to be secure in the standard
+model provided that the underlying primitives are also secu re in the standard
+model. Although efﬁcient and secure (in the standard model) PKE and signa-
+ture schemes do exist, until recently all efﬁcient IBE const ructions were shown
+to be IND-ID-CCA-secure only in the random oracle model. The ﬁrst efﬁcient
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 21
+and fully secure IBE was constructed by Waters [2005]: the co nstruction used
+a reduction from chosen-plaintext secure 2-level HIBE [Gen try and Silverberg
+2002; Horwitz and Lynn 2002; Boneh et al 2005; Boyen and Water s 2006] (con-
+structed using a semantically secure IBE from the same paper [Waters 2005]8)
+to fully secure IBE using the techniques in Boneh et al. [2006 ]. Following this
+work, Kiltz and Galindo [2006] and Kiltz [2006] directly con structed the ﬁrst
+efﬁcient IBE scheme secure in the standard model without use of the HIBE
+reduction and instead combining the basic IBE scheme of Wate rs [2005] with
+techniques ﬁrst described in Cramer and Shoup [1998]. More p recisely, Kiltz
+and Galindo [2006] and Kiltz [2006] constructed a secure ide ntity-based key
+encapsulation scheme [Cramer and Shoup 2003], which, toget her with the hy-
+brid construction technique proposed in Shoup [2000], can b e used to construct
+efﬁcient and secure IBE in the standard model.
+In this section we give an example TR-PKE scheme in the standa rd model
+which uses the same approach as in TR-PKAE bm. The scheme presented here
+is secure against adaptive IND-CCA2 for TR-PKE and secure against non-
+adaptive IND-RTR-CCA,9given hardness of the decisional BDHP. The dif-
+ference between IND-RTR-CCA2 and IND-RTR-CCA is that in the latter the
+adversary no longer has access to decryption/token oracles once the challenge
+ciphertext has been generated. Granted that this is a weaker attack, in many
+practical scenarios this notion still provides sufﬁcient s ecurity. Moreover, there
+is evidence of adaptive IND-RTR-CCA2 security for the proposed scheme, al-
+though reducing it to well-accepted standard hardness assu mptions appears to
+be challenging. More precisely, we also show that the scheme is secure against
+adaptive IND-RTR-CCA2 provided decisional TDHP is hard.
+The scheme presented here is an adaptation of the scheme in Ki ltz and
+Galindo [2006]. In addition to hardness of decisional BDHP ( and decisional
+TDHP for adaptive IND-RTR-CCA2), we also require existence of a target
+collision-resistant hash function h:G1→Zqwhich can be efﬁciently built as
+shown in Boyen et al. [2005]. Brieﬂy, for any polynomial-tim eA, Advtcr
+A,h(k) =
+Pr[x←G1,y←A(x) : h(y) =h(x)∧y/ne}ationslash=x] should be negligible, i.e., given
+random x∈G1it should be hard to ﬁnd y/ne}ationslash=xsuch that h(x) =h(y). Note
+that if his injective (which is possible since both G1and Zqare of order
+q) then it trivially satisﬁes this requirement. However, in p ractice standard
+cryptographic hash functions can also be used. We approach c onstruction of
+TR-PKE stdas follows: ﬁrst we construct a timed-release key encapsula tion
+scheme and then we use the approach given in Shoup [2000] to pr ovide fully
+functional encryption.
+6.1 Description of the Scheme
+LetGbe a BDH Parameter Generator . Figure 6 gives a complete description of
+the key encapsulation scheme for TR-PKE std.10The encapsulation scheme is
+8The construction was later improved in Naccache [2005] and C hatterjee and Sarkar [2005].
+9i.e., timed-release security against the receiver under “l unchtime” chosen-ciphertext attacks.
+10If only IND-RTR-CCA and IND-CCA2 are required, then one can s implify the encapsulation
+scheme further as follows: 1) generator P3is no longer required and the public key now is simply
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 22· J. H. Cheon et al.
+very similar to that given in Kiltz and Galindo [2006] and the refore we refer
+the reader to the previous work for a consistency proof. Note that if any part
+of encapsulation is inconsistent, then decapsulation will produce a random
+result [Cramer and Shoup 2003; Kiltz and Galindo 2006]. More precisely, the
+following are the modiﬁcations to Kiltz and Galindo [2006]:
+—The public key of the timed-release server is sPas in Waters [2005] (with pri-
+vate key sP2), which is the same as Kiltz and Galindo [2006] except that th ey
+slightly simplify it. In addition to that, each receiver has a public/private key
+pair constructed in the same way, i.e., a receiver has public key ( b P,b P3)
+and private key b P2where b P3is used only for key veriﬁcation. We de-
+note PT=H(T) =U′+/summationtext
+iTiVito be the hash of Trather than the identity,
+constructed in the same way as in Waters [2005].
+—To encrypt for time T, we simply add the public keys sPof timed-release
+server and b Pof receiver and encapsulate for time Tthe same way as Kiltz
+and Galindo [2006] encapsulates for identity PT=H(T) with the public key
+sP+b P.
+—To decapsulate, the secret information needed in Kiltz and Galindo [2006] is
+the identity decryption key {sP2+tH(T),tP}. In our case, this information
+will be published by the Timed-Release server on date T. However, this is
+insufﬁcient since the encapsulation was done using sP+b Pand not simply
+sPas the public key. This can be easily overcome by having recei ver add
+b P2(his secret key) to sP2+tH(T) and obtain{(sP2+b P2) +tH(T),tP}which
+is exactly the decryption key that would be required in Kiltz and Galindo
+[2006] to decapsulate information that was encapsulated us ingsP+b P.
+—To provide security against adaptive IND-KEM-RTR-CCA2, ( receiver timed-
+release conﬁdentiality) we also slightly modify what goes i nside the crypto-
+graphic hash function h. In Kiltz and Galindo [2006], the authors used h(rP).
+In our case, we use h(rPT+b P) which makes it harder for an adversary to
+launch successful adaptive attacks.
+6.2 Security of the Scheme
+The security proofs are modiﬁcations of Waters [2005] and Ki ltz and Galindo
+[2006] and are provided in Appendix C, where we discuss the re levant modi-
+ﬁcations and reduction analysis. The proofs are given with r espect to notions
+IND-KEM-CCA2 and IND-KEM-RTR-CCA which are deﬁned almost i denti-
+cally to IND-CCA2 and IND-RTR-CCA except that decryption qu eries are
+replaced by decapsulation queries; and during the challeng e we compute an
+encapsulation and choose at random whether to give the adver sary the encap-
+sulated key or a random key; the adversary’s goal is to decide which key was
+given.
+/hatwideb P; 2) instead of h(rPT+pk1), one can compute h(rP) with corresponding modiﬁcations in the
+decapsulation. One can show that the resulting encapsulati on scheme is IND-KEM-RTR-CCA
+and IND-KEM-CCA2-secure. Using Shoup’s hybrid approach [S houp 2000], the resulting TR-PKE
+scheme is IND-RTR-CCA and IND-CCA2-secure. This saves two b ilinear maps in the encryption,
+but the encapsulation scheme is demonstrably insecure agai nst adaptive IND-KEM-RTR-CCA2.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 23
+Fig. 6. The TR-PKE stdkey encapsulation scheme in the standard model.
+Below we sketch the proof of receiver timed-release conﬁden tiality IND-
+KEM-RTR-CCA (and IND-KEM-RTR-CCA2 given hardness of decis ional
+TDHP). One notable (but expected) property is that due to the extra binding
+in users’ public keys, the decryption oracle in the simulati on given in the proof
+no longer requires a receiver’s private key.
+THEOREM 6.2.1. The TR-PKE stdencapsulation scheme is IND-KEM-RTR-
+CCA secure, assuming that h is a target collision-resistant hash function and
+the decisional BDHP is hard. Moreover, the scheme is IND-KEM -RTR-CCA2-
+secure assuming also hardness of decisional TDHP.
+More precisely, let A1(resp, A2) be a IND-KEM-RTR-CCA (resp, IND-KEM-
+RTR-CCA2) adversary for TR-PKE std, with polynomial running time t (k), that
+makes p (k)decryption queries and has non-negligible advantage ǫ(k). Then
+there exist adversaries Abdh,Ahash, and Atdhsuch that
+(1) AdvIND-KEM-RTR-CCA
+A1,TR-PKE std(k)≤2
+λAdvdbdh
+Abdh,G(k) +4p(k)
+qλ+ 2Advtcr
+Ahash,h(k)
+(2) AdvIND-KEM-RTR-CCA2
+A2,TR-PKE std(k)≤2
+λAdvdbdh
+Abdh,G(k) +4p(k)
+qλ+ 2Advtcr
+Ahash,h(k) +
+2
+λAdvdtdh
+Atdh,G(k)
+Where λ=1
+4(n+1)p(k), Time (Abdh) =O(t(k) +ǫ−2(k) logǫlogλ/λ+p(k)),
+Time (Ahash) =O(t(k)), and Time (Atdh) =O(t(k)).
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 24· J. H. Cheon et al.
+PROOF . (Sketch) Let aP,b P,cP,Kbe a DBDHP challenge, i.e., with equal
+probability Kis random or K=e(P,P)abc. Due to the similarity between
+our scheme and that of Kiltz and Galindo [2006], most of the pr oof features
+carry over without signiﬁcant changes. In particular, we se t the system
+parameters so that L1=aPand L2=−h(cP)·aP+d·P(for random d),
+Q=sP2=b L1=ab P are constructed the same way.11To suit this setup, we
+setP2=α·b P(for random α),Ppub=sP=α−1·aPand P3=b P. Also the
+distribution of U′,Vis constructed the same way as in the previous proof, so
+H(T) =PT=x(T)P+y(T)L1, where the simulator knows x(T) and y(T).
+As in Kiltz and Galindo [2006], we immediately abort (return ing a random
+bit) when y(T) = 0 mod qduring token queries, or when y(T∗)/ne}ationslash= 0 mod qfor
+challenge time T∗. We follow the same technique for answering token queries
+as in Kiltz and Galindo [2006]. During decapsulation query a fter the challenge
+with T/ne}ationslash=T∗, we safely assume that a token query has been made for Tand
+thus y(T)/ne}ationslash= 0 mod qin such cases. If the simulation did not abort, at the end
+we compute whether ArtAbort, or artiﬁcial abort, should be s ignaled using
+sampling as in Kiltz and Galindo [2006]. To do so, the simulat or computes, by
+sampling, the probability that either y(T) = 0 mod qduring token queries or
+y(T∗)/ne}ationslash= 0 mod qhappen, keeping the adversarial view of the game the same
+as in the current game trace but varying other parameters. Wh en ArtAbort
+is signaled, the simulator aborts and returns a random bit. T he need to
+replicate this portion of the simulation introduces the dep endence on ǫ(k) in
+the runtime of Abdh.
+The decapsulation queries are carried out similarly to Kilt z and Galindo
+[2006] except that now the adversary also submits receiver p rivate key /hatwideb P2
+(which is added to the token if needed). Suppose the adversar y submits tuple
+(T,C={C1,rP,rPT}) with consistent Cto decapsulation oracle. There are two
+modiﬁcations that are introduced by our scheme, one is a new e vent and the
+other one is a technical modiﬁcation:
+—IfcP=rPT+/hatwideb Pand y(T) = 0 mod q, then we mark this event as CoAbort
+and abort returning a random bit.
+—Ifh(cP)/ne}ationslash=h(rPT+/hatwideb P), we return
+K=e(C1−d·rP,b P)(h(rPT+/hatwideb P)−h(cP))−1·e(rP,/hatwideb P2).
+The challenge ciphertext is computed once again similarly t o Kiltz and
+Galindo [2006], but a few technical modiﬁcations are made du e to the
+presence of the receiver public key submitted by the adversa ry. Given
+challenge time T∗and public key{/hatwideb∗P,/hatwideb∗P3=/hatwideb∗·b P}, the challenge
+ciphertext is computed as follows (if y(T∗)/ne}ationslash= 0 mod qwe abort return-
+ing a random bit). We choose cP=r∗PT∗+/hatwideb∗P, and create challenge
+11One slight difference is that we use Q=sP2(with the public information Ppub=sP), the
+approach used by Waters. This does not affect the proof.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 25
+ciphertext{d·cP−/hatwideb∗P
+x(T∗),cP−/hatwideb∗P
+x(T∗),cP−/hatwideb∗P}with corresponding session key
+K∗=K1/x(T∗)·e(/hatwideb∗P,P2)(c−/hatwideb∗)/x(T∗)·e(−aP,/hatwideb∗·b P)1/x(T∗). Note that e(/hatwideb∗P,
+P2)(c−/hatwideb∗)/x(T∗)=e(P,α·/hatwideb∗b P)(c−/hatwideb∗)/x(T∗)=e((c−/hatwideb∗)P,α·/hatwideb∗b P)1/x(T∗).
+Finally, we return to the DBDHP challenger the output of A.
+We note that if we consider a non-adaptive adversary, the ana lysis of the
+CoAbort event is the same as in Kiltz and Galindo [2006], i.e. , since the ad-
+versary obtains no information on cPuntil the challenge the probability that
+CoAbort occurs is less than 2 p/q. Consequently, all the analysis made in Kiltz
+and Galindo [2006] carries over automatically and IND-KEM- RTR-CCA
+security follows. The main thing to notice is that if in the DB DHP challenge,
+Kis in fact the solution to the computational BDHP, then the ch allenge
+ciphertext is correct including the returned encapsulated key. If instead Kis
+random then so is the returned encapsulated key. Thus, if the adversary can
+tell a random challenge encapsulated key from a real one, we w ill be able to
+solve decisional BDHP.
+To show that the scheme is IND-KEM-RTR-CCA2 secure given har dness of
+decisional TDHP, we note that in the above scheme we only need to address
+the case when event CoAbort happens after the challenge. In t his case, the
+adversary ﬁnds rP,rPT∗,/hatwideb P,/hatwideb P2,/hatwideb P3such that r∗PT∗+/hatwideb∗P=rPT∗+/hatwideb Pand
+/hatwideb/ne}ationslash=/hatwideb∗.12Rewrite the equation as r∗PT∗+ (/hatwideb∗−/hatwideb)P=rPT∗. LetζP,νP,R,Tbe
+a DTDH challenge where we have to decide if T=ζνR. We start with the real
+IND-KEM-RTR-CCA2 game and change it as follows: we set U′,Vto random
+multiples of ζPand P3=R; in particular given any PTwe know κsuch that
+κ·ζP=PT. Other than that the rest of the simulation proceeds exactly as
+in the real game. According to the above, we have r∗PT∗+ (/hatwideb∗−/hatwideb)P=rPT∗,
+or equivalently κ·r∗ζP+ (/hatwideb∗−/hatwideb)P=κ·rζPfor some known κ. Dividing
+both sides by ζ, we obtain that we can compute(/hatwideb∗−/hatwideb)
+ζP. Next we compute
+A1=e((/hatwideb∗−/hatwideb)
+ζP,T) and A2=e((/hatwideb∗−/hatwideb)R,νP), since R=P3and/hatwideb∗P3and/hatwideb P3
+are part of the public keys. If and only if A1=A2, then T=ζνQ: indeed, if
+T=ζνQ, then A1=e((/hatwideb∗−/hatwideb)P,νR) =e((/hatwideb∗−/hatwideb)R,νP) =A2. Therefore we
+can solve decisional TDHP instances with exactly the probab ility of the event
+CoAbort after the challenge.
+The proof of the Theorem 6.2.2 below is more straightforward and we refer
+the reader to Appendix C.
+THEOREM 6.2.2. The TR-PKE stdencapsulation scheme is IND-KEM-CCA2
+secure under the assumption that h is a target-resistant col lision hash function
+and the decisional BDHP is hard.
+12As a side note, one can easily show there can be only one such di stinct query and rewinding
+the experiment, such that behavior changes only once Ahas submitted challenge parameters, will
+not change the value of /hatwideb, for otherwise we will be able to solve the computational Dif ﬁe-Hellman
+problem in G1.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 26· J. H. Cheon et al.
+Table I. Cost of Basic Operations
+Function Modulus (bits) Exponent (bits) Performance (msec)
+RSA(Sig/Dec) 1024 1024 2.96
+RSA(Ver/Enc) 1024 16 (e= 216+ 1) 0.14
+Scalar Mul in EC over Fp 160 160 2.23
+MapToPoint 512 - 1.52
+Pairing 512 160 18.15
+More precisely, if there exists IND-KEM-CCA2 adversary Awith polynomial
+running time t (k)that makes p (k)decapsulation queries and has advantage
+ǫ(k), then there exist adversaries AbdhandAhashsuch that
+AdvIND-KEM-CCA 2
+A,T R-PKE std(k)≤2
+λ(Advdbdh
+Abdh,G(k) + 2p/q) + 2Advtcr
+Ahash,h(k),
+where λ=1
+4(n+1)p(k), Time (Abdh) =O(t(k) +ǫ−2(k) logǫlogλ/λ+p(k))and
+Time (Ahash) =O(t(k)).
+The following corollary is a direct application of Theorem 1 given in Shoup
+[2000].
+COROLLARY 1.Using Shoup’s hybrid scheme [Shoup 2000] and the encap-
+sulation scheme for TR-PKE std, we obtain a TR-PKE scheme secure against
+IND-CCA2 and IND-RTR-CCA in the standard model, given the ex istence of
+a secure pseudo-random bit generator, target collision-re sistant hash function h
+and the hardness of decisional BDHP. In addition, given the h ardness of deci-
+sional TDHP, the resulting TR-PKE scheme is secure against I ND-RTR-CCA2.
+7. DISCUSSION
+In this article, we discussed several constructions of TR-P KE and TR-PKAE.
+Fully secure generic constructions of TR-PKE require chose n-ciphertext se-
+cure IBE, PKE and SUF-CMA-secure one-time signature scheme , while TR-
+PKAE requires in addition a SUF-CMA-secure digital signatu re scheme. The
+most efﬁcient IBE schemes were constructed to be secure in th e random oracle
+model [Boneh and Franklin 2003]. Table I shows the cost of bas ic operations
+involved in bilinear maps. The performance results were com puted using Mir-
+acl library v.4.8.3 [Shamus Software Ltd.] with Tate pairin g for the bilinear
+map and were all averaged over 10,000 runs, except that the RS A results were
+obtained by running OpenSSL v.0.9.8 speed command. The group G1was cho-
+sen to be a subgroup of order qin a super-singular elliptic curve Eover Fp,
+where pis a 512 bit and qis a 160 bit prime. Group G2was a subgroup of a
+ﬁnite ﬁeld of order 1024 bits. We used a P4-3.2 GHz “Northwood ” (800MHz
+FSB) with 2GB of 400 MHz RAM desktop. Table II shows the compar ison of
+BF-IBE, Kiltz-Galindo’s IBE and single-primitive constru ctions of TR-PKAE bm
+and TR-PKE stdproposed in this article. Note that TR-PKAE bmis only slightly
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 27
+Table II. Complexity Comparison of Signiﬁcant Operations
+Function # Bilinear Maps # of Exp # of MapToPoint
+BF-IBE Enc/Dec 1/1 2/0 1/0
+TR-PKAE bmEnc/Dec 1/1 4/3 1/0
+Kiltz-Galindo IBE Enc/Dec 0/3 5/5 0/0
+TR-PKE stdEnc/Dec 1/3 5/5 0/0
+more expensive than BF-IBE.13When we switch to IBE in the standard model,
+the encryption becomes less expensive while decryption is a t least three times
+slower compared to BF-IBE. Extending Kiltz-Galindo’s IBE t o TR-PKE stdadds
+additional bilinear map in the encryption14, while decryption complexity stays
+the same. All these observations are natural since construc tions in the ran-
+dom oracle model are generally more efﬁcient and allow for ri ch functionality
+and extensions [Boyen 2003]. Efﬁcient extensions of primit ives in the standard
+model are much more challenging. Moreover, there is a securi ty trade-off when
+one considers random oracles and the standard model: securi ty in BF-IBE was
+shown under computational BDH assumption, while security i n the standard
+model was under stronger decisional BDH assumption. If we ma ke the even
+stronger mBDDH assumption, then one can reduce the cost of de cryption down
+to two bilinear maps [Kiltz 2006].
+7.1 Alternative Models for TR-PKE
+Cathalo et al. [2005] introduced a slightly different model of timed-release pub-
+lic key encryption, in which a receiver’s public key was boun d to the public key
+of timed-release server. The constructed scheme (without a uthentication) was
+shown to be secure in the random oracle model, assuming hardn ess of Bilinear
+Difﬁe-Hellman Inversion problem [Boneh and Boyen 2004], wi th similar efﬁ-
+ciency as the proposed TR-PKAE bm.15However, binding the user’s public key
+to a speciﬁc server violates our goal of separating timed-re lease servers from
+users and does not allow the sender to choose which servers wi ll be used. In ad-
+dition, Cathalo et al. [2005] introduce a stronger game for I ND-RTR-CCA2 in
+which the receiver no longer supplies a private key during de cryption queries.
+While this models a very strong attack, it is not clear how rea listic such game
+13However, when BF-IBE is extended to provide comparable func tionality to TR-PKAE bm, e.g.,
+using generic constructions, we expect the resulting schem e to be at least as expensive in practice
+as the proposed protocol.
+14Since the user public key in the TR-PKE stdis independent of timed-release server, one can
+assume that public keys are preveriﬁed. Otherwise addition al two bilinear maps are needed to
+verify consistency of public key. Moreover, one can precomp ute for a given sender and timed-
+release servers such that no bilinear maps are required in th e encryption (this also applies to
+BF-IBE).
+15Encryption requires veriﬁcation of the receiver’s public k ey which takes two bilinear map com-
+putations; provided veriﬁcation can be done beforehand no b ilinear map computation is needed in
+the encryption. Moreover, ciphertext is shorter by one poin t ofG1.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 28· J. H. Cheon et al.
+is, since in a real game the decryption oracle needs a receive r’s private key to
+decrypt ciphertext.16
+7.2 Extensions
+The proposed TR-PKAE bm(and the TR-PKE stdalong with generic TR-PKE/
+TR-PKAE with well-known IBE constructions) allows for efﬁc ient use of timed-
+release encryption using multiple independent servers. In TR-PKAE bm, given
+public keys s1P,...,smPofmtimed-release servers, the sender can simply en-
+crypt using sP=/summationtext
+jsijPwhile the receiver decrypts using sPT=/summationtext
+jsijPT. In
+this case, the receiver will be able to decrypt only when all c hosen servers have
+published their tokens. This approach enhances security fo r timed-release con-
+ﬁdentiality, since if the receiver fails to obtain even one t oken he will not be
+able to obtain any information about the encrypted plaintex t. However, if a
+single chosen server fails, the receiver will not be able to d ecrypt at all. To ad-
+dress robustness issues, one can easily adapt Pedersen’s di stributed threshold
+protocol [Pederson 1991], in which the servers will have to p erform a brief ini-
+tial setup among themselves which allows them to compute the ir secret keys
+disuch that given a threshold of di’s one can reconstruct the master secret dof
+the group. After that, each server publishes diPand on day Tpublishes diPT.
+Any user will be able to use this group of servers in a threshol d manner by
+noting that a user can compute dP(dPT) from any threshold number of diP’s
+(diPTrespectively) using Lagrange multipliers. As long as at lea st a threshold
+number of servers publish their tokens, the receiver will be able to decrypt a
+valid ciphertext. Also, as long as fewer than the threshold o f servers cooperate,
+the group master secret dstays secret. Note that using Lagrange coefﬁcients,
+in the TR-PKAE bmthe added complexity in decryption is a threshold number
+of multiplications/additions in G1, while encryption complexity stays the same
+(provided dPis published along with the description of the group of serve rs).
+Thus after the initial setup, the timed-release servers can function without
+interaction. To reduce complexity of decryption, the serve rs can take the job
+of computing dPTonto themselves in which case the complexity of decryption
+is as in the base TR-PKAE bm. Similar techniques can be applied to the TR-
+PKE stdin which now the servers split the master secret Q, while complexity
+discussion stays the same as in TR-PKAE bm.
+Finally, the timed-release schemes proposed here and in the literature, re-
+quire that past tokens be stored in a repository in case a user attempts to
+decrypt a message with designated time well in the past. As a r esult, the re-
+quired storage for tokens grows linearly over time. Hierarc hical IBE (HIBE)
+schemes such as the one proposed by Boneh et al. [Boneh et al 20 05], when
+16The main issue here is that of knowledge: if no one knows the pr ivate key and/or the encrypted
+plaintext, then decrypting without knowledge of the privat e key is unrealistic in the real game.
+If the adversary is asking the oracle to decrypt some interce pted ciphertext for which it does not
+know the private key, the adversarial ability to choose publ ic keys is limited to those of existing
+users’. Such situations can be modeled by a simple modiﬁcati on of the IND-RTR-CCA2 game in
+which the challenger generates a random series of public/pr ivate key pairs and gives the public
+keys to the adversary.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 29
+used in the generic constructions, allow us to reduce the req uired token storage
+toO(log3/2T) at the expense of larger tokens (from which all previous tok ens
+can be derived) and encryption/decryption complexity, whe reTis an upper
+bound on the number of time periods when tokens are published .
+Appendix A. Full Proofs of Theorems 5.3.1 and 5.3.3
+PROOF . [IND-RTR-KC-CCA2] Assume that we are given /an}bracketle{tq,G1,G2,e/an}bracketri}ht(out-
+put by G(1k)) and a random instance of BDH parameters /an}bracketle{tX,a′X,b′X,c′X/an}bracketri}ht,
+where Xis a generator of G1. Below, we design an algorithm Bthat inter-
+acts with Aby simulating a real game for the adversary in order to comput e
+solution to BDHP e(X,X)a′b′c′.
+We choose P=X. When hash functions H1,H2,...,H5are queried as ran-
+dom oracles, Bwill store the returned value in its database coupled with th e
+query and repeated queries will retrieve answers from the da tabase. The or-
+acles H2,...,H5will return random answers, while the way queries to H1are
+handled will be speciﬁed later. Moreover, we also use a biase d coin that with
+probability θ > 0 returns 0 and otherwise returns 1. The optimal value of
+θmaximizes the probability Pθthat simulation does not quit during token
+queries or the challenge. We have Pθ≥θqtok·(1−θ), where qtokis the num-
+ber of token queries made by A, and the right-hand side is maximized when
+θ= 1−1/(qtok+ 1) with value Pθ≥1
+e·(1+qtok), where e= 2.71828 .... This value of
+θand Pθwill be used in the proof.
+During Setup, Bchooses Ppub=sPto be b′Pand generates a random
+sender’s private key ska=a∈Z∗
+q. The adversary Ais given the public pa-
+rameters and the sender’s secret key ska.
+When Amakes a query to H1forPT,Bchooses random cT∈Z∗
+q, ﬂips the
+biased coin and returns cTPif the coin outcome is 0. Otherwise, it returns
+cT·c′P. When Amakes a token query for tkn[T] =sPT,Bqueries H1, ob-
+tains corresponding cTand 1) returns sH1(T) =cT(b′P) ifH1(T) =cTP, 2) fails
+otherwise.
+Consider decryption query prior to the challenge: Asubmits ciphertext
+/an}bracketle{tT,b,Q1,Q2,c1,c2/an}bracketri}ht, where bis the receiver’s secret key, pkais the sender, and
+T,Qi,c1andc2carry the same meaning as in the previous proofs. In this case ,
+as before, Bobtains r1andr2from the databases, which allows it to decrypt
+correctly.
+During the challenge, Achooses two equal-sized plaintexts m0,m1; public
+key pkb∗; and time T∗.If P T∗=cT∗P the simulator quits . It is assumed
+thatAdid not query (nor will query in the future) for tkn[T∗]. For chal-
+lenge ciphertext, Bchooses arbitrary β∈{0,1}andσ, and sets r2=r∗
+2=a′
+while the value of r1=r∗
+1is computed in a normal way. Then it chooses the
+value of the bilinear map at random and composes the resultin g ciphertext
+c∗=/an}bracketle{tT∗,pkb∗,Q∗
+1=r∗
+1PT∗,Q∗
+2=a′P,c∗
+1,c∗
+2/an}bracketri}ht.
+After the challenge, Ahas a choice to continue queries or to reply to the
+challenge. However, Ais not allowed to query for decryption of c∗using T∗and
+skb∗corresponding to pkb∗. Suppose Asubmits ciphertext /an}bracketle{tT,b,Q1,Q2,c1,c2/an}bracketri}ht
+after the challenge. If PT=cTP, then Bcan compute the corresponding
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 30· J. H. Cheon et al.
+bilinear map and answer the query correctly. If PT=cT·c′P, then we con-
+sider two cases separately:
+—If Q2=Q∗
+2, then we return false and enter the tuple ( T,b) in the database
+Daux. Note that for ciphertext to be valid we must have at least tha tQ1=
+r∗
+1PTand the bilinear map was computed correctly. Thus the simula tor’s
+response is incorrect only when the adversary made a query to H2with the
+correct value of the bilinear map constructed with the follo wing parameters:
+r1=r∗
+1,r2=r∗
+2, time Tand the receiver’s secret key b.
+—If Q2/ne}ationslash=Q∗
+2, then we should be able to obtain the corresponding value of r2
+and the input pair ( σ,m) from the queries to H3. Likewise, we can obtain
+the value of r1. Going through routine checks and noting that we can now
+compute the correct value of the bilinear map, we can answer c orrectly the
+decryption query.
+We will run the above simulation twice. The second simulatio n is run using
+the same random tape for the adversary and changing the rando m tape of
+the simulator immediately after the adversary made the sele ction during the
+challenge, but ensuring that the only possible difference i n the challenge step
+is in the value of r∗
+1. After each simulation the following post-simulation step s
+are taken:
+—After the ﬁrst simulation, 1) we pick at random a query Y1that an adversary
+made to H2and a random pair ( T,b) from database Daux, computing B1=
+(Y1/[e(Q∗
+2+aP,r∗
+1·b·PT)·e(b′P,aPT)])cT/cT∗; note that if Y1is the correct
+value of the bilinear map corresponding to r∗
+1,r∗
+2,Tand b, then B1is the
+solution to BDHP; 2) we also pick at random a query F1that an adversary
+made to H2(a possible value of the bilinear map used in the challenge) a nd
+output the pair ( F1,r∗
+1,1), where r∗
+1,1is the value r∗
+1used in the challenge.
+—After the second simulation, as in the ﬁrst simulation, 1) w e compute the
+value of a possible solution to BDHP using adversarial queri es to H2and
+database Daux, but we mark this value now as B2; 2) we pick at random a
+query F2that an adversary made to H2(a possible value of the bilinear map
+used in the challenge) and output the pair ( F2,r∗
+1,2), where r∗
+1,2is the value r∗
+1
+used in the challenge.
+After both simulations have been run, we ﬂip a coin. If the coi n output
+is “heads”, we pick at random either B1orB2as the solution to BDHP. If
+the coin output is “tails”, we compute Z= (F1/F2)(r∗
+1,1−r∗
+1,2)−1, then compute
+Y=F1/[e(sP,aPT∗)·Zr∗
+1,1] which is taken to power c−1
+T∗. The ﬁnal result is
+output as the solution to BDHP. Note that if Fiare indeed correct values of the
+challenge bilinear maps used in the simulations, then Z=e(b P,(r∗
+2+a)PT∗),
+Y=e(sP,r∗
+2PT∗) and the ﬁnal result is indeed the correct value of the soluti on
+to BDHP.
+Note that the simulations above fail to be indistinguishabl e from the real
+game when either the adversary makes a query to H2with the correct value
+of the challenge bilinear map, or when after the challenge th e simulator incor-
+rectly answers the decryption query (in the part where Dauxis updated). On
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 31
+the other hand, without making a query to H2with the correct value of the
+challenge bilinear map, the adversary cannot succeed more t han with negligi-
+ble probability.
+Denote by Pthe probability that in a single run of the simulation either
+the adversary makes a query to H2with the correct value of the bilinear map
+corresponding to some entry in Dauxor corresponding to the challenge, and
+the simulation does not fail due to the biased coin. Then P≥2ǫ·Pθ. Using
+well-known probabilistic lemma [Pointcheval and Stern 199 6] (aka the forking
+lemma), the probability that this event happens in both simu lations is at least
+(P/2)3. Given that in one of the simulations adversary makes a query toH2
+with the correct value of the bilinear map corresponding to s ome entry in Daux,
+probability that we output the solution to BDHP is at least P1=1
+4·qd·q2. Given
+that in one of the simulations the adversary makes a query to H2with the cor-
+rect value of the bilinear map corresponding to the challeng e in both simula-
+tions, the probability that we output the solution to BDHP is at least P2=1
+4·q2
+2.
+It follows that the probability that the combined simulatio n above outputs cor-
+rect solution to BDHP is at least ( P/2)3·min( P1,P2)≥1
+4q2·max( q2,qd)[ǫ·Pθ]3.
+PROOF . [RUF-TR-CTXT] The preliminaries in this proof are the same as in
+IND-KC-RTR-CCA2. More precisely, we are once again given BD H parameters
+/an}bracketle{tX,a′X,b′X,c′X/an}bracketri}ht, we set P=X, the oracles H2,...,H5return random answers,
+and we use the same biased coin with the same value of θwhich maximizes
+probability Pθthat simulation does not quit during forgery and token queri es.
+Our goal is to compute e(X,X)a′b′c′.
+During Setup, Bchooses Ppub=sPto be b′Pand sets pka=a′P. The adver-
+saryAobtains public parameters and pka. In addition, Bmaintains database
+Dsupdated during encryption queries.
+When Aqueries H1forPT,Bchooses random cT∈Z∗
+q, ﬂips the biased coin
+and returns cTPif the coin outcome is 0. Otherwise, it returns cT·c′P. When
+Aqueries for token sPT,Bqueries H1, obtains corresponding cTand returns
+sH1(T) =cT(b′P) ifH1(T) =cTP, 2), or the simulation fails and stops otherwise.
+During encryption query, Asubmits T,mandb P. The simulator is expected
+to output the encryption of musing a′(sender) and b P(receiver). If PT=cTP,
+Bcomputes the ciphertext in a normal way. It chooses arbitrar yσ, queries
+H3forr1,H4forr2, and then queries H5with input σ. Then it computes the
+bilinear map as e(sP+r1·b P,r2PT+aPT) by noting that aPT=a′·cTP=cT·a′P.
+The corresponding query is made to H2andBreturns resulting ciphertext. If
+PT=cT·c′P,Bchooses σand computes r2in the normal way. Then it picks
+random r′
+1and sets r1PT=r′
+1P, updating appropriately the database of H2.
+The value of bilinear map is chosen at random and the resultin g ciphertext is
+given to the adversary. The simulator enters the parameters (T,r2,r′
+1,b P) in
+database Daux.
+Finally, either simulation halts or the adversary outputs f orged ciphertext
+c∗=/an}bracketle{tQ∗
+1,Q∗
+2,T∗,c∗
+1,c∗
+2/an}bracketri}htand the receiver secret key b∗, which will be used for
+veriﬁcation. If P T∗=cT∗P,the simulation fails. The simulator ﬂips a fair coin.
+Next we describe what one does depending on the outcome of the coin: if the
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 32· J. H. Cheon et al.
+output is “tails” and the description below does not have dat a to proceed, then
+the coin is set to “heads” and vice versa.
+—If the coin outcome is “heads”, Bpicks a random entry ( T,r2,r′
+1,b P) from
+database Daux, and picks at random a query Ythat the adversary made
+toH2. Then it computes Z=e(r1·b P,(r2+a)PT) =e(b P,(r2+a)·r1PT) =
+e(r′
+1·b P,r2P+aP), computes Y/[e(sP,r2PT)·Z], and takes the result to power
+c−1
+T. The ﬁnal result is output as the solution to BDHP. Note that i fYwas
+the correct value of the bilinear map corresponding to ( T,r2,r′
+1,b P), then we
+do obtain the solution to BDHP.
+—If the coin outcome is “tails”, Bpicks at random a query Ythat the adversary
+made to H2. Ifr∗
+2forQ∗
+2was not found in database of H4, the simulation fails.
+If the actual value of r∗
+1corresponding to Q∗
+1was found in the database of H4,
+thenBcomputes Z=e(sP,r∗
+2PT∗)·e(r∗
+2P+aP,r∗
+1·b·PT). Then it computes
+(Y/Z)c−1
+T∗and outputs the result as the solution to BDHP. If no actual va lue
+ofr∗
+1was found and there exists an entry ( T,r2,r′
+1,b P) in Dauxsuch that
+r∗
+1=r1(where r1=r′
+1/cT), then as in the “heads” case we can compute Z=
+e(r∗
+1·b∗P,(r∗
+2+a)PT∗) =e(b∗P,(r∗
+2+a)·r∗
+1PT∗) =e(r′
+1·cT∗/cT·b∗P,r∗
+2P+aP),
+then compute Y/[e(sP,r∗
+2PT∗)·Z] and take the result to power c−1
+T∗producing
+our solution to BDHP. Note that if Ywas the correct value of the bilinear
+map in the forgery, then we do obtain the solution to BDHP.
+Note that the simulation fails to be indistinguishable from the real game
+when the adversary makes a query to H2with a real value of one of the bilinear
+maps used in the encryption queries. However, in this case, t he probability
+that we output correct solution to BDHP is at least1
+2·q2·qe. If no such query was
+made and the forgery is correct then the probability that we s olve BDHP is at
+least1
+2·q2.
+Taking into account the probability of failure due to the bia sed coin and the
+advantage ǫof the adversary in the real game, we obtain that the probabil ity
+of outputting correct solution to BDHP is at leastǫ·Pθ
+2·q2·qe.
+Appendix B. Proofs of Theorems 5.3.2 and 5.3.4
+For completeness, below we show the proofs of IND-KC-CCA2 an d TUF-CTXT
+for the proposed single-primitive TR-PKAE bm. As in IND-KC-TR-CCA2 and
+RUF-TR-CTXT, we are given /an}bracketle{tq,G1,G2,e/an}bracketri}ht(output by G(1k)) and a random in-
+stance of BDH parameters /an}bracketle{tX,a′X,b′X,c′X/an}bracketri}ht, where Xis a generator of G1.
+Our goal is to compute e(X,X)a′b′c′using the adversarial advantage in the real
+games. Once again, we set P=Xand random oracles H2,...,H5return random
+answers, while the way queries to H1are handled will be speciﬁed later.
+PROOF . [IND-KC-CCA2] During Setup, Bchooses random master secret s
+and makes it public, receiver public key pkb=b′P, and random ska=a∈RZ∗
+q.
+The adversary A, in addition to public parameters, receives s,ska, and pkb.
+In addition, Bmaintains database Lof possible values of e(P,P)a′b′c′updated
+during decryption queries made after the challenge.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 33
+When Aqueries H1forPT,Bsamples cT∈RZkand returns PT=cT·P,
+storing the query Tin the database coupled with cT.
+Consider the decryption query made by Abefore the challenge: Asubmits
+ciphertext/an}bracketle{tT,Q1,Q2,c1,c2/an}bracketri}ht, where c1denotes σ⊕K, and c2denotes m⊕H4(σ),
+Q1represents r1PT,Q2represents r2P,ska=ais the sender private key, and
+Tis the designated time. In this case, Bgoes through the oracle databases,
+checks that relevant queries have been made, and that the cip hertext is con-
+sistent. In particular, it can retrieve the message mand verify that the bilinear
+map is the same as e(sP,(r2+a)PT)·e([r2+a]·b P,Q1) using retrieved r1,r2.
+Should any step fail, false is returned. Otherwise, the mess agemis returned.
+During selection, Achooses two equal-sized plaintexts m0,m1, and T=T∗.
+To generate challenge ciphertext,
+—Bchooses arbitrary β∈{0,1}, and assigns Q∗
+1=r∗
+1PT∗=a′P,Q∗
+2=r∗
+2P=c′P.
+Then Bchooses σ∗, two random strings c∗
+1andc∗
+2, and composes and returns
+ciphertext c∗=/an}bracketle{tT∗,Q∗
+1,Q∗
+2,c∗
+1,c∗
+2/an}bracketri}ht.
+—Next, Bupdates the databases. For database of H3:B, instead of r∗
+1, puts
+Q∗
+1=r∗
+1PT∗as a value (marked that it’s already multiplied by PT) and
+(σ∗,mβ) as the query. Similar steps are taken with respect to Q∗
+2and the
+database of H4. Next, Bputs mβ⊕c∗
+2as a value and σ∗as the query into
+database of H5. IfH1(T∗) was never queried, then the query is made. Fi-
+nally, the database of H2is instructed never to return the corresponding
+value of K=K∗=σ∗⊕c∗
+1.
+After the challenge ciphertext, Ahas a choice to continue queries or to reply
+to the challenge. However, Ais not allowed to query for decryption of c∗using
+T∗chosen for the challenge. Now, when Asubmits ciphertext /an}bracketle{tT,Q1,Q2,c1,c2/an}bracketri}ht
+for decryption, slightly different steps are carried out by B. First, Bsearches
+forr1,r2corresponding to Q1,Q2in databases of H3,H4. If either one is not
+found even in the form that we put during challenge, Bsimply returns false. If
+Q1=Q∗
+1,Q2=Q∗
+2,T=T∗we also return false.17Otherwise,
+—First suppose Q2=Q∗
+2. IfQ1=Q∗
+1and T/ne}ationslash=T∗, then if we cannot ﬁnd the
+exact value of r1in the databases we return false. Otherwise, we note that
+r1PT=cTr1P=a′Pwhich allows us to compute the solution to BDHP. If
+Q1/ne}ationslash=Q∗
+1, then we again return false if we cannot ﬁnd the exact value of r1.
+Otherwise, we can compute correctly the bilinear map used in the encryption
+ase(sP+r1·b P,aPT+cT·Q2) and thus answer the decryption query correctly.
+—Now suppose that Q2/ne}ationslash=Q∗
+2. In that case, if exact value of r2could not be re-
+trieved, then false is returned. Otherwise, we can compute t he bilinear map
+ase((r2+a)P,sPT)e((r2+a)·b P,Q1) and thus correctly answer the decryption
+query.
+In the end, the simulation may either halt or Areturns β. If during the
+above simulation we managed to compute the solution to BDHP, then that is
+17Note that if c1/ne}ationslash=c∗
+1, and adversary computed bilinear map correctly, then the co rrect query was
+made to H2.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 34· J. H. Cheon et al.
+the value output by B. Otherwise, Boutputs at random one of the queries that
+the adversary has made to H2.
+Note that if the simulation answers a decryption query incor rectly, then (up
+to probability of guessing) the adversary will have made a qu ery to oracle H2
+with correct value of the challenge bilinear map, which will allow us to compute
+solution to BDHP. Simple computations show that the resulti ng advantage is
+at least 2 ǫ/q2.
+PROOF . [TUF-CTXT] During Setup, Bgenerates random master secret s∈
+Z∗
+q, sets public key of the receiver to be pkb=b′P, and the public key of the
+sender to be pka=a′P. The adversary Areceives public parameters, master
+secret s,pkaand pkb. In addition, Bmaintains database Dsupdated during
+encryption queries.
+When Amakes a query to H1forPT,Bchooses random cT∈Z∗
+qand returns
+cT(c′P). Query Talong with cTare stored and replies for repeated queries use
+the database.
+When Asubmits Tand mfor an encryption query, Bchooses σ,r1, and r2
+the same way as in the protocol. However, the value of the bili near map is
+chosen at random. Other than that, the ciphertext is formed i n a normal way
+and the databases are updated accordingly. Also Bkeeps the local database Ds
+in which it enters the information about the inputs of the bil inear map, i.e.,
+Tand which r1,r2were chosen.
+Finally, either Areturns forged ciphertext /an}bracketle{tT∗,Q∗
+1,Q∗
+2,c∗
+1,c∗
+2/an}bracketri}htor simulation
+halts. Then Bﬂips a coin. If Dsis empty and/or the adversary did not make
+any queries to H2, then we reset the coin outcome to “tails”. If no forgery
+was submitted then the coin outcome is changed to “heads”. If coin outcome is
+“heads”, Bpicks a random entry from database Ds, and obtains corresponding
+T,r1,r2. Then it picks the random adversarial query YtoH2and computes
+Y/[e(r2P+aP,sPT)·e(r1·b P,r2PT)]]c−1
+Tr−1
+1, which is output as the solution to
+BDHP. If the coin outcome is “tails”, Bﬁrst obtains corresponding values of r1
+andr2since they had to be queried from H3andH4. Then it extracts K=σ⊕c∗
+1
+and looks up the query Ythat was made to H2and returned K. Then as in the
+previous case, a candidate solution to BDHP is computed.
+The above simulation fails to be indistinguishable from a re al game if the
+adversary correctly computed the bilinear map correspondi ng to one of the en-
+cryption queries and then made the correct query to the H2oracle. However,
+in this case, with probability1
+2·qe·q2, the simulation will output the correct so-
+lution to BDHP. Otherwise, the simulation is indistinguish able from a real
+game and if forgery is successful the simulation outputs the correct solution
+to BDHP. It follows that the BDHP solution is output with a pro bability of at
+leastǫ
+2·qe·q2.
+Appendix C. Proof of Theorems 6.2.2 and 6.2.1
+PROOF . [IND-KEM-CCA2] Let aP,b P,cP,Kbe DBDHP challenge, i.e., with
+equal probability Kis random or K=e(P,P)abc.
+Setm= 2p(where pis the maximum number of adversarial queries). The
+simulator randomly chooses x0,...,xninZq,y′
+0,y1,...,yninZm,kinZn+1, and
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 35
+sets y0=q−km+y′
+0. Then set U′=x0P+y0L1andVi=xiP+yiL1,i= 1,...,n.
+The simulator can compute PTasx(T)P+y(T)L1, where x(T) =x0+/summationtextn
+i=1Tixi
+and y(T) =y0+/summationtextn
+i=1Tiyi. Note that distribution of U′,Vis indistinguishable
+from random in the adversarial view.
+Simulator Bsets L1=aP,L2=−h(cP+b P)·aP+d·Pfor random d,
+random s∈Zq. Also P2=α·aPfor random α, and P3=βPfor random β.
+The adversary Aobtains public parameters, Q=sP2and receiver’s public key
+{b P,b P3=β·b P}.
+Suppose tuple ( T,C={C1,rP,rPT}) is queried to the decapsulation oracle
+with consistent C. First consider the case when h(cP+b P) =h(rPT+b P):
+—cP/ne}ationslash=rPT, then we found collision in the hash function; we stop and ret urn a
+random bit.
+—cP=rPTand y(T) = 0 mod q. In this case, we abort and return a random
+bit.
+—cP=rPTand y(T)/ne}ationslash= 0 mod q. Since y(T)/ne}ationslash= 0 mod qandrPT=x(T)·rP+
+r·y(T)·aP, we can compute r·aP. Then the encapsulated key is e(Q,rP)·
+e(b P,α·raP), which we return to the adversary.
+If none of the above cases happen during the decapsulation qu ery, we compute
+response by noting that r[h(C2+b P)L1+L2] =r[([h(C2+b P)−h(cP+b P))aP+dP]
+which allows us to compute r·aP. Then the encapsulated key is e(Q,rP)·
+e(b P,α·raP), which we can compute.
+The challenge ciphertext for challenge time T∗is computed as follows. If
+y(T∗)/ne}ationslash= 0, then we stop and return a random bit. Otherwise, we choose cP=
+r∗PT∗=x(T∗)·r∗P. The challenge ciphertext is {d/x(T∗)·cP,1/x(T∗)·cP,cP}
+with the corresponding encapsulated key K∗=e(Q,1/x(T∗)·cP)·Kα/x(T∗).
+If the game did not abort before the end, at the end of the game w e ﬁx
+A’s random tape and all values that it sees from the simulator d uring execu-
+tion. In particular, set ID∗={T1,...,Tp0,T∗}, the set of times queried dur-
+ing decapsulations and challenge, is ﬁxed. Note that Y= (y′
+0,y1,...,yn,k)
+can still be varied randomly without changing the adversari al view. Deﬁne
+event ForcedAbort to be the case when either 1) y(Ti) = 0 mod qfor some
+i, or 2) y(T∗)/ne}ationslash= 0 mod q. Set η= Pr Y[¬ForcedAbort]≥λ=1
+4(n+1)p. If
+ForcedAbort did occur during the game, we abort and return a r andom bit.
+If no ForcedAbort has occurred, Bdetermines a good estimate η′ofη(the
+estimate is a function of T1,...,Tp0,T∗). If η′> λ, then with probability
+1−λ/η′it stops and outputs random bit – this event is called ArtAbor t, or
+artiﬁcial abort. Otherwise, we return to the DBDHP challeng er the output
+ofA.
+The main thing to notice is that if the Kis in fact the solution to com-
+putational BDHP, then the challenge ciphertext is correct, including the
+returned encapsulated key. If instead Kis random then so is the re-
+turned encapsulated key. Thus, if the adversary can tell the random chal-
+lenge encapsulated key from a real one, we will be able to solv e decisional
+BDHP.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 36· J. H. Cheon et al.
+Next, we provide the necessary analysis. Consider a game X1where
+we know a,b,cand we answer all decapsulation queries correctly without
+any aborts. The adversarial advantage in this game is the sam e as in the
+real IND-KEM-CCA2 game. Next, let us call X2the game which is the
+same as X1, except that the simulator aborts when a hash collision hap-
+pens, in which case it returns a random bit. Let us set γto be 0 if K
+is random, and γ= 1 if K=e(P,P)abc. Let us call γ′the output of ad-
+versary A. Denote by β′the output of the simulator for the DBDHP chal-
+lenge. Using Difference Lemma, we obtain |PrX2[β′=γ]−PrX1[β′=γ]|≤
+PrX2[HashCollision].
+Denote by X3the game which is the same as X2except that the simulator
+at the very end computes if ForcedAbort or ArtAbort happen, i n which case
+it returns a random bit. Denote κ1=PrX3[¬ForcedAbort∧¬ArtAbort|γ=
+γ′] and κ2=PrX3[¬ForcedAbort∧¬ArtAbort|γ/ne}ationslash=γ′]. Then, following ab-
+solutely the same analysis as in Kiltz and Galindo [2006], we have PrX3[β′=
+γ]−1/2 = 1 /2·(PrX2[β′=γ]·(κ1+κ2)−κ2). As in Kiltz and Galindo
+[2006], we have|κi−λ| ≤λρ/4, where λ=1
+4(n+1)p. After additional ma-
+nipulations, we obtain |PrX3[β′=γ]−1/2−λ·(PrX2[β′=γ]−1/2)| ≤
+λρ/2.
+The value ρwill be determined later and is a parameter in how many
+samples the simulator takes during ArtAbort computations. We assume
+that O(ρ−2lnρlnλ/λ) samples are taken which leads to the inequality
+|κi−λ|≤λρ/4 used above. The run-time complexity of the simulator, then , is
+O(Time (A) +ρ−2lnρlnλ/λ+p).
+Denote by X4the ﬁnal game described above, which is the same as X3except
+that we immediately abort, returning a random bit, if y(T∗)/ne}ationslash= 0 mod qduring
+the challenge or if we abort during the decapsulation query. In case y(T∗)/ne}ationslash= 0
+mod q, it does not matter if we abort immediately or at the very end— in both
+cases, the simulator will return the random bit. During deca psulation, abort
+happens when cP=rPTandy(T) = 0 mod q:
+—If this abort happens before the challenge, then the advers ary does not have
+information about cPand equality cP=rPTcan happen only due to random
+chance. Thus, the probability of such an abort is less than or equal to 2 p/q.
+—If this abort happens after the challenge, two cases are pos sible. If T=T∗,
+then the queried ciphertext is the same as the challenge ciph ertext and
+thus the query is invalid. If T/ne}ationslash=T∗, then the game X3would also return a
+random bit at the end during ForcedAbort check.
+From the above comments, we conclude that |PrX3[β′=γ]−PrX4[β′=
+γ]| ≤ 2p/q. Thus, combining all inequalities and equations, we have
+|PrX1[β′=γ]−1/2| ≤ | PrX2[β′=γ]−1/2|+PrX2[HashCollision]≤
+ρ/2 +|PrX3[β′=γ]−1/2|/λ+PrX2[HashCollision]≤ρ/2 + (|PrX4[β′=
+γ]−1/2|+ 2p/q)/λ+PrX2[HashCollision]. The run-time of X2andX1is
+O(Time (A)), and the run-time of X4isO(Time (A) +ρ−2lnρlnλ/λ+p).
+LetAbdhbe the resulting algorithm that, using A, outputs the answer to
+DBDHP in the game X4. And let Ahashdenote the resulting algorithm that,
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 37
+using A, outputs the hash collision input ysuch that cP/ne}ationslash=yandh(cP) =h(y)
+in the game X2. Since X1is indistinguishable from a real IND-KEM-CCA2
+game, we obtain AdvIND-KEM-CCA2
+A,TR-PKE std≤ρ/2 + (Advdbdh
+Abdh,G+ 2p/q)/λ+ Advtcr
+Ahash,h,
+where the run-time of AhashisO(Time (A)), and the run-time of Abdhis
+O(Time (A) +ρ−2lnρlnλ/λ+p). The ﬁnal conclusion of the Theorem follows
+by setting ρ= AdvIND-KEM-CCA2
+A,TR-PKE std.
+PROOF . [IND-KEM-RTR-CCA(2)]
+First, we describe construction of the simulation in full de tails. Let
+aP,b P,cP,Kbe DBDHP challenge, i.e., with equal probability Kis random
+orK=e(P,P)abc.
+Setm= 2p(where pis the maximum number of adversarial queries). The
+simulator randomly chooses x0,...,xninZq,y′
+0,y1,...,yninZm,kinZn+1and
+sets y0=q−km+y′
+0. Then set U′=x0P+y0L1andVi=xiP+yiL1,i= 1,...,n.
+The simulator can compute PTasx(T)P+y(T)L1, where x(T) =x0+/summationtextn
+i=1Tixi
+andy(T) =y0+/summationtextn
+i=1Tiyi. Note that the distribution of U′,Vstill looks random.
+Simulator Bsets L1=aP,L2=−h(cP)·aP+d·Pfor random d,Q=sP2=
+b L1=ab P. Also P2=αb Pfor random α,P3=b Pand Ppub=sP=α−1·aP.
+The adversary Aobtains public parameters only.
+When queried for token for time T, ify(T) = 0 mod qwe immediately abort
+and return a random bit. If y(T)/ne}ationslash= 0 mod q, then, as in Kiltz and Galindo
+[2006], we pick random r′, implicitly deﬁne r=−b/y(T) +r′, and compute the
+token as{−x(T)/y(T)·b P+r′x(T)P+r′y(T)L1,−1/y(T)·b P+r′P}.
+During a decapsulation query, we are given a tuple ( T,C={C1,rP,rPT})
+with consistent C, where the adversary also submits the decryption key /hatwideb P2
+and public key{0/ne}ationslash=/hatwideb P,/hatwideb P3}:
+—If h(cP) =h(rPT+/hatwideb P) and y(T) = 0 mod q, then we abort and return a
+random bit. If cP/ne}ationslash=rPT+/hatwideb P, then we found a collision in the hash function.
+Otherwise, we mark this event as CoAbort.
+—If y(T)/ne}ationslash= 0 mod q, then decryption can be carried out using token for time
+Tand the public/private keys submitted by the adversary.
+—If h(cP)/ne}ationslash=h(rPT+/hatwideb P), we return K=e(C1−d·rP,b P)(h(rPT+/hatwideb P)−h(cP))−1·
+e(rP,/hatwideb P2).
+The challenge ciphertext is computed once again similarly t o Kiltz and
+Galindo [2006], but a few technical modiﬁcations are made du e to pres-
+ence of the receiver public key submitted by the adversary. G iven challenge
+time T∗and public key{/hatwideb∗P,/hatwideb∗P3=/hatwideb∗·b P}, the challenge ciphertext is
+computed as follows. If y(T∗)/ne}ationslash= 0 mod qwe immediately abort returning
+a random bit. Otherwise, we choose cP=r∗PT∗+/hatwideb∗P, and create chal-
+lenge ciphertext{d·cP−/hatwideb∗P
+x(T∗),cP−/hatwideb∗P
+x(T∗),cP−/hatwideb∗P}with the corresponding session
+key K∗=K1/x(T∗)·e(/hatwideb∗P,P2)(c−/hatwideb∗)/x(T∗)·e(−aP,/hatwideb∗·b P)1/x(T∗). Note that
+e(/hatwideb∗P,P2)(c−/hatwideb∗)/x(T∗)=e(P,α·/hatwideb∗b P)(c−/hatwideb∗)/x(T∗)=e((c−/hatwideb∗)P,α·/hatwideb∗b P)1/x(T∗).
+If the game did not abort before the end, at the end of the game w e ﬁxA’s
+random tape and all values that it sees from the simulator dur ing execution. In
+particular, set ID∗={T1,...,Tp0,T∗}, the set of times queried during decapsu-
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 38· J. H. Cheon et al.
+lations and challenge, is ﬁxed. Note that Y= (y′
+0,y1,...,yn,k) can still be varied
+randomly without changing adversarial view. Deﬁne event Fo rcedAbort to be
+the case when either 1) y(Ti) = 0 mod qfor some i, or 2) y(T∗)/ne}ationslash= 0 mod q.
+Setη= Pr Y[¬ForcedAbort]≥λ=1
+4(n+1)p. If no ForcedAbort has occurred, B
+determines a good estimate η′ofη(the estimate is a function of T1,...,Tp0,T∗).
+Ifη′> λ, then with probability 1 −λ/η′, it stops and outputs a random bit,
+this event is called ArtAbort, or artiﬁcial abort. Otherwis e, we return to the
+DBDHP challenger the output of A.
+The main thing to notice is that if the Kis in fact the solution to computa-
+tional BDHP, then the challenge ciphertext is correct inclu ding the returned
+encapsulated key. If instead Kis random then so is the returned encapsulated
+key. Thus, if the adversary can tell the random challenge enc apsulated key
+from a real one, we will be able to solve decisional BDHP.
+In the analysis, we follow an approach similar to the one give n in IND-
+KEM-CCA2. At ﬁrst, we will consider adaptive and non-adapti ve games to-
+gether and then separate the analyses when needed. Consider a game X1
+where we know a,b,cand we answer all decapsulation and token queries cor-
+rectly without any aborts. The adversarial advantage in thi s game is the same
+as in the real IND-KEM-RTR-CCA game. Next, let us call X2the game which
+is the same as X1except that the simulator aborts when hash collision hap-
+pens, in which case it returns a random bit. Let us set γto be 0 if Kis random,
+andγ= 1 if K=e(P,P)abc. Let us call γ′the output of adversary A. Denote
+byβ′the output of the simulator for the DBDHP challenge. Using Di fference
+Lemma, we obtain |PrX2[β′=γ]−PrX1[β′=γ]|≤PrX2[HashCollision].
+Denote by X3the game which is the same as X2except that the simulator
+at the very end computes if ForcedAbort or ArtAbort happen, i n which case it
+returns a random bit. Denote κ1=PrX3[¬ForcedAbort∧¬ArtAbort|γ=γ′] and
+κ2=PrX3[¬ForcedAbort∧¬ArtAbort|γ/ne}ationslash=γ′]. Then, following absolutely the
+same analysis as in Kiltz and Galindo [2006], we have PrX3[β′=γ]−1/2 =
+1/2·(PrX2[β′=γ]·(κ1+κ2)−κ2). As in Kiltz and Galindo [2006], we have
+|κi−λ|≤λρ/4, where λ=1
+4(n+1)p. After additional manipulations, we obtain
+|PrX3[β′=γ]−1/2−λ·(PrX2[β′=γ]−1/2)|≤λρ/2.
+The value ρwill be determined later and is a parameter in how many
+samples the simulator takes during ArtAbort computations. We assume
+thatO(ρ−2lnρlnλ/λ) samples are taken, which leads to the inequality |κi−
+λ| ≤λρ/4 used above. The run-time complexity of the simulator, then , is
+O(Time (A) +ρ−2lnρlnλ/λ+p).
+Denote by X4the game, which is the same as X3except that the simulator
+immediately aborts returning a random bit when 1) a query Tis made to the
+token oracle with y(T) = 0 mod q, or 2) if y(T∗)/ne}ationslash= 0 mod q. Ify(T∗)/ne}ationslash= 0 mod q
+happens, then both X4andX3return a random bit (although X3does it at the
+end, which in this case does not matter). The same comment goe s for the case
+y(T) = 0 mod qduring token queries. Thus, PrX3[β′=γ] =PrX4[β′=γ].
+Denote by X5the ﬁnal game, which is the same as X4except that we immedi-
+ately abort and return a random bit when CoAbort happens. Usi ng Difference
+Lemma, PrX4[β′=γ]−PrX5[β′=γ]|≤PrX5[CoAbort].
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 39
+Combining all equations and inequalities, we have |PrX1[β′=γ]−1/2|≤
+|PrX2[β′=γ]−1/2|+PrX2[HashCollision]≤ρ/2 +|PrX4[β′=γ]−1/2|/λ+
+PrX2[HashCollision]≤ρ/2 + (|PrX5[β′=γ]−1/2|+PrX5[CoAbort]) /λ+
+PrX2[HashCollision]. The run-time of X2andX1isO(Time (A)), and the run-
+time of X5isO(Time (A) +ρ−2lnρlnλ/λ+p).
+LetAbdhbe the resulting algorithm that, using A, outputs the answer to
+DBDHP in the game X5. And let Ahashdenote the resulting algorithm that,
+using A, outputs the hash collision input ysuch that cP/ne}ationslash=yandh(cP) =h(y)
+in the game X2. Since X1is indistinguishable from a real IND-KEM-RTR-CCA
+game, we obtain AdvIND-KEM-RTR-CCA2
+A,TR-PKE std≤ρ/2 + (Advdbdh
+Abdh,G+ PrX5[CoAbort]) /λ+
+Advtcr
+Ahash,h, where the run-time of AhashisO(Time (A)), and the run-time of Abdh
+isO(Time (A) +ρ−2lnρlnλ/λ+p).
+In non-adaptive IND-KEM-RTR-CCA, the probability of CoAbo rt is less
+than 2 p/q, since the adversary obtains no information about cPuntil the
+challenge. Thus, we have AdvIND-KEM-RTR-CCA
+A,TR-PKE std≤ρ/2 + (Advdbdh
+Abdh,G+ 2p/q)/λ+
+Advtcr
+Ahash,h. By setting ǫ= AdvIND-KEM-RTR-CCA
+A,TR-PKE stdandρ=ǫ, we readily obtain the
+Theorem statement.
+In adaptive IND-KEM-RTR-CCA2, the CoAbort may happen with h igher
+probability after the challenge since the adversary knows cP. The probability
+before the challenge is the same as above. Thus, we concentra te on cases when
+CoAbort happens after the challenge. If in this event we have T/ne}ationslash=T∗, then
+we can assume that a query to the token query has been made with y(T) = 0
+mod q, in which case we would abort in game X4. Thus, the new event, which
+we call AcAbort, happens after the challenge and when T=T∗,cP=rPT∗+/hatwideb P
+and the queried ciphertext is different from the challenge. In this case, the
+adversary ﬁnds rP,rPT∗,/hatwideb P,/hatwideb P2,/hatwideb P3such that r∗PT∗+/hatwideb∗P=rPT∗+/hatwideb Pand
+/hatwideb/ne}ationslash=/hatwideb∗. We get the following inequality AdvIND-KEM-RTR-CCA2
+A,TR-PKE std≤ρ/2+(Advdbdh
+Abdh,G+
+2p/q+PrX5[AcAbort]) /λ+ Advtcr
+Ahash,h.
+Now, we design a game, which we will call Y, to estimate the probability of
+AcAbort. Let ζP,νP,R,Tbe the DTDH challenger where we have to decide
+ifT=ζνR. In game Y, we set U′=α·ζPand V=β·ζPfor some random
+α,β. We also set P3=R. We set the rest of parameters in this game in ab-
+solutely the same way as in a normal game. In particular, we no w can compute
+any token and answer any decapsulation query. And we compute the chal-
+lenge ciphertext in a normal way. Consider the case r∗PT∗+/hatwideb∗P=rPT∗+/hatwideb P
+mentioned above and rewrite this equation as r∗PT∗+ (/hatwideb∗−/hatwideb)P=rPT∗, or
+equivalently κ·r∗ζP+ (/hatwideb∗−/hatwideb)P=κ·rζPfor some known κ. Dividing
+both sides by ζ, we obtain that we can compute(/hatwideb∗−/hatwideb)
+ζP. Next we compute
+A1=e((/hatwideb∗−/hatwideb)
+ζP,T) and A2=e((/hatwideb∗−/hatwideb)R,νP), since R=P3and/hatwideb∗P3and/hatwideb P3
+are part of the public keys. If and only if A1=A2, then T=ζνR: indeed,
+ifT=ζνR, then A1=e((/hatwideb∗−/hatwideb)P,νR) =e((/hatwideb∗−/hatwideb)R,νP) = A2. There-
+fore we can solve decisional TDHP with exactly the probabili ty of the event
+AcAbort. We note that Yis indistinguishable from a real IND-KEM-RTR-
+CCA2 game, and the runs of X5where no abort (other than possibly AcAbort)
+happens are indistinguishable from Yin adversarial view. Thus, we have
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 40· J. H. Cheon et al.
+PrX5[AcAbort]≤PrY[AcAbort], where Yruns in time O(Time (A)). Denote
+byAtdhthe resulting adversary against decisional TDHP. Finally, we obtain
+AdvIND-KEM-RTR-CCA2
+A,TR-PKE std≤ρ/2 + (Advdbdh
+Abdh,G+ 2p/q+ Advdtdh
+Atdh,G)/λ+ Advtcr
+Ahash,h. The
+ﬁnal conclusion of the Theorem follows by setting ρ= AdvIND-KEM-RTR-CCA2
+A,TR-PKE std.
+Appendix D. Key-Insulated Equivalence Proofs
+There are two parts to proving equivalence of key-insulated encryption and
+timed-release: 1) construction of SKIE-OTRU from TR-PKE; a nd 2) construc-
+tion of TR-PKE from SKIE-OTRU. As the ﬁrst part is fairly triv ial (including
+the resulting security proofs and reductions), in this sect ion we concentrate
+only on the second part. The construction of TR-PKE from SKIE -OTRU is
+given in the main text and here we concentrate in more detail o n the security
+proofs and reductions.
+Let us consider adversary Aagainst IND-CCA2 of the resulting TR-PKE
+scheme. In this case, the adversary knows the timed-release secret and thus
+can compute the helper tokens of the related SKIE-OTRU. We ﬁx the receiver’s
+public/private keys and give the receiver’s public key to A. The adversary is
+also given access to the decryption oracle which decrypts us ing the above re-
+ceiver’s secret key and helper tokens. The adversary choose s adaptively time
+T∗, two equal-sized plaintexts and asks for IND-CCA2 challeng e with these
+parameters and the above receiver’s public key. The adversa ry can continue
+with decryption queries, except that it cannot ask for decry ption of the chal-
+lenge ciphertext unless T/ne}ationslash=T∗. In the end, Aguesses which plaintext was
+encrypted and wins if the guess is correct.
+Next, we design an algorithm Bwhich plays a SUF-CMA game against
+the one-time signature challenger, and at the same time play s an IND-CCA2
+game against the underlying PKC. The PKC gives us public key pkwhich we
+will use as the receiver’s public key in the TR-PKE, and the DS onechallenger
+provides us with a one-time signature veriﬁcation key V K∗. When Agives
+us a decryption query, we decrypt using the SKIE-OTRU secret s, obtaining s1.
+Then we query the PKC decryption oracle with c2and label V Kobtaining s2,
+allowing us to extract m. When Agives us challenge ( T∗,m∗
+0,m∗
+1), we choose
+random s∗
+1, compute s2,i=m∗
+i⊕s∗
+1and submit to PKC the pair ( s2,0,s2,1) and
+V K∗for challenge encryption. The PKC challenger chooses βand returns c∗
+2=
+/Pi1.PKEncVK∗(pk,s2,β). We set c∗
+1=/Sigma1.EncVK∗(spk,∗s1,T∗), query the one-time
+signature oracle for signature Sig( V K∗,(T∗,c∗
+1,c∗
+2)), and return the complete
+TR-PKE ciphertext to the adversary.
+After the challenge, if the adversary queries the decryptio n oracle with
+V K =V K∗, and either Sig( V K∗,(T,c1,c2)) is different from the challenge
+and/or ( T,c1,c2)/ne}ationslash= (T∗,c∗
+1,c∗
+2), then we return this signature to the DS one
+challenger, thus winning the SUF-CMA game. When we break SUF -CMA,
+we abort and return a random bit to the PKC challenger. If the a dversary
+queries the decryption oracle with V K/ne}ationslash=V K∗, then we can legitimately
+use the PKC decryption oracle (since we will not be querying t he PKC or-
+acle with the label used in the PKC challenge). In the end (unl ess we al-
+ready broke SUF-CMA), we return the response of Ato the PKC challenger.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 41
+The adversarial advantage against TR-PKE is the same as our a dvantage
+against IND-CCA2 with respect to PKC, since essentially it w as the PKC
+challenger who chose which plaintext to encrypt. Noting tha t, in case of SUF-
+CMA break, we win against PKC with probability exactly 1/2, w e obtain that
+AdvIND-CCA2
+A,TR-PKE(k)≤1
+2AdvSUF-CMA
+B,DSone(k) + AdvIND-CCA2
+B,PKE(k), where Bruns with com-
+plexity of A. The algorithm B1against SUF-CMA is a modiﬁcation of B, where
+Bsimulates the PKC challenger; similarly, algorithm B2against IND-CCA2 of
+PKC is a modiﬁcation of B, where Bsimulates the SUF-CMA challenger. Note
+that the game from the view of A, the IND-CCA2 game against TR-PKE is
+indistinguishable from a real one.
+Now let us consider adversary Aagainst IND-RTR-CCA2 of TR-PKE. In
+this case, the adversary makes token queries and decryption queries. In the
+decryption queries, Aalso submits the secret key of the receiver. The adver-
+sary chooses adaptively time T∗, receiver’s public key, two distinct equal-sized
+plaintexts, and asks for the IND-CCA2 challenge with these p arameters. The
+adversary is not allowed to query the token for time T∗, and cannot ask for
+decryption of the challenge ciphertext unless either T/ne}ationslash=T∗or the submitted
+secret key does not correspond to the challenge public key. T heAguesses
+which plaintext was encrypted and wins if the guess is correc t.
+As in the case of IND-CCA2 against TR-PKE, we design an algori thmB
+which plays a SUF-CMA game against the one-time signature ch allenger, and
+at the same time plays an IND-KIE-CCA2 game against the under lying KIE.
+The KIE gives us public information spk(so that we can encrypt, with labels,
+in KIE any message for any time period), provides us access to its decryption
+oracle and allows us to query for usk i.18The DS onechallenger provides us with
+a one-time signature veriﬁcation key V K∗.
+When Arequests a token, we simply ask the KIE oracle for the decrypt ion
+key for the speciﬁed time. During decryption queries, we dec rypt using sup-
+plied private/public key pair, and then ask the KIE to decryp t the rest. When
+the adversary submits ( pk∗,m∗
+0,m∗
+1,T∗) for the challenge, we choose random s∗
+2
+and set s1,i=m∗
+i⊕s∗
+2. We submit ( s1,0,s1,1,T∗) and V K∗to the KIE challenger,
+which returns the c∗
+1=/Sigma1.EncVK∗(spk,s1,β,T∗) for some randomly chosen β. We
+compute c∗
+2=/Pi1.PKEncVK∗(pk∗,s2) using the public key pk∗thatAhas given
+us, and query the one-time signature oracle for signature Si g(V K∗,(T∗,c∗
+1,c∗
+2)).
+The resulting challenge ciphertext is returned to A, which is a correct encryp-
+tion of m∗
+β.
+After the challenge, if the adversary queries the decryptio n oracle with
+V K =V K∗, and either Sig( V K∗,(T,c1,c2)) is different from the challenge
+and/or ( T,c1,c2)/ne}ationslash= (T∗,c∗
+1,c∗
+2), then we return this signature to the DS one
+challenger, thus winning the SUF-CMA game. When we break SUF -CMA,
+we abort and return a random bit to the KIE challenger. If the a dversary
+queries the decryption oracle with V K/ne}ationslash=V K∗, then we can legitimately use
+the KIE decryption oracle to decrypt the c1part (since we will not be querying
+18The restriction is that we cannot query for uskifor the challenge period, and we cannot ask for
+decryption of the IND-KIE-CCA2 challenge ciphertext with t he same parameters that were used
+during the challenge.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 42· J. H. Cheon et al.
+the KIE oracle with the label used in the IND-KIE-CCA2 challe nge); we de-
+crypt the rest of the ciphertext using the supplied receiver ’s secret key. In
+the end (unless we already broke SUF-CMA), we return the resp onse of Ato
+the KIE challenger. The adversarial advantage against TR-P KE is the same
+as our advantage against IND-KIE-CCA2, since essentially i t was the KIE
+challenger who chose which plaintext to encrypt. Noting tha t, in case of SUF-
+CMA break, we win against KIE with probability exactly 1/2, w e obtain that
+AdvIND-RTR-CCA2
+A,TR-PKE(k)≤1
+2AdvSUF-CMA
+B,DSone(k) + AdvIND-KIE-CCA2
+B,SKIE-OTRU(k), where Bruns with
+complexity of A. The algorithm B1against SUF-CMA is a modiﬁcation of B,
+where Bsimulates the KIE challenger; similarly, algorithm B2against IND-
+KIE-CCA2 of KIE is a modiﬁcation of B, where Bsimulates the SUF-CMA
+challenger. As before, the game IND-RTR-CCA2 that Aplays here is indistin-
+guishable from a real IND-RTR-CCA2 game. This ﬁnishes the pr oof.
+ACKNOWLEDGMENT
+The authors thank Moti Yung, Ran Canetti, Rosario Gennaro, S hai Halevi, and
+Hugo Krawczyk for many invaluable comments.
+REFERENCES
+ABDALLA , M., B ELLARE , M., AND ROGAWAY , P. 2001. The oracle Difﬁe-Hellman assumptions and
+an analysis of DHIES. In Cryptographer’s Track at the RSA Conference .
+AN, J. H. 2001. Authenticated encryption in the public-key set ting: security notions and analyses.
+http://eprint.iacr.org/2001/079/.
+BELLARE , M., D ESAI , A., P OINTCHEVAL , D., AND ROGAWAY , P. 1998. Relations among notions
+of security for public-key encryption schemes. In Annual International Cryptology Conference
+(CRYPTO’98) .
+BELLARE , M. AND GOLDWASSER , S. 1996. Encapsulated key escrow. Tech. rep., Laboratory f or
+Computer Science, MIT, TR-688.
+BELLARE , M. AND PALACIO , A. 2002. Protecting against key exposure: Strongly key-in sulated
+encryption with optimal threshold. http://eprint.iacr.o rg/2002/064/.
+BELLARE , M. AND ROGAWAY , P. 1995. Random oracles are practical: A paradigm for desig ning ef-
+ﬁcient protocols. In ACM Conference on Computer and Communications Security (AC M CCS’95) .
+BLAKE , I. F. AND CHAN, A. C.-F. 2005. Scalable, server-passive, user-anonymous timed release
+public key encryption from bilinear pairing. In International Conference on Distributed Comput-
+ing System (ICDCS’05) .
+BONEH , D. AND BOYEN , X. 2004. Efﬁcient selective-ID secure identity based encr yption without
+random oracles. In International Conference on the Theory and Applications of Cryptographic
+Techniques (EUROCRYPT’04) .
+BONEH , D., B OYEN , X., AND GOH, E.-J. 2005. Hierarchical identity based encryption with c on-
+stant size ciphertext. In International Conference on the Theory and Applications of Crypto-
+graphic Techniques (EUROCRYPT’05) .
+BONEH , D., C ANETTI , R., H ALEVI , S., AND KATZ, J. 2006. Chosen-ciphertext security from
+identity-based encryption. SIAM J. Comput . To appear.
+BONEH , D. AND FRANKLIN , M. 2003. Identity based encryption from the weil pairing. I nAnnual
+International Cryptology Conference (CRYPTO’03) .
+BONEH , D. AND NAOR, M. 2000. Timed commitments. In Annual International Cryptology Con-
+ference (CRYPTO’00) .
+BOYEN , X. 2003. Multipurpose identity based signcryption: A swis s army knife for identity based
+cryptography. In Annual International Cryptology Conference (CRYPTO’03) .
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.Provably Secure Timed-Release Public Key Encryption · 8: 43
+BOYEN , X., M EI, Q., AND WATERS , B. 2005. Simple and eﬁcient CCA2 security from IBE tech-
+niques. In ACM Conference on Computer and Communications Security (AC M CCS’05) .
+BOYEN , X. AND WATERS , B. 2006. Anonymous hierarchical identity-based encrypti on (without
+random oracles). In International Conference on the Theory and Applications of Cryptographic
+Techniques (EUROCRYPT’06) .
+CATHALO , J., L IBERT , B., AND QUISQUATER , J.-J. 2005. Efﬁcient and non-interactive timed-
+release encryption. In International Conference on Information, Communications and Signal
+Processing (ICICS’05) .
+CHATTERJEE , S. AND SARKAR , P. 2005. Trading time for space: Towards an efﬁcient IBE sch eme
+with short(er) public parameters in the standard model. In International Conference on Infor-
+mation Security and Cryptology (ICISC’05) .
+CHEN, L., H ARRISON , K., S OLDERA , D., AND SMART , N. 2002. Applications of multiple trust
+authorities in pairing based cryptosystems. In Proceedings of Infrastructure Security Conference .
+CHEON , J. H., H OPPER , N., K IM, Y., AND OSIPKOV , I. 2004. Authenticated key-insulated public
+key encryption and timed-release cryptography. http://ep rint.iacr.org/2004/231.
+CHEON , J. H., H OPPER , N., K IM, Y., AND OSIPKOV , I. 2006. Timed-release and key-insulated
+public key encryption. In Financial Cryptography .
+CRAMER , R. AND SHOUP , V. 1998. A practical public key cryptosystem provably secu re
+against adaptive chosen ciphertext attack. In Annual International Cryptology Conference
+(CRYPTO’98) .
+CRAMER , R. AND SHOUP , V. 2003. Design and analysis of practical public-key encry ption schemes
+secure against adaptive chosen ciphertext attack. SIAM J. Comput. 33 .
+CRESCENZO , G. D., O STROVSKY , R., AND RAJAGOPALAN , S. 1999. Conditional oblivious transfer
+and timed-release encryption. In International Conference on the Theory and Applications of
+Cryptographic Techniques (EUROCRYPT’99) .
+DODIS , Y. AND KATZ, J. 2005. Chosen-ciphertext security of multiple encrypti on. In Theory of
+Cryptography Conference .
+DODIS , Y., K ATZ, J., X U, S., AND YUNG, M. 2002. Key-insulated public key cryptosystems. In
+International Conference on the Theory and Applications of Cryptographic Techniques (EURO-
+CRYPT’02) .
+DODIS , Y., K ATZ, J., X U, S., AND YUNG, M. 2003. Strong key-insulated signature schemes. In
+Conference on Theory and Practice of Public-Key Cryptograp hy.
+FUJISAKI , E. AND OKAMOTO , T. 1999. Secure integration of asymmetric and symmetric en cryp-
+tion schemes. In Annual International Cryptology Conference (CRYPTO’99) .
+GARAY , J. AND POMERANCE , C. 2003. Timed fair exchange of arbitrary signatures. In Financial
+Cryptography .
+GARAY , J. A. AND POMERANCE , C. 2002. Timed fair exchange of standard signatures. In Financial
+Cryptography .
+GENTRY , C. AND SILVERBERG , A. 2002. Hierarchical ID-based cryptography. In International
+Conference on the Theory and Application of Cryptology and I nformation Security (ASI-
+ACRYPT’02) .
+HORWITZ , J.AND LYNN, B. 2002. Toward hierarchical identity-based encryption. InInternational
+Conference on the Theory and Applications of Cryptographic Techniques (EUROCRYPT’02) .
+KILTZ, E. 2006. Chosen-ciphertext secure identity-based encryp tion in the standard model with
+short ciphertexts. http://eprint.iacr.org/2006/122/.
+KILTZ, E. AND GALINDO , D. 2006. Direct chosen-ciphertext secure identity-based key encapsula-
+tion without random oracles. http://eprint.iacr.org/200 6/034/.
+LAGUILLAUMIE , F., P ALLIER , P., AND VERGNAUD , D. 2005. Universally convertible directed sig-
+natures. In International Conference on the Theory and Application of C ryptology and Informa-
+tion Security (ASIACRYPT’05) .
+MARCO CASASSA MONT, K. H. AND SADLER , M. 2003. The HP time vault service: Exploiting
+IBE for timed release of conﬁdential information. In World Wide Web Consortium .
+MAY, T. 1993. Timed-release crypto. http://www.cyphernet.or g/cyphernomicon/chapter14/
+14.5.html.
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.8: 44· J. H. Cheon et al.
+MENEZES , A., O KAMOTO , T., AND VANSTONE , S. 1993. Reducing elliptic curve logarithms to log-
+arithms in a ﬁnite ﬁeld. In IEEE Trans. Inform. Theory IT-39, 5 .
+NACCACHE , D. 2005. Secure and practical identity-based encryption. http://eprint.iacr.org/
+2005/369/.
+PEDERSON , T. P. 1991. A threshold cryptosystem without a trusted part y. In International Con-
+ference on the Theory and Applications of Cryptographic Tec hniques (EUROCRYPT’91) .
+POINTCHEVAL , D. AND STERN , J. 1996. Security proofs for signature schemes. In International
+Conference on the Theory and Applications of Cryptographic Techniques (EUROCRYPT’96) .
+RACKOFF , C. AND SIMON , D. R. 1991. Non-interactive zero-knowledge proof of knowl edge and
+chosen ciphertext attack. In Annual International Cryptology Conference (CRYPTO’91) .
+RIVEST , R. L., S HAMIR , A., AND WAGNER , D. A. 1996. Time-lock puzzles and timed-release
+crypto. Tech. rep., Laboratory for Computer Science, MIT, T R-684.
+SHAMUS SOFTWARE LTD. MIRACL: Multiprecision integer and rational arithmetic C /C++ library.
+http://indigo.ie/ mscott/.
+SHOUP , V. 2000. Using hash functions as hedge against chosen ciphe rtext attack. In International
+Conference on the Theory and Applications of Cryptographic Techniques (EUROCRYPT’00) .
+SHOUP , V. 2004. ISO 18033-2: An emerging standard for public-key e ncryption.
+http://shoup.net/iso/.
+SYVERSON , P. F. 1998. Weakly secret bit commitment: Applications to l otteries and fair exchange.
+InComputer Security Foundations Workshop .
+WATERS , B. 2005. Efﬁcient identity-based encryption without rand om oracles. In International
+Conference on the Theory and Applications of Cryptographic Techniques (EUROCRYPT’05) .
+Received September 2006; revised May 2007; accepted July 20 07
+ACM Transactions on Information and Systems Security, Vol. 11, No. 2, Article 8, Pub. date: May 2008.

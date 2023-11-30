@@ -1,0 +1,1119 @@
+Formal Security Analysis of Vehicle Diagnostic Protocols
+Timm Lauser
+timm.lauser@h-da.de
+Darmstadt University of Applied Sciences
+Darmstadt, GermanyChristoph Krauß
+christoph.krauss@h-da.de
+Darmstadt University of Applied Sciences
+Darmstadt, Germany
+ABSTRACT
+Diagnostic protocols for vehicles are important for maintenance,
+updates, etc. However, if they are not secure, an attacker can use
+them as an entry point to the vehicle or even directly access critical
+functionality. In this paper, we discuss the security of the vehicle
+diagnostics protocols Diagnostics over IP ( DoIP ) and Unified Di-
+agnostic Services ( UDS). For UDS, we provide a formal analysis
+of the included security protocols SecurityAccess service and the
+different variants of the new Authentication service introduced in
+the year 2020. We present two new vulnerabilities, we identified
+in our analyses, describe how they can be mitigated and formally
+verify our mitigations. Furthermore, we give recommendations on
+how to securely implement UDS and how future standards can be
+improved.
+CCS CONCEPTS
+•Security and privacy →Security protocols ;Embedded sys-
+tems security ;Formal security models .
+KEYWORDS
+security, diagnostics, vehicle, formal analysis
+ACM Reference Format:
+Timm Lauser and Christoph Krauß. 2023. Formal Security Analysis of Vehi-
+cle Diagnostic Protocols. In The 18th International Conference on Availability,
+Reliability and Security (ARES 2023), August 29–September 01, 2023, Ben-
+evento, Italy. ACM, New York, NY, USA, 11 pages. https://doi.org/10.1145/
+3600160.3600184
+1 INTRODUCTION
+IT security is becoming more and more critical for vehicles. With
+the increasing use of automotive Ethernet and the Internet Proto-
+col (IP) in cars, fostered by the advances towards autonomous driv-
+ing and Vehicle-to-everything ( V2X) communication, the network
+infrastructure of modern cars is changing and the attack surface,
+especially for remote attacks, is increasing. Diagnostic protocols
+are an important interface of modern vehicles and enable, for exam-
+ple, maintenance and updates of Electronic Control Units ( ECUs).
+Diagnosis can be performed locally, e.g., by physically connecting a
+diagnostic tester, but also remotely, e.g., via a network connection
+between vehicle and tester. This results in new attack possibilities,
+especially in case of remote interactions with the vehicle. Remote
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for third-party components of this work must be honored.
+For all other uses, contact the owner/author(s).
+ARES 2023, August 29–September 01, 2023, Benevento, Italy
+©2023 Copyright held by the owner/author(s).
+ACM ISBN 979-8-4007-0772-8/23/08.
+https://doi.org/10.1145/3600160.3600184attacks may also be possible if Onboard Diagnostics ( OBD ) devices
+are connected to the physical OBD port of the vehicle and provide
+connectivity (cf. [7, 34]).
+A prominent diagnostic protocol is Unified Diagnostic Services
+(UDS) [8,11], which used to be transmitted via ISO-TP [ 9] over the
+Controller Area Network ( CAN ) bus. However, modern vehicles ad-
+ditionally use Diagnostics over IP ( DoIP ) [10] as transport protocol
+to enable diagnostics over automotive Ethernet. While the security
+ofDoIP andUDS has been analyzed and criticized in the past (e.g.,
+[1,19,26,29], the corresponding standards have been updated to
+include new security protocols. Especially the security protocols of
+UDS have been improved with the new standard published in 2020
+[11] by adding a new Authentication service as an substitute of the
+still-included SecurityAccess service.
+In this paper, we present a security analysis of vehicle diagnostics
+protocols including a formal analysis of UDS, identified vulnerabil-
+ities, and recommendations for secure use of UDS. This paper has
+the following seven main contributions: (i)We discuss the current
+state of the art of DoIP andUDS security. (ii)We provide the first
+formal analysis of all security protocols of the UDS standard from
+2020, including the still-included legacy SecurityAccess service and
+the different variants of the new Authentication service. (iii)We
+describe two new vulnerabilities, one within all variants of the
+Authentication service, which we have identified in our analysis.
+(iv)We propose mechanisms to mitigate these vulnerabilities and
+provide a formal analysis showing the effectiveness of these mitiga-
+tion mechanisms. (v)We give recommendations for manufacturers
+on how to securely implement UDS (and DoIP , if used). (vi)We
+propose updates to increase the security of future versions of the
+standard. (vii) We publish all our formal models and proofs for the
+Tamarin Prover, which we used in our analysis, as open source.
+The remainder of the paper is structured as follows. In Section 2,
+we discuss related work. The current state of the art in DoIP and
+UDS security is discussed in Section 3 and Section 4, respectively.
+Our formal analysis is described in Section 5 and the recommenda-
+tions in Section 6. Finally, we conclude the paper in Section 7.
+2 RELATED WORK
+Formal methods provide well-developed tools for the analysis and
+verification of security protocols. Their usage for the verification
+of automotive protocols has been proposed in [ 18] and was already
+applied in [14, 31, 33].
+While many research works introduce new security protocols or
+extensions for automotive communication, e.g. [ 21,28,30,33], our
+work examines the existing standards and considers not only CAN
+but also automotive Ethernet as the underlying network technology.
+The security of DoIP andUDS, especially for the outdated ver-
+sions of the standards, have been analyzed in previous research,
+which we will discuss in Section 3 and 4.ARES 2023, August 29–September 01, 2023, Benevento, Italy Timm Lauser and Christoph Krauß
+Weiss et al . [32] provide threat definitions for UDS services,
+including security access, based on attacks shown in previous re-
+search. Moreover, their threat analysis tool can automatically test
+for known or trivial implementations. Pareja and Cordoba [25] use
+fault injection to bypass UDS authentication. In opposite, we focus
+on protocol security and do not consider sidechannel attacks.
+3 DOIP
+DoIP [10] is a transport protocol that was designed to enable the
+transmission of UDS messages over IPand, thus, automotive Ether-
+net. Furthermore, it uses Transmission Control Protocol ( TCP) as
+well as User Datagram Protocol ( UDP ).DoIP provides mechanisms
+to detect vehicles in a network and to enable communication with
+(DoIP-enabled) components. DoIP does not support multicasting.
+Each vehicle has only one DoIP entity that will be directly con-
+nected to an external tester, the edge node . However, there can
+be multiple DoIP nodes within the vehicle. DoIP gateways allow
+communication with sub-networks in the vehicle, which are not
+directly connected to the (main) IP-based network, as well as with
+ECUs using a different transport layer for diagnostic communica-
+tion. Nodes in the network that do not implement DoIP are referred
+to as network nodes .
+There are two ways to connect an external tester. First, it can be
+connected directly via a cable connection. Between the tester and
+the edge node, there is an additional activation line, which is used
+to start the IPaddress assignment process. Second, the vehicle can
+be connected to an IP-based network, for example via a wireless
+connection. This approach is more versatile and allows for multiple
+entities (tester and vehicles) in the same network. In this case, a
+Dynamic Host Configuration Protocol ( DHCP ) server is required
+for address assignment. In addition, the vehicle can include internal
+test equipment to support remote use cases. Especially in the second
+and, depending on how diagnostic communication is forwarded
+over the vehicle’s remote connection, the remote use case, it is
+critical to secure the connection as a private network can no longer
+be assumed. For example, an insecure Wi-Fi password in a garage or
+even bringing a compromised car to a garage can provide attackers
+access to such a network.
+Security of DoIP .Lindberg [19] informally analyses DoIP secu-
+rity based on the requirements from the EVITA project [ 27] and
+concludes that it cannot be used securely in arbitrary contexts
+without additional security mechanisms. One of the reasons is that
+messages are generally not authenticated or encrypted. Kleberger
+and Olovsson [16] compare possible approaches to secure DoIP
+with existing protocols on different network layers. They infor-
+mally examine the usage of Transport Layer Security ( TLS), ISO
+15764, Internet Protocol Security ( IPsec ), Virtual LAN ( VLAN ), and
+Cryptographic Link Layer (CLL) based on security and implemen-
+tation aspects. They recommend the usage of IPsec , together with
+application layer access control. Ajin et al . [1] also highlight some
+security vulnerabilities of DoIP in an informal analysis.
+Since then, the latest version of the DoIP standard introduced
+TLSto secure DoIP sessions [ 10]. However, using TLSis optional
+and does not extend to vehicle discovery and UDP -based commu-
+nication. A TLS-secured session works similarly to an unsecured
+session, the difference being that a different TCP port is used forDoIP Client DoIP Server
+Connection and vehicle discovery
+Connect to (TLS) TCP Socket
+TLS Handshake
+Routing activation request
+Routing activation response
+Diagnostic message
+Diagnostic responseTLS secured communicationTCP Close
+Figure 1: TLS-secured DoIP Session [10]
+the connection and, after the TLS handshake, all messages are sent
+via the established TLS connection (Figure 1).
+DoIP entities should support a subset of TLSversion 1.2 cipher
+suites, including one authentication-only cipher suite that is recom-
+mended to be only used for testing and debugging, as well as the
+TLS1.3 cipher suites. The standard only requires authentication of
+the server entity by the client, as client authentication is usually
+performed within UDS. Thus, TLS client authentication is optional.
+ADoIP session always starts with a routing activation request
+sent by the client. After receiving a positive response, the diagnostic
+session, also using request/response communication, is executed.
+The latest standard has been formally analyzed by Wachter and
+Kleber [ 31] with the Tamarin prover. They conclude that using TLS
+mitigates several vulnerabilities by providing a secure channel for
+theDoIP communication and recommend mandating the usage
+ofTLS1.3. However, they also identify several issues during the
+connection and vehicle discovery phase, which is not secured by
+TLS. Most notably, they recommend adding a signature to the DoIP
+header to mitigate spoofing attacks and to change the order in
+which the routing activation handler checks the communication
+requirements to prevent unauthenticated scanning for available
+DoIP source addresses.
+4 UDS
+UDS is standardized in ISO 14229 [ 11] and defines an application
+layer protocol for monitoring and diagnosis of vehicle services by
+a, usually external, tester. There are two basic types of services:
+Confirmed services, which follow a request/response pattern, and
+unconfirmed services, where no responses are given. UDS defines
+the following service primitives for interactions between service
+users (clients) and service providers (servers):
+Each ECU supporting UDS provides multiple services for differ-
+ent diagnostic operations. Which services are available depends
+on the current diagnostic session type. Which services are avail-
+able in which type of diagnostic session is defined by the vehicle
+manufacturer. Diagnostics always start in the default session, theFormal Security Analysis of Vehicle Diagnostic Protocols ARES 2023, August 29–September 01, 2023, Benevento, Italy
+UDS Client UDS Server
+requestSeed , [securityAccessDataRecord ]
+requestSeed positive Response
+sendKey
+sendKey positive response
+Figure 2: UDS SecurityAccess protocol flow and example mes-
+sages [11]. Parameters within [] are optional.
+transmission to other sessions must be requested by the client. Usu-
+ally, many (basic) services are accessible without authentication.
+While these services might already expose critical functionality,
+service availability can also depend on other factors such as the
+vehicle state. For example, some services might only be available
+while the ignition is on and the vehicle speed is below 10𝑘𝑚/ℎ.
+Critical functionalities can be secured with authentication and
+secure data transmission. For this purpose, UDS specifies the ser-
+vices SecurityAccess ,Authentication , and SecuredDataTransmission .
+We discuss these services in the following sections.
+4.1 SecurityAccess Service
+The SecurityAccess service specifies a simple challenge-response
+protocol between server and client. It is used to authorize the use
+of secured diagnostic functionality. Up to 21 security levels can
+be freely defined by the vehicle manufacturer, with further levels
+being reserved for suppliers and future versions of the standard.
+The protocol flow, together with the example messages from the
+standard, is shown in Figure 2. First, the client requests the challenge
+(called seed). This request can optionally contain additional data,
+such as client authentication. Then the server sends the challenge
+and waits for the appropriate response (called key) from the client.
+The server compares the received keywith an internally stored
+or calculated key. It then indicates whether the received keywas
+correct. Implementation details, such as the used algorithm and the
+length of challenge and response, are left to the manufacturer.
+Security levels can only be unlocked one at a time. When un-
+locking a new security level, any additional functionality from the
+previously unlocked security level will be locked again. In addition,
+the security level is locked on transition to a different diagnostic
+session type. The functionality provided by a security level can be
+freely defined by the manufacturer.
+Previous work pointed out several issues in implementations of
+this security mechanism. In 2014, Ring et al . [26] tested six vehicles
+by four different manufacturers and observed that SecurityAccess
+keys were generated independent of date and time, Vehicle Identi-
+fication Number ( VIN) orECU specific information. Thus, it was
+possible to extract all keys for an authorized tester in case of a small
+seed or to reconstruct the algorithm.
+Dürrwang et al . [6] found an in-field implementation that used
+one’s complement as the algorithm to calculate the response. While
+being used by the standard to visualize the request/response mech-
+anism, this is by no means a cryptographically secure cipher. They
+propose to follow Kerckhoff’s principle, i.e. use of a cipher whosesecurity depends exclusively on the secrecy of the cryptographic
+keys, and to implement brute-force protection mechanisms for the
+SecurityAccess service. Other inherently insecure in-field implemen-
+tations include the usage of static seeds andkeys (e.g., [ 15,24]) or
+static keys xor-ed or added on a seed.
+Van den Herrewegen and Garcia [29] demonstrated the insecu-
+rity of SecurityAccess implementations by reverse engineering three
+proprietary ciphers used in the SecurityAccess service by major auto-
+motive manufacturers. They identified critical security weaknesses
+in all three ciphers they examined. Moreover, they implemented a
+generic attack that gave them remote code execution and complete
+control of ECU s once security access had been bypassed. In addition,
+they discovered that one brute-force prevention mechanism, based
+on a timed delay after a number of unsuccessful authentication
+attempts, could be circumvented by sending ECU reset requests.
+Similarly, Kulandaivel [17] uses ECU resets to force ECUs relying
+on processor uptime as a randomness source to reuse seeds with
+known keys.
+Matsubayashi et al . [22] examine the security of the combina-
+tion of UDS andDoIP . They identify three different attacks on the
+SecurityAccess service by an attacker that can manipulate the DoIP
+communication between tester and target ECU and that the com-
+munication is not encrypted. The first attack is an authentication
+bypass attack which assumes that the session management of the
+UDS implementation is vulnerable and does not address the possi-
+ble presence of multiple testers at the same time as allowed by DoIP .
+Thus, the attacker does not need to authenticate if an authenticated
+tester is present at the same time.1The other two attacks are ses-
+sion hijacking attacks where the attacker sends either a tampered
+Vehicle Announcement orVehicle Identification Response , poisoning
+the address map of the vehicle or tester, respectively, bringing the
+attacker in a Man-in-the-Middle ( MitM ) position. They assume the
+communication to be neither encrypted nor authenticated. Thus,
+the attacker obtains complete control over the diagnostic session.
+Despite most of the SecurityAccess implementations analyzed
+in literature being symmetric, there are also asymmetric in-field
+mechanisms. For example, Stellantis’s Secure Gateway (SGW) mod-
+ule,2requires the diagnostic tester to send an x509 certificate within
+thesecurityAccessDataRecord field which must be requested by an
+online authentication authority.3However, there is little public
+information available on these mechanisms.
+4.2 Authentication Service
+The current version of the UDS standard from 2020 introduced Au-
+thentication Service as an alternative to the SecurityAccess service.
+It supports either bidirectional authentication or unidirectional au-
+thentication of the client only. This could, for example, be combined
+with unidirectional authentication in an underlying DoIP session.
+Moreover, the service optionally supports the exchange of session
+keys, allowing the encryption of subsequent communication. In
+addition, the Authentication service allows for higher flexibility and
+more fine-grained access control compared to SecurityAccess , e.g.,
+1In AUTOSAR, there is only one Security Access Level state machine, independent of
+the communication channel (CAN or DoIP connection) (cf. [2, 5]
+2Which can, apparently, easily be bypassed with physical access to the vehicle. Bypass
+devices are readily available on the internet.
+3In the case we analyzed, RSA signatures with a key length of 2048 bits were used.ARES 2023, August 29–September 01, 2023, Benevento, Italy Timm Lauser and Christoph Krauß
+via specifying specific access rights in certificates. There are two dif-
+ferent security concepts to achieve authentication, Authentication
+with PKI Certificate Exchange ( APCE ) and Authentication with
+Challenge-Response ( ACR ). While APCE is limited to asymmet-
+ric cryptography, ACR allows both, symmetric and asymmetric
+cryptography.
+In its unidirectional variant, the Authentication service has the
+same protocol flow as the SecurityAccess service. However, it speci-
+fies more details on the authentication mechanism. Moreover, in
+opposite to the SecurityAccess service, the authentication state is
+independent from the diagnostic session. It is also independent
+of the SecurityAccess security level. Deauthentication is possible
+via an explicit request or implicitly after a timeout period. The
+service access enabled by authentication is not statically defined as
+within the security levels but can be specified within the certificates
+forAPCE or within additional parameters provided by the client
+forACR . Moreover, here the authentication state is linked to the
+underlying diagnostic channel.
+APCE Authentication Mechanism. APCE authentication is based
+on a Public Key Infrastructure ( PKI). For bidirectional APCE au-
+thentication, certificates are required on client and server side. For
+unidirectional authentication, only the client requires a certificate
+and corresponding private key. The server requires the certificate
+of the Certificate Authority ( CA) that issued the client certificate.
+For bidirectional authentication, both parties require a certificate
+and private key and the certificate of the corresponding CA(s).
+APCE uses Card Verifiable Certificates ( CVC s) [12] and X.509
+certificates. The standard recommends using authentication tokens,
+called Proofs of Ownership (PoOs), based on ISO/IEC 9798-3 unilat-
+eral two-pass authentication and mutual three-pass authentication
+[13], for unidirectional and bidirectional authentication respectively.
+This is not enforced, however, minimal requirements towards the
+PoOs are specified.
+There are two possible options for session key exchange. First,
+session keys can be generated by the server and transferred to
+the client during the authentication process. If this option is used,
+the cryptographic keys included in the certificates must enable
+encryption in addition to digital signing. Second, session keys can
+be set up using a Diffie-Hellman Ephemeral ( DHE ) key exchange.
+For this option, signature keys are sufficient.
+The protocol flow is outlined in Figure 3. First, the client sends
+its certificate and, optional, a random challenge to the server. In
+addition, the client specifies if session keys shall be established
+during the authentication process. The server verifies the client’s
+certificate and responds with a random challenge. For bidirectional
+authentication, the server additionally responds with its PoO and, in
+case DHE key exchange is used, with its public DHE key. The client
+then verifies the server’s certificate and PoO, in case of bidirectional
+authentication, calculates its PoO and sends it to the server, together
+with its own public DHE key if applicable. The server then verifies
+the client’s PoO and notifies the client whether the authentication
+was successful.
+ACR Authentication Mechanism. ACR authentication uses pre-
+shared keys (either symmetric or asymmetric). In case of symmetric
+cryptography, the same symmetric key is used for both client and
+server authentication (if the latter is used).UDS Client UDS Server
+communication configuration
+certificate client, [challenge client]
+return value, challenge server
+[certificate server, PoO server, DHE key server]
+PoO client
+[DHE key client]
+return value
+[session key info]
+Figure 3: UDS ACPE protocol flow [ 11]. Parameters within []
+are optional.
+UDS Client UDS Server
+communication configuration
+algorithm indicator
+algorithm indicator, challenge server
+[request for additional parameters]
+algorithm indicator, PoO client
+[challenge client, additional parameters]
+return value, algorithm indicator
+[PoO server, session key info]
+Figure 4: UDS ACR protocol flow [ 11]. Parameters within []
+are optional.
+Figure 4 outlines the protocol flow, which is similar to the Se-
+curityAccess service. First, the client requests a challenge from the
+server, specifies if session keys shall be established, and, in addition,
+indicates the cryptographic algorithm that should be used. The
+server responds with the same algorithm identifier, the challenge,
+and optionally a request for additional parameters. These param-
+eters could, for example, be access rights or roles defined by the
+manufacturer. The client calculates its PoO based on the server’s
+challenge and sends it to the server together with the algorithm
+indicator and the additional parameters, if requested. In case of
+bidirectional authentication, the client also sends a challenge to the
+server. The server then verifies the client’s PoO. If requested by
+the client, the server then generates the session key and encapsu-
+lates it within the session key info. For bidirectional authentication,
+the server additionally calculates its own PoO. It then sends this
+information to the client and sets the new access rights. The client
+verifies the server’s PoO and extracts or derives the session key, if
+applicable. This concludes the authentication process.
+4.3 SecuredDataTransmission Service
+The SecuredDataTransmission service is used to tunnel application
+data for other services through a security sublayer that enables
+encrypted and signed communication. The required cryptographic
+keys can be either pre-shared or exchanged with the Authentica-
+tionservice as described above. Depending on the key distribution
+mechanism, secure multicast communication can be possible. InFormal Security Analysis of Vehicle Diagnostic Protocols ARES 2023, August 29–September 01, 2023, Benevento, Italy
+addition, messages contain an anti-replay counter which is always
+incremented until it overflows and, thus, is reset to 0.
+The standard does not specify or recommend cryptographic
+algorithms for the security sublayer. In addition, synchronization
+and consistency mechanisms for the anti-replay counter are also
+manufacturer specific. An example using one’s complement as
+encryption algorithm is provided.
+5 FORMAL VERIFICATION
+We use the Tamarin prover [ 3] to formally analyze the security
+mechanisms of the UDS protocol in the symbolic model.
+The Tamarin prover is a state-of-the-art tool for automated for-
+mal verification in the symbolic model. The symbolic model, often
+called Dolev-Yao model, is a formal model which abstracts from
+the computational security of cryptographic primitives to focus on
+the security of their composition in protocols. Due to the reduced
+complexity, automation of proof generation is more feasible and
+modeling complexity is reduced [4].
+For interested readers, [ 18] provides a discussion on formal ver-
+ification of automotive protocols as well as an overview of the
+available tools for automated analysis and verification. Addition-
+ally, please note that as proofs are automatically generated by the
+Tamarin prover, we do not provide proof details but focus on the
+modeling of the protocol as well as the verified security properties.
+All our models are open-source and can be accessed online.4
+5.1 Attacker Model
+We consider attackers with access to the diagnostic network and
+assume the transport-layer is not secured. For example, the attacker
+obtained access to a garage’s diagnostic network or physical access
+to a vehicle, enabling the connection of an attacker-controlled de-
+vice to the vehicle’s diagnostic connector or an internal network.
+Moreover, the attacker could have gained control over an internal
+component and attempt to leverage diagnostic communication for
+lateral movement.
+Our formal models use a Dolev-Yao attacker that has complete
+control over the network but cannot break cryptography. However,
+our attacker can additionally compromise other nodes in the net-
+work, which is modeled by exposing their cryptographic secrets. As
+the attacker controls the network, this is equivalent to the attacker
+obtaining complete control over the compromised node. As the
+network can potentially contain multiple vehicles, this also covers
+the case of one compromised vehicle being injected into a garage
+or dealer network. In reality, attackers might have fewer capabil-
+ities, e.g., when controlling one car in the network, they will not
+have access to all diagnostic messages sent to other cars because
+of routing. However, by using such a powerful attacker model, our
+obtained results are independent of the network configuration.
+5.2 Security Properties
+The main security goal of the UDS protocols we analyze is entity
+authentication. In addition, we consider the secrecy of exchanged
+session keys. We use the authentication hierarchy defined by Lowe
+[20]. In the following, we provide definitions of these properties.
+4https://code.fbi.h-da.de/seacop/uds-tamarinAs we examine protocols with a strict client/server architecture,
+our definitions assume fixed roles.
+Definition 5.1 (Aliveness). For all honest verifiers 𝐴, honest agents
+𝐵, data items®𝑑and timepoints 𝑡1there exists a verifier 𝐴2, data
+items®𝑑2and a timepoint 𝑡2such that
+Commit𝑡1(𝐴,𝐵,®𝑑)=⇒
+Running𝑡2(𝐵,𝐴 2,®𝑑2)∧𝑡2<𝑡1
+where Commit𝑡(𝐴,𝐵,®𝑑)denotes that the agent 𝐴completed a pro-
+tocol run at timepoint 𝑡, believing its communication partner to
+be𝐵and the exchanged data values to be ®𝑑.Running𝑡2(𝐵,𝐴 2,®𝑑2)
+denotes that agent 𝐵was running the protocol at timepoint 𝑡2, be-
+lieving its communication partner to be a, possibly different, agent
+𝐴2and the exchanged data values to be ®𝑑2.
+Aliveness is a weak authentication property that only requires
+that the agent was previously present. Honest means that the entity
+is acting according to the protocol specification and has not been
+compromised by the attacker. Within Tamarin, we model the com-
+promise of protocol entities by exposing their secret keys to the
+attacker. This captures either the full compromise of the protocol
+entity or the compromise of the key material.
+Definition 5.2 (Weak agreement). For all honest verifiers 𝐴, honest
+agents𝐵, data items®𝑑and timepoints 𝑡1there exist data items ®𝑑2
+and a timepoint 𝑡2such that
+Commit𝑡1(𝐴,𝐵,®𝑑)=⇒
+Running𝑡2(𝐵,𝐴,®𝑑2)∧𝑡2<𝑡1
+Weak agreement captures the identity of the communication
+partners, i.e., 𝐴and𝐵have each completed the protocol with each
+other, but not of context information the protocol entities assume.
+For example, a MitM attacker on the SecurityAccess service could
+not impersonate an honest client by himself, but still manipulate
+which security access level is unlocked by an honest client.
+Definition 5.3 (Non-injective agreement). For all honest verifiers
+𝐴, honest agents 𝐵, data items®𝑑and timepoints 𝑡1there exist data
+items®𝑑2and a timepoint 𝑡2such that
+Commit𝑡1(𝐴,𝐵,®𝑑)=⇒
+Running𝑡2(𝐵,𝐴,®𝑑)∧𝑡2<𝑡1
+Non-injective agreement requires that both parties agree on the
+same data items but does not require the absence of replay attacks.
+Definition 5.4 (Injective agreement). For all honest verifiers 𝐴,
+honest agents 𝐵, data items®𝑑and timepoints 𝑡1there exists a time-
+point𝑡2such that for all verifiers 𝐴2, agents𝐵2, and timepoints 𝑡3
+Commit𝑡1(𝐴,𝐵,®𝑑)=⇒©­
+«Running𝑡2(𝐵,𝐴,®𝑑)∧𝑡2<𝑡1
+∧
+Commit𝑡3(𝐴2,𝐵2,®𝑑)=⇒𝑡3=𝑡1ª®
+¬
+This notion of injective agreement enforces that ®𝑑contains a
+unique number in all protocol runs. Thus, this notion only holds if
+no replay attack is possible within the protocol. Note that 𝑡3=𝑡1
+implies the uniqueness of the Commit event. Thus, it implies that
+𝐴2=𝐴and𝐵2=𝐵.
+For specific symmetric use cases where multiple agents share
+the same cryptographic key(s), we define a relaxed notion whereARES 2023, August 29–September 01, 2023, Benevento, Italy Timm Lauser and Christoph Krauß
+multiple agents belong to a security group (c.f. [ 18]). These proper-
+ties assume that the verification goal is to determine whether the
+communication partner belongs to a group of authorized agents
+and that the specific identity of the agent is neglected.
+Definition 5.5 (Group aliveness). For all security groups Gcon-
+taining only honest members, honest verifiers 𝐴, agents𝐵∈G,
+data items®𝑑and timepoints 𝑡1,𝑡2there exists an agent 𝐶∈Gand
+a timepoint 𝑡2such that
+Commit𝑡1(𝐴,𝐵,®𝑑)=⇒
+Running𝑡2(𝐶)∧𝑡2<𝑡1
+Weak group agreement ,non-injective group agreement andinjec-
+tive group agreement are defined analogously.
+For session key exchange, we separately analyze non-injective
+agreement andinjective agreement of the exchanged session keys.
+Note that for unidirectional client authentication, agreement on
+session keys trivially fails as session keys are generated by the
+server. Thus, we specify a weaker notion, providing a security
+guarantee to the server. Intuitively, we require that honest clients
+that successfully authenticate against an honest server will only
+accept session keys that the same server generated within the same
+authentication process.
+Definition 5.6 (Trusted non-injective agreement). For all honest
+verifiers𝐴, honest agent 𝐵, data items®𝑑, session keys 𝑘and time-
+points𝑡1and𝑡2it holds that
+ 
+Commit𝑡1(𝐴,𝐵,®𝑑)
+∧Commit’𝑡2(𝐵,𝐴,®𝑑,𝑘)!
+=⇒
+Running′
+𝑡1(𝐴,𝐵,𝑘)∧𝑡2<𝑡1
+Trusted injective agreement is defined analogously.
+For our secrecy properties, we use the syntactic notions:
+Definition 5.7 (Secrecy). A data item 𝑠belonging to one or multi-
+ple honest protocol entities ®𝐸issecret , if there is no valid execution
+trace of the protocol where the attacker obtains knowledge of 𝑠.
+Definition 5.8 (Perfect forward secrecy). A data item 𝑠belonging
+to one or multiple protocol entities ®𝐸involved in an (authentication)
+process𝑝secret , if there is no valid execution trace of the protocol
+where the attacker obtains knowledge of 𝑠without compromising
+a long-term secret of ®𝐸before𝑝finished.
+In our analysis, we focus on the secrecy of exchanged session
+keys. However, our models also include a security lemma for the se-
+crecy of the long-term secrets. In addition, we only consider secrecy
+of honestly-generated keys. Possible manipulation or replacement
+of exchanged keys will be covered by the authentication properties
+for exchanged session keys.
+5.3 Analysis of SecurityAccess
+As the standard leaves many details to the manufacturer, we make
+the following modeling assumptions. We assume a straightforward
+implementation of the SecurityAccess service according to the UDS
+standard. In detail, we make the following assumptions:
+(1)For the authentication, we assume that symmetric key cryp-
+tography with a pre-shared key is used (cf. [ 26,29]). As we
+want to achieve message authentication, we select a MessageSecurity Access ModelVerification Results
+A𝐺WA𝐺NA𝐺IA𝐺AS→C
+(3a) Keys used for one service only ✔ ✔ ✔ ✔ ✘
+(3b) Key used for mult. security levels ✔ ✔ ✘ ✘ ✘
+(3c) Key shared for multiple ECUs ✔ ✘ ✘ ✘ ✘
+(3d) Modified authentication token ✔ ✔ ✔ ✔ ✘
+A𝐺= Group Aliveness, WA 𝐺= Weak Group Agreement, NA 𝐺=
+Non-injective Group Agreement, IA 𝐺= Injective Group
+Agreement, AS→C = Group Aliveness of server towards client
+Table 1: Tamarin verification results for UDS SecurityAccess
+Authentication Code ( MAC ) as the cryptographic primitive
+in our model.
+(2)The challenge (seed) is randomly selected. In practice, this
+might also be a timestamp or counter which might enable
+additional replay attacks if poorly implemented.
+(3)Additionally, we assume on the scope of validity for the
+symmetric keys. We consider 3 scenarios:
+(a)The pre-shared keys are only valid for a single security
+level on a single UDS server.
+(b)The pre-shared keys are valid for multiple security levels
+on one UDS server.
+(c)The pre-shared keys are valid for multiple security levels
+on multiple UDS servers.
+Note that the symbolic model assumes that the MAC algorithm
+is secure, including sufficient key and challenge length and the
+challenge selection is truly random.
+Because of the lack of publicly available information, we do not
+provide a separate Tamarin model for asymmetric SecurityAccess
+implementations. However, we refer to the analysis of the unidi-
+rectional variants of the Authentication service (cf. Sections 5.4 and
+5.5), which follow the same basic protocol flow.
+The modeled protocol is presented in Figure 5. Hereby, 𝑘𝑙denotes
+the symmetric MAC key for the security level 𝑙of the UDS server.
+𝑙𝑐𝑢𝑟𝑟𝑒𝑛𝑡 the currently unlocked security level. If the client requests
+a seed for the currently unlocked security level, a bitstring of 0s is
+returned ( 1○), otherwise, the challenge (seed) 𝑐is randomly sampled
+(2○). The challenge response (key) 𝑟is calculated as a MAC on
+𝑐under𝑘𝑙(3○). If the server successfully verifies this MAC , the
+requested security level is unlocked ( 4○)
+The verification results are shown in Table 1. We use the group
+notions of the authentication properties as we assumed that sym-
+metric keys are shared between all clients. Thus, the server cannot
+distinguish between different clients. Our results show that the pro-
+tocol provides basic authentication, but no manipulation protection.
+Only if the symmetric key is only valid for a single security level on
+a single server (scenario a) can the protocol satisfy injective group
+agreement . As soon as a key is reused for multiple security levels,
+aMitM attacker can manipulate the communication such that a
+different security level than intended is unlocked ( non-injective
+group agreement fails in scenario b). In case the key is reused on
+multiple UDS servers (scenario c), only the aliveness (A) of a client
+with knowledge of a valid key for the unlocked security level can
+be guaranteed. The identity of the server can be spoofed by theFormal Security Analysis of Vehicle Diagnostic Protocols ARES 2023, August 29–September 01, 2023, Benevento, Italy
+ClientC ServerS
+𝑘𝑙 𝑘𝑙,𝑙current
+𝑅𝐸𝑄 𝑠𝑒𝑒𝑑,𝑙 if𝑙=𝑙current then
+1 c:=∝⊑⌉⌋0
+else
+2 c$←{ 0,1}𝑛 𝑅𝐸𝑆 𝑠𝑒𝑒𝑑,𝑙,c
+ifc=∝⊑⌉⌋0then
+abort
+3 r:=MAC(𝑘𝑙,𝑐)𝑅𝐸𝑄 𝑘𝑒𝑦,𝑙,rif¬VerifyMAC(𝑘𝑙,c,r)then
+abort
+𝑅𝐸𝑆 𝑘𝑒𝑦 4𝑙current :=𝑙
+Figure 5: Protocol of the SecurityAccess Tamarin model
+attacker (AS→C ). To address this issue, all relevant parameters
+can be secured by the manufacturer-specific implementation of the
+authentication mechanism. In variant (3d) we modified the MAC
+calculation ( 3○in Figure 5) to include the server identity and se-
+curity level 𝑟:=MAC(𝑘𝑙,S,𝑙,𝑐), resulting in the same security
+properties as in scenario (a)5.
+As the SecurityAccess service offers unidirectional authentication
+of clients only, it does not provide any guarantees about the server.
+This is shown by the second aliveness property in the table (Server
+towards Client), which is falsified by Tamarin.
+As the SecurityAccess service does not protect the subsequently
+communicated information, it does not provide any authentication
+properties for messages exchanged with restricted services that
+are only accessible within a specific security level apart from the
+aliveness property offered by the initial authentication when the
+security level is unlocked.
+5.4 Analysis of APCE Authentication
+In this section, we describe multiple Tamarin models for the differ-
+ent options supported by the standard. Afterwards, we provide our
+verification results and, finally, we propose solutions to address the
+identified vulnerabilities.
+5.4.1 Formal Protocol Models. We use the following Tamarin mod-
+els to analyze the security of the APCE mechanism:
+Model 1. In the first model, we follow the minimum requirement
+towards the client’s PoO specified in the UDS standard. The signed
+data in the client’s PoO includes only (parts of) the server’s chal-
+lenge. As we operate in the symbolic model, we assume this part to
+be sufficiently long to be secure. Because of the insecurity of this
+model, we do not consider the exchange of session keys here. For a
+protocol outline, please refer to Figure 3.
+Model 2. In this model, the client’s PoO are authentication tokens
+based on ISO 9798-3 unilateral two-pass ( UNI.CR ) authentication.
+Hereby, the signed data includes client and server challenges ( 𝑟C
+and𝑟S), the identity of the server, as well as an optional text field
+𝑡2. As the standard does not specify a usage for 𝑡2, we leave it
+5This corresponds to a specific instantiation of ISO 9798-4 unilateral two-pass authen-
+tication. Alternatively, ISO-9798-2 unilateral two-pass authentication could be used.
+However, it is important to include the server’s identity (optional in the standard)
+and the desired security level within the authenticated data to achieve injective group
+agreement .
+ClientC ServerS
+certC,skC pkCA
+𝑐𝑐,certC if¬VerifypkCA(certC)then
+abort
+𝑟S, 𝑡1 𝑟S$←{0,1}𝑛
+𝑟C$←{ 0,1}𝑛
+𝑡2:=𝑐𝑐
+𝑚:=(UNI.CR 1, 𝑟C, 𝑟S, 𝑆, 𝑡 2)
+𝜎𝑚←RSignskC(𝑚)
+PoOC:=(𝑡3, 𝜎𝑚)PoOC if¬VerifyPoOpkC(PoOC)then
+abort
+. . . . . . . . . . . . . . . . . Without session key exchange . . . . . . . . . . . . . . . . .
+𝑅success Set access rights
+. . . . . . . . . . . . . . . . . . . With session key exchange . . . . . . . . . . . . . . . . . . .
+𝑘$←{ 0,1}𝑛
+info𝑘=EncpkC(𝑘)
+𝑘:=Dec skC(info𝑘)𝑅success ,info𝑘 Set access rightsFigure 6: (Model 2a) UDS APCE unidirectional authentication
+(Changes in Model 2c in red)
+empty. We provide separate models for traditional (Model 2a) and
+DHE-based key exchange (Model 2b).
+The protocol flow for key-exchange without DHE is shown in Fig-
+ure 6 (the highlighted changes are described later in Section 5.4.3).
+Hereby,𝑐𝑒𝑟𝑡Cdenotes the client’s certificate containing its public
+key and a signature of the CA, which can be verified by the server
+using the CA’s public key pkCA. For simplicity, we assume that the
+certificate is directly signed by the CA, otherwise, the intermediate
+certificates would, additionally, be transferred and verified. skC
+denotes the client’s private key and 𝑐𝑐the communication configu-
+ration. After receiving and verifying 𝑐𝑒𝑟𝑡C, the server generates a
+random nonce 𝑟Sand sends it to the client together with a times-
+tamp𝑡1. The client then computes the PoO𝑃𝑜𝑂Cusing skC. Please
+note that a revealing signature scheme is used. The PoO is then
+verified by the server to complete the authentication. If session key
+exchange was specified in 𝑐𝑐, the server generates a new symmet-
+ric session key 𝑘, encrypts the session key using pkCand sends
+the resulting session key info info𝑘to the client together with the
+return value 𝑅success indicating the authentication success.
+Model 3. The last model examines the bidirectional authentica-
+tion process using ISO 9798-3 mutual three-pass (MUT.CR) authen-
+tication tokens. Again, we provide separate models for traditional
+(Model 3a) and DHE -based key exchange (Model 3b). The protocol
+for Model 3a is shown in Figure 7 (the highlighted changes are
+described later in Section 5.4.3). In opposite to the unidirectional
+case described above, the server also has a certificate certSand
+corresponding private key skS. With the inital authentication re-
+quest, the client sends an additional nonce 𝑟C, which is used within
+the server’s PoO PoOS, which is constructed analogously to the
+client’s PoO, and sent together with the server’s certificate to theARES 2023, August 29–September 01, 2023, Benevento, Italy Timm Lauser and Christoph Krauß
+ClientC ServerS
+certC,skC,pkCA certS,skS,pkCA
+𝑟C$←{0,1}𝑛 𝑐𝑐,certC, 𝑟C if¬Verify(certC,pkCA)then
+abort
+𝑟S$←{ 0,1}𝑛
+𝑡1:=𝑐𝑐
+𝑚1:=(MUT.CR 1, 𝑟S, 𝑟C,S, 𝑡1)
+PoOS←/√︁a√︂enleftig
+𝑡2,RSignskS(𝑚1)/√︁a√︂en√︂ightigcertS,PoOS
+if¬Verify(certS,pkCA)
+∨¬Verify(PoOS,pkS)then
+abort
+𝑟′
+C$←{ 0,1}𝑛
+𝑚2:=(UNI.CR 1, 𝑟′
+C, 𝑟S, 𝑆, 𝑡 3)
+𝜎𝑚←RSign(𝑚,skC)
+PoOC:=(𝑡4, 𝜎𝑚)PoOC if¬VerifyPoO(PoOC,pkC)then
+abort
+. . . . . . . . . . . . . . . . . . Without session key exchange . . . . . . . . . . . . . . . . . .
+𝑅success / /Set access rights
+. . . . . . . . . . . . . . . . . . . . With session key exchange . . . . . . . . . . . . . . . . . . . .
+𝑘$←{ 0,1}𝑛/ /or keygen algorithm
+info𝑘←EncpkC(𝑘)
+𝜎𝑘←RSignskS(𝑘, 𝑟′
+C,C)
+info𝑘←EncpkC(𝜎𝑘)
+𝑅success ,info𝑘 / /Enable session key, set access rights𝑘:=Dec skC(info𝑘)
+𝜎𝑘:=Dec skC(info𝑘)
+if¬Verify(𝜎𝑘,pkS)then
+/ /This includes checking the consistency of Cand𝑟′
+C
+abort
+/ /Enable session key
+Figure 7: (Model 3a) UDS ACPE bidirectional authentication
+with session key exchanged (Changes in Model 3c in red)
+client in the second message. The client then verifies PoOSbefore
+constructing its own PoO.
+5.4.2 ACPE Verification Results. The results of our Tamarin analy-
+sis are shown in Table 2. For Model 1, we essentially observe the
+same problems as with the security access service. Given that the
+client is authorized for multiple servers, the attacker can redirect
+the client’s authentication to a different server, thus, weak agree-
+ment fails6. We conclude that this instantiation of the protocol is
+insecure and ISO9798-based authentication tokens should be used.
+For ISO9798-based authentication, we still observed two major
+vulnerabilities.
+Lemma 5.9 (Vulnerability 1 (ACPE)). Model 2a, 2b, 3a, and 3b
+do not satisfy non-injective agreement for all connection parameters.
+CandSdo not agree on the exchanged communication configuration.
+6For instance, an attack could look like this: A client Csends an authentication
+request to a UDS serverS1. The attacker redirects this authentication request to
+a different serverS2by changing receiver addresses in the underlying transport
+protocols. Similarly, the attacker then redirects the challenge 𝑟S2fromS2toCand
+theC’s response back toS2.S2gets unlocked and the adversary can send privileged
+requests.The standard does not specify any authentication on 𝑐𝑐. It is not
+required to be included in the signed data within any PoO. Thus, it
+can be freely manipulated by a MitM attacker. For example, an at-
+tacker could remove the client’s request for a session key exchange.
+Depending on the implementation, the connection attempt might
+fail on client side, while being successful on server side.
+Lemma 5.10 (Vulnerability 2 (ACPE)). Model 3a does not satisfy
+non-injective agreement for exchanged session keys. Model 2a and
+2b do not satisfy trusted non-injective agreement for session keys.
+According to the standard, info𝑘contains the encrypted session
+key(s) ’and/or proof value(s) (e.g., a hash value)’7for the valida-
+tion of the session keys. Moreover, the standard specifies that ’the
+client verifies the session key info using the session key(s)’ with an
+additional note that this step ’ensures that the session key estab-
+lishment is complete and valid’. It does not highlight its importance
+for security reasons nor the particular requirements towards such
+proof values. As we assume that certCis known by the attacker,
+for example by observing the communication request message, the
+attacker can encrypt (and hash) an arbitrary key, which will be
+accepted by the client. This vulnerability is especially critical as it
+can be combined with Vulnerability 1 . The attacker removes the
+request for session key exchange (and subsequently secured com-
+munication) from the client’s request towards a server, which will
+in turn use unsecured communication, and, after successful authen-
+tication, injects a new session key into the communication. The
+attacker then decrypts or removes any authentication tags from
+the client’s communication before forwarding (and freely manipu-
+lating) it to the server or forging an arbitrary response. Thus, the
+desired communication security has been completely circumvented.
+This vulnerability is not present in the bidirectional DHE variant
+as here, the DHE public keys are explicitly required to be signed
+within the PoOs.
+5.4.3 Proposed protocol modifications. To address Vulnerability 1 ,
+we propose that the communication configuration 𝑐𝑐is added to
+the signed data within the client’s PoO in case of unidirectional
+authentication and within the server’s PoO in case of bidirectional
+authentication. Therefore, it can be included in 𝑡1. We apply this
+modification in Model 2c, 2d, 2e, 3c and 3d (see Figure 6 and 7).
+Vulnerability 2 is most critical for bidirectional authentication,
+where we would assume injective agreement to hold for exchanged
+session keys. We propose that the server signs the generated session
+key together with the client random 𝑟′
+Cused in the client’s PoO
+and the clients identity 𝐶, which is then encrypted to construct
+info𝑘. We apply this modification in Model 3b (see Figure 7). For
+model 2b, we add the server’s public DHE key to the signed data in
+the client’s PoO. We prove the following lemma with Tamarin:
+Lemma 5.11. Model 2c, 2d, 2e, 3c and 3d satisfy injective agree-
+ment on the authentication process. In addition, Model 3c and 3d
+satisfy injective agreement on exchanged session keys. Model 2e uni-
+directionally satisfies injective agreement on exchanged session keys
+towards the server.
+Addressing Vulnerability 2 in Model 2a requires a more substan-
+tial modification of the standard. We shortly describe a solution
+7In our models. info𝑘contains an additional hash value of the session key, but this
+does not provide any security benefit. Thus, we omit it here.Formal Security Analysis of Vehicle Diagnostic Protocols ARES 2023, August 29–September 01, 2023, Benevento, Italy
+Original ACPE Variants A WA NA IA NA 𝑘IA𝑘S𝑘PFS𝑘
+(1) Unidirectional authentication with minimal PoO ✔C✘ ✘ ✘
+(2a) Unidirectional authentication with ISO 9798-3 (non-DHE) ✔C✔C✘ ✘ ✘ ✘ ✔ ✘
+(2b) Unidirectional authentication with ISO 9798-3 (DHE) ✔C✔C✘ ✘ ✘ ✘ ✔ ✔
+(3a) Bidirectional authentication with ISO 9798-3 (non-DHE) ✔ ✔ ✘ ✘ ✘ ✘ ✔ ✘
+(3b) Bidirectional authentication with ISO 9798-3 (DHE) ✔ ✔ ✘ ✘ ✔ ✔ ✔ ✔
+Proposed ACPE Modifications A WA NA IA NA 𝑘IA𝑘S𝑘PFS𝑘
+(2c) Unidirectional authentication with ISO 9798-3 (non-DHE) ✔C✔C✔C✔C✘ ✘ ✔ ✘
+(2d) Unidirectional authentication with ISO 9798-3 (non-DHE) ✔C✔C✔C✔C T T ✔ ✘
+(2e) Unidirectional authentication with ISO 9798-3 (DHE) ✔C✔C✔C✔C✔C✔C✔ ✔
+(3c) Bidirectional authentication with ISO 9798-3 (non-DHE) ✔ ✔ ✔ ✔ ✔ ✔ ✔ ✘
+(3d) Bidirectional authentication with ISO 9798-3 (DHE) ✔ ✔ ✔ ✔ ✔ ✔ ✔ ✔
+Original ACR Variants A WA NA IA NA 𝑘IA𝑘S𝑘
+(4a) Unidirectional authentication (symmetric) G G ✘ ✘ ✘ ✘ ✔
+(5a) Bidirectional authentication (symmetric) G G ✘ ✘ ✘ ✘ ✔
+(6a) Unidirectional authentication (asymmetric) ✔C✔C✘ ✘ ✘ ✘ ✔
+(7a) Bidirectional authentication (asymmetric) ✔ ✔ ✘ ✘ ✘ ✘ ✔
+Proposed ACR Modifications A WA NA IA NA 𝑘IA𝑘S𝑘
+(4b) Unidirectional authentication (symmetric) ✔C✔C✔C✔C✔ ✔ ✔
+(5b) Bidirectional authentication (symmetric) ✔ ✔ ✔ ✔ ✔ ✔ ✔
+(6b) Unidirectional authentication (asymmetric) ✔C✔C✔C✔C✘ ✘ ✔
+(6c) Unidirectional authentication (asymmetric) ✔C✔C✔C✔C T T ✔
+(7b) Bidirectional authentication (asymmetric) ✔ ✔ ✔ ✔ ✔ ✔ ✔
+A = Aliveness, WA = Weak Agreement, NA = Non-injective Agreement, IA = Injective Agreement, S 𝑘= Secrecy of session keys, PFS 𝑘=
+Perfect forward secrecy of session keys, ✔C= Holds for client authentication only, ✔= Holds bidirectionally, T= Only trusted (non-)injective
+agreement holds, G= Only the group variant of the property holds.
+Table 2: Tamarin verification results of the APCE protocol variants
+here. The session key 𝑘is generated by the server on receiving 𝑐𝑐,
+indicating session key exchange, and certC. In addition, the server
+computes a non-reversable cryptographic checksum ℎ𝑘:=H(𝑘),
+sending it to the client together with 𝑟S(𝑡1:=ℎ𝑘). The client adds
+the received ℎ𝑘as part of𝑡2to the PoO (𝑡2:=(𝑐𝑐,ℎ𝑘)). Within the
+PoO verification, the server additionally checks the correctness of
+ℎ𝑘. After extracting 𝑘from info𝑘, the client verifies that H(𝑘)=ℎ𝑘.
+We implement this solution in Model 2d, for which we prove trusted
+injective agreement on exchanged session keys with Tamarin.
+5.5 Analysis of ACR Authentication
+5.5.1 Formal Protocol Models. As with APCE , the minimal au-
+thentication requirements of the standard is that the authenticated
+data contains at least the server’s challenge. We do not provide an
+analysis of this case here but instead refer to our analysis of the
+SecurityAccess service (cf. Section 5.3) for symmetric cryptography
+and Model 1 for asymmetric cryptography. The standard recom-
+mends authentication tokens based on ISO 9798-2 and ISO 9798-4.
+The difference between these two authentication tokens is that the
+first uses authenticated encryption while the second uses crypto-
+graphic check values ( MAC s) as cryptographic primitive. In our
+analysis, we used ISO 9798-2 authentication tokens for symmetric
+cryptography. As both recommended standards only use symmetric
+primitives, we use ISO 9798-3 authentication tokens for asymmetric
+encryption.Model 4 and 5. The unidirectional and bidirectional variants of
+ACR with symmetric cryptography are analyzed in Model 4a and
+5a, respectively. We assume that the symmetric keys are shared
+between multiple clients (cf. Section 5.3).
+Model 6 and 7. These models capture the unidirectional and
+bidirectional ACR variants with asymmetric encryption. As they
+use the same authentication tokens, they are similar to Model 2 and
+3. The main difference is that the server’s PoO is send in the last
+message together with the session key info (if applicable).
+5.5.2 ACR Verification Results. First, we observe that only the
+group variant of weak agreement is satisfied in Model 4a and 5a. This
+is due to the fact that only the receivers identifier is authenticated in
+thePoO. Second, we observe that Vulnerability 1 andVulnerability
+2are also present in the ACR mechanism.
+Lemma 5.12 (Vulnerability 1 (ACR)). Model 4a, 5a, 6a and 7a
+do not satisfy non-injective agreement for all connection parameters.
+More precisely,CandSdo not agree on the exchanged communication
+configuration.
+Lemma 5.13 (Vulnerability 2 (ACR)). Model 4a, 5a and 7a do not
+satisfy non-injective agreement on exchanged session keys. Model
+6a does not satisfy trusted non-injective agreement on exchanged
+session keys.ARES 2023, August 29–September 01, 2023, Benevento, Italy Timm Lauser and Christoph Krauß
+With regard to the session key exchange, the symmetric ap-
+proach has the advantage that the attacker does not have the en-
+cryption key. Thus, the adversary cannot inject arbitrary keys.
+However, old session keys or session keys generated by a different
+server, possibly for a different client, can be injected. While this is
+less critical than in the asymmetric case (if we assume that session
+keys cannot be broken during the lifetime of a vehicle), it still en-
+ables multiple attacks. For example, injecting an old session key
+into a current authentication process, the adversary could possibly
+replay corresponding diagnostic messages secured with the same
+key to a different ECU, even though the authentication itself is
+secured against replay attacks. Thus, it should be mitigated.
+5.5.3 Proposed Modifications. First, we propose to add the commu-
+nication configuration 𝑐𝑐to the authenticated data within the first
+sent PoO in all variants (cf. Section 5.4.3) to mitigate Vulnerability
+1. Here, we also recommend authenticating 𝑖𝑑alg. Second, for the
+symmetric variants (Model 4b and 5b), we propose to add a sender
+identifier to the authenticated data within the PoOs. Thus, we can
+satisfy the non-group variants of the security properties. Please note
+that once a symmetric key has been leaked, the attacker can still
+forge requests for any party, given that the corresponding identifier
+is known or can be guessed.
+To address Vulnerability 2 in Model 4, we add the client’s random
+𝑟Cto the encrypted data within the session key info info 𝑘(Model
+4b). However, we recommend using bidirectional authentication
+instead. As the same key is used for client and server authentication,
+the overhead is low. For Model 5, we propose to send the session
+key within the secured data in the PoO instead of computing a
+separate session key info. For Model 6 and 7, the mitigations from
+Section 5.4.3 are used (Model 6b, 6c and 7b).
+6 RECOMMENDATIONS
+The results of previous research and our analysis of UDS show that
+manufacturers should consider several aspects when implementing
+theUDS standard and that the standard itself could be improved.
+In this section, we give recommendations for manufacturers and
+describe possible extensions of the standard to improve security.
+6.1 Recommendation for Manufacturers
+Generally, we recommend using the new Authentication Service
+(with our proposed modifications) instead of the old SecurityAccess
+in all new applications. If this is not possible, the following should
+be considered when using SecurityAccess :
+•Follow accepted guidelines for cryptographic key manage-
+ment such as [23].
+–Use only standardized, well-analyzed ciphers (cf. [6, 29]).
+–Use an approved Random Number Generator (RNG) with
+sufficient entropy, even directly after ECU startup, to gen-
+erate seed values, do not use static seeds (cf. [15, 24, 26]).
+–Use a sufficient length for seed values and keys.
+•Limit the number of authentication attempts in a specific
+time period to slow down seed and seed/key extractions.
+Ensure this mechanism persists ECU resets (cf. [29]).
+•Limit the validity of used symmetric keys as far as possible.
+•Thoroughly analyze the security of the used authentication
+mechanism, use ISO 9798-based authentication or similar.For the Authentication service, apart from using standardized
+ciphers and following accepted guidelines as above, we give the
+following recommendations:
+•Do not follow the minimal authentication token require-
+ments from the standard but use the recommended ISO 9798
+authentication instead.
+•Implement the modifications from Model 2c, 3c, 4b, 5b, 6b,
+and/or 7b. This is especially important if no underlying trans-
+port security (such as TLS-secured DoIP) is used.
+•Use underlying transport protocol security mechanisms. Oth-
+erwise, enforce session key establishment and subsequently
+secured communication on server side, reject authentication
+attempts for unsecured communication.
+•Limit the number of authentication attempts allowed in a
+specific time period.
+6.2 Recommendations for Improving the
+Standard
+For improving the standard, we give the following recommenda-
+tions:
+•Include our proposed modifications (Section 5.4.3 and 5.5.3).
+•Provide more details on the security considerations for the
+available options in the Authentication service and define
+the construction of the PoOs more explicitly.
+•Unlocked security levels should only affect the same commu-
+nication session (and possibly a single diagnostic session).
+•Do not provide examples with insecure algorithms such as
+one’s complement. Even if their insecurity is explicitly stated,
+this might not be sufficient to prevent their usage (cf. [6]).
+7 CONCLUSION
+In our security analysis of the vehicle diagnostics protocols with a
+focus on UDS, we identified several issues which need to be consid-
+ered when using these protocols. For SecurityAccess , the standard
+leaves a lot of room for interpretation, which has led to many poor
+realizations. We confirmed this in our formal verification and con-
+clude that the authentication mechanisms should be standardized
+in more detail. This has been attempted in the new Authentication
+service, in which our analysis identified two vulnerabilities which,
+in combination, could enable the complete circumvention of the
+desired protection of subsequent diagnostic communication. We
+proposed modifications addressing these vulnerabilities, which we
+formally verified. Especially for remote and network use-cases, we
+highly recommend using security mechanisms in underlying pro-
+tocols, such as DoIP ’sTLS-secured sessions, until these issues are
+addressed. However, there are also issues in DoIP which have been
+investigated in related work and we follow the recommendations in
+[31] for securing DoIP sessions. Moreover, in addition to analyzing
+the standards, the concrete implementations must also be checked.
+In the past, there were many vulnerabilities that an attacker could
+exploit.
+As future work, we will adapt our Tamarin models to analyze
+other protocols and mechanisms. They are available under open
+source, so they can be used as a basis for further automotive security
+research.Formal Security Analysis of Vehicle Diagnostic Protocols ARES 2023, August 29–September 01, 2023, Benevento, Italy
+ACKNOWLEDGMENTS
+This research work has been funded by the German Federal Min-
+istry of Education and Research and the Hessian Ministry of Higher
+Education, Research, Science and the Arts within their joint sup-
+port of the National Research Center for Applied Cybersecurity
+ATHENE.
+REFERENCES
+[1]V. W. Ajin, Lekshmy D. Kumar, and James Joy. 2016. Study of security and
+effectiveness of DoIP in vehicle networks. In 2016 International Conference on
+Circuit, Power and Computing Technologies (ICCPCT) . 1–6.
+[2]AUTOSAR GbR. 2019. Specification of Diagnostic Communication Manager . AU-
+TOSAR CP R19-11. https://www.autosar.org/fileadmin/standards/classic/19-
+11/AUTOSAR_SWS_DiagnosticCommunicationManager.pdf
+[3]David Basin, Cas Cremers, Jannik Dreier, Simon Meier, Ralf Sasse, and Benedikt
+Schmidt. 2023. Tamarin Prover. https://tamarin-prover.github.io/
+[4]Bruno Blanchet. 2012. Security Protocol Verification: Symbolic and Computa-
+tional Models. In Principles of Security and Trust . Springer Berlin Heidelberg,
+Berlin, Heidelberg, 3–29.
+[5]Iain Cunningham. 2021. Certificate-Based Authentication in Vehicle Diagnostics
+#1: What is Possible in UDS and AUTOSAR? https://www.youtube.com/watch?
+v=k4JD2ZUHrXA
+[6]Jürgen Dürrwang, Johannes Braun, Marcel Rumez, and Reiner Kriesten. 2017.
+Security Evaluation of an Airbag-ECU by Reusing Threat Modeling Artefacts.
+In2017 International Conference on Computational Science and Computational
+Intelligence (CSCI) . 37–43. https://doi.org/10.1109/CSCI.2017.7
+[7]Rudolf Hackenberg, Nils Weiss, Sebastian Renner, and Enrico Pozzobon. 2017.
+Extend Your Car’s Attack Surface Through Smart Devices. (2017).
+[8]ISO. 2013. Road vehicles — Unified diagnostic services (UDS) — Part 1: Specification
+and requirements . ISO Standard 14229-1. Geneva, Switzerland.
+[9]ISO. 2016. Road vehicles — Diagnostic communication over Controller Area Network
+(DoCAN) — Part 2: Transport protocol and network layer services . ISO Standard
+15765-2:2016. International Organization for Standardization, Geneva, Switzer-
+land. https://www.iso.org/obp/ui/#iso:std:iso:15765:-2:dis:ed-4:v1:en
+[10] ISO. 2019. Road vehicles — Diagnostic communication over Internet Protocol (DoIP)
+— Part 2: Transport protocol and network layer services . ISO Standard 13400-2:2019.
+International Organization for Standardization, Geneva, Switzerland.
+[11] ISO. 2020. Road vehicles — Unified diagnostic services (UDS) — Part 1: Application
+layer . ISO Standard 14229-1:2020. International Organization for Standardization,
+Geneva, Switzerland.
+[12] ISO. 2021. Identification cards — Integrated circuit cards — Part 8: Commands
+and mechanisms for security operations . ISO Standard 7816-8:2021. International
+Organization for Standardization, Geneva, Switzerland. https://www.iso.org/
+obp/ui/#iso:std:iso-iec:7816:-8:ed-5:v1:en
+[13] ISO/IEC. 2019. IT Security techniques — Entity authentication — Part 3: Mecha-
+nisms using digital signature techniques . ISO Standard 9798-2:2019. International
+Organization for Standardization, Geneva, Switzerland.
+[14] Dustin Kern, Timm Lauser, and Christoph Krauß. 2022. Integrating Privacy into
+the Electric Vehicle Charging Architecture. Proceedings on Privacy Enhancing
+Technologies 3 (2022), 140–158.
+[15] Patrick Kiley. 2021. The UDS Security Model of the Tesla CAN Bus and
+Battery Management System. https://www.rsaconference.com/Library/
+presentation/USA/2021/the-uds-security-model-of-the-tesla-can-bus-and-
+battery-management-system
+[16] Pierre Kleberger and Tomas Olovsson. 2014. Securing Vehicle Diagnostics in
+Repair Shops. In Computer Safety, Reliability, and Security . Springer International
+Publishing, Cham, 93–108.
+[17] Sekar Kulandaivel. 2021. Revisiting remote attack kill-chains on modern in-vehicle
+networks . Ph. D. Dissertation. Carnegie Mellon University.
+[18] Timm Lauser, Daniel Zelle, and Christoph Krauß. 2020. Security Analysis of
+Automotive Protocols. In Computer Science in Cars Symposium (Feldkirchen,
+Germany) (CSCS ’20) . Association for Computing Machinery, New York, NY,
+USA, Article 11, 12 pages. https://doi.org/10.1145/3385958.3430482
+[19] Johan Lindberg. 2011. Security analysis of vehicle diagnostics using DoIP . Master’s
+thesis. Chalmers University of Technology.
+[20] Gavin Lowe. 1997. A hierarchy of authentication specifications. In Proceedings
+10th Computer Security Foundations Workshop . IEEE, 31–43.
+[21] Jia-Ning Luo, Chang-Ming Wu, and Ming-Hour Yang. 2021. A CAN-Bus Light-
+weight Authentication Scheme. Sensors 21, 21 (2021). https://doi.org/10.3390/
+s21217069
+[22] Masaru Matsubayashi, Takuma Koyama, Yasushi Okano, Masashi Tanaka, Asami
+Miyajima, Yoshihito Oshima, Shintaro Ukai, Tasuku Wakatsuki, Takeshi Sug-
+ashima, and Takeshi Nakamura. 2021. Attacks Against UDS on DoIP by ExploitingDiagnostic Communications and Their Countermeasures. In 2021 IEEE 93rd Ve-
+hicular Technology Conference (VTC2021-Spring) . 1–6. https://doi.org/10.1109/
+VTC2021-Spring51267.2021.9448963
+[23] National Institute of Standards and Technology. 2020. Recommendation for Key
+Management: Part 1 – General . Technical Report NIST Special Publication 800-
+57 Part 1 Revision 5. U.S. Department of Commerce, Washington, D.C. https:
+//doi.org/10.6028/NIST.SP.800-57pt1r5
+[24] Sen Nie, Ling Liu, and Yuefeng Du. 2017. Free-fall: Hacking tesla from wireless
+to can bus. Briefing, Black Hat USA (2017), 1–16.
+[25] Ramiro Pareja and Santiago Cordoba. 2018. Fault injection on automotive diag-
+nostic protocols. escar USA (2018).
+[26] Martin Ring, Tobias Rensen, and Reiner Kriesten. 2014. Evaluation of vehicle diag-
+nostics security–implementation of a reproducible security access. SECURWARE
+2014 213 (2014).
+[27] Alastair Ruddle, David Ward, Benjamin Weyl, Sabir Idrees, Yves Roudier, Michael
+Friedewald, Timo Leimbach, Andreas Fuchs, Sigrid Gürgens, Olaf Henniger, et al .
+2009. Deliverable D2. 3: Security requirements for automotive on-board networks
+based on dark-side scenarios. In EVITA project .
+[28] Jackson Schmandt, Alan T. Sherman, and Nilanjan Banerjee. 2017. Mini-MAC:
+Raising the bar for vehicular security with a lightweight message authentication
+protocol. Vehicular Communications 9 (2017), 188–196. https://doi.org/10.1016/j.
+vehcom.2017.07.002
+[29] Jan Van den Herrewegen and Flavio D Garcia. 2018. Beneath the bonnet: A break-
+down of diagnostic security. In European Symposium on Research in Computer
+Security . Springer, 305–324.
+[30] Anthony Van Herrewege, Dave Singelee, and Ingrid Verbauwhede. 2011.
+CANAuth-a simple, backward compatible broadcast authentication protocol
+for CAN bus. In ECRYPT Workshop on Lightweight Cryptography , Vol. 2011. 20.
+[31] Patrick Wachter and Stephan Kleber. 2022. Analysis of the DoIP Protocol for
+Security Vulnerabilities. In Computer Science in Cars Symposium (Ingolstadt,
+Germany) (CSCS ’22) . Association for Computing Machinery, New York, NY,
+USA, Article 9, 10 pages. https://doi.org/10.1145/3568160.3570229
+[32] Nils Weiss, Sebastian Renner, Jürgen Mottok, and Václav Matoušek. 2021. Auto-
+mated Threat Evaluation of Automotive Diagnostic Protocols. (2021).
+[33] Daniel Zelle, Timm Lauser, Dustin Kern, and Christoph Krauß. 2021. Analyzing
+and Securing SOME/IP Automotive Services with Formal and Practical Methods.
+InThe 16th International Conference on Availability, Reliability and Security (Vi-
+enna, Austria) (ARES 2021) . Association for Computing Machinery, New York,
+NY, USA, Article 8, 20 pages. https://doi.org/10.1145/3465481.3465748
+[34] Yu Zhang, Binbin Ge, Xiang Li, Bin Shi, and Bo Li. 2016. Controlling a Car Through
+OBD Injection. In 2016 IEEE 3rd International Conference on Cyber Security and
+Cloud Computing (CSCloud) . 26–29. https://doi.org/10.1109/CSCloud.2016.42

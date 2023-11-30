@@ -1,0 +1,1047 @@
+.INTRODUCTION 
+There are two main issues concerning data 
+security" on networks; controlling access and the 
+vulnerability of data communication links. A 
+brief introduction to the various techniques 
+which amy be applied to these concerns are given 
+in this paper. CRYPTOGRAPHIC KEY MANAGEMENT 
+OR 
+STRONG NETWORK SECURITY MANAGEMENT 
+by Dahl A. Gerberick (c) 1990 
+Used with permission 
+integrity of transmitted messages m,d data. 
+Critical to the effectiveness of a cryptographic 
+system is the management of the crypto-variables 
+or keys. 
+Access control systems are essentially concerned 
+with two issues. The first is the verification of 
+the user, that is verifying that the user is ac- 
+t,~lly who they claim to be. The second issue is 
+the permissioning scheme which limits each user 
+to a predetermined set of functions or data file 
+accesses within the system. The permi.~sionlng 
+scheme is generally performed by a small kernel, 
+sometimes known as the Security Reference 
+Monitor (SRM). When the integrity of the SRM 
+is verifmble it is also known as the Trusted 
+Computing Base (TCB). 
+In a data network, information has to be trans- 
+mitted along the lines between various nodes. It 
+must be recognized that all communication paths, 
+whether inside or outside a physical security 
+perimeter, are vulnerable to being tapped, cut or 
+otherwise tampered with. Furthermore, penetra- 
+tion of the physiccally secure environment that 
+may house the network nodes is not necessary 
+for the attacker to eavesdrop or even tamper 
+with the communication link. It is also true that 
+any such interception is likely to be undetected 
+and can therefore be repeated for a prolonged 
+period. Attacking data communication links is, 
+therefore, a partic-larly attractive proposition. 
+In recent years there has been a phenomenal rise 
+in the number of Electronic Funds Transfer 
+Systems (EFTS) in the financial industry. Many 
+billions of dollars are transferred from account to 
+account and from institution to institution over 
+such systems every day. The opportunity for 
+fraudulent manipulation of these transfers are 
+numerous and wide ranging. They offer the 
+would be attacker the possibility of committing a 
+large fraud, often without any direct evidence of 
+the crime. Stringent security measures are 
+clearly required to minimize this risk. This 
+almost inevitably necessitates the use of cryptog- 
+raphy, which provides the only known quantify- 
+able means of ensuring both the privacy and the Local Area Networks (LA.Ns) are worth a special 
+mention as they are a notoriously vulnerable 
+component in any commmfication environment. 
+LANs operate by multiplexing messages along a 
+common path between nodes, often breaking long 
+stremns into smaller packets. This can often lull 
+System Managers into a fidse seuse of security, 
+by making them think that an interceptor would 
+not be bale to recover the original message or 
+insert false ones. 
+In fact tapping into a ].,AN, either actively or 
+passively, is very easy. LANs are designed to 
+lmve a low connection cost and a tap is just 
+another connection. Moreover, the protocols 
+implemented on LANs are designed to be simple, 
+again to reduce connection costs. 
+Data transfers across a LAN should be regarded 
+as in the public domain and appropriate security 
+measures (encryption and authentication) includ- 
+ed in the application to provide message privacy 
+and integrity. 
+KEY MANAGEMENT 
+The protection afforded by a eryptograplfic 
+process is no greater than tile protection given to 
+the key controlling tlmt process. Spccial "Key 
+Management" procedures are required to ensure 
+that the secrecy of these keys is maintained. In 
+practice, key management forms the largest part 
+in the design of a security system. 
+In general, key management is concerned with 
+the following topics: 
+I. Key Generation - Keys must be gener- 
+ated in a random and unpredictable 
+manner. Pseudo-random processes may 
+be used, though prclbrably, the process 
+should rely, at least in part, on some 
+external random process such as thermal 
+noise, the time between asynchronous 
+events, etc. 
+12 SIGSAC Review 
+Summer 1990. Key Distribution - For parties to com- 
+municate, using a conventional cypher, 
+they must share a common key. This 
+key must be distributed in a secure 
+manner. If the key is to be distributed 
+manually, as might be the case for an 
+initial Master Key (MK), then the split 
+key technique call be used. Here the 
+key is split into a number of constituent 
+elements, all of which are required to 
+correctly reconstruct the key. Further- 
+more, it should not be possible to infer 
+any information about the key from 
+knowledge of any single constituent 
+element. Each constituent element 
+should then be transferred separately. 
+Often it is desirable to distribute keys 
+electronically. Here, special keys, known 
+as Key Encrypting Keys CKEK} are used 
+solely to transfer the session or Data En- 
+crypting Keys (DEK). To provide extra 
+protection for this very critical function, 
+these keys can be of double length de- 
+sign. 
+The Financial Institution Key Manage- 
+ment Standard - ANSI X9.17 - (X9.17) 
+defines a key management standard 
+based on a master key and session key 
+hierarchy. 
+Public Key Cryptography can also be 
+used to transfer keys. In the Public Key 
+Architecture, each party generates two 
+keys, a Public Encrypting Key (PEK) and 
+a Private Dccrypting Key (PDK). The 
+sender can transmit a new session key 
+by first encrypting it under the recipi- 
+ent's Public Encrypting Key (PEK) and 
+then decrypting the results under his 
+own Private Decrypting Key (PDK). The 
+result is then transmitted to the recip- 
+ient who encrypts it using the sender's 
+Public Encrypting Key (PEK) and then 
+decrypts that result using his own Pri- 
+vate Decrypting Key (PDK). This pro- 
+cess insures that only the intended recip- 
+ient can recover the key and that they 
+cannot be spoofed into accepting a false 
+key from any third party. There is, 
+however, no interlmtionally recognized . 
+. 
+. Public Key standard and, at present, 
+public key algorithms tend to be rather 
+slow. 
+A new group of key mnuagement 
+schemes, which can offer significant se- 
+curity and operational advantages, have 
+recently been proposed, and are included 
+in the ANSI X9.24 draft. This group is 
+known as "Unique Key per Transaction" 
+key management schemes. The two 
+most pop,,lar systems are the Derived 
+Key scheme and the Transaction Key 
+scheme. The Transaction Key scheme 
+offers significant security advantages 
+over the Derived Key Scheme. 
+Key Hierarchy - Many of the pitfalls in 
+key management can be avoided if a 
+strict key hierarchy is observed. Keys at 
+one level should only operate on keys (or 
+data) in the level immediately below. By 
+maintaining a strict key hierarchy, and 
+by using appropriate security hardware, 
+it is possible to ensure that keys can 
+never exist in plain text on the computer 
+system. 
+Key Storage - Cryptographic keys must 
+be stored in a secure manner. The usual 
+practice is to permit keys to exist in 
+plain text only within a physically see- 
+parate, tamper resistant security module. 
+A special key, called a Local Master Key 
+(LMK), and known only to the security 
+module, is used to encrypt keys while 
+they are stored outside the module. 
+Different variants of the LMK are used 
+to store different key types. In this way 
+it is possible to police tile key usage. 
+Key Change - Keys need to be changed 
+from time to time in order to hinder any 
+cryptanalytic attack and limit the conse- 
+quences of any breach. The frequency of 
+key change depends on the sensitivity of 
+the data that the key is protecting and 
+the frequency with which it is used. For 
+example, a key which protects highly 
+sensitive data being transmitted across 
+public lines should be changed very 
+frequently. 
+13 SIGSAC Review 
+Summer 1990. Key Deletion - Procedures are also re- 
+quired to ensure that plain text keys, 
+such as those used during manual dis- 
+tribution, are securely destroyed when 
+no longer required. 
+ACCESS CONTROL 
+Access control systems are essentially concerned 
+with two problems. The first is the verification 
+of the user, that is verifying that the user is 
+actually who they claim to be. The second 
+problem is the permissioning scheme which limits 
+each user to a predetermined set of functions 
+and]or data file accesses within the system. The 
+permissioning scheme is generally performed by 
+a small kernel, sometimes known as the Security 
+Reference Monitor (SRM). The integrity of the 
+SRM must be assured and as such it is some- 
+times also known as the Trusted Computing Base 
+(TCB). 
+There are a number of general requirements for 
+any access control system, the most important of 
+which are as follows: 
+. The systems must be easy for users to 
+operate and errors should not result in a 
+breach of security. 
+2. The management of any user identifi- 
+cation data must cause minimal dis- 
+ruption to the system as a whole. 
+. The storage of any user identification 
+data must itself be held securely. 
+. The access control mechanism must 
+operate with minimal impact on the 
+communication overhead and system 
+architecture. 
+. Unauthorized access attempts must be 
+detected and activate an alarm. Clear 
+procedures must be laid down for dealing 
+with such alarms. 
+6. Audit trails must be provided. User Verification 
+Teclmiques available for user verification are 
+wide ranging but fall into tile following general 
+categories: 
+1. Tokens - For most situations tokens 
+alone are unacceptable since, if the token 
+is stolen, impersonation of the user is 
+immediately possible. Furthermore, the 
+token itself will normally generate infor- 
+mation to be transmitted to the host. 
+Unless this is carefully tied into an au- 
+thentication and]or encryption system, 
+interception of the appropriate message 
+will permit an unauthorized person to 
+alter, create, delete or replay messages 
+and to forge tokens. 
+. Passwords - Passwords lmve the advan- 
+tage, over tokens, that they are purely 
+information held in the users memory, 
+rather than an easily lost or stolen to- 
+ken. However, in practice passwords are 
+notoriously insecure. 
+Passwords are usually chosen to be 
+easily remembered; names, places, tel- 
+ephone numbers, etc. and so can be 
+easily guessed. An eavesdropper can 
+recover a password by tapping the line 
+from the keyboard or by observing the 
+key sequence when entered. 
+Some systems can force more random 
+passwords, for exan~ple by generating 
+them themselves or by defining a min- 
+imum password length and insisting that 
+they are not all numeric or all alphabetic. 
+In addition, these systems can force a 
+user to change their passwords periodi- 
+cally. However, all these methods serve 
+to make the passwords difficult to re- 
+member and so encourage users to write 
+them down, or worse, program a function 
+key with them, thus creating a new and 
+a potentially much more serious security 
+weakness. 
+Static passwords are also vulnerable to a 
+masquerade attack. Here the attacker 
+writes a program to display the "free ter- 
+14 SIGSAC Review 
+Summer 1990. 
+. minal" banner and then emulate thelog- 
+in sequence. The unsuspecting user 
+would then enter his ID and Password. 
+The program would then store these in 
+one of the attacker' files, reply with a 
+"user authorization failure" message and 
+then stop itself. The user, thinking they 
+had mistyped their password, would try 
+logging on again, this time successfully. 
+The user would be unaware that the 
+attacker lind obtained their password 
+and could now log-in as them. 
+Dynamic Passwords - A recent, inno- 
+vative idea is the use of cryptographic 
+techniques to provide dynamic pass- 
+words, (i.e., the situation where a users 
+password changes each time they log-on). 
+To achieve tiffs the user is given an 
+intelligent token containing the User's 
+Secret Key (USK) which is activated by 
+the user entering their Personal Identifi- 
+cation Number (PIN). To identify the 
+user, the system issues a challenge (usu- 
+ally a number) and accepts the user if 
+they can respond with that number en- 
+crypted under their USK stored in the 
+token. 
+Dynamic Passwords provide strong ac- 
+cess control by combining the advantages 
+of both passwords and tokens. Although 
+dynamic passwords offer a high level of 
+security, it must be realized that they 
+involve a slightly more complex log-in 
+procedure. 
+Dial-Back - Dial-Back methods may be 
+used on systems which are accessible 
+from the public telephone network. 
+Here, a dial-back number is associated 
+with each user account. TO log-in, a user 
+first calls the system, identifies them- 
+selves, and hangs up. The system then 
+dials the user back using the number 
+stored in the data base for their account. 
+While providing a woi-thwhile measure of 
+security on particularly vulnerable links, 
+dial-back alone does not provide reliable 
+security. For example, an attacker could 
+actually be at the dial-back number site. Other ways in which dial-back can be 
+vulnerable include, use of the call for- 
+warding facility provided at some ex- 
+changes and intercept of the communica- 
+tion line itself either near the terminal 
+or near the host system. 
+Careful consideration is required to 
+ensure the integrity of the dial-back data 
+base, as any unauthorized modification 
+would nullify any security provided. 
+Such modification couhl be achieved by 
+an insider or, where procedural controls 
+are lax, which is not uncommon. An 
+attacker might simply imtffy the system 
+manager of a false change of telephone 
+number. 
+. Biometn'c Methods - The last group of 
+access control systems is based on bio~ 
+metric methods. }tere, the individual is 
+identified by some biological feature. 
+Examples include finger print check, 
+retina scan, signature analysis, vein 
+pattern analysis, and voice print. Gen- 
+erally such devices tend to be very ex- 
+pensive, and in order to provide an ac- 
+ceptable level of protection against fraud- 
+ulent access, tend to lmve a high error 
+rate of preventing genuine access. 
+A weakness, inherent with biometric 
+systems, is that the data base of bio- 
+metric characteristics cannot be changed 
+ff it is compromised. It is not possible to 
+issue people with a new set of finger- 
+prints. Furthermore, biometrie parame- 
+ters cannot be changed when someone 
+leaves one organization for another. 
+There are a number of practical security 
+concerns with biometric systems that 
+have yet to be resolved. 
+For most applications Dynamic Passwords are 
+generally considered to be the most cost effective 
+and secure means of user verification currently 
+available. It must be recognized, however, tlmt 
+Dynamic Passwords, or passwords that ctumge 
+each time they are used, do involve a slightly 
+more complex log-on procedure. 
+SIGSAC Review 
+15 Summer 1990S¢~curity Rcferen~ Monitor 
+The other aspect of access control is defining the 
+set of functions and data files that bona-fide 
+users are allowed to access once they are logged- 
+in. Certain functions, such as modifying the 
+access control system itself, must be strictly 
+limited. As was pointed out above, the integrity 
+of the Trusted Computing Base (TCB) must be 
+assured. For it to be described as trusted, it will 
+have been assessed and validated by some inde- 
+pendent agency, such as the NCSC at NSA. 
+A scheme for limiting access which is used by a 
+number of TCBs is the Bell and T~Padula Model. 
+Here, a system of hierarchical classification levels 
+and]or non-hierarchical categories is applied to 
+each data object and to each user. Two rules are 
+then applied: 
+. The Simple Security Property states that 
+a user's classification must dominate an 
+object's for the user to observe it. That 
+is, the user's classification level must be 
+greater than or equal to, and the user's 
+classification categories must be a super- 
+set of or equal to the object's. In this 
+way a SECRET user cannot read a TOP 
+SECRET file. 
+. The "*" Security Property states that a 
+user's classification must be dominated 
+by the object's in order to alter it. Thus 
+a secret user cannot write to an unclassi- 
+fied file. At first Sight, this rule might 
+seem unnecessarily restrictive. Its pur- 
+pose, though, is to guarantee that a 
+secret user can never give secret infor- 
+mation away, either accidentally or inten- 
+tionally. Once information has been 
+classified, it cannot be declassified. 
+The success of any Access Control System de- 
+pends on its implementation. Careful consider- 
+ation must be given to the User Verification 
+methods and 'the assignment of classification 
+levels and categories within the Security Refer- 
+ence Monitor. 
+For the purposes of this paper we intend to con- 
+centrate on the processes of user authentication, 
+message authentication, and data encryption. We will demonstrate how good cryptograpldc key 
+management methods will make all this possible 
+with minimal impact on the users. The Security 
+Reference Monitor (SRM) concepts outlined here 
+are reasonably well understood and can be 
+applied once user authentication is accomplished. 
+The Security Reference Monitor (SRM) itself, 
+however, is outside the scope of tiffs paper. 
+THE FILTERING PROCESS 
+The result of an encryption process is a pseudo- 
+random binary string. Communications systems 
+may interpret some of the pseudo-random binary 
+output as control characters or control sequences 
+which may be detrimental to the transmission 
+services (e.g., spurious XON/XOFF or EOF 
+characters). 
+Filtering is a reversible process that converts the 
+binary output from an encryption process to a 
+code character set output that does not contain 
+control characters or sequences. This process 
+will normally increase the size of the message, 
+producing up to twice the number of characters 
+as the original input. The receiving system uses 
+the inverse faltering process to convert the data 
+back to binary data so that it can be decrypted. 
+ANSI X9.23 defines several optional filters that 
+trade off between character set flexibility and 
+message expansion: 
+. The Hexadecimal Filter converts each 
+byte of data into two hexadecimal char- 
+acters (0...9,A...F) expressed in the char- 
+acter set of transmission. The Filter 
+works well with nearly all character sets, 
+but it produces the greatest message 
+expansion. 
+2. The ASCH Filter converts the binary 
+data to a string of ASCII printable char- 
+acters and normally produces an expan- 
+sion of about 23%. 
+. The ASCIIIIIAUDOT Filter converts the 
+binary data to a string of clmracters 
+belonging to both the ASCH and the 
+BAUDOT character sets and normally 
+produces an expansion of about 86%. 
+16 SIGSAC Review 
+Summer 1990In establislfing rely standardized filtering meth- 
+odology the use of no filter, or the use of any 
+filter chosen by mutual consent, should also be 
+allowed. 
+A SUGGESTED IMPLEMENTATION 
+What follows is a suggested implementation for 
+strong network security measures through good 
+cryptographic key management teclmiques. We 
+will refer to this implementation as the Security 
+System. 
+The Security System must provide a method for 
+two machines to share a common set of cryp- 
+tographic keys and functions. This can be ac- 
+complished with the aid of a hardware device 
+that can store several cryptographic keys in a 
+tamper resistant manner while being able to 
+perform cryptograplfic transforms on data of up 
+to 3,000 bytes in length. Several special func- 
+tions must also be built into the device to handle 
+the operation of data encryption and key ,mn- 
+agement. These hardware functions will be 
+defined later. 
+By tamper resistant storage we mean that a 
+ROM store for cryptographic keys must exist 
+such that the keys are not accessible by outside 
+tampering (i.e., progranmmtic read or physical 
+probe). This can be accomplished by standard 
+memory protection teclmiques and physically 
+encasing the ROM in such a way that if tam- 
+pering is attempted power will be removed from 
+the ROM, effectively erasing its contents. 
+By cryptographic transforms we mean that the 
+device must be able to encrypt and decrypt data 
+using the American National Standard Institute 
+Data Encryption Standard - ANSI X3.92-1981 - 
+(DES) and keys stored within the device. Not all 
+keys need be stored within the device's ROM, 
+but at least one key, and possibly more, must be 
+stored there. 
+The Security System must also have a secure 
+method of User Authentication and Authoriza- 
+tion. This requirement can be achieved by the 
+use of Dynamic Passwords. When a user at- 
+tempts to gain access to the computer they enter a User ID. The computer then displays a Chal- 
+lenge (usually a 7 decimal digit number) and asks 
+for a valid response. The user enters their 
+Personal Identification Number (PIN) and then 
+the Challenge into their token. If the correct 
+PIN was entered the correct Response is provid- 
+ed. If they did not enter their correct PIN into 
+the token they get an incorrect Response back. 
+The user then enters this response into the 
+computer. If the correct Response was provided 
+access is granted and the users permissionlng 
+scheme is properly set up. 
+NOTE: At no time should the user ever be told 
+that they provided the wrong input for 
+the PIN or the Challenge or the Re- 
+sponse. If the wrong answer is ever 
+provided then the only indication of this 
+ever given to the user is that they are 
+not granted access to the computer. 
+This way an imposter will have no way of 
+knowing whether the problem is with 
+the PIN, the token or the computer. 
+Finally, the Security System must provide protec- 
+tion against message modification. This can be 
+aclfieved by a technique known as Message 
+Authentication. 
+The authentication process includes the com- 
+putation, transmission, and validation of a cryp- 
+tograpl~c checksum known as a Message Au- 
+thentication Code (MAC). The MAC is based on 
+either the complete message text or selected 
+elements of the text. Additional information, 
+known to both parties but not transmitted with 
+the message, may also be included in the MAC 
+computation. The MAC calculation uses the DES 
+encryption algorithm and yields a 64-bit quantity, 
+of which only the first 32 bits are used. 
+The MAC is added to tile message by the origi- 
+nator and is transmitted to the recipient. The 
+message or message elements are accepted by 
+the recipient if the same algorithm and secret 
+key produce a MAC identical to tile received 
+MAC. Bogus or altered messages will fail such a 
+test. 
+The Financial Institution Message Authentication 
+Standard - ANSI X9.9 - 1982 - and the Financial 
+Institution Retail Message Authentication Stand- 
+17 SIGSAC Review 
+Summer 1990ard - ANSI X9.19 - define a standard for message 
+authentication based on DES. Again, since DES 
+is in the public domain, the security of the au- 
+thentication process is directly dependent on the 
+security afforded to key nmnagement. 
+TIIE FUNCTIONAL REQUIICEMENTS 
+We assume the existence of two machines each 
+containing the Security System. First, we initial- 
+ize each maclfine. This is accomplished by gener- 
+ating a random number of 16 hex digits and 
+storing this number in the Security System's 
+ROM memory as the 64 bit Local Master Key 
+(LMK). At no time should this number be 
+known by anyone, nor should it exist outside of 
+the Security System's ROM. 
+We accomplish this by defining three random, 16 
+hex digit, numbers. These are the components 
+that when combined will produce the Local 
+Master Key (LMK). They must be entered into 
+the machines one at a time such that the first 
+two are exclusively ORd together. The result of 
+this process is then exclusively ORd to the third 
+component. The final result is then stored in the 
+Security Module's tamper resistant ROM. 
+This process will provide a secure Local Master 
+Key (LMK). It is not possible to infer any in- 
+formation about this Local Master Key (LMK) 
+from knowledge of any key component. It is 
+important to remember, however, that each of 
+these components must be guarded and kept 
+separate. At no time should all of these numbers 
+come together or be known by one person. 
+The LMK is used by the Security Module to 
+encrypt all data keys so that they be stored 
+outside the Security Module's tamper resistant 
+ROM. If the Security Module must be serviced, 
+or a hardware malfunction is detected, or the 
+device should be tampered with, then the LMK 
+will be lost. In order to make sure that all the 
+data keys stored outside the device are not lost 
+we must be able to reproduce this LMK. It is 
+hnportant, therefore, to make sure that these 
+components are stored in secure but different 
+places. These components must never come 
+together or be known by one person. Next, we enable these machines to communicate 
+one with the other. This is accomplished by 
+establishing a common Master Key (MK). 
+We start by defining three random, 16 hex digit, 
+ntunbers. These are the components that when 
+combined will produce the Master Key (MK). 
+They must be entered into the machines one at 
+a time such that the first two are exclusively 
+ORd together. The result of this process is then 
+exclusively ORd to the third component. The 
+final result is encrypted using the Local Master 
+Key (LMK) and output for storage in the Se- 
+curity Systems data base. 
+We next repeat this process on machine number 
+two. It is important to remember that each of 
+these components should be transmitted between 
+machines using different paths. At no time 
+should all of these numbers come together or be 
+known by one person. 
+Tiffs process will provide a Master Key (MK) 
+shared between machines. Furthermore, it is not 
+possible to infer any information about the 
+Master Key (MK) from knowledge of any key 
+component. 
+Given the existence of a Master Key (MK) we 
+next need to provide a method of electronically 
+transmitting cryptographic keys between machine 
+number one and machine number two. To 
+accomplish this, machine number one can gener- 
+ate a random Key Encrypting Key (KEK). Next 
+we read the Master Key (MK) shared with ma- 
+chine number two and decrypt it using machine 
+number one's Local Master Key (LMK). We 
+then encrypt the Key Encrypting Key (KEK) 
+using the Master Key (MK) and output it for 
+transmittal to machine number two. Finally we 
+encrypt the Key Encrypting Key (KEK) again, 
+this time using machine number one's Local 
+Master Key (LMK) and output it for storage in 
+the Security System's data base. 
+When the Key Encrypting Key (KEK) is received 
+at machine number two it must first be decrypt- 
+ed using the Master Key (MK) shared with 
+machine ntimber one, and then encrypted again 
+using mactfine number two's Local Master Key 
+(LMK). This is accomplished by first taking the 
+18 SIGSAC Review 
+Summer 1990Master Key (MK) slmred with machine number 
+one and decrypting it using machine number 
+two's Local Master Key (LMK). Next we take 
+the Key Encrypting Key (KEK) just transmitted 
+and decrypt it using the Master Key (MK). 
+Finally we encrypt the Key Encrypting Key 
+(KEK) using this machine's Local Master Key 
+(LMK) and output it for storage in the Security 
+Systems data base. 
+Keep in mind that the Local Master Key (LMK), 
+the Key Encrypting Key (KEK), and the Master 
+Key (MK) must never exist in the clear outside 
+of the Security System's ROM memory. 
+Data Access Controls 
+At this point we will want to authorize users to 
+access a machine. This is accomplished by having 
+each user select their own User Secret Key 
+(USK) - a 16 hex digit number. This is best 
+accomplished by asking the Security Module to 
+generate a random number for us. This number 
+is then keyed into the users token so that it can 
+be used to generate a valid User Access Re- 
+sponse (UAR) to a User Access Challenge (UAC). 
+At tiffs same time the user will select their own 
+Personal Identification Number (PIN) and input 
+that into their own token. The PIN is required 
+in order to activate the ChaUenge/Response 
+mechanism in the token. 
+To gain authorized access to the computer sys- 
+tem the user will provi.de the Security System 
+with their User ID. In response to this the 
+Security System will provide a Challenge (usually 
+a 7 decimal digit number) and request a valid 
+response (usually a 7 decimal digit number). 
+At this point the user will enter their PIN into 
+the token to activate the Challenge/Response 
+process. Next the user enters the Challenge into 
+the token and a valid response is returned. The 
+user enters that response !nto the computer and 
+the Security System will verify it. If the correct 
+response has been entered then the user is 
+granted access to the computer and their prede- 
+termined set of functions or data accesses within 
+the computer are set. Data Communication Controls 
+This brings us to the next fimction of the Secu- 
+rity System, to enerypt, decrypt, and]or authen- 
+ticate messages sent between machines. Let us 
+assume that a message will not be larger than 
+3,000 bytes. This proyides a maximum size for 
+any message that should not cause problems. 
+However, given any limit we know that someone 
+somewhere will come up with a reason to exceed 
+it. So we build in a method to send a message of 
+any length by breaking it into 3,000 byte blocks. 
+We also recognize that to support the desired 
+functions, the Security System must pass ad- 
+ditional information from maclfine to machine. 
+This information will be passed in the form of an 
+envelope surrounding the message and consist of 
+the following: 
+. Start Message (SM) - This is a two byte 
+field that signals the beginning of am 
+other message envelope. 
+. From Machine ID (FM1D) - This is the 
+Identification Number that is assigned to 
+the sending machine. 
+. To Machine ID (TMID) - Tlds is the 
+Identification Number that is assigned to 
+the receiving machine. 
+4. Data Encrypti,g Key (DER) - This is the 
+key that was used to encrypt the Mes- 
+sage Data Block (MDB) field. The DEK 
+has itself been encrypted using the Key 
+Encrypting Key (KEK) that is shared 
+between the sending and receiving ma- 
+chines. 
+. Data Filtering Code (DFC) - This ,is a 
+one byte transmission filtering code used 
+to identify the method of filtering binary 
+cipher data into transmittable text: 
+0 - None (binary cipher data) 
+1 - Hexadecimal 
+2 - ASCII 
+3 - Mutually Defined. 
+19 SIGSAC Review 
+Summer 1990. 
+. 
+. 
+. 
+10. 
+11. 
+12. 
+13. ~lessage Authentication Key (MAK) - 
+This is the key used to produce the 
+Message Authentication Code that fol- 
+lows. Tiffs MAlt has been encrypted 
+under the Key Encrypting Key (KEK) 
+that is shared between the machines. 
+~lessage Authentication Code (MAC) - 
+This is the MAC that was calculated on 
+the message that follows. Generate the 
+MAC using the MAK beginning with the 
+From Machine ID (FMID) field and using 
+all data through and including the End 
+Data Block (EDB) field, excluding the 
+DEK, DFC, MAK, and the MAC fields. 
+Message Sequence Number (MSN) 
+Assuming the transmitted message is 
+greater then 3,000 bytes long we must 
+differentiate the first block from the 
+second etc. This field is simply a sequen- 
+tial number, starting with one. The 
+MSN is used to keep the message blocks 
+in their original sequence. 
+Message Block Size (MRS) - As we have 
+already said, a message block can be as 
+large as 3,000 bytes or as short as 1 
+byte. In order to know exactly where 
+this message block ends we mtlst provide 
+the exact size of the Message Data Block 
+(MDB) field. 
+End of Message Code (EMC) - This is a 
+two byte field used to identify the last 
+block in a multi-block message. If tlds 
+message has only one block, or this is the 
+last block in the message, then the EMC 
+code is placed in this field. If this is not 
+the last block in this message set this 
+field to blanks. 
+Start Data Block (SDB) - This is a two 
+byte field that signals the end of the 
+message header and the beginning of the 
+message text. 
+Message Data Block (MDB) - This is the 
+actual text of the message. 
+End Data Block (EDB) - This is a two 
+byte field tlmt signals the end of the message text and the end of the message 
+block. 
+14. End Message (EM) - This is a two byte 
+field that signals the end of another 
+message envelope. 
+Given the above format for a message we next 
+identify the order of processing for this data. 
+First we check to see if the whole message is less 
+than 3,000 bytes. If so, then place the data in the 
+Message Data Block (MI)B) field and set the End 
+of Message Code (EMC). If the message data is 
+larger than 3,000 bytes break the message at 
+3,000 bytes and place that data in the Message 
+Data Block (MDB) field and set the End of 
+Message Code to blanks. 
+Second, set the Message Sequence Code to n + 1 
+where n was initialized to zero. 
+Third, set the From Machine ID (FMID) and the 
+To Machine ID (TMID) numbers as appropriate. 
+If a Message Authentication Code (MAC) Ires 
+been requested then begin by selecting a random 
+number for the Message Authentication Key 
+(MAK). Generate the MAC using the MAK 
+beginning with the From Machine ID (FMID) 
+field and using all data through and including the 
+End Data Block (EDB) field, excluding the DEK, 
+DFC, MAK, and MAC fields. Place the MAC in 
+the MAC field. Retrieve the Key Encrypting Key 
+(KEK) for machine number two and decrypt it 
+using this machine's Local Master Key (LMK). 
+Using the decrypted KEK encrypt the MAK and 
+place that value in the MAK field. 
+If a MAC has not been requested then fill both 
+tile MAK and the MAC fields with blanks. 
+If data encryption has been requested then begin 
+by selecting a random number for the Data 
+Encrypting Key (DEK) and encrypt the Message 
+Data Block (MDB) field. 
+Finally, retrieve the Key Encrypting Key (KEK) 
+for machine number two and decrypt it using ttfis 
+machine's Local Master Key (LMK). Using the 
+decrypted KEK encrypt the DEK and place that 
+value in the DEK field. 
+20 SIGSAC Review 
+Summer 1990If data encryption lms not been requested then 
+fdl the DEK with blanks. 
+Next we need to determine if data filtering has 
+been requested. If it Ires we determine the data 
+filtering method to use. As we stated earlier, 
+ANSI X9.23 defines several optional filters that 
+trade off between character set flexibility and 
+message expansion. For discussion purposes we 
+will arbitrarily chose Hexadecimal filtering. 
+If encryption and filtering Ires been selected then 
+we take the Message Data Block (MDB) and turn 
+each hexadecimal character (0...9 & A...F) into 
+two hexadecimal characters by appending a 
+constant value to it. In other words, the string 
+258CA would become F2F5F8FCFA by append- 
+ing the hexadecimal character F to every hexa- 
+decimal character in the string. In this way we 
+make sure that the binary string that results 
+from the encryption of the Message Data Block 
+(MDB) is free of any potential transmission 
+control characters. 
+The message is now ready to send to machine 
+number two. 
+Once the message block has been received at 
+machine number two the decryption process 
+begins. If encryption and filtering has been 
+requested then the Message Data Block (MDB) 
+is identified and the filtering method is deter- 
+mined by reading the Data Filtering Code (DFC) 
+found in the message envelope. Based on this 
+information the data filtering process is reversed. 
+Next the From Machine ID (FMID) is read from 
+the message envelope. Tt{is is used to look up 
+machine number one's Key Encrypting Key 
+(KEK) from the Security System's data base. 
+Using this machine's Local Master Key (LMK) 
+the KEK is decryptcd. The Data Encrypting Key 
+(DEK) is read from the message envelope mid 
+decrypted using the KEK. The DEK is then used 
+to decrypt the Message Data Block (MDB) field. 
+The Message Authentication Key (MAt0 is then 
+read from the message envelope and decrypted 
+using the KEK. The decrypted MAK is then 
+used to generate a Message Authentication Code 
+(MAC) beginning with the From Machine ID 
+(FM1D) field and using all data through and in- eluding the End Data Block (EDB) field, exclud- 
+ing the DEK, DFC, MAK, and MAC fields. The 
+resulting MAC is then compared to the MAC 
+found on the message envelope. If a match is 
+found the message is assumed to be correct and 
+unaltered. If the two MACs do not match then 
+the message is suspect and all processing is 
+halted. 
+Given a good match on the two MACs we read 
+tile Message Sequence number (MSN), the Mes- 
+sage Block Size (MBS), and the End of Message 
+Code (EMC). Depending upon their values we 
+begin reading the Message Data Block (MDB) for 
+bIBS bytes and, depending upon the MSN and 
+EMC, process the MDB back into the original 
+message form. 
+NOTE: This Sec~ity System can be rendered 
+totally secure by utilizing double length 
+keys for the following fields. 
+1. Local Master Key (LMK) 
+2. Master Key (MK) 
+3. Key Encrypting Key (KEIO 
+4. Data Encrypting Key (DEK) 
+5. Message Authentication Key (MA.K) 
+With single length (16 hex digits or 64 
+bits) keys there are 70,000,000,000, 
+000,000 key combinations. Assuming 
+16Mhz chips, 8 chips per board, 16 
+boards per chassis, and 8 chassis per 
+rack (a 1,024 chip parallel processor), it 
+has been estimated that it would require 
+24 days to break a DES cypher. With 
+double length (32 hex digits or 128 bits) 
+keys however there are 5,000,000,000, 
+000,000,000,000,000, 000,000,000, key 
+combinations. Our 1,024 chip parallel 
+processor would require almost 46,000 
+CFEd~rTURIES to break a DES cypher. 
+TtlE SECI3TOTY MODULE 
+Tile more functions that you can place in the 
+Security System's tamper resistant Security 
+Module, the better your security. At a minimum, 
+however, the following functions must be built 
+into the hardware. 
+21 SIGSAC Review 
+Summer 1990. 
+2. 
+. 
+. 
+. 
+. Generate a Local Master Key (LMK) - 
+Given three 16 hex digit numbers, exclu- 
+sively OR one to two and then exclusive- 
+ly OR the result to three. Load that 
+result into the tamper resistant ROM as 
+the LMK. 
+Generate a ~faster Key encrypted under 
+the LMK- Given three 16 hex digit 
+numbers, exclusively OR one to two and 
+then exclusively OR the result to three. 
+Take this ntunber and encrypt it using 
+the LMK and output the result. 
+Generate a Key Enerypting Key (lOgK) - 
+Given a Master Key (MK) decrypt it 
+using the LMK. Select a random num- 
+ber of 16 hex digits and encrypt it using 
+the MK. Output the result for transmis- 
+sion to machine number two. Take that 
+same random number and encrypt it 
+using the LMK and output that result 
+for storage in the Security System's data 
+base. 
+Receive a Key Enerypting Key (KEK) 
+from another machine - Given a KEK (a 
+16 hex digit number), and a Master Key 
+(MK), decrypt the MK using the LMK. 
+Using that result decrypt the KEK. 
+Encrypt the KEK using the LMK and 
+output the result for storage in the Secu- 
+rity System's data base. 
+Generate a Message Authentication Code 
+(MAC) - Select a random number of 16 
+hex digits to be used as the Message Au- 
+thentication Key (MAK). Use the MAK 
+to generate a MAC on a given data block 
+of up to, but not more then, 3,192 bytes 
+(3,000 byte message block plus the mes- 
+sage envelope). Given a KEK, decrypt it 
+using the LMK. Using that result en- 
+crypt the MAK and output it and the 
+MAC. 
+Verify a Message Authentication Code 
+(MAC) - Given a MAC, a MAK, a KEK, 
+and a data block of up to, but not more 
+than 3,192 bytes dccrypt the KEK using 
+the LMiC Using the result of that step 
+decrypt the MAK. Using the result of 7. 
+. 
+9. 
+10. that step generate a MAC on the data 
+block. Compare the two MACs and if 
+they are "the same output "OK". If the 
+two MACs are not the same output 
+"ERROR". 
+Encrypt a Data Block - G iven a KEK and 
+a data block of up to, but not more then, 
+3,000 bytes, generate a random number 
+of 16 hex digits to be used as the Data 
+Encrypting Key (DEK). Encrypt the 
+data block using the DEK. Decrypt the 
+KEK using the LMK. Using that result, 
+encrypt the DEtC Output the encrypted 
+DEK and the encrypted data block. 
+.l~rypt a Data Block - Given a KEK, an 
+encrypted DEK, and an encrypted data 
+block, decrypt the KEK using the LMK. 
+Using this result decrypt the DEK. 
+Using this result decrypt the data block. 
+Output the decrypted data block. 
+Generate a Users Secret Access Key - 
+Select a random number of 16 hex digits 
+to be used as the User's Secret Key 
+(USK). Take that same random number 
+and encrypt if using the LMK and out- 
+put that result for storage in the Securi- 
+ty System's data base. Also output the 
+USK in the clear so that the user can 
+input that number into their own token. 
+Verify a User Access Response - Given a 
+Users Secret Key (USK), a User Access 
+Challenge (UAC), and a User Access 
+Response (UAR), decrypt the USK using 
+the LMK. Next, encrypt the UAC using 
+the USK. If the result of this process is 
+the same as the given UAR, then output 
+"OK", otherwise output "ERROR". 
+CONCLUSION 
+The Network Security System we lmve described 
+herein can be used as an eflbctive security sys- 
+tem for all types and sizes of computer networks. 
+The recommended approach for accomplishing 
+this, as described herein, is based upon tile 
+premise that the Network Security System 
+Application Program (software) should be the 
+SIGSAC Review 
+22 Summer 1990controlling mecllanbm and not the Security 
+Module (hardware). It is, after all, the Network 
+Security Application Program that really knows 
+what security is to be applied and where it is to 
+be applied. At the same time we believe that 
+software alone cannot provide the necessary level 
+of security without a hardware device as de- 
+scribed herein. 
+It should be noted that the Network Security 
+System described herein has everything needed 
+to provide the User Authentication, Message 
+Authentication, and the Data Encryption capa- 
+bility required to protect any size computer 
+network. Only the inclusion of a Security Ref- 
+erence Monitor (SRM) and good Audit Trail 
+standards are lacking. 
+We emphasize also that all of the Security Mod- 
+ule's functions could be implemented in software 
+but you would likely end up with a weaker 
+Security System. Likewise everything described 
+above could be implemented in hardware, prefer- 
+ably on one chip. The additional security af- 
+forded by this approach simply does not justify 
+the costs, however. We believe the ideal compro- 
+mise between costs and security are achieved by 
+placing the Security Module's functions in a 
+physically separate, tamper resistant, hardware 
+device. 
+Copyright (c) 1990 Dahl A. Gerberick 
+SIGSAC Review 
+23 .qnmmer 199N

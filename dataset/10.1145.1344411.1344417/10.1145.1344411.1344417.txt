@@ -1,0 +1,831 @@
+11On Ranking Techniques for Desktop Search
+SARA COHEN
+The Hebrew University of JerusalemandCARMEL DOMSHLAK and NAAMA ZWERDLINGTechnion—Israel Institute of Technology
+Users tend to store huge amounts of ﬁles, of various formats, on their personal computers. As
+a result, ﬁnding a speciﬁc, desired ﬁle within the ﬁle system is a challenging task. This articleaddresses the desktop search problem by considering various techniques for ranking results of a
+search query over the ﬁle system. First, basic ranking techniques, which are based on variousﬁle features (e.g., ﬁle name, access date, ﬁle size, etc.), are considered and their effectiveness isempirically analyzed. Next, two learning-based ranking schemes are presented, and are shown tobe signiﬁcantly more effective than the basic ranking methods. Finally, a novel ranking technique,based on query selectiveness, is considered for use during the cold-start period of the system. Thismethod is also shown to be empirically effective, even though it does not involve any learning.
+Categories and Subject Descriptors: H.3.3 [ Information Storage and Retrieval ]: Information
+Search and Retrieval
+General Terms: Experimentation, Human FactorsAdditional Key Words and Phrases: Desktop search, personal information management, ranking
+ACM Reference Format:
+Cohen, S., Domshlak, C., and Zwerdling, N. 2008. On ranking techniques for desktop search. ACM
+Trans. Inf. Syst. 26, 2, Article 11 (March 2008), 24 pages. DOI =10.1145/1344411.1344417 http://
+doi.acm.org/10.1145/1344411.1344417
+1. INTRODUCTION
+Due to the increasing storage capabilities of standard personal computers, users
+are no longer motivated to delete old ﬁles. The opposite is true; users tend
+S. Cohen and N. Zwerdling were partially supported by the ISF (Grant 1032/05). C. Domshlak was
+partially supported by the BSF (Grant 2004216).Authors’ addresses: S. Cohen, The Selim and Rachel Benin School of Engineering and ComputerScience, The Hebrew University of Jerusalem, Edmond J. Safra Campus, Jerusalem 91904, Israel;email: sara@cs.huji.ac.il C. Domshlak, N. Zwerdling, The William Davidson Faculty of Indus-trial Engineering and Management, Technion—Israel Institute of Technology, Haifa 32000, Israel;email: dcarmel@ie.technion.ac.il; anaama@tx.technion.ac.ilPermission to make digital or hard copies of part or all of this work for personal or classroom use isgranted without fee provided that copies are not made or distributed for proﬁt or direct commercialadvantage and that copies show this notice on the ﬁrst page or initial screen of a display alongwith the full citation. Copyrights for components of this work owned by others than ACM must behonored. Abstracting with credit is permitted. To copy otherwise, to republish, to post on servers,to redistribute to lists, or to use any component of this work in other works requires prior speciﬁcpermission and/or a fee. Permissions may be requested from Publications Dept., ACM, Inc., 2 PennPlaza, Suite 701, New York, NY 10121-0701, USA, fax +1 (212) 869-0481, or permissions@acm.org.
+C/circlecopyrt2008 ACM 1046-8188/2008/03-ART11 $5.00 DOI 10.1145/1344411.1344417 http://doi.acm.org/
+10.1145/1344411.1344417
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:2 • S. Cohen et al.
+to save huge amounts of multimedia data, such as text documents, pictures,
+audio and video ﬁles, emails, presentations, etc. The practice of “never deletingﬁles” has distinct advantages, since it ensures that important data will neverbe accidentally removed. However, as an unfortunate side effect, the personalcomputer often becomes an unwieldy mess. Thus, locating a speciﬁc ﬁle withinthe ﬁle system may become a challenging (and even daunting) task.
+To address this problem, numerous research and industrial projects have
+evolved in the area of personal information management (PIM). These projectsaim to develop technologies allowing users to store, access, and effectivelysearch for information in their personal computer, or even about virtually ev-erything in their personal life’s history [Teevan et al. 2006]. Due to the spe-cial nature of its goals, PIM brings together researchers from a wide spec-trum of scientiﬁc and engineering disciplines, bridging cognitive psychology(where the term “personal information management” was ﬁrst coined [Lansdale1988]) with database management and information retrieval (IR). In particu-lar, [Lowell 2003] considers PIM to be one of the grand research challenges forthe upcoming years.
+The focus of this article is on desktop search , that is, effective search within
+a personal computer. This is an important problem, since a desktop searchengine should make it easier to locate the information we need, even when itis buried in vast amounts of unrelated information. The commercial and socialsuccess of classical and web information retrieval techniques seem to imply thatdesktop search can be successfully addressed using the tools developed for theformer tasks. Desktop search, however, is different in many ways from searchin an unknown data repository such as a digital library or the Web. Perhapsthe foremost difference is that users search their personal desktops mainly forconcrete ﬁles they know to exist.
+Recently, the challenge of developing a tool for effective desktop search has
+been studied by both academic and commercial research groups (e.g., Gemmellet al. [2002], Fagin et al. [2003], Dumais et al. [2003], Nejdl and Paiu [2005],Google [2008], Copernic [2007], and Spotlight [2008]). While these tools differ insome capabilities and the form of user interface, most adopt the same intuitiveframework of:
+(1) deﬁning a query as a small set of keywords;
+(2) retrieving a set of documents that are related in some way to the query
+keywords;
+(3) presenting the user with these documents ordered according to some (de-
+fault) primary ranking scheme; and
+(4) allowing the user to reorder the document list according to secondary rank-
+ing schemes, which generally consist of attributes such as last-access date,ﬁlename, purported relevance of the documents’ content to the query, etc.
+Interestingly, while the last feature is easy to implement, many commercial
+desktop search tools seem to prefer more laconic forms of user interface, re-turning to the user a single (possibly structured) ranked list of search re-sults (e.g., Google [2008] and Spotlight [2008]). This supports what we believe
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:3
+to be an inherent property of searching personal data-spheres: The typical
+assumption of desktop-search users is that they know how to correctly querythe system for their desired ﬁle, and they expect the system to locate this ﬁlesuccessfully.
+All these special properties of desktop search make the choice of a primary
+ranking scheme (item 3 in the preceding) quite crucial. However, while the
+body of work on personal information management, and particularly on desktopsearch, is continuously growing [Ahlberg et al. 1992; Barreau and Nardi 1995;Gemmell et al. 2002; Dong and Halevy 2005; Fagin et al. 2003; Dumais et al.2003; Erickson 1996; Nejdl and Paiu 2005; Teevan et al. 2006; Marais andBharat 1997], there are currently only limited (published) insights into thequestion of how to rank desktop-search results. Interestingly, the observationsreported in the literature are somewhat surprising from an IR perspective. Forinstance, the analysis of log data of Stuff I’ve Seen ’s users, reported in Dumais
+et al. [2003], suggests that users sort search results by the last-update datemore frequently than by a ranking mechanism based on an IR technique. Theconclusion in Dumais et al. [ibid.] is that “the fact that users frequently switchto sorting by Date suggests that Date is a more useful attribute than [thetextual-relevance-based] Rank for ﬁnding personal items.” Additional indirectevidence for such an a priori dominance of text-independent ranking schemescomes from many industrial desktop-search applications in which date-relatedinformation is also used as the primary ranking scheme (e.g., Google [2008] andCopernic [2007]).
+In this article we focus on the problem of ﬁnding an effective primary ranking
+scheme for the desktop search. We will mainly focus on “known item” queries,that is, ﬁles that the user knows to exist and whose names the user can also rec-ognize [Ogilvie and Callan 2003; Lee et al. 2006; Macdonald and Ounis 2006].In particular, we consider ﬁles that would normally be created or saved by theuser, that is, excluding emails.
+1To obtain the essential user data, we developed
+a simple desktop-search tool that follows the basic format described in the pre-ceding items 1 to 4. We provided this tool to a group of volunteer users. Aftera while, log data
+2was collected from the users. This data was thoroughly ana-
+lyzed to determine the relative effectiveness of ranking search results accordingto numerous standard sorting criteria, for example, last-update date, textualconnection between content and query, textual connection between ﬁlenameand query, etc. This analysis also provided us with some interesting ﬁndingsabout desktop-search habits (of our users). Based on these ﬁndings, we suggestand evaluate the effectiveness of:
+(1) basic ranking schemes that rank results according to individual ﬁle fea-
+tures;
+(2) two learning-based ranking schemes that can be automatically learned from
+the system’s log data; and
+1Email has very different properties than other ﬁles in a personal computer; for example, email
+is not explicitly saved and has rather special metadata such as sender and recipient, etc. Rankingresults that may include emails is left for future work.
+2The data is available online at http://iew3.technion.ac.il/~sarac/desktop-search.html
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:4 • S. Cohen et al.
+(3) a novel approach to rank the desktop search results that constitutes a
+(rather simple) reasoning about the search results, but does not requirelearning, and thus is suitable for the “cold start” period of the system.
+Our empirical analysis shows that both learning and reasoning-based ap-
+proaches signiﬁcantly dominate all the basic ranking schemes with respectto our evaluation criteria.
+The rest of the article is organized as follows. In Section 2 we describe related
+work. In Section 3 we formally state the problem of desktop search, suitableevaluation criteria, and the type of information about ﬁles that we used in ourdesktop search system. Section 4 describes the system, data, and evaluationsetup we used in our analysis. In Section 5 we present the results of our studyof the basic ranking methods that are typically used in desktop search systems.Sections 6 and 7 are devoted to the learning-based and reasoning-based ap-proaches, respectively, and to their evaluation. We conclude and outline a fewdirections for future research in Section 8.
+2. RELATED WORK
+2.1 Desktop Search Studies
+When developing a desktop search engine it is important to “know the audi-
+ence,” that is, to know how users organize their ﬁles in the ﬁle system and howthey retrieve data. In addition, it is important to be familiar with the searchbehaviors of users.
+In Barreau and Nardi [1995], two independent studies were compared. The
+studies examined the way users organize and search for ﬁles on their com-puters in three different operating systems (Windows, DOS, and MacIntosh).Both studies agreed that there are three types of information on the personalcomputer, listed as follows.
+(1)Ephemeral . This is short-term information containing tasks and memos
+which function as reminders. This type of information is usually stored attop-level directories and is used very frequently.
+(2)Working . This is information that is frequently used for ongoing work on
+a current project which has a shelf-life of weeks or months. This type ofinformation is organized in directories according to categories.
+(3)Archive . This is information that has a shelf-life of months or even years
+and contains data on completed work. This information is rarely used andis not organized in a speciﬁc manner.
+The results of both studies in Barreau and Nardi [ibid.] reﬂect the notion that
+the older the data, the less often it is used. These studies also claim that “ﬁlenaming was given careful attention by all users,” and that users have in mindthe goal of being able to ﬁnd a ﬁle when they name the ﬁle and when they placeit in a speciﬁc location. Finally, both studies agreed that users prefer to performan active search according to the ﬁle location, since they need to feel in controland since they usually remember more or less where was the ﬁle stored.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:5
+The last result was also one of the conclusions of Teevan et al. [2004], which
+studied how users perform personally motivated searches in email, ﬁles, andthe Web. They discovered that users usually search in small steps. Each step’sresults lead to the next step. In most searches, users knew what they werelooking for and remembered the type of ﬁle (e.g., email, word document, etc.)that held this information.
+Several approaches for retrieving information from a personal computer have
+been suggested in the past. One of these is a system for personal retrieval andreuse called Stuff I’ve Seen (SIS) [Dumais et al. 2003], developed in Microsoft
+Research Laboratories. One of the main assumptions behind the work on SISis that most of the data that a user wants to retrieve was seen by her in thepast [Dumais et al. 2003]. Therefore, SIS records and indexes all the data thatthe user sees, from any source (e.g., mail, Web, Word, Power-Point presenta-tions). The system’s GUI provides a text box for the query and presents a pre-view of the results’ content, title, author, date, rank, mail-to, and source. Bydefault, results are ordered according to date or “rank,” which is a measure ofhow relevant the content of the document is to the search query. The user is ableto sort the results according to any of the ﬁelds displayed (title, author, date,rank, mail-to, and source), or to ﬁlter the results according to the values of theseﬁelds. By performing such ﬁltering, the user can get to her desired result bysmall steps, as suggested in Barreau and Nardi [1995]. In this study [Dumaiset al. 2003], the ﬁelds most frequently used for sorting were date, then rank,and only afterwards title, author, etc. Therefore, SIS’s ranking function is notoptimal, since it was used less often than sorting by date. In addition, SIS doesnot employ any learning methods to improve the search, and does not allow anydegree of personalization in the ranking function.
+Phlat [Cutrell et al. 2006] is another interesting system for personal search.
+One of the goals of this system is to allow for intuitive search that emphasizesﬁltering of results by user-supplied parameters, such as ﬁle type, date, etc.Phlat uses a conceptual tagging scheme to deﬁne appropriate labels for a widevariety of ﬁles and formats. Effort is expended in making the user interface asconvenient as possible. Phlat does not rank the query results, but rather allowsusers to sort them according to various basic features.
+A different approach for organizing and retrieving personal information was
+taken in Wolber et al. [2002]. In this study, a tool was developed to help organizeand retrieve data from the user’s personal web, which consists of ﬁles storedlocally, webpages saved as bookmarks, and other webpages that are linked tothe bookmarked pages. The tool uniﬁes the following three different hierarchiesinto one hierarchy according to the content relationship between the documents:(1) the directory structure of the ﬁle system, (2) the bookmark directory, and (3)the hidden hierarchy deﬁned by direct links between documents, represented byhyperlinks and citations. The tool presents an alternative interface for savingnew documents and retrieving old ones. The user saves a document not in aspeciﬁc location in the ﬁle system or as a bookmark, but rather with respectto the existing documents. In other words, the user speciﬁes which documentshave content that is related to that of the new document. The tool allows usersto retrieve data by presenting the hierarchy so that the user can browse to ﬁnd
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:6 • S. Cohen et al.
+related documents in the area of interest. The method for information retrieval,
+presented in Wolber et al. [ibid.], is quite different from previous studies. It hastwo main drawbacks. First, it does not allow the user to control the ﬁle locationin the ﬁle system. This is a potential problem, since Barreau and Nardi [1995]and Teevan et al. [2004] indicate that users prefer to perform search accordingto the ﬁle location. Second, it does not employ any ranking method and thereforeexposes the user to a large unordered dataset.
+2.2 Industrial Tools
+Recently, several industrial companies have developed desktop-search applica-
+tions. We brieﬂy survey some of the best-known ones.
+Copernic [2007] was one of the ﬁrst companies to develop a desktop search
+application allowing users to search virtually any type of ﬁle, such as, pdf ﬁles,Word documents, Power-Point presentations, email, audio, bookmarks, etc. Fordifferent types of ﬁles (e.g., email, music, etc.), Copernic provides specializedGUIs that allow results to be sorted by any of the properties of the ﬁles. Bydefault, the results in Copernic are sorted by date. The system incorporates nogeneral ranking function whatsoever.
+Google [2008], famous for its web search engine, developed a desktop version,
+called Google Desktop. The GUI of Google Desktop is similar to that of the websearch engine. The results of a search can be sorted either by date or by the rankof the ﬁle, a number which is determined by the Google Desktop application.It is not clear which types of factors are considered in ranking documents inquery results. PageRank, a ranking method based on link analysis, is widelybelieved to be the basis of the ranking function for Google’s web search engine.However, PageRank is not suitable for desktop search, since most of the ﬁlesin a personal computer do not have hyperlinks. It is interesting to note that atpresent, the results returned by Google Desktop are by default sorted by date.This seems to indicate that Google is not conﬁdent that sorting according totheir ranking function typically yields high-quality results.
+Many other companies have created their own desktop search engines, for
+example, LookOut, Yahoo, HotBot, Blinkx, FileHand. All these search enginessupport searching over a variety of ﬁle types, yet (to the best of our knowl-edge) none of these industrial desktop search engines incorporates a learningfunctionality or personalization. When ranking is available, it is performedaccording to a variation of TF-IDF, a criterion used in classic information re-trieval [Baeza-Yates and Ribeiro-Neto 1999].
+3. FRAMEWORK
+3.1 Queries and Answers
+We use fandFto refer to a ﬁle and a set of ﬁles, respectively. Each ﬁle fis
+associated with four multisets of terms, as follows.
+—Path (f). This corresponds to the full path of f, with “\:._- ” used as
+delimiters. For example, the full path multiset of c:f\g\my_foo.txt is
+{{c, f, g, my, foo, txt }}.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:7
+—Name (f). This corresponds the name of fwith “._-” used as delim-
+iters. For example, the name multiset of the ﬁle c:\f\g\my_foo.txt is
+{{my, foo, txt }}.
+—Content (f). This corresponds to the bag-of-words content of f. (If fhas no
+textual content, e.g., fis an image or audio ﬁle, then content (f)=∅.)
+—Querylog (f). This is the multiset of all previously issued queries (of the user
+in question) that resulted in the user choosing (i.e., clicking on) f.
+Letqbe a query, namely, a bag of words, and let Fbe a set of ﬁles. The
+candidate answers Cand (q,F) for qoverFis the set of all ﬁles f∈Fsuch
+that there is at least one word in common to qand to one of the four word
+multisets associated with f. In our system (described in Section 4), when the
+user issues a query qand the ﬁle system consists of the ﬁles F, the user is
+provided with the list of ﬁles Cand (q,F). The user can then either choose a
+single ﬁle among Cand (q,F), or desist from choosing any ﬁle. In our analysis
+we make two important assumptions that are customary in the scope of known-item search [Ogilvie and Callan 2003; Lee et al. 2006; Macdonald and Ounis2006], as follows.
+Unique File Assumption. There is a unique ﬁlef
+∗
+q|F∈Fthat the user de-
+sires when issuing a query q.
+Recognizability Assumption. If the user issues a query q, and chooses a ﬁle
+f∈Cand (q,F) from the list of returned answers, then we have f=f∗
+q|F.
+Note that these assumptions would not normally hold for standard, open-
+repository search applications such as web search. However, they are quitenatural in the context of desktop search [Fagin et al. 2003]. This is especiallytrue in our setting, since our search engine only indexes ﬁles that are normallycreated or saved by the user, and not, for example, emails. In the sequel, we alsoassume that the user always chooses a ﬁle from Cand (q,F); all other queries
+are discarded from our analysis.
+3.2 Features of Interest
+In a standard ﬁle system, ﬁles are naturally associated with numerous at-
+tributes such as ﬁlename, size, date of creation, location of the ﬁle in the hi-erarchy of directories, etc. A priori, all these attributes bring information thatmight inﬂuence the relative relevance of the ﬁles to the user queries. In ad-dition, previous interactions of the users with the desktop search engine arepotential sources of useful information. In our system we decided to exploit awide palette of such potentially useful sources of information.
+Given a query qand a set of ﬁles F, each ﬁle f∈Fis associated with a
+feature vector /vectorf(q)∈R
+n. Each feature corresponds to one or another property
+of the ﬁle, and, depending on the nature of the feature, its value might beeither query dependent or query independent. In what follows, the names of thefeatures are written using the small-caps font, for example, F
+ILETYPE. For ease
+of presentation, given a feature F EATURE , a query q, and a ﬁle f,b yF EATURE q(f)
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:8 • S. Cohen et al.
+we denote the value of F EATURE in/vectorf(q). (We allow ourselves to omit the subscript
+qif the value of the feature in /vectorf(q) is query independent.)
+Query-independent features. We ﬁrst consider ﬁle features whose values are
+determined independently from the speciﬁc user query.
+—S IZE(f) captures the relative size of f. We set S IZE(f)=1 (respectively,
+0.8, 0.6, 0.4, 0.2, 0.0) if the size of fis among top 5 (respectively, 10, 20, 50,
+75, 100) percent in F. We use discrete values later in the learning techniques
+in order to improve the generalization power, since the data volume is notvery large.
+—N
+ORMALIZED SIZE(f) captures the normalized deviation of the physical size of
+ffrom the average size of all other ﬁles in Fthat are of the same type as f.
+Speciﬁcally, N ORMALIZED SIZE(f) is set to a [0, 1]-normalization of
+size(f)
+avg{size(f/prime)|ﬁletype (f)=ﬁletype (f/prime)},
+where ﬁletype (f) is the ﬁle type of f, such as doc, txt, etc.
+—Iflevel(f) is the distance of ﬁle ffrom the uppermost directory, then we set
+LEVEL(f)=1/level(f). For example, we have L EVEL(c:\foo.txt )=1,
+LEVEL(c:\f\g\foo.txt )=1/3, etc. This feature is considered following the
+observation in Barreau and Nardi [1995] on storage habits of users withrespect to different types of information.
+—We have several binary, mutually exclusive features of the form
+F
+ILETYPEX(f), where X is one of the values doc, txt, tex/bib, pdf, ppt, html,
+java, c, cpp, h, cs, or other. For instance, F ILETYPEPDF( f)=1 iff fis a PDF
+document.
+—Using a nonstandard feature D IRRANK(f), we aim at capturing the impor-
+tance of the directories in which fappears (directly or indirectly) to the
+speciﬁc task of desktop search. As mentioned in Barreau and Nardi [1995],ephemeral and working information types are arranged in directories andreused. Therefore, we expect the probability to open a ﬁle in a speciﬁc di-rectory to be proportional to the number of ﬁles this were previously openedfrom this directory. Intuitively, we consider the importance of a directory inthis context as proportional to the number of times that the correct resultfor a query appeared either in that directory, or in one of its subdirectories.However, we normalize this importance by “spreading” out the importanceof a directory among all ﬁles in this directory (or in its subdirectories). Notethat the value of D
+IRRANKis updated after each new query qis issued, and
+after the user choice f∗
+q|Famong the query results is obtained.
+Speciﬁcally, D IRRANK(f) is deﬁned as follows. At ﬁrst, before any queries
+are issued, we set D IRRANK(f)=0 for all ﬁles f∈F. Now, suppose that
+a query is issued and the desired ﬁle f∗
+q|Fis found in a directory dq. For a
+ﬁlef∈F, let d1,...,dkbe all the directories that are common ancestors
+ofdqand fwhen viewing the ﬁle system as a tree. For each i≤k, let ni
+be the number of ﬁles that are in dior in any of its subdirectories, that is,
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:9
+niis the number of ﬁle nodes in the subtree of the ﬁle system rooted at di.
+Then, we increment D IRRANKoffby/summationtextk
+i=11/ni. Note that the value added to
+DIRRANK(f) is proportional to the number of directories which are common
+todqand f, and inversely proportional to the number of ﬁles in each of the
+common directories.3
+Query-dependent features. In addition to query-independent features, some
+features of a ﬁle depend either on the date on which the query was issued, oron the actual content of the query.
+First, recall that each ﬁle fis associated with four word multisets path (f),
+name (f),content (f), and querylog (f). These sets naturally give rise to the
+four respective features P
+ATH,NAME,CONTENT , and Q UERYLOG, where P ATH q(f)
+correlates with the cosine distance between the tf.idf vectors of path (f) and
+q; the values of N AME q(f), C ONTENT q(f), and Q UERYLOGq(f) are similarly
+determined.4
+Next, we adopt and use three features whose values depend on the date on
+which the query is issued, namely, A CCESS DATE,UPDATE DATE, and C REATE DATE.
+The value of each of these features is determined in exactly the same fashion,and thus we explicitly explain only A
+CCESS DATE. Consider a ﬁle fwhich was
+last accessed on date t. Suppose that the query qwas issued on date tq. Then,
+the value of A CCESS DATEq(f) is set to one of the following
+—1 if t=tq,
+—0.8 if tis within the last three days of tq,
+—0.6 if tis within the last week of tq,
+—0.4 if tis within the last month of tq,
+—0.2 if tis within the last two months of tq, and
+—0 otherwise.
+The value of A CCESS DATEq(f) decreases as the distance in time between tandtq
+grows. This setting is consistent with the observations reported in Dumais et al.
+[2003] and Barreau and Nardi [1995] that people are typically more interestedin recently created/accessed ﬁles.
+3.3 Evaluation Criteria
+The goal of this article is to ﬁnd effective ranking methods for desktop search.
+Towards this aim we must be able to determine the (relative) effectiveness of aparticular ranking method. We introduce our evaluation criteria here.
+3When we performed our experimentation, we also considered two other variants of computing
+DIRRANK. Similar results were obtained, and thus we omit the details in this article.
+4We note that tf.idf is the name given to a family of scoring methods in which a higher weight is
+given to word sequences that contain more occurrences of rare words in q. To determine how rare
+a particular word is for one of the features (e.g., P ATH), we take as our corpus the set of all word
+multisets of ﬁles in the ﬁle system that are associated with the given feature (e.g., the set of all fullpath multisets). See http://lucene.apache.org/java/docs/scoring.html for the exact version of
+the tf.idf formula used.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:10 • S. Cohen et al.
+Consider a query qand a set of ﬁles F. Recall that our system retrieves the
+ﬁles Cand (q,F), when qis issued over F.Aranking method τ:Rn→Ris a
+function that associates feature vectors /vectorf(q),f∈Cand (q,F) with a numeric
+value, denoted τq(f). Note that each feature by itself induces a ranking method;
+additional ranking methods are discussed later on.
+Now, suppose that we are given a query q, a set of ﬁles F, and a ranking
+method τ. When displaying Cand (q,F) to the user according to τ, the ﬁles in
+Cand (q,F) are listed in decreasing order of τq(f), with the ties being arbitrarily
+broken. Hence, we can associate each ﬁle f∈Cand (q,F) with its expected
+placement according to τ. Let ngtbe the number of ﬁles with a higher ranking
+than f, and let neqbe the number of ﬁles different from fwith the same ranking
+asf, that is,
+ngt=| { f/prime∈Cand (q,F)|τq(f)>τ q(f/prime)}|
+neq=| { f/prime∈Cand (q,F)|τq(f)=τq(f/prime) and f/negationslash=f/prime}|.
+Then, the expected placement of f, according to τ,i s
+Exp(τ,f|q,F)def=1+ngt+1
+2·neq,
+where the value 1 is added so that the expected placement will be a number
+that is greater than or equal to 1.
+To determine the effectiveness of a ranking method τ, we consider the mean
+reciprocal rank [Kantor and Voorhees 2000] of f∗
+qi|Fi(orf∗
+i, for short) with
+respect to a set of query/ﬁleset pairs
+S={(q1,F1),...,(qm,Fm)}.
+(Note that the ﬁle system changes over time; hence, each query is evaluated with
+respect to a speciﬁc instance of the ﬁle system.) We deﬁne the effectiveness of τ
+by averaging the reciprocal rank (i.e., the reciprocal of the expected placement)off
+∗
+iover the pairs ( qi,Fi), namely,
+MRR (τ,S)def=avg
+(qi,Fi)∈S/braceleftbigg1
+Exp(τ,f∗
+i|qi,Fi)/bracerightbigg
+. (1)
+Intuitively, the overall effectiveness of τonSis proportional to score MRR (τ,S);
+a higher score is better, as it indicates an expected placement that is closer to 1.
+Other measures of effectiveness might also be of interest in the context of
+desktop search. As we already discussed, the users in our case are likely to haverelatively high expectations from the performance of a desktop search engine.Thus, if f
+∗
+q|Fdoes not appear within some short top- kpreﬁx of the ordered list
+Cand (q,F), it is likely not to be discovered by the user at all. To capture this
+expected property of desktop search applications, given a series of query/ﬁlesetpairs S, we deﬁne the effectiveness of τat k as
+TopScore
+k(τ,S)def=100
+|S[>k]|/summationdisplay
+(qi,Fi)∈S[>k]δ(Exp(τ,f∗
+i|qi,Fi)≤k), (2)
+where
+S[>k]={(qi,Fi)∈S|k<|Cand (qi,Fi)|}
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:11
+Fig. 1. A screenshot of our desktop search engine.
+andδis the Kronecker step function (which returns 1 if the argument condition
+holds and 0 otherwise). A higher value for TopScorek(τ,S) is preferable, as it
+indicates a greater percentage of highly ranked query results. Note that S[>k]
+is used to ﬁlter out of the set Sany queries which have at most kresults
+(and hence f∗
+q|Fmust be in the top- k). Note also that Eq. (2) is reminiscent
+of specializing the standard recall-at-k evaluation measure used in IR [Baeza-
+Yates and Ribeiro-Neto 1999] to our assumption of uniqueness of f∗
+q|F.
+4. EXPERIMENTAL SETUP AND DATA GATHERING
+Our desktop search engine was built as an extension of the open-source search
+engine Lucene.5We implemented the following four main functionalities.
+—Users can choose folders of interest and request to create an index for these
+folders. While indexing, our engine stores information about each ﬁle, suchas its full path, name, creation date, etc.
+—The user can request the system to update the index . By default, the in-
+dex is updated daily, but users can arrange for a different desired updatingschedule.
+—Queries can be issued to our search engine. Each query constitutes a list of
+words, possibly with wildcards.
+6The ﬁlename, path, type, last access date,
+last update date, and creation date are displayed for each ﬁle in the result.The system displays the results set Cand (q,F) sorted by default in decreas-
+ing order of their last access dates; see Figure 1 for a screen shot of a queryresult. The user then selects a single ﬁle ffrom the query results by clicking
+on the corresponding ﬁlename, at which point the ﬁle is opened by the appro-priate application. Clicking on a ﬁlename also triggers an automatic update
+5http://lucene.apache.org/java/docs/
+6In addition, users can add ﬁlter constraints to the queries, to ﬁlter results by the values of various
+attributes (e.g., “ﬁltype:pdf”). However, such ﬁlters were used very rarely in practice, and appearedin only ﬁve queries.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:12 • S. Cohen et al.
+Table I. Frequency of Result Size
+Num. Results Num. Queries Notation
+1 188
+2–50 916 S2–50
+>50 115 S>50
+of the last access date of f, the values for the feature D IRRANK, as well as the
+content of the multiset querylog (f).
+We supplied to our users the ability to sort results according to any of thedisplayed ﬁelds in order to allow the user to ﬁnd f
+∗
+q|Feasily. A priori, we did
+not know which ranking methods would be most effective, and our primaryobjective was in fact to shed some light on this question. Thus, the effective-ness of various ranking methods was analyzed “postmortem,” on the basis ofthe collected log data.
+—One of the most important features of our engine is the extensive logging that
+it performs. Speciﬁcally, after each query is issued and a ﬁle is chosen, thesystem stores the list of all ﬁles displayed to the user, as well as the ﬁle thatwas chosen, with all of their features. This extensive logging allowed us toperform a postmortem analysis of ranking mechanisms.
+The desktop search engine was distributed to 19 volunteers, 10 of whom
+were male, and 9 female. Moreover, 5 of our volunteers were undergraduatestudents, 8 were graduate students and 6 worked in the industry, for example,as engineers. All were nonnative English speakers with a good command of theEnglish language. The users were in the age range of 21 to 35. The queries weretypically performed over a period of several months. Each volunteer performedbetween 4 and 443 queries. In total, 1219 queries were issued (with an averageof 64.2 queries per user). The queries varied in their number of results. On av-erage, there were 23.74 results per query, with a very large variance of 3482.99.See Table I for a more detailed view of the number of results per query.
+At the end of the evaluation period, all log ﬁles were collected from the users
+for analysis. We will use S
+allto denote the set of all user-issued pairs ( q,F) for
+which Cand (q,F)>1, that is, Sall=S2–50∪S>50, where S2–50andS>50are
+as deﬁned in Table I. The sets Sall,S2–50, and S>50provide the basis for our
+analysis of different ranking methods. We note that dividing the ( q,F) pairs
+according to the size of Cand (q,F) will prove useful, since the size of output is
+an indicator of the nature of the query.7This issue is discussed in more detail
+in Section 5.
+5. BASIC RANKING SCHEMES
+Typically, desktop search engines allow the user to sort search results according
+to various (query-dependent and -independent) properties of the ﬁles, such asname, last access date, etc. Hence, we ﬁrst consider the effectiveness of basic
+7The cutoff point (50) is also natural, since it is the number of results that the user was able to
+view in full screen, without scrolling, in our system.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:13
+Table II. Effectiveness of Basic, Feature-Based Ranking Methods
+FEATURE MRR (τ,Sall) FEATURE MRR (τ,S2–50) FEATURE MRR (τ,S>50)
+UPDATE DATE 0.4 UPDATE DATE 0.43 ACCESS DATE 0.16
+NAME 0.39 NAME 0.43 UPDATE DATE 0.15
+ACCESS DATE 0.38 ACCESS DATE 0.4 CREATE DATE 0.12
+CREATE DATE 0.36 CREATE DATE 0.39 NAME 0.1
+SIZE 0.36 SIZE 0.39 PATH 0.1
+CONTENT 0.35 CONTENT 0.38 SIZE 0.08
+NORMALIZED SIZE 0.33 NORMALIZED SIZE 0.36 QUERYLOG 0.07
+PATH 0.31 PATH 0.34 DIRRANK 0.06
+QUERYLOG 0.31 QUERYLOG 0.34 CONTENT 0.06
+DIRRANK 0.3 DIRRANK 0.33 NORMALIZED SIZE 0.06
+LEVEL 0.28 LEVEL 0.31 LEVEL 0.03
+Random 0.25 Random 0.28 Random 0.02
+ranking methods, each relying upon a single feature of the ﬁles.8(These rank-
+ing methods correspond naturally to different ways that the user can sort ﬁles.)Table II summarizes MRR (τ,·) for different such single-feature-based ranking
+methods with respect to S
+all,S2–50, and S>50, ordered by decreasing overall ef-
+fectiveness, that is, decreasing value of MRR (τ,·). As a reference point, Random
+gives the effectiveness of a random ordering of results.
+In Table II, consistently with the results reported in Dumais et al. [2003],
+the date feature U PDATE DATE(as well as other date-related features) has been
+found clearly more effective than the relevance-based feature C ONTENT (with
+this dominance being statistically signiﬁcant9on all three sets Sall,S2–50and
+S>50). What was somewhat surprising, however, is that C ONTENT is signiﬁcantly
+worse than the other textual-based feature, N AME.
+The poor performance of C ONTENT is seemingly inconsistent with the obser-
+vation in Dumais et al. [2003] that U PDATE DATEand (a closely related variant of)
+CONTENT were observed to be by far the most popular sorting schemes. However,
+this observation does not necessarily contradict the results in Table II. A priori,even for us it was not intuitive why textual connection between the query andthe ﬁle’s name is a more effective search/ranking criterion than textual con-nection between the query and the content of the ﬁle.
+10We may conclude that
+despite the fact that desktop search typically targets a concrete data object, the
+user’s intuition about the relative effectiveness of various ranking methods does
+notnecessarily correspond to their effectiveness in practice . In fact, the analysis
+in Dumais et al. [2003] indirectly supports this hypothesis by indicating that,given a speciﬁc search result Cand (q,F), users often order and reorder results
+according to various features (or ranking schemes) in order to ﬁnd the desired
+8For the features A CCESS DATE,U PDATE DATE,CREATE DATE,SIZE, and N ORMALIZED SIZE, we actually
+ranked the ﬁles according to the real values of these features, and not according to the coarservalues of 1, 0.8, 0.6, etc., as described in Section 3. This provided us with a ﬁner distinction betweenﬁles, for ranking purposes.
+9Statistically signiﬁcant differences in performance are determined using the two-sided Wilcoxon
+test at the 95% conﬁdence level.
+10Some intuitions for why N AMEis relatively effective can be found in Barreau and Nardi [1995]
+where it was observed that “ﬁle naming was given careful attention by the users.” This, however,does not explain why C
+ONTENT was less effective than N AMEor any other feature.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:14 • S. Cohen et al.
+Table III. Basic, Feature-Based Ranking Methods for Effectiveness at k∈{1, 2, 5, 10 }
+TopScorek(τ,Sall) TopScorek(τ,S2–50) TopScorek(τ,S>50)
+FEATURE k=1k=2k=5k=10k=1k=2k=5k=10k=1k=2k=5k=10
+UPDATE DATE 21.6 31.5 40.7 52.5 23.4 34.6 44.8 57.8 7.8 9.6 20.0 33.9
+ACCESS DATE 19.2 30.0 40.9 52.3 19.2 29.0 40.9 52.3 7.0 12.2 22.6 36.5
+NAME 16.5 29.2 41.8 51.7 18.1 32.5 47.3 60.5 3.5 6.1 13.9 20.9
+CREATE DATE 17.7 27.3 37.6 48.5 19.2 30.0 42.2 54.1 5.2 8.7 14.8 28.7
+DIRRANK 5.4 18.0 32.2 47.5 6.1 20.4 36.5 55.3 0.0 0.9 10.4 20.0
+PATH 6.9 19.1 33.8 45.9 7.2 20.7 38.2 54.1 4.3 7.8 11.3 17.4
+SIZE 16.1 26.6 39.2 42.3 17.8 29.6 44.8 50.6 2.6 5.2 11.3 13.0
+QUERYLOG 8.1 18.2 28.9 40.5 8.7 20.0 33.0 49.9 3.5 5.2 7.8 7.8
+CONTENT 13.2 23.6 36.9 45.0 14.6 26.4 43.0 55.1 1.7 4.3 6.1 9.6
+Random 0.0 10.6 22.6 36.3 0.0 12.1 27.0 46.7 0.0 0.0 0.0 0.0
+NORMALIZED SIZE 14.5 21.6 29.5 36.3 16.0 24.3 34.4 44.4 1.7 2.6 4.3 7.8
+LEVEL 4.6 15.7 26.7 34.9 5.1 17.8 31.5 43.2 0.0 0.9 2.6 6.1
+ﬁle. Note that this only stresses the importance of automatically selecting the
+primary ranking scheme.
+The relative effectiveness of the ranking methods are identical for both Sall
+andS2–50.F o rS>50, the relative effectiveness is different. In particular, there is
+a drop in effectiveness of the textual-based features N AMEand C ONTENT . Thus,
+for example, in S>50, the date-based features are more effective, whereas for
+SallandS2–50the differences between date-based features and N AMEare not
+statistically signiﬁcant. The feature C ONTENT is relatively much less effective
+overS>50than over S2–50.
+We conjecture that the difference in relative effectiveness of the textual-
+based features between S2–50andS>50has an intuitive explanation. When
+querying in a search system of any type, users attempt to provide a query thatisselective , namely, that can effectively separate between the result of interest
+and the remainder of available objects (e.g., ﬁles). This perspective on the queryformulation process is especially intuitive in the context of desktop search,since the users are presumed to (approximately) know the feature values, suchas, the name or path, of the desired ﬁle. Having this perspective in mind, theselectiveness of the content of a query qwith respect to the user’s search desires
+and the given set of ﬁles F, is inversely proportional to the size of the result
+setCand (q,F). If so, then the larger the resulting size of Cand (q,F), the less
+selective the query, and thus, a ranking method that is independent of the
+content of the query is more likely to be relatively more effective. Date-relatedfeatures appear to be good candidates for such a query-content-independentranking method, as we often search our ﬁle system for ﬁles that were recentlyin use. We revisit the issue of selectiveness of features in Section 7.
+Table III summarizes the effectiveness of the best single-feature-based rank-
+ing methods for k∈{1, 2, 5, 10 }. In each column, the score of the most effective
+feature is emphasized. There are no clear winners for any of S
+all,S2–50,o rS>50.
+Thus, based on our results, no recommendation can be made as to a rankingmethod of choice, when we wish to optimize for the top- kresults. Interestingly,
+we will show in upcoming sections that the picture changes dramatically oncemore sophisticated ranking methods are considered.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:15
+6. LEARNING TO RANK
+As already mentioned, one of the components of our desktop search system is
+the logger that stores all data on the past search sessions of the user. Specif-ically, for each search session ( q,F), the logger stores information about the
+result set Cand (q,F) and the selected ﬁle f
+∗
+q|F∈Cand (q,F). In principle,
+this information can be used for learning a better ranking method. Probablythe simplest such learning scheme would go along the lines of our analysis inSection 5, by selecting a primary ranking method that would optimize effec-tiveness measures such as those in Eqs. (1) and (2), possibly given the size of
+Cand (q,F) and/or some other helpful indicators. However, here we show that
+(even just slightly) more sophisticated learning schemes can provide us withmore effective ranking methods for desktop search.
+6.1 Learning a Ranking Function
+Suppose we are given some previous user search sessions ( q
+1,F1),...,(qm,Fm),
+or, more speciﬁcally, with the corresponding logged information
+L={ /angbracketleftf∗
+1,Cand (q1,F1)/angbracketright,...,/angbracketleftf∗
+m,Cand (qm,Fm)/angbracketright}. (3)
+One way to use the information about past user searches would consist of: (i)
+adopting a standard machine learning approach of binary classiﬁcation withthe two classes “relevant” and “nonrelevant”; and (ii) training a binary clas-siﬁer over “relevant” training examples/uniontext
+m
+i=1{f∗
+i}and “nonrelevant” training
+examples/uniontextm
+i=1Cand (qi,Fi)\{f∗
+i}. However, as observed in Joachims [2002]
+and Joachims et al. [2005], in applications like desktop search this approachhas several drawbacks. First, due to a strong majority of “nonrelevant” exam-ples, a classiﬁer will typically optimize the predictive classiﬁcation accuracyby always responding “nonrelevant.” Second, and even more importantly, whilewe know that f
+∗
+iis explicitly selected by the user as the target of her search, if
+the content of the ﬁle system were to be different, the user might use the samequery q
+ito search for a different ﬁle. The (unique) “relevance” of f∗
+itoqiis not
+absolute, but rather is relative to the content of Cand (qi,Fi). In other words, if
+/followsistands for a “more relevant to qi” binary relation over the ﬁle universe, then
+the only information that the logger Lreally conveys to us is that
+∀1≤i≤m,∀f∈Cand (qi,Fi)\{f∗
+i}:f∗
+i/followsif. (4)
+Considering Eq. (4), at ﬁrst view it seems that learning a classiﬁer cannot ad-
+dress our needs. However, this is not exactly so. Partial rankings such as thatof Eq. (4) have been used in the machine learning community to train binaryclassiﬁers over pairs of objects, with the target being not a class label, but a bi-
+nary relation over the objects [Cohen et al. 1999; Herbrich et al. 2000; Joachimset al. 2005]. Speciﬁcally, such learners select, from a family of ranking functions
+over (a representation of) the objects, a ranking function ϕthat minimizes the
+classiﬁcation (i.e., ranking) error on the training data.
+Following a variation of the framework suggested in Joachims [2002], let us
+consider the class of binary relations /follows
+/vectorwover triplets ( f;q,F) that is deﬁned
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:16 • S. Cohen et al.
+by the set of linear functions ϕ/vectorw:Rn→Rover our nﬁle features as
+(f;q,F)/follows/vectorw(f/prime;q/prime,F/prime) iff ϕ/vectorw(/vectorf(q))>ϕ/vectorw(/vectorf/prime(q/prime)),
+where /vectorf(q) is our feature vector of the ﬁle fwith respect to query qand ﬁleset
+F. This can be written equivalently as
+(f;q,F)/follows/vectorw(f/prime;q/prime,F/prime) iff /vectorw·/vectorf(q)>/vectorw·/vectorf/prime(q/prime),
+where /vectorwis the vector of ϕ/vectorw’s coefﬁcients and ·is the dot product. Finding such
+a function ϕ/vectorwthat minimizes classiﬁcation error on our training logger data (4)
+is equivalent to ﬁnding a weight vector /vectorwso that the maximum number of the
+inequalities in Eq. (5), to follow, are satisﬁed.
+∀1≤i≤m,∀f∈Cand (qi,Fi)\{f∗
+i}:
+/vectorw·/vectorf∗
+i(qi)>/vectorw·/vectorf(qi) (5)
+This optimization problem, unfortunately, is known to be NP-hard [Joachims
+2002; H ¨offgen et al. 1995]. However, it is possible to approximate its solution
+by introducing a nonnegative slack variable ξfor each linear constraint in (5),
+and then minimizing the sum of these slack variables. On the other hand,as suggested by theory and practice of classiﬁcation support vector machines(SVMs) [Cortes and Vapnik 1995], adding regularization for margin maximiza-tion to the objective is likely to increase the generalization power of the learnedfunction ϕ
+/vectorwwell beyond the training data. A machine with small margin and
+therefore low generalization power might incorrectly classify queries that donot resemble the training queries, whereas a machine with large margin andtherefore high generalization power should succeed better with these queries.
+This setting results in the following optimization problem (6).
+minimize:1
+2/vectorw·/vectorw+C/summationdisplay
+ξi,f
+subject to:
+∀1≤i≤m,∀f∈Cand (qi,Fi)\{f∗
+i}: (6)
+/vectorw·/vectorf∗
+i(qi)>/vectorw·/vectorf(qi)+1−ξi,f
+∀ξi,f:ξi,f≥0,
+where Cis a parameter that allows trading-off margin size, namely (1
+2/vectorw·/vectorw),
+against training error, namely (/summationtextξi,f). The optimization problem (6) is strictly
+convex, has no local minima, and is equivalent to that of classiﬁcation SVM ondifference vectors /vectorf
+∗
+i(qi)−/vectorf(qi). Thus, it can be efﬁciently solved using one of the
+standard tools for classiﬁcation SVM (e.g., see Joachims [1999]). Having gener-ated the weight vector /vectorwoptimizing (6), for each new search session ( q
+new,Fnew),
+the search results f∈Cand (qnew,Fnew) are then ranked in decreasing order of
+/vectorw·/vectorf(qnew).
+For our analysis we have implemented and evaluated the effectiveness of the
+learning scheme, based on the ranking SVM problem formulation as in Eq. (6).The results of this analysis are discussed in Section 6.3, after we present yetanother type of learning scheme.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:17
+6.2 Learning a Simple Aggregation
+Learning a ranking function using ranking SVM on the basis of a logger Las in
+Eq. (3), can be done in time linear in the number of ﬁle features n, and polyno-
+mial in/summationtextm
+i=1|Cand (qi,Fi)|[Bertsekas et al. 2003]. As the amount of the logged
+search sessions grows, the latter complexity factor signiﬁcantly slows down thelearner. This slowdown is particularly signiﬁcant when queries result in a largenumber of candidate answers. Moreover, while learning can be performed of-ﬂine (at the otherwise idle time of the machine), at some point the system willunavoidably have to cut down the amount of available training data, possiblyusing only some chronological sufﬁx of the logged data.
+To what degree the latter issue is a limitation is not entirely clear. In fact, our
+evaluation provides some evidence showing that a reasonably small amount oftraining data allows learning good ranking functions already; using the rank-ing SVM scheme. In any event, we decided to check whether some easy-to-learncompositions of the basic, feature-based ranking schemes can buy us further im-provement in ranking efﬁciency. For this, we tried two simple ranking schemes:L
+EXORDand U SERBEST.
+The ﬁrst scheme, called L EXORD(for “lexicographic order”), requires learning
+only the relative efﬁciency of various basic ranking schemes, as in Section 5 (i.e.,learning only information as in Tables II and III), and is deﬁned as follows.
+(a) Let a logger Lcontain information about some past search sessions S=
+{(q
+1,F1),...,(qm,Fm)}of the user.
+(b) Let F EATURE(1),...,FEATURE(n)be our ﬁle features (described in Section 3),
+numbered in decreasing order of their efﬁciency on S. In other words, if τiis
+the ranking method implicitly provided by F EATURE(i), then for 1 ≤i<m,
+we have MRR (τi,S)≥MRR (τi+1,S).
+(c) Given a new search session ( qnew,Fnew), rank the result set Cand (qnew,Fnew)
+such that for any two ﬁles f,f/prime∈Cand (qnew,Fnew), we have franked
+higher than f/primeif there is an isuch that
+FEATURE(i)
+qnew(f)>FEATURE(i)
+qnew(f/prime),
+and for all j<i,
+FEATURE(j)
+qnew(f)=FEATURE(j)
+qnew(f/prime).
+In other words, L EXORDcorresponds to a lexicographic aggregation of feature-
+based rankings based on their relative efﬁciency when used in isolation.
+The second scheme, called U SERBEST, is even simpler. It operates the same
+w a ya sL EXORD. However, step (6.2) is only applied for F EATURE(1). In other words,
+for each user we choose the feature that was most effective for previous trainingqueries and apply it on the new query results F
+new.
+6.3 Evaluation
+All learning schemes have been evaluated on the log datasets Sall,S2–50, and
+S>50. For each user, the training data consisted of ten randomly chosen subsets
+of 10% of its log data, with the remaining 90% used as the test set. The resultswere averaged over these ten samples (accomplishing tenfold cross-validation)
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:18 • S. Cohen et al.
+Table IV. Relative Effectiveness of Learned Ranking Functions and Lexicographic Aggregations of
+Basic, Feature-Based Rankings
+FEATURE MRR (τ,Sall) FEATURE MRR (τ,S2–50) FEATURE MRR (τ,S>50)
+SVM 0.51 SVM 0.54 SVM 0.26
+LexOrd 0.49 LexOrd 0.53 LexOrd 0.18
+UserBest 0.44 UserBest 0.47 ACCESS DATE 0.16
+UPDATE DATE 0.4 UPDATE DATE 0.43 UserBest 0.16
+NAME 0.39 NAME 0.43 UPDATE DATE 0.15
+ACCESS DATE 0.38 ACCESS DATE 0.4 CREATE DATE 0.12
+CREATE DATE 0.36 CREATE DATE 0.39 NAME 0.1
+SIZE 0.36 SIZE 0.39 PATH 0.1
+CONTENT 0.35 CONTENT 0.38 SIZE 0.08
+NORMALIZED SIZE 0.33 NORMALIZED SIZE 0.36 QUERYLOG 0.07
+PATH 0.31 PATH 0.34 DIRRANK 0.06
+QUERYLOG 0.31 QUERYLOG 0.34 CONTENT 0.06
+DIRRANK 0.3 DIRRANK 0.33 NORMALIZED SIZE 0.06
+LEVEL 0.28 LEVEL 0.31 LEVEL 0.03
+Random 0.25 Random 0.28 Random 0.02
+Table V. Relative Effectiveness at k∈{1, 2, 5, 10 }of Learned Ranking Functions and
+Lexicographic Aggregations Basic, Feature-Based Ranking
+TopScorek(τ,Sall) TopScorek(τ,S2–50) TopScorek(τ,S>50)
+FEATURE k=1k=2k=5k=10k=1k=2k=5k=10k=1k=2k=5k=10
+SVM 34.4 45.2 56.3 64.9 36.6 48.4 61.1 71.7 17.4 22.6 32.2 40.9
+LexOrd 34.0 41.8 52.2 62.5 37.2 45.8 60.0 68.5 8.7 13.9 27.8 41.7
+UserBest 24.3 34.6 46.7 57.1 26.6 38.1 51.3 62.0 6.0 10.4 23.5 40.0
+UPDATE DATE 21.6 31.5 40.7 52.5 23.4 34.6 44.8 57.8 7.8 9.6 20.0 33.9
+ACCESS DATE 19.2 30.0 40.9 52.3 19.2 29.0 40.9 52.3 7.0 12.2 22.6 36.5
+NAME 16.5 29.2 41.8 51.7 18.1 32.5 47.3 60.5 3.5 6.1 13.9 20.9
+CREATE DATE 17.7 27.3 37.6 48.5 19.2 30.0 42.2 54.1 5.2 8.7 14.8 28.7
+DIRRANK 5.4 18.0 32.2 47.5 6.1 20.4 36.5 55.3 0.0 0.9 10.4 20.0
+PATH 6.9 19.1 33.8 45.9 7.2 20.7 38.2 54.1 4.3 7.8 11.3 17.4
+SIZE 16.1 26.6 39.2 42.3 17.8 29.6 44.8 50.6 2.6 5.2 11.3 13.0
+QUERYLOG 8.1 18.2 28.9 40.5 8.7 20.0 33.0 49.9 3.5 5.2 7.8 7.8
+CONTENT 13.2 23.6 36.9 45.0 14.6 26.4 43.0 55.1 1.7 4.3 6.1 9.6
+Random 0.0 10.6 22.6 36.3 0.0 12.1 27.0 46.7 0.0 0.0 0.0 0.0
+NORMALIZED SIZE 14.5 21.6 29.5 36.3 16.0 24.3 34.4 44.4 1.7 2.6 4.3 7.8
+LEVEL 4.6 15.7 26.7 34.9 5.1 17.8 31.5 43.2 0.0 0.9 2.6 6.1
+and over all users. In what follows, the corresponding results are marked with
+SVM. Learning the L EXORDand U SERBESTranking schemes is straightforward,
+and does not require any further speciﬁcation. To learn linear ranking functions,we used the SVM
+lightsoftware [Joachims 1999] with the ranking SVM setup.11
+No feature selection, parameter optimization, or other tuning was done; all
+parameters of the learner were set to their default values.
+Tables IV and V summarize the effectiveness and effectiveness at kof
+LEXORD,USERBEST, and SVM, and compare them to basic, feature-based rank-
+ing methods (taken from Tables II and III.) The results appear to sharply votefor learning rankings that are based on (some or another) personalized aggre-
+gation of different features of the ﬁles with respect to the query. Considering
+11http://svmlight.joachims.org
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:19
+ﬁrst the general effectiveness measured by MRR (τ,·) in Table IV, we make the
+following observations.
+(1) SVM ended up the clear winner for Sall,S2–50, andS>50, with the difference
+between SVM and the second most effective ranking method in each cate-gory being statistically signiﬁcant in S
+allandS>50.I nS2–50, the difference
+between SVM and L EXORDwas not statistically signiﬁcant, but SVM (and
+indeed L EXORD) is signiﬁcantly better than the third most effective ranking
+method, U SERBEST.
+(2) For SallandS2–50,LEXORDwas the second most effective ranking and sig-
+niﬁcantly better than the third most effective ranking, U SERBEST. Both sim-
+ple learning schemes were signiﬁcantly better than the next best method,U
+PATEDATE.
+(3) For S>50,USERBESTwas outperformed by A CCESS DATE. However, the pairwise
+difference between all three methods L EXORD,ACCESS DATE, and U SERBEST
+was not statistically signiﬁcant.
+The picture is even sharper when considering effectiveness at k; see Table V.
+For all S∈{Sall,S2–50,S>50}, and all k∈{1, 2, 5, 10 }, SVM and L EXORDwere
+found the two most effective ranking methods (typically in this order). Theeffectiveness of the three leaders appear to be rather comparable; however, onelevel lower lies the third most effective method; U
+SERBEST. In the third level
+we ﬁnd our basic features. U SERBESTis more effective than the rest of the basic
+methods for all kinSall,S2–50, and for k∈{5, 10}inS>50.
+We conclude that both of our “multifeature-” learning-based ranking meth-
+ods performed signiﬁcantly better than all single-feature-based ranking meth-ods, across all of S
+all,S2–50, and S>50, with respect to both general and top- k
+effectiveness (for any k∈{1, 2, 5, 10 }).
+It is important to note the following.
+1. L EXORDwas learned to optimize only MRR , yet its performance was impres-
+sive on both MRR andTopScore . Separate learning of L EXORDand U SERBEST
+to optimize MRR and TopScore can only improve the results for the latter
+evaluation criteria.
+2. SVM ranking functions were learned to minimize the general ranking er-
+ror, and not directly to optimize MRR and/or TopScore . It is quite possible
+that learning ranking functions to directly optimize these evaluation crite-ria will improve the effectiveness of the ranking function methodology evenfurther [Joachims 2005].
+7. REASONING TO RANK AND SELECTIVENESS OF THE FEATURES
+The results in the previous section clearly suggest adopting some or another
+learning-based ranking method as the primary ranking scheme. Using thesemethods, however, is relevant only in presence of sufﬁcient training data. Whilein many domains this limitation is less problematic, in our case it can be areal obstacle. Desktop search users tend to issue only a few queries a day, andthus the cold-start period of the system may last even a few months. In an at-tempt to address the cold-start problem more effectively than just (temporarily)
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:20 • S. Cohen et al.
+reverting to some single-feature-based ranking method, we went back to our
+general intuitions on query selectiveness, discussed in Section 5.
+Recall that users always aim at formulating a selective query, allowing the
+desktop search engine to automatically separate the desired ﬁle from the restof the ﬁles in the system. Since a query is a set of words, the selectiveness of thequery is meaningful only with respect to one or more textual features of the ﬁles,namely, in our case, N
+AME,PATH,CONTENT , and Q UERYLOG. However, the user may
+not state (and may not even remember) which of these feature(s) she expectsher query to be ranked selectively on. Targeting this lack of information, wehave deﬁned a novel ranking method, called S
+ELECTIVE , that aims at alleviating
+this problem. This method is based on a certain form of reasoning about the
+result set Cand (q,F), aimed at inferring the correct way to rank this set of
+ﬁles with respect to the query in question.
+Before we formally specify S ELECTIVE , let us provide the basic intuition behind
+this method by a (somewhat extreme) example. Suppose the user poses a query
+qresulting in a large set of results Cand (q,F), and we have: (i) q⊆content (f)
+for all ﬁles f∈Cand (q,F); and (ii) there is only one ﬁle f/prime∈Cand (q,F)
+such that q∩name (f/prime)/negationslash=∅. Ignoring for a moment all the other features, and
+assuming that the user strives to formulate a selective query, it is reasonableto conjecture that the user formulated qwhile having in mind (either implicitly
+or explicitly) the ﬁlename of f
+∗
+q|F. And from this, we have that f/primeis more likely
+to be the desired ﬁle f∗
+q|Fthan any other ﬁle in Cand (q,F).
+Extending this intuition to the typically more fuzzy situations that happen in
+practice, S ELECTIVE combines: (i) information carried by the textual properties
+of the ﬁles in Cand (q,F); and (ii) the (observed on Cand (q,F)) frequency of
+textual connection between each such property and query q. Formally, S ELECTIVE
+is computed as follows. Let qbe a query, and Cand (q,F) be a result set for
+q.W eu s e nz(FEATURE q) to denote the number of ﬁles f∈Cand (q,F) that
+have a nonzero (i.e., some nontrivial) value F EATURE q(f). Given is, for each ﬁle
+f∈Cand (q,F)w es e t
+SELECTIVE q(f)def=/summationdisplay
+FEATURE ∈{NAME,PATH,
+CONTENT ,QUERYLOG}FEATURE q(f)
+nz(FEATURE q). (7)
+Intuitively, given Cand (q,F) ,aS ELECTIVE ranking aims at adaptively empha-
+sizing the purportedly more selective features. Technically, it does this by fol-lowing the principle underlying the standard IDF (inverse document frequency)measure used in IR; the contributions of different features to S
+ELECTIVE q(f) are
+combined via a weighted sum in which less “common” features (in Cand (q,F))
+are given larger weights.
+Please note that S ELECTIVE q(f) is signiﬁcantly different than just summing
+the textual features, that is, without normalization by their selectivenessamong the result scores. When comparing between S
+ELECTIVE q(f) and the sum-
+mation over TF-IDF scores, we found that S ELECTIVE q(f) was more effective over
+all sets ( Sall,S2–50, andS>50), with the increase in effectiveness statistically sig-
+niﬁcant at the 90% conﬁdence level. (The score of summation over TF-IDF isomitted from this article since it was less effective than S
+ELECTIVE q(f).)
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:21
+Table VI. Relative Effectiveness of S ELECTIVE
+FEATURE MRR (τ,Sall) FEATURE MRR (τ,S2–50) FEATURE MRR (τ,S>50)
+SVM 0.51 SVM 0.54 SVM 0.26
+LEXORD 0.49 LEXORD 0.53 LEXORD 0.18
+Selective 0.46 Selective 0.5 Selective 0.17
+USERBEST 0.44 USERBEST 0.47 ACCESS DATE 0.16
+UPDATE DATE 0.4 UPDATE DATE 0.43 USERBEST 0.16
+NAME 0.39 NAME 0.43 UPDATE DATE 0.15
+ACCESS DATE 0.38 ACCESS DATE 0.4 CREATE DATE 0.12
+CREATE DATE 0.36 CREATE DATE 0.39 NAME 0.1
+SIZE 0.36 SIZE 0.39 PATH 0.1
+CONTENT 0.35 CONTENT 0.38 SIZE 0.08
+NORMALIZED SIZE 0.33 NORMALIZED SIZE 0.36 QUERYLOG 0.07
+PATH 0.31 PATH 0.34 DIRRANK 0.06
+QUERYLOG 0.31 QUERYLOG 0.34 CONTENT 0.06
+DIRRANK 0.3 DIRRANK 0.33 NORMALIZED SIZE 0.06
+LEVEL 0.28 LEVEL 0.31 LEVEL 0.03
+Random 0.25 Random 0.28 Random 0.02
+We note that S ELECTIVE , as deﬁned in Eq. (7), constitutes probably one of the
+simplest realizations of the basic idea of “reasoning about query selectiveness,”and that more complex reasoning procedures conforming to the same intuitionthat are possible. Interestingly, despite its simplicity, S
+ELECTIVE yields surpris-
+ingly good results, especially for S2–50andSall. (We did not expect S ELECTIVE
+to perform particularly well on S>50, since none of the textual-based features
+considered in S ELECTIVE is expected to be sufﬁciently selective in this case, as
+discussed earlier.)
+The relative effectiveness of S ELECTIVE is presented in Table VI. For all three
+ofSall,S2–50, and S>50,SELECTIVE is better than (or at least as good as) its
+most effective component (among N AME,PATH,CONTENT ,QUERYLOG). Notably,
+SELECTIVE is more effective than its most effective component on SallandS2–50
+(with statistical signiﬁcance), and is statistically indistinguishable with N AME
+onS>50. Somewhat surprisingly, on S2–50andSallSELECTIVE even successfully
+competes with our simplest learning-based ranking method; it appears to bemore effective than U
+SERBEST(with statistical signiﬁcance). On S>50,SELECTIVE
+is statistically indistinguishable from L EXORD. Thus, S ELECTIVE appears quite
+effective for S2–50andSall, even though it does not involve any learning.
+Table VII presents the effectiveness of S ELECTIVE for top- k. Observe that
+SELECTIVE is fourth best in almost all cases, that is, next best after our learning-
+based ranking methods. The two exceptions are in the cases of S>50fork=5 and
+k=10, where, as we discussed before, our expectations from S ELECTIVE were the
+lowest. Furthermore, similarly to what we observed with the learning-basedranking methods, in general there is a sharp drop in effectiveness betweenS
+ELECTIVE and the best single-feature-based ranking method. Overall, Tables VI
+and VII show that S ELECTIVE yields quality results, and this despite the sim-
+plicity of the method. Hence, we believe that S ELECTIVE (or some possibly more
+sophisticated variation) is an excellent choice for ranking desktop search re-sults during a cold-start period when sufﬁcient training data for learning is notavailable.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:22 • S. Cohen et al.
+Table VII. Relative Effectiveness at k∈{1, 2, 5, 10 }of S ELECTIVE
+TopScorek(τ,Sall) TopScorek(τ,S2–50) TopScorek(τ,S>50)
+FEATURE k=1k=2k=5k=10k=1k=2k=5k=10k=1k=2k=5k=10
+SVM 34.4 45.2 56.3 64.9 36.6 48.4 61.1 71.7 17.4 22.6 32.2 40.9
+LEXORD 34.0 41.8 52.2 62.5 37.2 45.8 60.0 68.5 8.7 13.9 27.8 41.7
+Selective 27.1 37.5 53.3 63.1 29.3 41.1 59.4 72.7 9.6 12.2 22.6 29.6
+USERBEST 24.3 34.6 46.7 57.1 26.6 38.1 51.3 62.0 6.0 10.4 23.5 40.0
+UPDATE DATE 21.6 31.5 40.7 52.5 23.4 34.6 44.8 57.8 7.8 9.6 20.0 33.9
+ACCESS DATE 19.2 30.0 40.9 52.3 19.2 29.0 40.9 52.3 7.0 12.2 22.6 36.5
+NAME 16.5 29.2 41.8 51.7 18.1 32.5 47.3 60.5 3.5 6.1 13.9 20.9
+CREATE DATE 17.7 27.3 37.6 48.5 19.2 30.0 42.2 54.1 5.2 8.7 14.8 28.7
+DIRRANK 5.4 18.0 32.2 47.5 6.1 20.4 36.5 55.3 0.0 0.9 10.4 20.0
+PATH 6.9 19.1 33.8 45.9 7.2 20.7 38.2 54.1 4.3 7.8 11.3 17.4
+SIZE 16.1 26.6 39.2 42.3 17.8 29.6 44.8 50.6 2.6 5.2 11.3 13.0
+QUERYLOG 8.1 18.2 28.9 40.5 8.7 20.0 33.0 49.9 3.5 5.2 7.8 7.8
+CONTENT 13.2 23.6 36.9 45.0 14.6 26.4 43.0 55.1 1.7 4.3 6.1 9.6
+Random 0.0 10.6 22.6 36.3 0.0 12.1 27.0 46.7 0.0 0.0 0.0 0.0
+NORMALIZED SIZE 14.5 21.6 29.5 36.3 16.0 24.3 34.4 44.4 1.7 2.6 4.3 7.8
+LEVEL 4.6 15.7 26.7 34.9 5.1 17.8 31.5 43.2 0.0 0.9 2.6 6.1
+8. CONCLUSIONS AND FUTURE WORK
+In this article we studied the ranking problem for desktop search. Based on a
+postmortem analysis of the usage of our dektop search engine, we evaluated theeffectiveness of basic (single-feature-based) ranking schemes, learning-basedranking, and ranking based on selectiveness reasoning. Our ﬁndings show thatlearning-based ranking is signiﬁcantly more effective than the basic rankingschemes, both in terms of the mean reciprocal rank and recall-at- k. We have also
+shown that our novel reasoning-based ranking, S
+ELECTIVE , is effective (despite
+its simplicity), and hence is a good choice as a primary ranking scheme for thecold-start period of the system.
+As future work, we will investigate whether ranking based on selectiveness
+reasoning can also be effective in general ad hoc information retrieval. We alsoplan to extend S
+ELECTIVE to take into consideration additional ﬁle features, such
+as date-based features. Another important extension to our framework is to de-velop a conceptual treatment of missing feature values (e.g., of missing content),since currently these features are given a default value of zero. In addition, wewill try using qualitative rank aggregation techniques, as suggested in Dworket al. [2001], to determine whether they can lead to more effective ranking.Finally, we plan to extend our system to search for emails, and to then studythe effectiveness of our ranking techniques when emails are included.
+REFERENCES
+ABITEBOUR , S., A GRAWAL , R., P HIL, B., C AREY, M., C ERI, S., C ROFT, B., D EWITT, D., F RANKLIN , M., G ARCIA -
+MOLINA , H., G AWLICK , D., G RAY, J., H AAS, L., H ALEVY , A., H ELLERSTEIN , J., I OANNIDIS , Y., K ERSTEN , M.,
+PAZZANI , M., L ESK, M., M AIER, D., N AUGHTON , J., S CHEK , H., S ELLIS , T., S ILBERSCHATZ , A., S TONEBRAKER ,
+M., S NOD-GRASS, R., U LLMAN , J., W EIKUM , G., W IDOM,J . , ANDZDONIK , S. 2003. The Lowell database
+research self assessment. eprint: arxiv:cs/0310006.
+AHLBERG , C., W ILLIAMSON ,C . , ANDSHNEIDERMAN , B. 1992. Dynamic queries for information explo-
+ration: An implementation and evaluation. In Proceedings of the SIGCHI Conference on Human
+Factors in Computing Systems (CHI) , 619–626.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.On Ranking Techniques for Desktop Search • 11:23
+APPLE INC. 2008. Spotlight. http://www.apple.com/macosx/features/spotlight/.
+BAEZA-YATES,R . ANDRIBEIRO -NETO, B. 1999. Modern Information Retrieval . ACM Press Series.
+Addison-Wesley.
+BARREAU ,D . ANDNARDI, B. A. 1995. Finding and reminding - File organization from the desktop.
+ACM SIGCHI Bull. 27 , 3, 39–43.
+BERTSEKAS , D., N EDIC, A., ANDOZDAGLAR , A. 2003. Convex Analysis and Optimization . Athena
+Scientiﬁc.
+COHEN , W., S CHAPIRE , R., ANDSINGER , Y. 1999. Learning to order things. J. Artif. Intell. Res. 10 ,
+243–270.
+COPERNIC . 2007. Copernic desktop search. www.copernic.com/.
+CORTES ,C . ANDVAPNIK , V. 1995. Support-Vector networks. Mach. Learn. J. 20 , 273–297.
+CUTRELL , E., R OBBINS , D., D UMAIS ,S . , AND SARIN, R. 2006. Fast, ﬂexible ﬁltering with
+Phlat—Personal search and organization made easy. In Proceedings of the SIGCHI Con-
+ference on Human Factors in Computing Systems (CHI) . ACM Press, New York, 261–
+270.
+DONG,X . ANDHALEVY , A. 2005. A platform for personal information management and integration.
+InProceedings of the International Conference on Innovative Data Systems Research (CIDR) ,
+119–130.
+DUMAIS , S., C UTRELL , E., C ADIZ, J., J ANCKE , G., S ARIN, R., ANDROBBINS , D. C. 2003. Stuff I’ve seen: A
+system for personal information retrieval and re-use. In Proceedings of the Annual International
+ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR) . ACM
+Press, 72–79.
+DWORK , C., K UMAR , R., N AOR, M., ANDSIVAKUMAR , D. 2001. Rank aggregation methods for the Web.
+InProceedings of the WWW’01 . Hong Kong, 613–622.
+ERICKSON , T. 1996. The design and long-term use of a personal electronic notebook: A reﬂective
+analysis. In Proceedings of the SIGCHI Conference on Human Factors in Computing Systems
+(CHI) , 11–18.
+FAGIN, R., K UMAR , R., M CCURLEY , K. S., N OVAK, J., S IVAKUMAR , D., T OMLIN ,J .A . , ANDWILLIAMSON ,
+D. P. 2003. Searching the workplace Web. In Proceedings of WWW’03 . ACM Press, 366–
+375.
+GEMMELL , J., B ELL, G., L UEDER , R., D RUCKER ,S . , ANDWONG, C. 2002. MyLifeBits: Fulﬁlling the
+Memex vision. In Proceedings of ACM Multimedia’02 . 235–238.
+GOOGLE . 2008. Microsoft, Google desktop. http://desktop.google.com/features.html#search.
+HERBRICH , R., G RAEPEL ,T . , ANDOBERMAYER , K. 2000. Large margin rank boundaries for ordinal
+regression. In Advances in Large Margin Classiﬁers . 115–132.
+H¨OFFGEN , K., S IMON, H., AND VAN HORN, K. 1995. Robust trainability of single neurons. J. Comput.
+Syst. Sci. 50 , 114–125.
+JOACHIMS , T. 2005. A support vector method for multivariate performance measures. In Proceed-
+ings of the International Conference on Machine Learning . 377–384.
+JOACHIMS , T. 2002. Optimizing search engines using clickthrough data. In Proceedings of the
+Annual International ACM SIGIR Conference on Research and Development in Information Re-trieval (SIGIR) . ACM Press, 154–161.
+J
+OACHIMS , T. 1999. Making large-scale SVM learning practical. In Advances in Kernel Methods—
+Support Vector Learning . MIT Press, Chapter 11.
+JOACHIMS , T., G RANKA , L., P ANG, B., H EMBROOKE , H., ANDGAY, G. 2005. Accurately interpreting
+clickthrough data as implicit feedback. In Proceedings of SIGIR’05 . 154–161.
+KANTOR ,P . ANDVOORHEES , E. 2000. The TREC-5 confusion track: Comparing retrieval methods
+for scanned text. Inf. Retriev. 2 , 2, 165–176.
+LANSDALE , M. 1988. The psychology of personal information management. Appl. Ergonom. 19 ,1 ,
+55–66.
+LEE, J. H., R ENEAR , A., ANDSMITH, L. C. 2006. Known-Item search: Variations on a concept.
+InProceedings of 69th Annual Meeting of the American Society for Information Science and
+Technology (ASIST) , Austin, TX, 619–626.
+MACDONALD ,C . ANDOUNIS, I. 2006. Combining ﬁelds in known-item email search. In Proceed-
+ings of the 29th Annual International ACM SIGIR Conference on Research and Development inInformation Retrieval (SIGIR) , Seattle, WA, 675–676.
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.11:24 • S. Cohen et al.
+MARAIS ,H . ANDBHARAT , K. 1997. Supporting cooperative and personal surﬁng with a desktop
+assistant. In Proceedings of the 10th Annual ACM Symposium on User Interface Software and
+Technology (UIST) , 129–138.
+NEJDL,W . ANDPAIU, R. 2005. Desktop search—How contextual information inﬂuences search
+results and rankings. In Proceedings of the IRiX Workshop at the Annual International ACM
+SIGIR Conference on Research and Development in Information Retrieval (SIGIR) .
+OGILVIE ,P . ANDCALLAN , J. 2003. Combining document representations for known-item search. In
+Proceedings of the 26th Annual International ACM SIGIR Conference on Research and Develop-ment in Informaion Retrieval (SIGIR) , Toronto, Canada, 143–150.
+T
+EEVAN , J., A LVARADO , C., A CKERMAN ,M .S . , ANDKARGER , D. R., E DS. 2004. The perfect search engine
+is not enough: A study of orienteering behavior in directed search. In Proceedings of the SIGCHI
+Conference on Human Factors in Computing Systems.
+TEEVAN , J., J ONES,W . , ANDBEDERSON ,B .B . ,E DS. 2006. Introduction to special issue on personal
+information management. Commun. ACM 49 .
+WOLBER , D., K EPE, M., ANDRANITOVIC , I. 2002. Exposing document content in the personal Web.
+InProceedings of the 7th International Conference on Intelligent User Interfaces . ACM Press,
+151–158.
+Received May 2007; revised August 2007; accepted September 2007
+ACM Transactions on Information Systems, Vol. 26, No. 2, Article 11, Publication date: March 2008.

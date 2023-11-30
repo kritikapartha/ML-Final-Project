@@ -1,0 +1,888 @@
+ATooItoSupport Speech andNon-Speech Audio
+Feedback Generation inAudioInterfaces
+LisaJ.Stfelman
+SpeechResearch Group
+MITMediaLabomtory
+20AmesStreet,Cambridge, MA02139
+Tel:1-617-253-8026
+E-mail:lisa@?media.mit. edu
+ABSTRACT
+Development ofnewauditory interfaces requires the
+integration oftext-to-speech synthesis, digitized audio,and
+non-speech audiooutput. Thispaperdescribes atoolfor
+specifying speechandnon-speech audiofeedback anditsuse
+inthedevelopment ofaspeechinterface, Conversational
+VoiceNotes. Auditory feedback isspecified asacontext-free
+grammar, wherethebasicelements inthegrammar canbe
+eitherwordsornon-speech sounds. Thefeedback
+specification methoddescribed hereprovides theabilityto
+varythefeedback basedonthecurrentstateofthesystem,
+andisflexible enough toallowdifferent feedback for
+different inputmodalities (e.g.,speech, mouse, buttons).
+Thedeclarative specification iseasily modifiable,
+supporting aniterative designprocess.
+KEYWORDS
+Speech userinterfaces, auditory feedback, text-to-speech
+synthesis, non-speech audio,hand-held computers, speech
+recognition.
+INTRODUCTION
+Ascomputers continue todecrease insize,speechandsound
+willbecome aprimary meansofcommunication between
+thehumanandcomputer. Itwillbeincreasingly common
+forpeopletospeaktotheircomputers, VCRs,andwrist
+watches, andforthemtospeakback.Whilespeechand
+soundarebecoming moreprevalent components for
+interaction, bettertoolsareneeded fordesigners and
+developers ofaudiointerfaces. Speech recognition
+technology hasmovedfromspeaker-dependent isolatedword
+recognition tospeaker-independent continuous speech,
+increasing thecomplexity ofboththespoken inputand
+output. Mostcontinuous speechrecognition systems (e.g.,
+Plaintalk [16],Hark[1],Dagger[13])provide amechanism
+foradeveloper tospecify whatausercansaytoan
+application. 1Aneasilymodifiable, declarative mechanism
+Permission tomakedigital/hard copies ofallorpartof(hismaterial for
+personal orclassroom useisgranted widmut feeprovided thatthecopies
+arenotmadeordistributed forprofitorcommercial advantage. thecopy-
+rightnotice, thetitleofthepublication anditsdateappear. andnotice is
+giventhatcopyright isbypermission oftheACM, k.Tocopyutherwise,
+tnrepublish, toposton.erverfi ortoretiistribute tolists,requires specific
+permission and/or fee,
+UIST95Pittsburgh PAUSA
+@1995ACMO-8979 l-709-x/95/l 1..$3.50isalsoneededforspecifying speechandnon-speech audio
+feedback (i.e.,auditory icons[9]orearcons [4]).
+Naturallanguage generation research hastendedtofocuson
+producing coherent mtdtisentential text[14],anddetailed
+multisentential explanations anddescriptions [22,23],
+ratherthanthekindofterseinteractive dialogue neededfor
+today’sspeechsystems. Inaddition, sophisticated language
+generation toolsarenotgenerally accessible byinterface
+designers anddevelopers.z Thegoaloftheworkdescribed
+herewastosimplify thefeedback generation component of
+developing audiouserinterfaces andallowrapiditeration of
+designs.
+Thispaperdescribes atoolforspecifying speechandnon-
+speechaudiofeedback anditsuseinthedevelopment ofa
+speechinterface, Conversational VoiceNotes. Auditory
+feedback isspecified asacontext-free grammar, wherethe
+basicelements inthegrammar canbeeitherwordsornon-
+speechaudiosounds.
+FROMVOICENOTES TOCONVERSATIONAL
+VOICENOTES
+VoiceNotes [28,29]explored aspeechinterface forahand-
+heldnotetakirtg device. VoiceNotes allowsausertocapture
+andrandomly accessspontaneous thoughts, ideas,orthings-
+to-doincontexts wherewriting wouldbeinconvenient
+(e.g.,whiledriving orwalking downthestreet). This
+research explored theideaofaspeech-driven, hand-held
+computer withamicrophone, speaker, andonlyafew
+buttons; nokeyboard orscreen. VoiceNotes demonstrated
+theutility ofstored speech, overcoming thetime
+consuming natureoflistening tospeechbyproviding the
+userwithrandom access, dynamic speedcontrol, and
+customizable feedback.
+Conversational VoiceNotes expands thenavigational model
+oftheoriginal system, providing theuserwithmultiple
+waysoforganizing andaccessing notesinthespeech
+database. Conversational VoiceNotes usesthePlainTalk
+l=hc~c~y~tem utilizeagrammar toconstrain theperplexity ofinput>
+andenableefficientsearching witfdnthespeechrecognition engine.
+20nebarrier isthatmostinterface andapplication development
+environments use‘C’whileAIandnaturatlanguage researchers workin
+LISP.
+November 14-17,1995 UIST’95171[16]speaker-independent continuous speechrecognition and
+text-to-speech synthesis systems. Usingcontinuous speech
+input,userscandescribe oraddactions totheirnotes.
+Currently implemented descriptors areimportance, dayof
+theweek,andatimetobereminded. Descriptors canbe
+addedtonotesasapreamble torecording (e.g.,“Takean
+important note”)orpostamble (e.g.,“It’simportant”).
+Thesedescriptions canthenbeusedtonavigate through the
+speech database (e.g.,“Playallmyimportant notes”),
+allowing random accesstosmallsubsets ofnotes. In
+addition toscaling theinterface, allowing theuserto
+manage alargernumber ofnotes,thegoalistoprovide
+addedflexibility tosupport different userpreferences or
+mentalmodels.
+CRITERIA FORDESIGN
+Indeveloping Conversational VoiceNotes, atoolwas
+needed tosupport easierintegration ofspeechandnon-
+speechaudiofeedback. Conversational VoiceNotes uses
+digitized speech fortheuser’snotes,text-to-speech
+synthesis forresponding totheuser’svoicecommands, and
+non-speech audiofornavigational cuesanddescribing notes.
+Inearlyprototypes ofthesystem, eachofthesetypesof
+outputwereembedded invariousplacesinthecode.This
+madeitdifficult tomakemodifications tothedesign,
+integrate thedifferent formsoffeedback, andensure
+consistency throughout thesystem. Itwastherefore
+important tohaveamechanism fordescribing speechand
+soundfeedback asawhole,inaformthatwouldbeeasily
+modifiable.
+Another important consideration istheability to
+dynamically varythetypeandamount offeedback [7,29].
+Conversational VoiceNotes variestheaudiofeedback
+depending onfactorssuchastheuser’spreferred output
+modality, detaillevel,andtheinputmodality employed.
+Brennan [6,8]emphasizes acollaborative viewof
+interaction inwhichthecomputer mustadaptitsresponses
+toitsconversational partnerandthecurrentcontextofthe
+dialogue. Inaddition, studies showthatusersprefer
+dynamic tostaticorrepetitive feedback. Yankelovich [32]
+foundthatprogressively modifying thefeedback forspeech
+recognition rejection errors3waspreferred overasingle
+repetitive message. Astudyofeducational gamesfor
+children foundthatprograms withanumber ofdifferent
+messages forthesamesituation werepreferred tothose
+usingthesamefeedback overandoveragain[30].
+Sinceaudiooutputcanbeusedindependently ofspeech
+input,thegeneration method should notassume the
+existence ofspeechrecognition. Thefeedback specification
+methoddescribed herecanapplytoanymodeofinput(e.g.,
+mouse,keyboard, physical buttons, speech), andisflexible
+enoughtoallowdifferent feedback fordifferent mockdities.
+3Rejection errorsoccurwhenaspeechrecognize isunabletoreport
+anyofthewordsspokenbytheuser[26].SPECIFYING AUDITORY FEEDBACK
+Earlyintheprocess ofdeveloping Conversational
+VoiceNotes itbecame clearthatatoolwasneedtosupport
+feedback generation, specifically forproviding:
+.
+●
+●
+✎
+●
+✎
+Thesynthetic speechfeedback forresponding tospeech
+database queries
+digitized speechforplayingauser’svoicenotes
+non-speech audiofornavigational cues
+combinations oftheabovetypesoffeedback
+multiple levelsoffeedback (i.e.,differing amounts
+ofdetail)
+selection between different typesoffeedback
+(synthetic speechvs.non-speech audio).
+followimz sections present thebasicdesignofthe
+feedback gene~ation tool.Notethatthecodeexamples have
+beensimplified andmodified forthepaper.
+Feedback Grammar
+Auditory feedback isspecified asacontext-free grammar.
+Theformatofthegrammar isbasedononeusedby
+Plaintalk [2,31]forcontinuous speechrecognition input.
+Thegoalwastomakethetwoformats ascompatible as
+possible, sothattheymighteventually beusedin
+conjunction withoneanother. Theadvantage ofa
+hierarchical grammar istheabilitytoreusecomponents and
+avoidrepetition. Thespecification ismodular—for
+example, oncethegrammar rulesforhandling datesand
+timeshavebeenwritten, theycanbeusedinavarietyof
+applications.
+UsingVariables inFeedback Rules
+Oneproblem withmanyspeechrecognition grammars is
+thattheydonotprovide amechanism forsharingdata(i.e.,
+variables) withtheapplication. Theprogrammer isoften
+forcedtohardcodeinformation intothegrammar. Thisis
+extremely limiting, sincethegrammar cannot be
+synchronized withtheapplication data.Forexample, the
+following definitions hardcodethenamesofpeople,
+duplicating information already contained insideauser’s
+personal information manager oragroupinformation
+database:
+SENDMESSAGE: “Recording atIOtefOf’”PERSONNAME;
+PERSONNAME: “Chris”I“Barry”I“Eric”;
+Thefeedback grammar described here,allowstheuseof
+application variables insidenontermina14 definitions. The
+grammar canaccessdatawithintheapplication whichin
+turncanaccessanydatabase. Intheexample below,
+%person Nameaccesses thevalueofthepersonName
+variable intheapplication:
+4*~e.in~is~ato~cufitinthegrammarthatcannotbetmkmdown
+anyfurther (e.g.,awordstring). Anonterminal isacollection of
+terminals andmayatsocontainothernonterminats (seeFigure1).
+172 LJIST’95 November 14-17,1995%define SendMessage
+“Recording anotefor”%personName
+%end
+Notethatinthisgrammar specification, %define isusedto
+beginanonterrninal definition and%endtocomplete it.
+Anglebraces(e.g.,cnonterminal-name>) areusedwhenever
+anonterminal isreferenced [2].
+Dynamic Generation Based onApplication State
+Thefeedback grammar allowstheapplication developer to
+specify theconditions underwhichdifferent typesof
+feedback willbegenerated. Ifthereismorethanonerule
+insideadefinition, thenmoreinformation isneeded to
+determine whichruletousetogenerate thefeedback. A
+conditional statement canbespecified foreachrule
+(indicated usingasemicolon aftertherule)asshowninthe
+following example:
+O/Odefine Modifier /’conditional statements “/
+“highpriority” ;%priority==HIGH
+“lowpriority” ;%priority==LOW0,08
+%end
+O/Odefine VoiceObj
+“reminder” ;%reminderVar==TRUE
+“note”
+%end
+‘/’define RecordResponse
+“Recording a“<Modifier> cVoiceObj> ‘for”cWeekDay>
+‘/’end
+Theconditional statement
+O/OreminderVar==TRUE
+isequivalent tothe‘C’programming construct
+if(reminderVar ==TRUE){
+VoiceObj =“reminder”;
+}
+else{
+VoiceObj =“note”;
+}
+Ifnoconditions arespecified, thefeedback generator will
+usethefirstruleinthelist.Intheexample above,if
+reminderVar istruetheresultwillbe“Recording areminder
+for...“IfreminderVar isfalse,thenthesecond rule
+(“note”) willmatchbydefaultsincetherearenoassociated
+conditions andtheresultwillbe“Recording a...notefor
+,,....
+Thedefinition ofModifier showsanexample ofanullrule,
+whichisusefulforkeeping thespecification concise. In
+thisdefinition, thelastrule(“”)willbeexecuted ifthe
+priority isnotsettohighorlow.Without thenullrule,
+twocRecordResponse> ruleswouldbeneeded-one with
+thecModifier>component, andonewithout it.Theprogram alsosupports alogicalANDoperator, so
+multiple conditions canbeplacedontherighthandsideofa
+rule.Forexample, thefeedback grammar condition:
+O/OreminderVar==TRUE O/Oevent==PLAY
+isequivalent tothe‘C’construct:
+H(reminderVar ==TRUE&&event==PLAY)
+Currently, ANDistheonlylogicaloperator implemented,
+however, ORcanbeaccomplished usingmultiple rules.
+Sharing Constant Definitions
+Inaddition tosharing variables between theapplication
+program andgrammar, constant definitions canalsobe
+shared. The‘C’programming constructs #define and
+#include canbeusedinsidethegrammar, thereby avoiding
+duplicating definitions alreadyspecified in‘C’headerfiles
+(i.e.,.hfiles),orworse, hard-coding valuesintothe
+grammar. Noticethecondition %priority==HIGH inthe
+definition for<Modifier>. Thedefinition ofHIGHis
+contained ina‘C’header filethatissharedbythe
+application andthegrammar.
+Integrating Sound intotheGrammar
+Inaddition towordstrings, soundreferences canalsobe
+usedinthefeedback grammar. Notethat“sound” refersto
+digitized speechornon-speech audio.Asimpleexample is
+apromptforrecording avoicemessage:
+O/Odefine RecordMessage
+“Record yourmessage atthebeep”SOUND:beep
+%end
+Allsoundterminals inthegrammar arespecified using
+SOUND: followed byanameorvariable. Intheabove
+example, thesoundnamedbeepisused.
+Thefeedback generation program passesanobjectlist
+containing wordstringsandsoundreferences backtothe
+application (seeImplementation section). In
+Conversational VoiceNotes, audiooutputisthenhandled by
+text-to-speech andsoundlibraries.5 Thefeedback tooldoes
+notgenerate audiooutputitselfsincetheapplication
+handles allaudiooutputandissetuptoallowinterruption
+bytheuser.Allsoundsarecurrently storedinAIFFsound
+files,however, thereisnothing topreclude theuseof
+synthesized [10]ratherthansampled sounds.
+Inthedefinitions below,thesoundnameoftheuser’svoice
+note(orvoicereminder) iscontained inthevariable
+O/OcurrentNote.
+‘Thetext-to-soeech andsoundlibraries arebuiltontoooftheMacintosh
+Toolbox toprbvide ahigherlevel,easiertouse,programmatic interface
+tospeechandsound.
+November 14-17,1995 UIST’95 173‘Adefine ReminderPlayBack
+“Remember to”SOUND:%currentNote
+O/Oend
+O/Odefine MoveResponse
+“Move”SOUND:%currentNote “towhere?”
+;%needCategory==TRUE
+SOUND:%currentNote “movedto”<Category>
+O/~end
+Thefirstdefinition statesthatwhenareminder isplayed,
+thesystemprecedes itwiththephrase“Remember to”
+beforeplaying theuser’svoicenote.TheMoveResponse
+outputdepends onasinglecondition—whether theuserhas
+specified thenewcategory. Iftheuserrequests “Movethis
+notetomygrocery list”,thesystem wouldrespond by
+playingthenotebeingmoved(e.g,Buyapples)followed by
+thephrase“movedtogroceries”.
+FEEDBACK GENERATION IN
+CONVERSATIONAL VOICENOTES
+Thefollowing sections discuss theuseofthefeedback
+generation toolbyConversational VoiceNotes tosupporta
+varietyofinterface designconsiderations.
+Feedback Levels
+Conversational VoiceNotes usestwotypesofoutput—
+speechandnon-speech, twotypesofinput—speech and
+buttons, andtwolevelsofdetail(terseorverbose). The
+audiofeedback isvarieddepending onthevariables listed
+below:
+●
+●
+✎
+●userpreferred outputmodality
+userpreferred detaillevel
+inputmodality employed
+timeelapsedsincethelastusercommand
+Conversational VoiceNotes selectsthetypeoffeedback
+basedontheconditional statements inthegrammar. The
+RecordNoteResponse definition belowstatesthatsound
+outputisusedinresponse torecording anotewhentheuser
+employs buttoninputorhasrequested tersefeedback.e
+Buttoninputisassociated withterseorsoundoutputmore
+oftenthanspeechinput. Inausertestoftheoriginal
+VoiceNotes interface [29],usersdidnotexpectspeech
+feedback inresponse topressing therecordbuttononthe
+deviceandoftenspokeoverit.
+%define RecordNoteResponse
+SOUND:beep ;O/Oinput==BUl_rON_l NPUT
+SOUND:beep ;O/’fbLevel==TERSE_FEEDBACK
+“Recording anote”SOUND:beep
+O/Oend
+TheStopResponse definition statesthatnoexplicit
+feedback isprovided forstopping audioplayback (except
+silence)ifbuttoninputisusedortersefeedback ispreferred.
+6~e~dditi~n of~ORoperator wouldremove theduplicate mlein‘ie
+RecordNoteResponse definition.%define StopResponse01s%input==BUTTON_ lNPUT,,t,;/00fbLevel==TERSE_FEEDBACK
+“Stopped”
+%end
+Aconcern withtheinterface isthatuserswillnotremember
+theirplaceinthespeechdatabase andputanoteinan
+unintended place.Therefore, ifthetimesincetheuser’slast
+command hasexceeded athreshold (i.e.,timeElapsed ==
+TRUE),thenthesystemreminds theuserofthecurrent
+location. Forexample, whenanewnoteisrecorded, the
+systemreportsthenameofthecategory wherethenotehas
+beenplaced
+O/Odefine NewNoteResponse
+“Noteaddedto”<Category> ;%timeElapsed==TRUE
+SOUND:thunk7 ;O/oOutput==SOUND_OP
+“Noteaddedto”<Category>; %fbLevel==VERBOSE_FB
+“Newnoteadded”
+O/iend
+Speech andNon-Speech Audio Feedback
+InConversational VoiceNotes, non-speech audioisusedfor
+navigational cuesandtoprovide information aboutnotes.
+Forexample, whenever art“important” noteisplayed,itis
+preceded byanauditory iconthatsoundslikeatrumpet. To
+reinforce thiscue,ifanoteismarkedasimportant (e.g.,by
+saying“It’simportant”) andsoundoutputisselected, the
+trumpet soundisalsoplayed:
+%define DescribePriority
+SOUND:trumpet SOUND:%currentNote
+;O/ooutput==SOUND_OP
+“Notemarkedasimportant” SOUND:%currentNote
+;%output==SPEECH_OP
+O/Oend
+Rulescanalsocombine soundoutputandtexttobe
+spoken. Intheexample below,iftheuserpreference isset
+toSOUND_OP, whenacategory ofnotesisselected, an
+“opening” auditory icon(namedopencat) isplayedfollowed
+bytext-to-speech synthesis ofthecategory name.
+O/Odefine SelectResponse
+SOUND:OpenCat <Category> ;Yooutput==souND_oP
+“Moving into”cCategory> ;~ooutput==SPEECH_OP
+O/Oend
+ErrorCorrection
+Duetotheerror-prone natureofcurrentspeechrecognition
+technology, someexperimentation wasalsodonewitha
+mechanism forerrorcorrection andfeedback. Inparticular,
+substitution errorsgoftenoccurwhenusersenterdatesand
+timesasinthefollowing example dialogue:
+7Thethunksoundusestheanatogy ofthenotebeingdropped intoa
+container andhittingthebottom.
+‘Substitution errorsoccurwhenallorpartoftheutterance spokenbythe
+userisrecognized asadifferent utterance (e.g.,theusersays3o’clock
+andtherecognize reports2o’clock) [26].
+174 UIST’95 November 14-17,1995User:
+System:
+User:
+System:
+User:
+System:
+User:
+System:“Playtoday’snotes”
+Notesfortoday...“workontheCHIposition
+paper”,“meetwithJordan”
+“Remind meaboutthis”
+Atwhattimedoyouwanttobereminded?
+“At3O’CIOCk
+Notemarkedasreminder fortodayat
+2o’clock ...
+“NoIsaid3o’clock”
+Oopssorry,notemarkedasreminder for
+todayat3o’clock“meetwithJordan”
+OAdefine CorrectionRule
+“OOPSsorry,“cResponse>; %correction==TRUE
+<Response>
+%end
+Whenever theuserspeaksadayortimeforareminder, the
+system addsanediting expression tothespeech
+recognition grammar, allowing theusertosay“NoIsaid”
+followed byanewdayandtime.Thesystem’s response to
+suchanediting expression isextremely important for
+maintaining mutualbeliefbetween thesystemanduser.By
+responding “Oops sorry”Conversational VoiceNotes
+acknowledges theuser’sintention tocorrect anerror,
+keeping thedialogue ontrack.
+Noticeintheabovedialogue thatthecorrection response
+repeatsalloftheinformation forthereminder. Whilean
+elliptical10 response suchas“Notemarked for3o’clock” is
+briefer, inclusion ofallreminder attributes implicitly
+informs theuserwhatthesystemhasassumed tobecorrect
+[12,27,32]allowing furtherrepairifneeded.
+IMPLEMENTATION
+Feedback StateFrame
+Thefeedback generator isdesigned toworkinconjunction
+witha‘C’program. Theprogram sharesvariables withthe
+feedback grammar usingafeedback stateframe(seeexample
+below). Variables inthefeedback stateframecanbeused
+insidenonterminal definitions orconditional statements in
+thegrammar. Foreveryvariable tobeusedinthe
+grammar, theprogrammer specifies thetextnameanda
+pointertotheapplication variable.
+KVPairFbStateFrame[] ={
+{“event”, &lnput.event},
+{“object”, &lnput.obj},
+{“argument”, &lnput.arg},
+{“currentPosition”, &AppState.currentPos},
+{“currentNote”, &AppState.currentNote},
+{“inputType”, &Feedbacklnfo.inType},
+{“outputType”, &Feedbacklnfo.outType},
+{“feedbackLevel”, &Feedbacklnfo.f bLevel},
+};
+9Aneditingexpression (e.g.,er,rather,no,Imean)isrrsedtosignala
+comection tothelistener [18].
+10Eltipsis istheomission ofoneormorewordsthatareexpected tobe
+implicitly rmderstoed basedonthecontext.Intheexample, variables froman“Input” structure that
+contain theuser’svoicecommand areincluded inthe
+feedback stateframe.Inaddition, thereisinformation about
+thecurrentstateoftheapplication—the currentnotebeing
+playedanditsposition inthespeechdatabase. Lastly,there
+isinformation thatiscritical foruseinthefeedback
+generation—the inputmodality used,theoutputmodality
+preferred bytheuser,andthelevelofdetail.
+Parsing theGrammar
+Thefeedback grammar islexically analyzed andparsedusing
+variants ofLexandYacc[15,17,21].Usingthesetools,a
+separate treeiscreated foreachnonterminal definition
+(%define) inthegrammar. Thenonterminaf istheroot
+nodeofthetree,withasubnode foreveryruleinthe
+definition. Therulenodeshaveasubnode foreachtoken
+contained intherule(seeFigure1).Figure2showsatree
+forthenonterminal definition GetRem inderlnfo. Foreach
+rulenode,theprogram createsalistofconditions.
+[Tokens lExample
+lnofierminal references I<Date>I
+Iwordstrings I“onFriday” I
+wordstringvariables O/Operson Name
+soundnames SOUND: whoosh
+soundvariables SOUND: %currentNote
+Figure1:Tokensthatcanbeusedinrules.
+%define GetReminderInfo
+“Onwhatday”cReminded>; %day==TRUE
+“Atwhattime”<Reminded>; %time==TRUE
+“Onwhatdayandtime”<Reminded>
+O/Oend
++= “
+“Onwhatday” <Reminded>
+Figure2:Treeforanonterminal definition.
+Inasecondstageofprocessing following parsing, allofthe
+nonterminal references areresolved—a linkiscreated
+between eachreference andthetreeforthatnonterminal. In
+theexample above,thecReminded> reference wouldget
+linkedtotheReminded tree.Intheresulting structure,
+nonterminal definitions mayhavemorethanoneparent
+November 14-17,1995 UIST’95175node,sincetheycanbereferenced inmultiple places
+throtrghout thegrammar. Thistreestructure (technicallya
+directed acyclic graph, orDAG), identifies common
+subexpressions (i.e.,nonterminals) toeliminate duplication
+[3].
+Checking forErrors intheGrammar
+During thesecond stageprocessing, asnonterminal
+references areresolved, twokindsoferrorchecking are
+performed. First,anerroroccursifanonterminal reference
+hasnotbeendefined inthegrammar. Theprogram
+continues toattempt toresolve theremainder ofthe
+references, andoutputs anerrorreportlistingallthe
+unresolved references. Second, eachnonterminal definition
+nodecontains aflagindicating whether ornotithasbeen
+referenced anywhere inthefeedback grammrm Awarning is
+givenintheerrorreportforeveryunreferenced nonterminal.
+Whendeveloping theConversational VoiceNotes grammar,
+thiserrorreportwasaninvaluable resource fordebugging
+thegrammar.
+Generation Solving Function
+Thefeedback generation solvingfunction usesadepth-first
+searchthrough thetreeofnonterminals starting attheroot
+node.11Eachruleischecked intheorderlistedinthe
+grammar untilonesucceeds. Thefollowing isavery
+simpleexample grammar toshowtheprocess offeedback
+generation, fromgrammar specification tofinalresult:
+O/OdefineRoot
+cQuestion Response> ;O/Oneedlnfo==TRUE
+cAnswerResponse>
+O/Oend
+YOdefine QuestionResponse
+“Callwho?” “%person==NULL
+“Call”%person “where?;
+O/Oend
+YOdefine AnswerResponse
+“Calling” YOperson “at”<Place>
+O/Oend
+%define Place
+“home” ;O/OIocation==PERSONAL_LOC
+“work” ;‘YOlocation==BUSINESS_LOC
+O/Oend
+Giventhisexample grammar, thealgorithm wouldfirst
+evaluate thecQuestionResponse> rule;ifthisrulefailed,
+thecAnswerResponse> rulewouldbeevaluated next.A
+rulesucceeds ifallofitsconditional statements evaluate to
+TRUE. Ifnoconditions arespecified (asinthe
+eAnswerResponse> rule),aruleisautomatically accepted.
+Ifarulecontains anonterminal reference, thenthe
+algorithm checks therulesforthisreference, andthis
+continues untilaleafnodeisreached. Thefollowing
+11Therootnodeoftiegrammm isspecified infhefirst%define inMe
+feedback specification.example showshowtheresult“Callwho?”couldget
+generated
+Given: needlnfo =TRUE
+person=NULL
+Result: “Callwho?”
+Thealgorithm startsattherootnode,firstevaluating the
+<Question Response> rule.Since%needlnfo isTRUE,
+thenthealgorithm traverses tothedefinition of
+<Question Response> andcheckstheserules.Starting at
+thefirstrule(“Callwho?”), thealgorithm evaluates the
+condition %person ==NULL.Sincethisistrueandtherule
+doesnotcontain anymorenonterminal references, aleaf
+nodehasbeenreached successfully. Inordertogenerate the
+finalresult,eachnodeinthetreemaintains alistoftokens
+thatgetspropagated fromtheleafuptotherootnodeofthe
+tree.Inthisexample, thetoken“Callwho?”getscopied
+fromtheQuestionResponse nodetotheRootnodeandthe
+algorithm completes successfully.
+Inthesample generation illustrated above, eachrule
+condition thatwaschecked completed successfully.
+However, ifoneoftheruleshadfailed(i.e.,arulecondition
+evaluates toFALSE), thealgorithm wouldpopupalevelto
+testthenextruleforthatnonterrninal. Thenextexample
+showshowtheresult“Calling Barryathome”couldget
+generated:
+Given: needlnfo =FALSE
+person=“Barryi’
+location=PERSONAL_LOC
+Result: “Calling Barryathome”
+Again,thealgorithm startsattherootnode,evaluating the
+<QuestionResponse> rule.Since%needlnfo isFALSE,
+thealgorithm thengoesontothenextrule,
+<AnswerResponse>. Thisrulehasnoconditions, soitis
+accepted automatically. Next,thealgorithm traverses tothe
+definition ofcAnswerResponse> andchecksthefirstrule,
+“Calling” %person “at”<Place>. Thisrulealsohasno
+conditions, sothealgorithm traverses another leveltothe
+definition ofcPlace> andchecksitsfirstrule“home”. The
+variable location issettoPERSONAL_LOC, andthereare
+nomorenonterminal references tocheck,soaleafnodehas
+beenreachedsuccessfully.
+Asintheprevious example, thefinalresultispropagated
+ftomtheleaftotherootnodeofthetree.First,thetoken
+“home” iscopied fromthePIacenodetothe
+AnswerResponse node.Itisaddedontotheendofthelist
+oftokenslocatedatthisnode—’’Calling”, “Barry”, and“at”.
+Notethatthe%person tokenisresolved to“Barry” using
+thekey-value pairsspecified inthefeedback stateframe.
+Lastly, alistof4tokens(“Calling”, “Barry”, “at”,and
+“home”) iscopiedfromtheAnswerResponse nodetothe
+176 UIST’95 November 14-17,1995Rootnodeofthetree.Thegrammar generator returnsthis
+listoftokenstotheapplication.
+RELATED WORK
+Manyconversational speechinterfaces arebeingdeveloped
+usingthelatestcontinuous speechrecognition andtext-to-
+speechsynthesis technologies (e.g.,[19,32,33]).While
+ATIS(AirTravelInformation Service) research [25]has
+focused oneffective speechrecognition performance in
+specialized domains, bettertoolsareneededfordesigners to
+develop newuserinterfaces employing speechtechnology
+inavarietyofdomains. Inaddition, asZuestates“current
+research inspokenlanguage systems hasfocused onthe
+inputside”alone,ratherthanonbothspeechinputand
+generation [34].
+Researchers atSunMicrosystems arecurrently working on
+SpeechActs, ageneralenvironment fordeveloping speech-
+basedapplications [20].Thisarchitecture consists ofa
+naturatlanguage component calledSWIFTUS, agrammar
+compiler forspeechrecognition, andadiscourse manager.
+Thegoalistosupport theuseofavariety ofspeech
+recognition systems. Thesetoolshavebeenusedinthe
+development ofseveral applications foraccessing
+information (e.g.,email,calendar) overthetelephone using
+spoken input[32].TheSpeechActs architecture isan
+important steptowardeasierdevelopment ofspeech-based
+interfaces. Without adevelopment toollikeSWIFTUS, a
+speechapplication developer isforcedtowriteaseparate
+grammar forthespeechrecognize andnaturallanguage
+components ofthesystem. Inaddition, thesespecifications
+wouldnotbeportable forusewithanother speech
+recognition system. SpeechActs hasfocused onspeech
+inputspecification, butwouldbeagoodenvironment for
+integration withanaudiooutputtoolliketheonedescribed
+inthispaper.
+Brennan andHulteen havedeveloped ageneralmodelfor
+adaptive feedback [7].Asatestbedfortheirmodelthey
+developed aconversational telephone agentthatadaptsits
+feedback depending onthestateoftheinteraction between
+theuserandcomputer. Thefeedback modelhasseven
+possible statesforresponding totheuser.Forexample, if
+theagentisinthe“attending” statebuthasnotheardthe
+wordsspokenbytheuser,itmightrespond “Whatwasthat
+again?Anumberoffactorsme&enintoaccount suchas
+thefrequency ofuserinterruptions tocorrectthesystemin
+therecent dialogue history, thefrequency of
+misrecognitions (e.g.,rejection errors)madebythesystem,
+andthelevelofnoiseintheuser’senvironment. Thiswork
+represents animportant steptowardthedevelopment of
+conversational speechinterfaces thatareabletorepairerrors
+incommunication andadapttothecurrentcontext ofthe
+discourse. However, toolslikethefeedback grammar
+described inthispaperareneeded tohelpdesigners
+implement thiskindoffeedback model.ISSUES FORFUTURE WORK
+Throughout thispaper,examples havebeengivenshowing
+thegeneration capabilities oftheauditory feedback tool.
+However, anumber oflimitations werealsoexperienced.
+Giventhedeclarative specification ofthegrammar, the
+feedback canbechanged quickly, without recompiling the
+application. However, acontext-free grammar wasfoundto
+betoolimited initsgenerative power. Thegrammar
+becomes longandunwieldy asadditional rulesareneededto
+handlecasessuchassingular versuspluralforms. The
+sections belowdescribe otherlimitations encountered when
+implementing thefeedback forConversational VoiceNotes
+andhowtheseissuesmightbeaddressed infuturework.
+Auditory Feature Specification
+Intheoriginat VoiceNotes interface, thespeedoftheaudio
+feedback isvaried.Forexample, whendeleting anote,the
+systemresponds “Deleting ...”andthenplaysbackthe
+contents ofthenotebeingdeleted atarate1.5timesthe
+user’sspeedsetting. Thecurrentfeedback grammar does
+notprovide support forspecifying playback speed. A
+generat mechanism forspecifying features (e.g.,speed,
+duration) oftokensinthegrammar isneededforcaseslike
+thisone.Thiscouldalsobeusefulforallowing
+parameterization ofauditory icons(e.g.,notjustspecifying
+a“thunk” soundbuthowbigandwhattypeofobject)[10].
+Thegrammar alsodoesnotprovide asyntaxforspecifying
+thatsoundsbemixedorspatialized. Theproblem becomes
+oneofauditory streaming [5]—sounds mustbebrokeninto
+auditory streams according totheirsemantic groupings. In
+Conversational VoiceNotes, notesanddescriptive audio
+iconsshouldformoneauditory stream, andnavigational
+soundsanother. Therearemanypotential cuesthatcanbe
+employed tocausesuchstreaming (e.g.,spatiallocation,
+pitchdifferences, timesynchronization). Additionat support
+isneededforthisinthegrammar. Forexample, adesigner
+needstobeabletospecifythattwosoundsshouldbeginor
+endatthesametimeorbenormalized inlength.
+Ultimately, thereneedstobeawaytogroupsegments of
+auditory output,creating multiple auditory streams.
+Adaptive Feedback
+Inaddition tocodinginformation suchasplayback speedin
+thegrammar, thereneedstobeamechanism toaccount for
+dynamic changes basedondiscourse context. Theglobal
+andlocalfocusofthediscourse [11]willimpacttheuseof
+pronouns, ellipsis, andprosodic cuessuchasaccent. One
+difficulty isalthough something maybepronominalized in
+human-human conversation, thismaynotbeappropriate in
+thesameinstances forconversation withanerror-prone
+speechrecognize (seeexample below).
+Thedecision ofwhentopronominalize willdepend not
+onlyondiscourse structure butonfactorssuchastheuser’s
+experience level,thenumber ofspeechrecognition errors
+thathaveoccurred inthepresentinteraction, andeventhe
+noiselevelofthelistening environment. Brennan and
+November 14-17,1995 UIST’95177Hulteen’s conversational telephone agentadaptsitsfeedback
+basedonfactorslikethese[7].
+Another important consideration ishowcritical isthe
+actionthatisabouttobeperformed. Forexample, deleting
+avoicenotehasadestructive consequence whereas playing
+itbackdoesnot.Brennan andHulteen use“positive
+evidence” [8]tonotifyusersofanintended actionbeforeit
+iscompleted. Thefollowing aretwoexample dialogues
+fromtheirsystem:
+User: “CallLisa.”
+System: “Ok,I’llcallLisa,”
+User: “CallLisa.”
+System: “Ok,I’llcallLewis.”
+User: “No!IsaidcallLisa.”
+Inthefirstcase,givenonlydiscourse focusinformation, a
+pronoun couldhavebeenused—’’OK, I’llcallher.”
+However, thesystemexplicitly repeatsthecommand aspart
+ofthefeedback inordertogivepositive evidence ofthe
+namerecognized bythesystem. Giventhisevidence, the
+userhastheopportunity tointerrupt ifanerrorhas
+occurred. Theerror-prone natureofspeechrecognition as
+wellastheaddedcognitive loadoflistening tosynthetic
+speech[24]mustbetakenintoaccount whendesigning
+auditory feedback.
+Integration withSpeech Input
+Duetothedevicedependent natureofcurrentcontinuous
+speechrecognition grammars, thefeedback grammar tool
+hasnotyetbeenintegrated withaparticular speechinput
+format.Theinputgrammar forConversational VoiceNotes
+isspecified usingtheformatforthePlaintalk speech
+recognition systemandisnotcurrently integrated withthe
+feedback grammar. Inorderforthistooltobemostvaluable
+todesigners usingbothspeech inputandoutput, itis
+criticaltoallowtheinputandoutputgrammars tosharea
+lexicon, nonterminals, andphonetic pronunciation rules.
+CONCLUSION
+Thispaperdescribes atooltosupportgeneration ofspeech
+andnon-speech auditory feedback andprovides examples of
+itsuseinanapplication. Inparticular, Conversational
+VoiceNotes usesthegrammar tospecifyconditions under
+whichdifferent typesandamount offeedback shouldbe
+generated. Onceafeedback grammar hasbeencreated, itis
+simpletomodify, supporting aniterative designprocess.
+Thepaperoutlines anumber ofimportant issuesforfuture
+workinthisarea.Researchers exploring usesofspeechand
+non-speech audiohaveprimarily studied thetwoin
+isolation. Giventhegrowing needforauditory feedback in
+theuserinterface, itisnecessary tofocusonhowspeech
+andsoundcanbeusedtogether effectively. Thework
+presented inthispaperisanimportant stepinthis
+direction.ACKNOWLEDGMENTS
+Thanks toBarryAronsforhelping withthedesignand
+codingofthefeedback compiler andproviding valuable
+comments ondraftsofthispaper.JordanSlotthelpedwith
+debugging. EricHulteen, BarryArons,andChrisSchmandt
+gavevaluable inputinthedesign ofConversational
+VoiceNotes. Kai-Fu LeeandEricHulteen provided
+Plaintalk, andBobStrong, MattPallakoff, andTed
+Kopulos provided technical support.
+Thisworkwassponsored byApple@ Computer, Inc.and
+SunMicrosystems.
+REFERENCES
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+9.
+10.
+11,
+12.HARKPrototype User’sGuide.BBNSystems and
+Technologies: ADivision ofBoltBeranek and
+Newman Inc.,1993.
+SpeechRules.Chapter 8inMacintosh Quadra 840AV
+andMacintosh Centris660AVComputers. Apple
+Computer, Inc.DeveloperPress, 1993.
+A.V.Aho,R.SethiandJ.D.Unman. Compilers:
+Principles, Techniques, andTools.Addkon-Wesley,
+1988.
+M.M.Blattner, D.A.Sumikawa andR.M.Greenberg.
+Earcons andIcons:TheirStructure andCommon
+DesignPrinciples. Human-Computer Interaction,
+4(1):11-44, 1989.
+A.S.Bregman. Auditory SceneAnalysis: The
+Perceptual Organization ofSound.Cambridge, The
+MITPress,1990.
+S.E.Brennan. Conversation withandthrough
+computers. Usermodeling anduser-adapted interaction,
+1(1):67–86, 1991.
+S.E.Brennan andE.A.Hulteen. Interaction and
+Feedback inaSpoken-Language System: ATheoretical
+Framework. Knowledge-Based Systems, (March)1995.
+H.H.ClarkandS.E.Brennan. Grounding in
+communication. InJ.Levine, L.B.Resnick andS.D.
+Teasley, editor,Perspectives onsocially shured
+cognition, pages127-149. APA,1991.
+W.W.Gaver.TheSonicFlnder: Aninterface thatuses
+auditory icons.Human-Computer Interaction, 4(1):67-
+94,1989.
+W.W. Gaver.Synthesizing Auditory Icons.k
+Proceedings ofINTERCHI ’93,pages228-235. ACM,
+1993.
+B.GroszandC.Sidner.Attention, Intentions, andthe
+Structure ofDiscourse. Computational Linguistics,
+12(3):175-204, 1986.
+P.J.HayesandD.R.Reddy.Stepstowardgraceful
+interaction inspokenandwrittenman-ma~hine
+178 UIST’95 November 14-17,1995communication. International Journal ofMan-Machine
+Studies, 19:231-284, 1983.
+13.C.T.Hemphill. DaggerUser’sGuideandReference
+Manual. TexasInstruments Incorporated, 1993.
+14.E.H.Hovy.Planning Coherent Multisentential Text.
+InProceedings ofthe26thAnnualMeeting ofthe
+Association forComputational Linguistics, pages
+163–169, 1988.
+15.S.C.Johnson. YACC: YetAnother Compiler
+Compiler. University ofCalifornia, Berkeley, CSRG,
+1986.
+16.K.Lee.Towards Conversational Computers: AnApple
+Perspective. InProceedings ofEuroSpeech. Berlin,
+Germany, 1993.
+17.M.E.LeskandSchmidt. Lex-A LexicalAnalyzer
+Generator. University ofCalifornia, Berkeley, CSRG,
+1986.
+18.W.J.M.Levelt.Speaking: FromIntention to
+Articulation. TheMITPress,1989.
+19.E.LyandC.Schmandt. Chatte~ AConversational
+Learning SpeechInterface. InProceedings ofAAAI
+SpringSymposium onIntelligent Multi-Media Multi-
+ModalSystems, 1994.
+20.P.MartinandA.Kehler.SpeechActs: ATestbed for
+Continuous SpeechApplications. InProceedings of
+AAAZ’94Workshop ontheIntegration ofNatural
+Language andSpeechProcessing, 12thNational
+Conference onAZ,1994.
+21.T.MasonandD.Brown.LEX&YACC. O’Reilly &
+Associates, Inc.,1991.
+22.K.R.McKeown. TextGeneration: UsingDkcourse
+Strategies andFocusConstraints toGenerate Natural
+Language Text.Cambridge University Press,1985.
+23.J.D.MooreandC.L.Paris.Planning Textfor
+Advisory Dialogues. InProceedings ofthe27thAnnual
+Meeting oftheAssociation ofComputational
+Linguistics, pages203-211. ACL,1989.24.D.B.Pisoni,H.C.Nusbaum andB.G.Greene.
+Perception ofSynthetic SpeechGenerated ByRule.
+Proceedings oftheIEEE,73(11):1665-1676, 1985.
+25.P.Price.Evaluation ofSpokenLanguage Systems:
+TheATISDomain. InProceedings ofDARPA Speech
+andNatural Language Workshop, pages91–95,1990.
+26.C.Schmandt. Conversational Computing Systems.
+NewYork,VanNostrand Reinhold, 1993.
+27.C.Schmandt andB.Arons.ARobustParserand
+DialogGenerator foraConversational OfficeSystem.
+InProceedings ofAVIOS,1986.
+28.L.J.Stifelman. VoiceNotes: AnApplication fora
+Voice-Controlled Hand-Held Computer. Master’s
+Thesis.Massachusetts Institute ofTechnology, 1992.
+29.L.J.Stifelman, B,Arons,C.Schmandt andE.A.
+Hulteen. VoiceNotes: ASpeechInterface foraHand-
+HeldVoiceNotetaker. ZnProceedings ofINTERCHI
+’93,pages179-186. ACMSIGCHI, 1993.
+30.E.Strommen. “BeQuiet,YouMonster!”: Speechasan
+Element ofSoftwme forPreschool. Presented atthe
+AnnualMeeting oftheAmerican Educational Research
+Association. Children’s Television Workshop, 1991.
+31.B.Strong.Casper: SpeechInterface fortheMacintosh.
+ZnProceedings ofEuroSpeech. Berlin,Germany, 1993.
+32.N.Yankelovich, G.LevowandM.Marx.Designing
+SpeechActs: IssuesinSpeechUserInterfaces. In
+Proceedings ofCHI’95.ACMSIGCHI, 1995.
+33.V.Zue,J.Glass,D.Goodine, H.Leung,M.Phillips,
+J.Polifroni andS.Seneff.TheVoyager Speech
+Understanding System: Preliminary Development and
+Evaluation. InProceedings ofIEEE1990International
+Conference onAcoustics, Speech, andSignal
+Processing, 1990.
+34.V.W.Zue.HumanComputer Interactions Using
+Language BasedTechnology. Presented atthe1994
+International Symposium onSpeech, Image
+Processing, andNeuralNetworks, 1994.
+November 14-17,1995UIST’95179

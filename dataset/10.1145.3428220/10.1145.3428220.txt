@@ -1,0 +1,1491 @@
+152Igloo:Soundly LinkingCompositional Refinementand
+Separation Logic forDistributed System Verification
+CHRISTOPH SPRENGER, TOBIAS KLENZE, MARCO EILERS, FELIX A. WOLF, PETER
+MÜLLER, MARTIN CLOCHARD, and DAVID BASIN, ETH Zurich,Switzerland
+Lighthouse projects like CompCert, seL4, IronFleet, and DeepSpec have demonstrated that full system verifi-
+cation is feasible by establishing a refinement between an abstract system specification and an executable
+implementation.Existingapproacheshoweverimposesevererestrictionsontheabstractsystemspecifications
+duetotheirlimitedexpressivenessorversatility,orontheexecutablecodeduetotheiruseofsuboptimalcode
+extraction or inexpressive program logics. We propose a novel methodology that combines the compositional
+refinementofevent-basedmodelsofdistributedsystemswiththeverificationoffull-fledgedprogramcode
+using expressive separation logics, which support features of realistic programming languages like heap data
+structures and concurrency. Our main technical contribution is a formal framework that soundly relates
+event-based system models to program specifications in separation logics. This enables protocol development
+tools to soundly interoperate with program verifiers to establish a refinement between the model and the
+code. We formalized our framework, Igloo, in Isabelle/HOL. We report on three case studies, a leader election
+protocol,areplicationprotocol,andasecurityprotocol,forwhichwerefineformalrequirementsintoprogram
+specifications that we implement inJava andPythonandprove correctusing the VeriFast andNaginitools.
+CCS Concepts: •Theory of computation →Logic and verification ;Higher order logic ;Separation
+logic;•Computersystemsorganization →Dependableandfault-tolerantsystemsandnetworks ;•
+Securityandprivacy →Logicand verification ; •Computingmethodologies →Distributed algorithms .
+AdditionalKeyWordsandPhrases:end-to-endverification,distributedsystems,compositionalrefinement,
+higher-order logic, separation logic, toolinteroperability,leader election, fault-tolerance,security protocols.
+ACM ReferenceFormat:
+Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David
+Basin. 2020. Igloo: Soundly Linking Compositional Refinementand SeparationLogic for Distributed System
+Verification. Proc. ACM Program. Lang. 4, OOPSLA, Article 152 (November 2020), 31pages.https://doi.org/10.
+1145/3428220
+1 INTRODUCTION
+The full verification of entire software systems, formally relating abstract specifications to exe-
+cutablecode,isoneofthegrandchallengesofcomputerscience[ Hoare2003 ].Seminalprojects
+such as seL4 [ Klein et al .2009], CompCert [ Leroy 2006 ], IronFleet [ Hawblitzel et al .2015], and
+DeepSpec [ Pierce 2016 ] have achieved this goal by formally establishing a refinement relation
+between a systemspecification and an executable implementation.
+Despite this progress, substantial challenges still lay ahead. We posit that techniques for the
+verification of entiresystems shouldsatisfy four major requirements:
+Authors’ address: Christoph Sprenger, sprenger@inf.ethz.ch; Tobias Klenze, tobias.klenze@inf.ethz.ch; Marco Eilers, marco.
+eilers@inf.ethz.ch; Felix A. Wolf, felix.wolf@inf.ethz.ch; Peter Müller, peter.mueller@inf.ethz.ch; Martin Clochard, martin.
+clochard@inf.ethz.ch; DavidBasin, basin@inf.ethz.ch, Department ofComputerScience,ETH Zurich, Switzerland.
+© 2020Copyrightheld by the owner/author(s).
+2475-1421/2020/11-ART152
+https://doi.org/10.1145/3428220
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.
+Thiswork is licensed underaCreativeCommons Attribution 4.0 InternationalLicense.152:2 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+(1)End-to-end guarantees : Verification techniques should provide system-wide correctness guar-
+antees,relatingglobal propertiesto verifiedimplementationsof thesystemcomponents.
+(2)Versatility :Verificationtechniquesshouldbeapplicabletoawiderangeofsystems.Inthe
+important domain of distributed systems, versatility requires (i) the ability to model different
+kindsofenvironmentsinwhichthesystemoperates,capturing,forinstance,differentnetwork
+properties, fault models, or attacker models, (ii) support for different flavors of systems,
+comprising different types of components (such as clients and servers) and allowing an
+unbounded number of instances per component type, and (iii) support for heterogeneous
+implementations,forinstance,tosupportthecommoncasethatclientsaresequential,servers
+areconcurrent,and eachof themisimplementedin a differentlanguage.
+(3)Expressiveness :Verificationtechniquesshouldsupportexpressivelanguagesandlogics.In
+particular, high-level system models and proofs often benefit from the expressiveness of
+richformalismssuchashigher-orderlogic,whereascode-levelverificationneedstotarget
+efficiently-executable and maintainableimplementations,often in multiple languages.
+(4)Toolinteroperability :Whileitis possibleto support the previousthreerequirements within
+one generic verification tool, it is advantageous to employ specialized tools, for instance, to
+obtain a high degree of automation and to leverage existing tools, infrastructure, and expert
+knowledge.Thisgivesrisetotheadditionalrequirementofsoundinteroperabilityofdifferent
+verificationtools,whichisalong-standingchallengeinverification.Moreover,integrating
+toolsshouldideallynotrequireanymodificationstothetools,eventhoughtheymaysupport
+differentlogics and programminglanguages.
+Despite enablingfullverification, existing techniques donot meet all of theserequirements.
+Some existing approaches [ Koh et al.2019] use specifications of individual system components
+(such as a server), but do not explain how to formally connect them to a global model of the entire
+system.Aglobalmodelisnecessarytoprovesystem-wideproperties,especiallyindecentralized
+systems.Others[ OortwijnandHuisman2019 ]donotconsiderthepreservationofglobalmodel
+propertiesdowntotheimplementation.Hence,theseapproachesdonotmeetourfirstrequirement.
+Most existing approaches do not match our versatility requirements. Some target particular
+types of systems [ Klein et al .2009;Lesani et al .2016;Rahli et al .2018] or make fixed environment
+assumptions [ Koh et al.2019;Sergey et al .2018]. Moreover, in several works, different component
+typeswithunboundednumbersofinstancesareeithernotsupportedoritisunclearwhethertheyare
+genericallysupported[ Hawblitzeletal .2015;Kohetal.2019].Finally,manyapproaches[ Hawblitzel
+et al.2015;Lesani et al .2016;Rahli et al .2018;Sergey et al .2018;Wilcox et al .2015] prescribe a
+fixedprogramminglanguage and, thus,donot supportheterogeneous implementations.
+Most previous work does not satisfy our expressiveness requirement. Some of them [ Hawblitzel
+etal.2015,2014]limittheformalismusedformodeldevelopmenttofirst-orderlogic,toleverage
+SMT solvers, which complicates the formalization of common properties such as graph properties.
+Others restrict the executable implementation [ Leroy 2006 ;Lesani et al .2016;Liu et al.2020;Rahli
+et al.2018;Sergey et al .2018;Wilcox et al .2015;Woos et al .2016] and extract executable code
+directly from formal models. This guarantees the implementation’s correctness, but has several
+drawbacks. In particular, the extracted code is purely functional or rewriting-based, with sub-
+optimal performance, and any manual code optimizations invalidate the correctness argument and
+may compromise the intended behavior. Moreover, code extraction complicates the interaction
+withexistingsystemcomponentsandlibraries.Otherapproachesreasonaboutmanually-written
+implementations, but do not employ a modern verification logic [ Klein et al .2009], restricting the
+implementation, for instance, to sequential code, and precluding the use of existing state-of-the-art
+program verification tools, potentially resulting in low proof automation and non-modular proofs.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:3
+Finally,mostexistingapproachesrequiretheuseofasingletool,typicallyaninteractivetheorem
+prover. This may prevent experts in both protocol and program verification from using the highly
+automated tools they are familiar with and from building on their existing infrastructure. An
+exception is Oortwijn and Huisman [2019], who combine the Viper verifier [ Müller et al .2016]
+withthemCRL2 model checker[ Cranen et al. 2013 ] to reason aboutmessagepassing programs.
+This Work. We propose a novel approach that combines the top-down compositional refinement of
+abstract, event-based system models [ Abadi and Lamport 1991 ;Abrial 2010 ;Lynch and Vaandrager
+1995]withthebottom-upverificationoffull-fledgedprogramcodeusingseparationlogic[ Reynolds
+2002]. Our approach satisfies all four of our requirements. It offers the full expressive power of
+higher-order logic and the foundational guarantees of interactive theorem provers for developing
+formal models, as well as the expressiveness and tool support provided by modern program logics.
+Thecoreofourapproachisaformalframeworkthatsoundlyrelatesevent-basedsystemmodelsto
+programspecificationsinseparationlogic,suchthatsuccessfulverificationestablishesarefinement
+between the model and the code. The program specifications decouple models and code, allowing
+ustosupportmultiple programminglanguagesandverificationtools.Thisis,forinstance,useful
+to develop multiple library implementations of a protocol. Moreover, this decoupling enables a
+separation of concerns where we can use specialized tools for model refinement and for code
+verification, tailoredto theproblem and theprogramminglanguage at hand.
+Wefocusonthedevelopmentof distributed systems,consistingofanarbitrarynumberofcompo-
+nents (of possibly different types such as clients and servers) that interact by exchanging messages
+via an arbitrary,potentially faulty or adversarial environment. Such systems exhibitcomplex con-
+current behaviors. In this setting, a component’s program specification prescribes its state changes
+as well as its I/O behavior and is called an I/O specification . We employ an existing encoding of I/O
+specifications into a separation logic, which supports both of these aspects [ Penninckx et al .2015].
+Thisencodingisapplicabletoanylogicofferingstandardseparationlogicfeatures,andcanthusbe
+used to verify components with mutable heap datastructures, concurrency, and other features of
+realisticprogramminglanguagesthatenableefficient implementations.
+Abstract system model
+Protocol modelStepwise reﬁnement
+Interface modelStepwise reﬁnement
+Component 
+model
+Environment 
+modelDecomposition
+Component 
+model
+I/O 
+speciﬁcationTranslation
+I/O 
+speciﬁcation
+Component 
+codeCode veriﬁcation
+Component 
+codeStep 1
+Step 2
+Step 3
+Step 4
+Step 5
+Step 6
+Fig. 1. The main steps of our approach.Approach. Our methodology consists of six main
+steps, illustrated in Figure 1. All steps come
+with formal guarantees to soundly link the ab-
+stractmodelswiththecode.Thefirstfivesteps
+are formalized in Isabelle/HOL [ Nipkow et al .
+2002].Step 1requires formalizing an initial ab-
+stract model of the entire system and proving de-
+siredtraceproperties.Thismodelandsubsequent
+models are expressed as event systems (i.e., la-
+beled transition systems) in a generic refinement
+frameworkthatweimplementedinIsabelle/HOL.
+Step 2develops a protocol model, which con-
+tains the components of the distributed system
+tobedevelopedaswellasassumptionsaboutthe
+communicationnetwork. This environment may,
+for instance, include a fault model or an attacker
+model, which can be used to prove properties
+aboutfault-tolerantorsecuresystems.Sofar,this
+is standard development by refinement, but Steps 3-5 are specific to our approach. Step3prepares
+themodelforasubsequentdecompositionandrefinestheinterfacesofthecomponentsandthe
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:4 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+environment to match the interfaces of the I/O libraries to be used in the implementations. Step 4
+decomposesthe, sofarmonolithic,modelintomodelsoftheindividualsystemcomponents(e.g.,
+clientsandservers)andtheenvironment. Step5translateseachcomponent’seventsystemintoan
+I/O specification, which formalizes its valid I/O behaviors. We express thisspecification asanen-
+codingintostandardseparationlogicassertionsthatcandescribesequencesofcallstoI/Olibraries,
+e.g., for sending and receiving messages [ Penninckx et al .2015]. Each such call corresponds to one
+eventofthecomponent’seventsystem.Finally, Step6isstandardcodeverificationofthedifferent
+system components,albeitwith I/Ospecifications.Thisstepcanbe performed usingan embedding
+ofaseparationlogicintoaninteractive theoremprover(to obtainfoundationalguarantees)orby
+using separate dedicated program verifiers (to increase automation). For the latter, any existing
+verifiersupportingstandardseparationlogicfeaturescanbeusedwithoutrequiringchangestothe
+tool,provideditsatisfiesour verifierassumption .ThisassumptionstatesthatprovingaHoaretriple
+involving the I/O specification in the tool implies that the program’s I/O behavior refines the one
+definedbytheI/Ospecification.Crucially,ourapproachsupportsmodularreasoninginthatthe
+verificationofacomponent’scodedoesnotinvolvereasoningaboutthesystem’sglobalproperties,
+othercomponents,ortheenvironment.Moreover,wecanemploydifferentcodeverifierstosupport
+heterogeneousimplementations,wheredifferentcomponentsarewrittenindifferentlanguages,
+and some aresequential, whileothersuse localconcurrencyforimprovedperformance.
+Our approach ensures that the resulting distributed system’s implementation does not abort due
+toruntimeerrorsandsatisfies,byvirtueofcompositionalrefinement,therequirementsspecified
+andprovedfortheformalmodels.Theseguaranteesassumethattherealenvironment,includingthe
+I/O libraries and the lower software and hardware layers, conforms to our environment model, the
+components are correctly instantiated, and the verification tools used are sound. As our approach
+łgluesžtogether modelsand code throughtheirI/O behavior, wehavedubbeditłIgloož.
+Contributions. Ourwork makesthefollowing contributions:
+(1)Methodology: Wepresentanovelmethodologyforthesoundend-to-endverificationofdis-
+tributedsystemsthatcombinestherefinementofexpressiveglobalsystemspecificationswith
+programverificationbasedonexpressiveseparationlogics.Thiscombinationsupportsthever-
+ification of system-wide properties and handles heap data structures, concurrency, and other
+language features required for efficient code. Our methodology enables the sound interoper-
+ability of interactive theorem provers with existing code verifiers for different programming
+languages,and theverifiedinteroperability of theresultingcomponent implementations.
+(2)Theory:Weestablishanovel,formallinkbetweeneventsystemmodelsandI/Ospecifications
+forprogramsexpressedinseparationlogicsbyrelatingbothofthemtoaprocesscalculus.
+Thislinkbetweenthesedisparateformalizationsiscentraltoourmethodology’ssoundness.It
+isalsointerestinginitsownrightsinceitshowshowtoformallyintegratethetracesemantics
+of eventsystems and processes with thepermissionsmanipulatedbyseparation logics.
+(3)Casestudies: Wedemonstratethefeasibilityofourapproachbydevelopingformalmodels
+for a leader election protocol, a replication protocol, and a security protocol, deriving I/O
+specifications for their components, and verifying independent implementations in Java and
+Python,usingtheVeriFast[ Jacobset al.2011 ]andNagini[ EilersandMüller2018 ]verifiers.
+Some of thesecomponents’performanceisoptimizedusing locallyconcurrentexecution.
+(4)Formalization: AllourdefinitionsandresultsareformalizedandproveninIsabelle/HOL.This
+includes the refinement frameworkand its soundness, the formalization of I/O specifications,
+the soundness proof that formally links event systems, processes, and I/O specifications, and
+Steps1ś5ofourcasestudies.Thisfoundationalapproachyieldsstrongsoundnessguarantees.
+Ourframework, Igloo, and our casestudies areavailable online [ Sprenger et al. 2020b ].
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:5
+Table 1.Summaryof notation.
+1,B,N{•},{true,false},naturals
+𝐴×𝐵cartesianproduct
+(|𝑥∈𝐴,𝑦∈𝐵|)recordswithfields 𝑥and𝑦
+𝐴⊎𝐵disjointunion (sum)
+𝐴⊥ =𝐴⊎{⊥}
+𝐴→𝐵,𝐴⇀𝐵totalandpartialfunctions
+P(𝐴)powerset
+𝐴∗finitesequences
+𝐴#multisets, =𝐴→N∪{∞}(|𝑥=𝑎,𝑦=𝑏|)concrete record
+𝑥(𝑟),𝑟(|𝑥:=𝑣|)recordfield 𝑥,update
+𝑓(𝑥↦→𝑣),𝑓−1function update,inverse
+𝜖,𝑎𝑏𝑐or⟨𝑎,𝑏,𝑐⟩empty,concrete sequence
+𝑥·𝑦 concatenation
+len(𝑥),𝑥(𝑖)length,𝑖-th value
+{𝑎,𝑎,𝑏,𝑐}#concrete multiset
+𝑀+#𝑀′multisetsum
+∅#,𝑎∈#𝑀{}#,𝑀(𝑎)>0
+2 PRELIMINARIES
+Although we formalize our development in Isabelle/HOL, we use standard mathematical notation
+wherepossibleto enhancereadability. Table 1summarizes our notation.
+2.1 EventSystems,Refinement,and ParallelComposition
+2.1.1 Event Systems. Anevent system is a labeled transition system E=(𝑆,𝐸,− →), where𝑆is a set
+of states, 𝐸is a set of events, and − → ⊆𝑆×𝐸×𝑆is the transition relation. We also write 𝑠𝑒− →𝑠′
+for(𝑠,𝑒,𝑠′) ∈ − →.Weextendthetransitionrelationstofinitesequencesofevents 𝜏byinductively
+defining, for all 𝑠,𝑠′,𝑠′′∈𝑆,𝑠𝜖− →𝑠and𝑠𝜏·⟨𝑒⟩− −−− →𝑠′′, whenever 𝑠𝜏− →𝑠′and𝑠′𝑒− →𝑠′′. Given a set of
+initial states 𝐼⊆𝑆, atraceof an event system Estarting in 𝐼is a finite sequence 𝜏such that 𝑠𝜏− →𝑠′
+forsomeinitialstate 𝑠∈𝐼andreachablestate 𝑠′.Wedenoteby traces(E,𝐼)thesetofalltracesof E
+startingin 𝐼.Forsingletonsets 𝐼={𝑠},wealsowrite traces(E,𝑠),omittingbrackets.Wecallaset
+of traces𝑃over𝐸atraceproperty and write E,𝐼|=𝑃iftraces(E,𝐼) ⊆𝑃.
+Forconcretespecifications,weoftenuse guardedeventsystems oftheform G=(𝑆,𝐸,𝐺,𝑈)where
+𝐺and𝑈denote the 𝐸-indexed families of guards𝐺𝑒:𝑆→Bandupdatefunctions 𝑈𝑒:𝑆→𝑆.
+The associated transition relation is − →={(𝑠,𝑒,𝑠′) |𝐺𝑒(𝑠) ∧𝑠′=𝑈𝑒(𝑠)}. If𝑆=(|¯𝑥∈¯𝑇|)is a
+record, we use the notation e:𝐺e(¯𝑥)⊲¯𝑥:=𝑈𝑒(¯𝑥)to specify events. For example, the event
+dec(𝑎):𝑧>𝑎⊲𝑧:=𝑧−𝑎decreases 𝑧bytheparameter 𝑎providedthattheguard 𝑧>𝑎holds.
+2.1.2 Refinement. Giventwoeventsystems, E𝑖=(𝑆𝑖,𝐸𝑖,− →𝑖)andsetsofinitialstates 𝐼𝑖⊆𝑆𝑖for
+𝑖∈ {1,2}, we say that (E2,𝐼2)refines(E1,𝐼1)modulo a mediator function 𝜋:𝐸2→𝐸1, written
+(E2,𝐼2) ⊑𝜋(E1,𝐼1), ifthereisa simulation relation 𝑅⊆𝑆2×𝑆1such that
+(1) foreach 𝑠2∈𝐼2thereexistssome 𝑠1∈𝐼1such that (𝑠2,𝑠1) ∈𝑅, and
+(2)for all𝑠1∈𝑆1,𝑠2,𝑠′
+2∈𝑆2and𝑒2∈𝐸2such that (𝑠2,𝑠1) ∈𝑅and𝑠2𝑒2− →2𝑠′
+2there exists some
+𝑠′
+1∈𝑆1such that 𝑠1𝜋(𝑒2)− −−− →1𝑠′
+1and(𝑠′
+2,𝑠′
+1) ∈𝑅.
+This is standard forward simulation [ Lynch and Vaandrager 1995 ], augmented withthe mediator
+function 𝜋, which allows us to vary the events in a refinement. We assume that all models Ein
+our developments include a special stuttering event skip∈𝐸, defined by 𝑠skip− −− →𝑠; consequently,
+the trace properties traces(E,𝐼)are closed under the addition and removal of skipto traces. Events
+thatareaddedina refinement stepoften refine skip.
+Weproveastandardsoundnesstheoremstatingthatrefinementimpliestraceinclusion.This
+traceinclusioninturnpreservestraceproperties(modulothemediator 𝜋).Here,𝜋isappliedto
+eachelementofeachtraceand 𝜋−1(𝑃1)consistsofalltracesthatmapelement-wisetoatracein 𝑃1.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:6 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+Theorem2.1. (E2,𝐼2) ⊑𝜋(E1,𝐼1)implies𝜋(traces(E2,𝐼2)) ⊆traces(E1,𝐼1).
+Lemma 2.2. SupposeE1,𝐼1|=𝑃1and𝜋(traces(E2,𝐼2)) ⊆traces(E1,𝐼1).ThenE2,𝐼2|=𝜋−1(𝑃1).
+Forcomplexormulti-levelrefinements,itmaybeadvisabletoreformulatetheintendedprop-
+erty𝑃1at theconcretelevel as 𝑃2and provethat 𝜋−1(𝑃1) ⊆𝑃2, which implies E2,𝐼2|=𝑃2.
+2.1.3 ParallelComposition. Giventwoeventsystems, E𝑖=(𝑆𝑖,𝐸𝑖,→𝑖)for𝑖∈ {1,2},asetofevents
+𝐸, and a partial function 𝜒:𝐸1×𝐸2⇀𝐸, we define their parallel composition E1∥𝜒E2=(𝑆,𝐸,→),
+where𝑆=𝑆1×𝑆2and(𝑠1,𝑠2)𝑒− → (𝑠′
+1,𝑠′
+2)iff there exist 𝑒1∈𝐸1and𝑒2∈𝐸2such that 𝜒(𝑒1,𝑒2)=𝑒,
+𝑠1𝑒1− →𝑠′
+1, and𝑠2𝑒2− →𝑠′
+2. We define the interleaving composition E1/interleaveE2=E1∥𝜒𝐼E2, where
+𝐸=𝐸1⊎𝐸2and𝜒𝐼(𝑒1,skip)=𝑒1,𝜒𝐼(skip,𝑒2)=𝑒2, and𝜒𝐼(𝑒1,𝑒2)=⊥ifskip∉{𝑒1,𝑒2}.
+Wecanalsodefineacompositiononsetsoftraces.Fortwotraceproperties 𝑇1and𝑇2overevents
+𝐸1and𝐸2, a set of events 𝐸, and a partial function 𝜒:𝐸1×𝐸2⇀𝐸, we define 𝜏∈𝑇1∥𝜒𝑇2iff there
+exist𝜏1∈𝑇1and𝜏2∈𝑇2such that len(𝜏1)=len(𝜏2)=𝑙𝑒𝑛(𝜏)and, for0≤𝑖<len(𝜏), we have
+𝜒(𝜏1(𝑖),𝜏2(𝑖))=𝜏(𝑖). We can then prove the following composition theorem (Theorem 2.3), which
+enablescompositionalrefinement(Corollary 2.4),wherewecanrefineindividualcomponentswhile
+preservingtraceinclusionforthecomposedsystem.Similarresultsexistedpreviously(see,e.g.,
+[Silvaand Butler 2010 ]), but wehavegeneralizedthemand formalizedthemin Isabelle/HOL.
+Theorem2.3(Compositiontheorem). traces(E1∥𝜒E2,𝐼1×𝐼2)=traces(E1,𝐼1) ∥𝜒traces(E2,𝐼2).
+Corollary2.4(Compositionalrefinement). Supposetraces(E′
+𝑖,𝐼′
+𝑖) ⊆traces(E𝑖,𝐼𝑖)for𝑖∈ {1,2}.
+Then traces (E′
+1∥𝜒E′
+2,𝐼′
+1×𝐼′
+2) ⊆traces(E1∥𝜒E2,𝐼1×𝐼2).
+2.2 I/O Specifications forSeparation Logic
+To satisfy the versatility and expressiveness requirements stated in the introduction, we use a
+verificationtechniquethatworkswith anyseparationlogicthatoffersafewstandardfeatures.This
+approach supports a wide range of programming languages, program logics, and verification tools.
+Webuildontheworkby Penninckxetal .[2015],whichemploysstandardseparationlogicto
+verify possibly non-terminating reactive programs that interact with their environment through a
+setofI/OoperationscorrespondingtoI/Olibraryfunctions.Theyintroduceanexpressiveassertion
+language for specifying a program’s allowed I/O behavior, including sequential, non-deterministic,
+andconcurrentI/Obehavior.Thislanguagecanbeencodedintoanyseparationlogicwithstandard
+featuressuchasabstractpredicates[ ParkinsonandBierman2005 ].Consequently,ourapproach
+inherits the virtues of these logics, for instance, local reasoning and support for language features
+such as mutable heap data structures and concurrency (including fine-grained and weak-memory
+concurrency).Inparticular,ourapproachleveragesexistingprogramverificationtoolsforseparation
+logic, such as VeriFast [ Jacobs et al .2011] (for Java and C), Nagini [ Eilers and Müller 2018 ] (for
+Python), and GRASShopper[ Piskac et al. 2013 ], and benefits from theautomation they offer.
+Syntax.We assume a given set of (basic) I/O operations 𝑏𝑖𝑜∈Biosand countably infinite sets of
+values𝑣,𝑤∈Valuesand places 𝑡,𝑡′∈Places. The setof chunksisdefinedby
+Chunks::=bio(𝑡,𝑣,𝑤,𝑡′) |token(𝑡),
+wherebio∈Bios,𝑡,𝑡′∈Places,and𝑣,𝑤∈Values. Wecallachunkoftheform bio(𝑡,𝑣,𝑤,𝑡′)anI/O
+permission toinvoketheoperation 𝑏𝑖𝑜withoutput 𝑣,whosesourceandtargetplacesare 𝑡and𝑡′,
+respectively,andwhich predictsreceivingtheinputvalue 𝑤.Notethatinputandoutputarefromthe
+perspectiveofthecallingsystemcomponent,nottheenvironment:forexample, send(𝑡1,12,0,𝑡2)
+models a permission to send the value 12(output) and a prediction that the obtained result will
+be0(input). A chunk of the form token(𝑡)is called a tokenat place𝑡. Intuitively, the places and
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:7
+I/Opermissions form the nodes and edges of a multigraph. Allowed I/O behaviors are obtained by
+pushing tokensalongtheseedges,which consumesthecorresponding I/O permissions.
+The language of assertions, intended to describe multisets of chunks representing possibly
+non-terminating behavior, isco-inductivelydefined(indicatedbythesubscript 𝜈)by
+𝜙::=𝜈𝑏|𝑐|𝜙1★𝜙2| ∃𝑣. 𝜙| ∃𝑡.𝜙,
+where𝑏∈B,𝑐∈Chunks,𝜙1★𝜙2istheseparatingconjunction,andthetwoexistentialquantifiersare
+onvalues 𝑣∈Valuesandplaces 𝑡∈Places,respectively.Inseparationlogic,chunkscanbemodeled
+using abstract predicates; all other assertions are standard. In our Isabelle/HOL formalization, we
+use a shallow embedding of assertions. Disjunction is encoded using existential quantification.
+We borrow other constructs such as the conditional ł if𝑏then𝜙1else𝜙2ž, variables, and functions
+operating on values from the meta-language, namely, Isabelle’s higher-order logic. We also call
+assertions I/O specifications to emphasize theiruse asprogram specifications.
+Example 2.5. The following I/O specification allows receiving an integer and subsequently
+sending thedoubledvalue.
+𝜙=token(𝑡)★(∃𝑥,𝑡′,𝑡′′.recv(𝑡,𝑥,𝑡′)★send(𝑡′,2𝑥,𝑡′′)).
+Sincethe inputvalue 𝑥isexistentiallyquantifiedandunconstrained,thereisno predictionabout
+the value that will be received. Here, we use I/O permissions performing only input ( recv) or only
+output(send)insteadofboth.Forsuchpermissions,weelidetheirrelevantargument,implicitly
+setting itto a default valueliketheunit •. The singletokenpointsto thesourceplace 𝑡ofrecv.
+NotethatI/OspecificationsuseplacestodeterminetheexecutionorderofI/Ooperationswithout
+requiring specific program logic support beyond normal separation logic. For example, sequential
+composition and choice are expressed by using separate chunks that share source or target places.
+DeterminingwhetheranI/Ooperationmaybeperformedisthusassimpleascheckingwhether
+thereisapermissionwithatokenatitssourceplace.Otherapproachesrequirecustomspecification
+constructs and custom logics to express this (e.g., Koh et al.[2019];Oortwijn and Huisman [2019]).
+Repeating behavior. The co-inductive definition of assertions allows us to define formulas co-
+recursively.Forconsistency,Isabelle/HOLrequiresthatco-recursivecallsare productive [Blanchette
+et al.2017], namely, guarded by some constructor, which is the case for all of our co-recursive
+definitions.Forexample,foracountablesetofvalues 𝑆,wedefinetheiteratedseparatingconjunction
+∀★𝑣∈𝑆.𝜙. Wecan alsoco-recursivelydefine possibly non-terminating I/O behavior.
+Example 2.6. The assertion 𝜙=token(𝑡)★RS(𝑡,0)specifies the behavior of repeatedly receiving
+inputsand sending theirsum, aslong asthereceivedvaluesarepositive.
+RS(𝑡,𝑎)=𝜈∃𝑧,𝑡′,𝑡′′.recv(𝑡,𝑧,𝑡′)★if𝑧>0thensend(𝑡′,𝑎+𝑧,𝑡′′)★RS(𝑡′′,𝑎+𝑧)else true.
+Here,theparameters 𝑡and𝑎ofRSrepresentthecurrentstate.Sincethisisaco-recursivedefinition,
+itincludes thenon-terminating behaviors whereall receivedvaluesarestrictlypositive.
+Semantics. Assertions have both a static semantics in terms of multisets of chunks and a transition
+semanticsforwhichwehavegivenanintuitionabove.Thisintuitionsufficestounderstandour
+methodology. Wethereforedefer thedefinitionof theformalsemantics to Section 5.1.
+3 IGLOOMETHODOLOGY
+Inthissection,wepresentourapproachfordevelopingfullyverifieddistributedsystems,which
+satisfiestherequirementssetoutintheintroduction.Ourapproachappliestoanysystemwhose
+components maintain a local state and exclusively communicate over an environment such as
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:8 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+a communication network or a shared memory system. There are neither built-in assumptions
+about the number or nature of the different system components nor about the environment. In
+particular, the environmentmay involvefaultyor adversarial behavior. Wealso support different
+programming languages and code verifiers for the implementation and the interoperability of
+heterogenous components written in different languages. This versatility is enabled by separating
+themodeling and implementation side and using I/O specificationsto linkthem.
+Aftergivinganoverviewofourmethodology(Section 3.1)andthedistributedleaderelection
+protocol case study (Section 3.2), we explain our methodology’s steps and illustrate them by
+transforming an informal, high-level description of the system and its environment into real-world
+implementations in Java and Python with formal correctness guarantees (Sections 3.3ś3.8). We
+summarize our approach’s soundness arguments (Section 3.9): trace properties established for the
+modelsarepreserveddowntotheimplementationprovidedthatourtrustassumptions(Section 3.10)
+hold. Wecurrently supporttheverification of safety properties,but not livenessproperties.
+3.1 Overview ofFormalDevelopment Steps
+Before we start a formal development, we must identify the system requirements and the assump-
+tions about the environment. The system requirements include the (informally stated) goals to
+be achieved by the system and structural constraints such as the types of its components. The
+environmentassumptionsdescribethepropertiesoftheenvironment,includingcommunication
+channels (e.g.,asynchronous, lossy, reordering channels), the typesofcomponentfaultsthat may
+occur(e.g.,crash-stoporByzantine[ Cachinetal .2011]),andpossibleadversarialbehavior(e.g.,
+theDolev-Yao model of an activenetwork adversary [ Dolev and Yao 1983 ]).
+Our methodology consists of six steps (cf. Figure 1). In Steps 1ś2, we use standard refinement to
+developa detailed modelofthe systemand its environment.Thenumber ofrefinementsper stepis
+not fixed. Each refinement is proven correct and may incorporate additional system requirements.
+(1)Abstract models . We start with an abstract model that takes a global perspective on the
+problem.It maysolve theproblem ina single transition.Typically, the mostcentral system
+properties are already established for this model, or the abstract models that further refine it.
+(2)Protocolmodels .Wethenmovefromtheglobaltoadistributedview,wherenodesexecute
+a protocol and communicate over the environment. The result of this step is a model that
+incorporates all systemrequirements and environment assumptions.
+In Steps 3ś6, we produce an interface model from which we can then extract component specifi-
+cations,implement thecomponents,and verify thatthey satisfy theirspecifications.
+(3)Interfacemodels .Wefurtherrefinetheprotocolmodelforthesubsequentdecompositioninto
+systemcomponentsandtheenvironment,takingintoaccounttheI/Olibraryinterfacestobe
+usedbytheimplementation.
+(4)Decomposition. Wedecomposethemonolithicinterfacemodel intosystemcomponentsand
+theenvironment. Theirre-composition istrace-equivalentwith themonolithic model.
+(5)ComponentI/Ospecification. Wetranslatethecomponentmodelsintotrace-equivalentI/O
+specifications(inseparation logic)of theprogramsthatimplement thecomponents.
+(6)Component implementation and verification. We implement the components in a suitable
+programminglanguage and provethatthey satisfy theirI/O specification.
+Steps 1ś4 are supported by a generic refinement and composition framework that we have
+embeddedinIsabelle/HOL(seeSections 2.1and3.6).Steps3ś5arenovelandspecifictoourapproach.
+In Steps 3 and 4, we align our models’ events with the implementation’s I/O library functions and
+thenseparatetheinterfacemodelintoasetofpossiblyheterogeneoussystemcomponents(e.g.,
+clients and servers) and theapplication-specific environment(e.g.,modelingaparticularnetwork
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:9
+semantics,faulty,or adversarial behavior).Step5constitutesoneofthe core contributionsof our
+approach: a sound link between abstract models and I/O specifications in separation logic, also
+formalizedinIsabelle/HOL.ItwillbeintroducedinformallyhereandformalizedinSection 5.Step6
+corresponds to standard code verification, using tools such as Nagini (for Python) and VeriFast
+(for Java and C). Due to our clear separation of modeling and implementation, the code verifier
+must check only that a component implementation follows the protocol; code verification neither
+needs to reason about the protocol’s global properties nor about the environment, which simplifies
+verificationandincreasesmodularity. InSection 3.9,wewillderivetheoverallsoundnessofour
+methodologyfrom theindividual steps’ guarantees,which aresummarizedin Table 2.
+Our three case studies demonstrate the versatility and expressiveness of our approach. We cover
+different types of systems, including fault-tolerant and secure ones, different component types
+withunboundednumbersofinstances,andTCPandUDPcommunication.Wehavewrittenand
+verifiedimplementationsinPythonandJava,includingconcurrentones.Thissectionillustrates
+our approach using the leader election case study; the other case studies are presented in Section 4.
+3.2 Case Study:LeaderElection
+The main requirement of a distributed leader election protocol is to elect at most one leader in
+a network of uniquely identified but otherwise identical nodes, whose total number is a priori
+unknown. Since we do not consider liveness properties in this work, we do not prove that the
+protocolwill terminate withan electedleader.
+We model an algorithm by Chang and Roberts [1979], which assumes a ring network and a
+stricttotalorderonthesetofnodeidentifiers.Thealgorithmelectsthenodewiththemaximum
+identifier as follows. Each node initially sends out its identifier to the next node in the ring and
+subsequently forwards all received identifiers greater than its own. When a node receives its own
+identifier, this is guaranteed to be the maximum identifier in the ring, and the node declares itself
+the leader. For the environment, we assume that each node asynchronously sends messages to the
+next nodein the ringover anunreliable, duplicating,andreordering channel. We do not consider
+other faults or adversarial behaviorinthis example, but seeSection 4forcasestudies thatdo.
+3.3 Step1: Abstract Models
+Acommonapproachtodevelopsystemsbyrefinementistostartfromaveryabstractmodelwhose
+correctnessiseitherobviousorcanbeprovedbyasetofsimpleinvariantsorothertraceproperties.
+This model takes a global łbird’s eyež view of an entire run of the protocol in that it does not
+explicitlymodel thenetwork communicationor representtheindividual protocolsteps.
+Example3.1. Theabstractmodelofleaderelectionelectsaleaderinasinglełone-shotžtransition.
+Weassumeagivenset IDofnodeidentifiers.Themodel’sstatespaceisdefinedasan ID-indexed
+family of local states containing a single boolean state variable identifying the leader, i.e., 𝑆0=
+ID→ (|leader∈B|).Initially, leader(𝑠0(𝑖))=false, for all𝑖∈ID. There is a singleevent electthat
+elects the leader. The guard ensures that this event can be performed only by a single, initially
+arbitrary node thatupdatesits localvariable leadertotrue.
+elect(𝑖):(∀𝑗.leader𝑗⇒𝑖=𝑗)⊲leader𝑖:=true.
+Weuseindexingtorefertodifferentinstancesofvariables,e.g., leader𝑗referstonode 𝑗’slocalstate.
+Note that the guard refers to other nodes’ local states; hence, this model takes a global point of
+view.Wehaveprovedthatthismodelsatisfiesthemainrequirementforleaderelection,namely,
+theuniqueness of theleader. This isformalizedasthetrace property
+𝐿0={𝜏| ∀𝑖, 𝑗.elect(𝑖) ∈𝜏∧elect(𝑗) ∈𝜏⇒𝑖=𝑗},
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:10 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+where𝑒∈𝜏means that the event 𝑒occurs in the trace 𝜏. This model is sufficiently abstract to
+specifyanyleaderelectionalgorithm,and will berefinedto theprotocoldescribedabovenext.
+3.4 Step2: Protocol Models
+In Step 2, we move from a global to a distributed perspective, and distinguish system components
+(e.g., nodes or clients and servers) that communicate over an environment (e.g., a wide-area
+network). The way that we model the environment accounts for any assumptions made about
+network communication. For example, we can represent a reliable, non-duplicating, reordering
+channelasamultisetofmessages.Thisstepmayalsointroduceafailuremodelforfault-tolerant
+systemsoranadversarymodelforsecuresystems.Theresultofthisstepisacompletemodelof
+our systemand environment thatsatisfiesall systemrequirements.
+Example3.2. Werefineourabstractmodelintoaprotocolmodel.Wemodeltheenvironment
+by assuming a finite, totally ordered set of identifiers IDand that the nodes are arranged in a
+ringdefinedbyafunction next:ID→ID,wherenext(𝑖)yieldsnode 𝑖’ssuccessor inthering. We
+extend the state with communication channels, which we model as sets, from which messages
+areneverremoved;thisrepresentsourassumptionthatthenetworkmayreorderandduplicate
+messages. Since we do not consider liveness properties, message loss is implicitly represented
+byneverreceivingamessage.Sincemessagescontainnodeidentifiers,ourstatespacebecomes
+𝑆1=ID→ (|leader∈B,chan∈P(ID) |).
+Threeeventsmodeltheprotocolsteps:a setupeventwherenodessendtheirownidentifierto
+the next node in the ring, an acceptevent where they forward received identifiers greater than
+theirown, and an electeventwherea node receiving its ownidentifier declaresitself theleader.
+setup(𝑖):true ⊲channext(𝑖):=channext(𝑖)∪{𝑖}
+accept(𝑖, 𝑗):𝑗∈chan𝑖∧𝑗>𝑖⊲channext(𝑖):=channext(𝑖)∪{𝑗}
+elect(𝑖):𝑖∈chan𝑖 ⊲leader𝑖:=true
+We have proved that this protocol model refines the abstract model defined in Example 3.1. For
+thisweusethesimulationrelationthatremovesthefield chanfromthelocalstateandthemediator
+function that maps electto itself and the newevents to skip. The proof involvesshowing that the
+guardofthismodel’s electeventimpliestheguardoftheabstractmodel’s electevent.Weprove
+two invariants that together imply this. The first one is inductive and states that if a node ID 𝑖is in
+the channelof node 𝑗then𝑘<𝑖for allnodeIDs 𝑘inthechannels intheringinterval from 𝑖to𝑗.
+From this it follows that if 𝑖∈chan𝑖then𝑖is the maximal node ID. The second invariant expresses
+thatonlythenode withthemaximal node IDcan become a leader.
+3.5 Step3: Interface Models
+This is the first step towards an implementation. Its purpose is twofold: first, we prepare the model
+for the subsequent decomposition step(Step 4) and,second, we align the I/O eventswith the API
+functions of the I/O libraries to be used in the implementation. The resulting interface model must
+satisfy thefollowing structural interfacerequirements :
+(1)The state space is a product of the components’ local state spaces and the environment’s
+state space. The events are partitioned into I/O events , which model the communication with
+theenvironment, and internal events , which model localcomputations.
+(2)EachI/OeventcanbeassociatedwithasingleI/Olibraryfunction(e.g.,receivingorsendinga
+messageonasocket,butnotboth).Itmusthavethesameparametersasthatlibraryfunction,
+eachofwhichcanbeidentifiedasanoutputparameter(e.g.,themessagetosend)oraninput
+parameter(e.g., an error code returnedasa result).
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:11
+setup𝑖():true ⊲obuf𝑖:=obuf𝑖∪{𝑖}
+receive𝑖(𝑗):𝑗∈chanaddr(𝑖) ⊲ibuf𝑖:=ibuf𝑖∪{𝑗}
+accept𝑖(𝑗):𝑗∈ibuf𝑖∧𝑗>𝑖 ⊲obuf𝑖:=obuf𝑖∪{𝑗}
+send𝑖(𝑗,𝑎):𝑗∈obuf𝑖∧𝑎=addr(next(𝑖))⊲chan𝑎:=chan𝑎∪{𝑗}
+elect𝑖():𝑖∈ibuf𝑖 ⊲leader𝑖:=true.
+Fig. 2. Event system resulting from interface refinement step.
+(3)EachI/O event’s guardmustbetheconjunction of
+•acomponentguard ,which refersonlytothecomponent’slocalstate, theevent’soutput
+parameters, and thecomponent identifier, and
+•anenvironment guard , referring only to the environment’s state, the input parameters, and
+thecomponent identifier.
+Our approach leaves the choice of the abstraction level of the interface model’s I/O events to the
+user. Forexample,theAPIsofnetworksocketlibraries typicallyrepresentpayloadsas bitstrings,
+whichtheapplicationmustparseintoandmarshalfromitsinternalrepresentation.Wemaychoose
+toeither (i) defineI/O events (andthusI/O operations) thatoperateon bitstrings, which requires
+modeling andverifyingparsingandmarshallingexplicitly, or(ii) keeptheirinterfaceonthe level
+of parseddataobjects, and trust thatthesefunctionsareimplementedcorrectly.
+Example3.3. Werefinetheprotocolmodelintoamodelsatisfyingtheinterfacerequirements.The
+protocol model’s accepteventreceives, processes,and sends amessage.TosatisfyConditions1ś2
+above, we introduce two local buffers, ibufandobuf, for each node and split acceptinto three
+events:receivetransfersamessagefromthepreviousnodetotheinputbuffer ibuf,acceptprocesses
+a message from ibufand places the result in the output buffer obuf, andsendsends a message
+fromobufto thenextnode.
+We also align the I/O events sendandreceivewith the I/O operations UDP_send_int(msg,addr)
+andUDP_receive_int(msg), which are offered by standard socket libraries. Here, we represent
+messages as integers, but as stated above, we could alternatively represent them as bitstrings,
+and model parsing and marshalling explicitly (including bounds and endianness), resulting in
+strongercorrectnessguarantees.SinceeachI/OeventmustmatchthecorrespondingI/Ooperation’s
+parameters(Condition2),we addthesendoperation’sdestinationaddressasaneventparameter.
+Hence,weintroduceaninjectivefunction addr:ID→Addr,whereAddristhesetofaddresses.
+UDP communication is unreliable and messages sent may be reordered, duplicated, or lost; our
+environment model faithfullyrepresents this behaviorbymodeling channelsassets(Section 3.4).
+Wedefinethestatespaceastheproduct 𝑆2=𝑆s
+2×𝑆e
+2(Condition 1)of a systemstatespace 𝑆s
+2=
+ID→ (|leader∈B,ibuf∈P(ID),obuf∈P(ID) |)and an environment state space 𝑆e
+2=Addr→
+(|chan∈P(ID) |). The events are specified in Figure 2. We henceforth consider the component
+identifier 𝑖asacomponentparameterandthereforewriteitasasubscriptoftheevent. Only receive
+andsendareI/Oevents;allothersareinternal(Condition1).TheseI/Oeventshavetherequired
+formandparameters(Condition2)andtheirguardshavetherequiredseparableform(Condition3).
+Theparameter 𝑗ofreceiveistheonlyinputparameterandallothersareoutputs.Thesimulation
+relationwiththeprotocolmodelprojectsawaytheinternalbuffers.Themediatorfunctionmaps
+electto itself,send𝑖(𝑗,𝑎)tosetup(𝑖)if𝑖=𝑗and toaccept(𝑖, 𝑗)otherwise, and all other events to
+skip. The refinement proof requires an invariant relating internal buffers to channels, e.g., stating
+that𝑗∈ibufiimplies𝑗∈chanaddr(𝑖).
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:12 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+3.6 Step4: Decomposition
+To support distributed systems with different component types (such as nodes or clients and
+servers),wedecomposethemonolithicinterfacemodelfromStep3intotheparallelcomposition
+of an environment model and (a family of)component modelsforeach component type.
+Wefirstdecomposetheinterfacemodelintoaparallelcomposition E=Es∥𝜒Eeofasystem
+modelEsand an environment model Ee. We have already distinguished their respective state
+spaces𝑆sand𝑆ein the interface model. The I/O events 𝑒ofEare split into a system part 𝑒s,
+consistingof 𝑒’scomponentguardandsystemstateupdates,andanenvironmentpart 𝑒e,consisting
+of𝑒’senvironmentguardandenvironmentstateupdates.Wedefine 𝜒suchthatitsynchronizes
+thesplitI/Oeventsandinterleavestheinternalevents. Thesystemmodelisfurthersubdivided
+into models of different component types, which are composed using interleaving composition
+Es=Es
+1/interleave···/interleaveEs
+𝑛.Thisreflectsourassumptionthatthecomponentsexclusivelycommunicatevia
+the environment. If there are multiple instances of a component type, parametrized by a countable
+index set 𝐼of identifiers, the respective model, say Es
+𝑘, becomes an interleaving composition over 𝐼,
+thatis, /interleave𝑖∈𝐼Es
+𝑘(/⊑ec𝛾𝑘(𝑖)).Each componentmodel Es
+𝑘(/⊑ec𝑝)mayhavesomeparameters /⊑ec𝑝.We instantiate
+theseusinga configurationmap /⊑ec𝛾𝑘,whichrepresentsassumptionsonthe correctsystemconfiguration .
+Notethat component models may be further refined before translating them to I/O specifications.
+InpreparationforthesubsequenttranslationtoI/Ospecifications,wemodel(instancesof)system
+componentsina subclassof guardedeventsystems.An I/O-guardedeventsystem G=(𝑆,𝐸,𝐺,𝑈)
+is a guarded event system, where 𝐸consists of events of the form bio(𝑣,𝑤)(formally introduced as
+I/O actions in Section 5.1) and all guards 𝐺bio(𝑣,𝑤)are component guards as in Condition (3), i.e.,
+they must not depend on the I/O action’s input 𝑤. This models that an input becomes available
+onlyastheresultofanI/OoperationandcannotbeselectedbeforetheI/Ooperationisinvoked.
+Furthermore,wemodelacomponent’sinternaleventsas ghostI/Oactions ;theseactionschange
+thestateofthe abstractmodel,butdonotcorrespondtoreal I/Ooperations.Theimplementation
+may haveto performa corresponding statechangeto stayalignedwith theabstractmodel.
+We prove the correctness of the decomposition by showing that the parallel (re)composition of
+all parts istrace-equivalentto theoriginalsystem.
+Example 3.4. All nodes instantiate the same component type. We thus decompose the model
+from the previous step into an environment event system Eeand an I/O-guarded event system
+Es(𝑖,𝑎),parametrizedbyanodeidentifier 𝑖∈IDandanaddress 𝑎∈Addr.Thesewillalsobethe
+parameters of the futureprogram 𝑐(𝑖,𝑎)implementing Es(𝑖,𝑎). For the system’s (re)composition,
+we use the configuration map /⊑ec𝛾(𝑖)=(𝑖,addr(next(𝑖))), which instantiates the destination address
+𝑎for𝑖’soutboundmessageswiththeaddressof 𝑖’ssuccessorinthering. Theenvironmentoperates
+on the state 𝑆e
+3=Addr→ (|chan∈P(ID) |)and the state space of each node model Es(𝑖,𝑎)is
+𝑆s
+3=(|leader∈B,ibuf∈P(ID),obuf∈P(ID) |). The environment has the following events, where
+‘−’represents theidentity updatefunction:
+receivee(𝑖,𝑚):𝑚∈chanaddr(𝑖)⊲−
+sende(𝑖,𝑚,𝑎):true ⊲chan𝑎:=chan𝑎∪{𝑚}.
+These events executesynchronously with theirmatchingsystemparts:
+receives
+𝑖,𝑎(𝑚):true ⊲ibuf:=ibuf∪{𝑚}
+sends
+𝑖,𝑎(𝑚,𝑎′):𝑚∈obuf∧𝑎′=𝑎⊲−.
+Notethatthe receivesevent’sguarddoesnotdependonitsinputparameter 𝑚andthesends
+𝑖,𝑎event’s
+single output parameter is a pair of a message and an address. The equality 𝑎′=𝑎in the guard of
+sends
+𝑖,𝑎enforces that messages are sent only to the node at the address 𝑎, which is a component
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:13
+𝑃(𝑡,(𝑖,𝑎),𝑠)=𝜈(∃𝑡′.setup(𝑡,𝑡′)★𝑃(𝑡′,(𝑖,𝑎),𝑠(|obuf:=obuf(𝑠) ∪{𝑖}|)))★
+(∃𝑚,𝑡′.UDP_receive_int(t,m,t′)★P(t′,(i,a),s(|ibuf:=ibuf(𝑠) ∪{𝑚}|)))★
+(∀★𝑚.if𝑚∈ibuf(𝑠) ∧𝑖<𝑚then∃𝑡′.accept(𝑡,𝑚,𝑡′)★
+𝑃(𝑡′,(𝑖,𝑎),𝑠(|obuf:=obuf(𝑠) ∪{𝑚}|))else true)★
+(∀★𝑚,𝑎′.if𝑚∈obuf(𝑠) ∧𝑎′=𝑎then∃𝑡′.UDP_send_int(𝑡,(𝑚,𝑎′),𝑡′)★
+𝑃(𝑡′,(𝑖,𝑎),𝑠)else true)★
+(if𝑖∈ibuf(𝑠)then∃𝑡′.elect(𝑡,𝑡′)★𝑃(𝑡′,(𝑖,𝑎),𝑠(|leader:=true|))else true).
+Fig. 3. I/O specification of leader election nodes.
+parameter.Thisisaconstraintonthefutureprogram’suseoftheI/Olibraryfunction.Theinternal
+eventssetup𝑖,𝑎(),accept𝑖,𝑎(𝑚),andelect𝑖,𝑎()ofEs(𝑖,𝑎)areghostI/Oactions,whichareidenticalto
+their counterparts inthe previous model modulotheir slightly different parametrization.Wehave
+provedthatthecomposition of all parts istrace-equivalentto theoriginalmonolithic system.
+3.7 Step5: I/O Specifications
+We can now perform the central step of our approach: we extract, for each component, an I/O
+specification that defines the implementation’s I/O behavior. Our translation maps an I/O-guarded
+parametrizedeventsystem Es(/⊑ec𝑝)to an I/O specification of theform
+𝜙(/⊑ec𝑝)=∃𝑡.token(𝑡)★𝑃(𝑡,/⊑ec𝑝,𝑠0),
+where𝑃isaco-recursivelydefinedpredicateencodingtheeventsand 𝑠0istheeventsystem’sinitial
+state.1The predicate 𝑃takes a place 𝑡, the event system’s (and future program’s) parameters /⊑ec𝑝,
+and the event system’s abstract state 𝑠as arguments. The predicate 𝑃contains, for each event and
+all values of its output parameters satisfying the guard, a permission to execute the I/O operation
+representedbytheevent,andanotherinstanceofitselfwiththeargumentrepresentingthenew
+state resulting from applying the event’s update function. This translation is formally defined and
+provedcorrectinSection 5. Here, weexplaintheintuitionbehind itusing our example.
+Example3.5. Figure3definesthepredicate 𝑃(𝑡,(𝑖,𝑎),𝑠)forourexample,where 𝑖and𝑎denotethe
+local node identifier 𝑖and the address 𝑎of the next node in the ring. The fourth top-level conjunct
+of𝑃corresponds to the sends
+𝑖,𝑎(𝑚,𝑎′)event from the previous step. It states that for all possible
+valuesoftheoutputparameter (𝑚,𝑎′)thatfulfilltheevent’sguard 𝑚∈obuf(𝑠) ∧𝑎′=𝑎,thereis
+a permission to perform the I/O operation UDP_send_int(which is mapped to the sends
+𝑖,𝑎event)
+and another instance of 𝑃at the operation’s target place with the same state, since sends
+𝑖,𝑎does
+not change the local state. The second (simplified) conjunct corresponds to the receives
+𝑖,𝑎event and
+existentiallyquantifiesovertheevent’sinput parameterand containsanotherpredicateinstance
+with an updated state 𝑠(|ibuf:=ibuf(𝑠) ∪{𝑚}|)as defined by receives
+𝑖,𝑎. The remaining conjuncts
+correspond to theinternalevents setup,accept, andelect.
+1The formal development of our theory (Section 5) is based on event systems with single initial states. This is without loss
+ofgenerality sincemultipleinitial statescan easily beintroduced by anon-deterministicinitialization event.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:14 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+def main ( my_id : int , o u t _ h o s t : str ) :
+#@ PRE: exists t . token ( t ) and P(t , (my_id , out_host ) , INIT_ STATE)
+#@ POST: true
+to_send = my_id # variable stores only the largest identifier seen so far
+se t u p ( ) # ghost I /O operation
+while True :
+#@ INVARIANT: exists t , s . token ( t ) and P(t , (my_id , out_hos t ) , s )
+#@ INVARIANT: to_send in s . obuf and to_send >= my_id
+s e n d _ i n t ( out_host , to_send )
+msg = t r y _ r e c e i v e _ i n t ( ) # returns None on timeout
+ifmsgis not None :
+ifmsgismy_id :
+e l e c t ( ) # ghost I /O operation
+break
+elif msg > to_send :
+a c c e p t ( msg ) # ghost I /O operation
+to_send = msg
+Listing 1. Pseudocode of the leader election algorithm with proof annotations (simplified). The method
+try_receive _inttries a receive operation and either returns an identifier or times out and returns None .
+3.8 Step6: ComponentImplementation and Verification
+In the final step, we prove for every component that its implementation 𝑐fulfills the I/O specifica-
+tion𝜙thatwas extractedintheprevious step. This requirement isexpressedas
+traces(𝑐) ⊆traces(𝜙), (1)
+i.e., the I/O traces of the component implementation 𝑐, as defined by its operational semantics, are
+included inthose specified by theI/O specification 𝜙. Here,weelidepossible parameters /⊑ec𝑝of the
+program𝑐and the I/O specification 𝜙for the sake of a lighter notation. Since I/O specifications are
+language-agnostic,theimplementationmayuseanyprogramminglanguage.Verifying (1)typically
+requires defining a suitable I/O-aware semantics of the chosen language that defines the I/O traces
+producedbyitsprograms.Weassumethattheverificationtechniqueuseddefinesaninterpretation
+ofHoare triplesoftheform |={𝜙}𝑐{𝜓},anda soundprogramlogictoprovethem.We onlyrely
+ontheverifier assumption statingthatthe correctness of a commandwith respectto a precondition
+implies the trace inclusion between the command and the precondition assertion. Since the I/O
+permissions inthe precondition restrictwhich I/O operations may be performed, these triples do
+not triviallyhold even thoughthepostcondition is true:
+|={𝜙}𝑐{true}impliestraces(𝑐) ⊆traces(𝜙). (VA)
+OurapproachleavesopenthemechanismforprovingsuchHoaretriples.Inprinciple,proofs
+can be constructed using an interactive theorem prover, an SMT-based automated verifier, or even
+aspen-and-paperproof.I/Ospecificationsconsistonlyofconstructsthatcanbeexpressedusing
+standard separation logic with abstract predicates. This allows us to leverage existing tool support,
+in particular, proof automation. For instance, encoding such specifications in VeriFast required less
+than25LoCtodeclaretypesforplacesandabstractpredicatesforchunks,andnotoolmodifications.
+The I/O specification is (currently manually) converted to the syntax of the respective tool, and
+theprogramverifieristhenusedtoprovethecorrectnessoftheprogramwithrespecttoitsI/O
+specification. Assuming ( VA)holdsforthetool,this guaranteestherequiredtrace inclusion( 1).
+Besides the verification, we must informally justify that the actual program’s I/O operations
+satisfytheassumptionsencodedintheenvironmentmodel.Forexample,wemayimplementan
+order-preserving network channel modelusing TCP sockets, but not UDP sockets.Conversely, itis
+soundto implement an unorderedchannel model using either TCP or UDP communication.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:15
+def s e n d _ i n t ( a d d r e s s : str, msg : int ) :
+#@ PRE: token (? t ) ∗ UDP_send_int (t , (msg , address ) , ?tp )
+#@ PRE: connected ( this , address )
+#@ PRE: 0 <= msg <= MAX_MSG_VAL
+#@ POST: token ( tp )
+#@ EXCEPTIONAL POST: token ( t ) ∗ UDP_send_int (t , (msg , addr ess ) , tp )
+Listing 2. The simplified pseudocode contract for a library method for sending packets via UDP. The names
+starting with question marks are implicitly existentially quantified. connected is a separation logic predicate
+that contains the heap memory of a UDP socket object connected to the shown address.
+Example 3.6. We have implemented three versions of the leader election algorithm, a sequential
+andaconcurrentoneinJavaandasequentialversioninPython,andverifiedinVeriFastandNagini
+that these implementations conform to their I/O specification: |={𝜙(𝑖,𝑎)}main(𝑖,𝑎) {true}. All
+threeimplementationsareinteroperable and successfully electa leaderin actual networks.
+Listing1shows a slightly simplified pseudocode versionof thesequential implementation; the
+Java and Python versionssharethe same structurebut contain additionalannotations asrequired
+by the respective verifier. The concurrent version uses two separate threads for receiving and
+sending identifiers. We use the standard UDP socket libraries of the respective languages; since the
+APIinbothcasesisstructureddifferently,wedefinedtheI/Ooperationsusedinthespecificationto
+becompatiblewithboth.WeannotatedtherelevantI/Olibraryoperationswithcontracts,whose
+correctnessisassumedand mustbevalidatedmanuallyagainsttheenvironment model.
+Listing2shows a simplified pseudocode specification of a message sending function. Its precon-
+ditionconsistsofthreetypicalpartsthat(i)specifiytheI/Obehaviorofthisfunctionintermsof
+tokensandI/Opermissions,(ii)constraintheprogramstate,inthiscaserequiringthatoursocketis
+already connected to the receiver address, and (iii) impose additional restrictions on messages that
+donot exist on moreabstractlevels,inthis case, thatthesent messagefalls within a validrange.
+SincetheI/Ospecification describes theallowedI/Obehavior in termsofthemodel’s state,the
+verificationprocessrequiresrelatingtheprogramtothemodelstate.Thelatterisrepresentedinthe
+programasa ghoststate ,whichispresentonlyforverificationpurposes,butnotduringprogram
+execution. If the verifier can prove for a given program point that a token for a place 𝑡and the
+predicate 𝑃(𝑡,(𝑖,𝑎),𝑠)areheldforsomemodelstate 𝑠,thismeansthatthecurrentprogramstate
+corresponds to the model state 𝑠. The invocations of the internal operations setup,accept, andelect
+in thecode updatetheghost stateto stayalignedwith theprogram state.
+Asanoptimization,theimplementationsstoreandforwardonlythelargestidentifierseensofar,
+sincesmalleronescanneverbelongtotheleader.Theverifierprovestheloopinvariantthatthis
+largest integer isalwaysintheoutputbuffer and may thereforebesent out.
+Note that, although we do not prove liveness, our implementation repeatedly resends UDP
+packets since packets may be lost. This will continue even after a leader has been elected since our
+simple protocoldoesnot includea leaderannouncement phase.
+3.9 OverallSoundness Guarantees
+Our methodology provides a general wayof proving properties of adistributed system. Table 2
+summarizes the soundness guarantees of each step (see also Figure 1). We now show how to
+combine them to obtain the overall soundness guarantee that the models’ properties are preserved
+down to the implementation. Wewillfirst discussthe simplercase with asingleinstanceofeach
+component and later extendthis reasoningto multiple instances.
+Let our implemented system be defined by S=(C1/interleave.../interleaveC𝑛) ∥𝜒𝑒Ere,where each C𝑗is the
+event system defining the operational semantics of 𝑐𝑗, i.e.,traces(C𝑗)=traces(𝑐𝑗), and suppose
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:16 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+Table 2.Methodoverview withguarantees of eachstep (initial stateselided).
+stepsactivity guarantee justification
+1ś3model refinements and ˆ𝜋𝑖(traces(M𝑚)) ⊆traces(M𝑖)ref.M𝑖+1⊑𝜋𝑖+1M𝑖
+interfacerefinement whereˆ𝜋𝑖=𝜋𝑚◦···◦𝜋𝑖+1Theorem 2.1
+4decompose M𝑚intotraces(M𝑚)= mutual refinement
+Es
+1,...,Es
+𝑛, andEetraces((Es
+1/interleave.../interleaveEs
+𝑛) ∥𝜒𝑒Ee)Theorem 2.1
+5translate Es
+𝑗into𝜙𝑗traces(𝜙𝑗)=traces(Es
+𝑗) Theorems 5.5and5.7
+6verify|={𝜙𝑗}𝑐𝑗{true}traces(𝑐𝑗) ⊆traces(𝜙𝑗) Assumption ( VA)
+theeventsystem Erecorrespondstotherealenvironment.FromSteps5ś6’sguaranteeslistedin
+Table2,wederive traces(C𝑗) ⊆traces(Es
+𝑗).Furthermore,weassumethattheenvironmentmodel
+faithfullyrepresents therealenvironment, i.e.,
+traces(Ere) ⊆traces(Ee). (EA)
+Using Corollary 2.4and Step 4’s guarantee, we derive that the implemented system’s traces
+areincludedintheinterfacemodel’straces: traces(S) ⊆traces(M𝑚).UsingLemma 2.2andthe
+guarantees of Steps 1ś3, we derive our overall soundness guarantee stating that any trace property
+𝑃𝑖of model M𝑖ispreservedall theway downto theimplementation:
+M𝑖|=𝑃𝑖=⇒ S |=ˆ𝜋−1
+𝑖(𝑃𝑖). (SOUND)
+Withmultiplecomponentinstances,theeventsystems Es
+𝑗andC𝑗havetheformofcompositions
+/interleave𝑖∈𝐼Es
+𝑗(/⊑ec𝛾𝑗(𝑖))and/interleave𝑖∈𝐼C𝑗(/⊑ec𝛾𝑗(𝑖))for some configuration map /⊑ec𝛾𝑗and we have traces(C𝑗(/⊑ec𝑝))=
+traces(𝑐𝑗(/⊑ec𝑝))for all parameters /⊑ec𝑝. The guarantees of Step 4 in Table 2hold for these compositions
+and those of Steps 5ś6 for the individual parametrized components. We then easily derive the
+guarantee (SOUND)usingatheoremsimilartoCorollary 2.4forindexedinterleavingcomposition.
+3.10 TrustAssumptions
+The guaranteesdescribedinthelast subsectionhold underthefollowing trust assumptions:
+(1)Environmentassumptions: Themodeledenvironmentincludesallpossiblebehaviorsofthe
+real system’s environment, as formulated in Assumption (EA). This means it faithfully
+represents the behavior of all real components below the interface of the I/O library used in
+the implementation. These may include the I/O library, the operating system, the hardware,
+the communication network, as well as potential attackers and link or node failures. Recent
+work byMansky et al .[2020] demonstrates how to connect the verification of I/O behavior
+to a verified operating system to remove the I/O library and operating system from the trust
+assumptions.Theirapproachcouldbeadaptedtooursetting.Otherenvironmentassumptions,
+such astheattacker model, remainand cannotbeeliminatedthroughformalproofs.
+(2)Correct program configuration: The programs are called with parameters conforming to
+the configuration map /⊑ec𝛾. For instance, our case study assumes that each node program is
+initialized with parameters /⊑ec𝛾(𝑖)=(𝑖,𝑎)where𝑖is a node identifier and 𝑎=addr(next(𝑖))is
+the network address of 𝑖’s successor in the ring. Verifying the configuration, which typically
+happensusing scriptsor manual procedures,isorthogonal to program correctness.
+(3)Manual translationofI/Ospecification: The I/Ospecification istranslatedcorrectlyfromthe
+Isabelle/HOLtothecode verifiertool’s syntax. Thistranslationis manual, butwell-defined
+and can thus be automated in the future by a translator implemented and verified in Isabelle.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:17
+(4)Toolchain soundness. The verification logics and tools are sound and all proofs are thus
+correct.They agreeon the semantics of I/O specificationsand thecode verifiersatisfiesthe
+verifier assumption (VA). In our case, this concerns Isabelle/HOL and either VeriFast (which
+usesZ3[deMouraandBjùrner2008 ])orNagini(whichdependsonViper[ Mülleretal .2016]
+and Z3). The trusted codebase could be reduced further by using a foundational verifier such
+asVST[Appel 2012 ], at thecostof a higherverification effort.
+4 CASESTUDIES:FAULT-TOLERANCE ANDSECURITY
+Weevaluateourmethodologywithtwoadditionalcasestudiesthatdemonstratethegeneralityand
+versatilityofIgloo.Concretely,westudyafault-tolerant,primary-backupreplicationsystemandan
+authentication protocol. These case studies showcase different features of our approach: (1) proofs
+ofglobal,protocol-levelproperties,(2)environmentswithdifferenttypesofnetworksaswellas
+faultyandadversarialenvironments,(3)differentcomponenttypeswithunboundednumbersof
+instances, and (4) sequential and concurrent implementations in different programming languages.
+4.1 Primary-BackupReplication
+Weapplyourmethodologytoaprimary-backupreplicationprotocolpresentedby vanRenesseand
+Guerraoui [2010].Thiscasestudyexhibitsthefollowingfeaturessupportedbyourapproach:(i)
+an environmentthatincludesa faultmodel forcomponents,(ii)reliable, in-ordercommunication
+implementedbyTCP, and (iii) sequential aswell asconcurrentimplementations.
+4.1.1 Description. The primary-backup replication protocol maintains an append-only distributed
+data structure, called log, which is a sequence of arbitrary data (e.g., database commands). One
+server,the primary,receivesrequestsfromclientstoappendelementstothelog.Theprimaryserver
+first synchronizes a given append request with all other servers, the backups, before extending
+its own log and responding to the client. The protocol’s goal is to maintain backup consistency ,
+i.e.,thelogstoredontheprimarywhenitrepliestotheclientisaprefixofthelogsstoredatall
+backups. We assume a fail-stop fault model, where servers can fail but not recover, and perfect
+failure detection,where allclientsandservers eventuallydetect serverfailures (see,e.g., [ Cachin
+et al.2011]). The servers are totally ordered, and initially, the first server is the primary. A backup
+server becomesthenew primaryonce itdetects thatallprevious servers in theorderhave failed.
+4.1.2 ProtocolModel. Inthiscasestudy,wehavechosennottomodelanabstractversionofthe
+protocol(Step1),butrathertheconcreteprotocol(Step2)directly.Whilethenormal(fault-free)
+operation of the protocol is straightforward, the non-deterministic failures and their detection add
+significantcomplexity.Whenanewprimaryservertakesover,itslogmaydivergefromthoseof
+thebackups.Bysynchronizingitslogwiththoseofthebackupservers,itreestablishesaconsistent
+state beforeresponding toa client. Oncebackup 𝑏has repliedto async request fromprimary 𝑎,
+all logscontainedintheirstates and sent between themaretotallyorderedin a prefix relation:
+ordered-wrt-prefix (⟨log(𝑎)⟩ ·transit(𝑏,𝑎) · ⟨log(𝑏)⟩ ·transit(𝑎,𝑏) · ⟨pend(𝑎)⟩).
+Here,pend(𝑎)is the primary’s log including all pending additions, and transit(𝑎,𝑏)is the sequence
+oflogsintransitfrom 𝑎to𝑏(insyncrequestsorresponses).Additionalinductiveinvariantsand
+history variables are needed to derive this invariant. Careful modeling is also required for the
+failuredetection.Theenvironmentstatecontainsaset liveenv,consisting ofalllive servers.Since
+clients and servers may detect failures only after some delay, each of them has its own set live
+containing all servers except for those whose failure was noticed. As we show in an invariant, live
+setsaresupersetsof liveenv. Intotal,our proof of backup consistency relieson nine invariants.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:18 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+4.1.3 Towards an Implementation. Our protocol model already includes the input and output
+buffers that are typically only added in Step 3. This allows us to directly decompose the model into
+a trace-equivalentcomposition of client and servercomponentsand an environment (Step4).
+Besidessendandreceive,theclientsandservershaveathirdI/Oevent, detect-failure ,toquery
+the failure detector. Its system part removes a server from the component’s liveset whereas its
+environment parthasof a guardensuring thattheremovedserverisnot in the liveenv-set.
+WeextractI/Ospecificationsforboththeserverandtheclientcomponenttypes(Step5).This
+extraction, as well as the equivalence proof between the component’s event systems and their I/O
+specifications,followsthesamestandardpatternasinoursecuritycasestudybelow.Thus,this
+stepcouldlikelybeautomatedinthefuture.
+4.1.4 Code Level. We implement a sequential client and a concurrent server in Java. To handle
+requests in parallel, wesplit theserverinto multiple threads, communicatingoversharedbuffers,
+guarded by a lock. For TCP, we use Java’s standard socket library. For failure detection, clients
+andservers get afailure detector objectas an argument.This object provides methods toquery
+whetheraserverhasfailed.IfJava’ssocketAPIdeterminesthataconnectionattempttimesout,
+thefailuredetectorisqueried.Accordingtotheprotocol,failedserversareremovedfromthesetof
+liveservers, otherwise the last action is repeated. For this case study, we provide a dummy failure
+detectorinstance,which storesthe setof failed server ids.Whenwekill aserver in our execution
+script, the server process is terminated and its id is added to that set. The setup of contracts for
+trustedlibrariesandtheverificationofourclientandserverimplementationsinVeriFastagainst
+theirrespectiveI/O specificationsclosely followsour approach describedin Section 3.8.
+In the server, all shared data is protected by a lock. For this lock, we define a monitor invari-
+ant[LeinoandMüller2009 ],declaringthatthelockownsallshareddatastructuresandtheI/O
+permissions. The ownership of these resources is transferred to a thread when it acquires the lock
+and is transferred back when the lock is released. The I/O permissions define which I/O operations
+maybeperformeddependingonthecomponentmodel’sstate.Sincetheimplementation’sbehavior
+dependsontheactualprogramstate,inparticularthestateguardedbythelock,wealsoneedtolink
+themodelstatetotheactualstateinthemonitorinvariant.Wedothisusinganabstractionfunction.
+Thus,whenexecutinganI/Ooperation,theassociatedmodelstateupdatemustbematchedbya
+corresponding program stateupdatebeforethelockcan bereleased.
+4.2 Two-PartyEntityAuthentication
+Wealsouseourmethodologytoderiveandimplementatwo-partyauthenticationprotocolstan-
+dardized asISO/IEC 9798-3. This casestudy demonstrates the following features of ourapproach:
+(i)anadversarialenvironment, (ii)theuseofcryptography, (iii)unreliable,unorderedchannels
+implemented by UDP, and (iv) the use of data abstraction linking abstract message terms and their
+concretecryptographic bitstringrepresentations.
+4.2.1 Description. Instandard(informal) Alice&Bobnotation, theprotocolreads asfollows.
+M1.𝐴→𝐵:𝐴,𝐵,𝑁𝐴
+M2.𝐵→𝐴:[𝑁𝐵,𝑁𝐴,𝐴]pri(𝐵)
+Here𝑁𝐴and𝑁𝐵are the nonces generated by the initiator 𝐴and the responder 𝐵respectively, and
+[𝑀]pri(𝐵)denotesthedigitalsignatureofthemessage 𝑀with𝐵’sprivatekey.First,theinitiator
+generates a fresh nonce and sends it to the responder. Afterwards, the responder generates his
+own nonce, signs it together with the initiator’s nonce and name, and sends the signed message to
+theinitiator.Thenoncesprovidereplayprotection. Theprotocol’s authenticationgoalisthatthe
+initiatoragreeswiththeresponder on theirnamesand thetwononces.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:19
+4.2.2 Abstract and Protocol Models. We follow the four-level refinement strategy for security
+protocolsproposedby SprengerandBasin [2018].Itslevelscorrespondstothefirsttwostepsof
+our methodology. We start from an abstract model of the desired security property, in our case,
+injectiveagreement[ Lowe1997 ].Wethenrefinethisintoaprotocolmodelthatintroducesthetwo
+protocolroles(i.e.,Igloocomponenttypes)andtheirruns.Eachprotocolruninstantiatesaroleand
+storestheparticipants’namesandreceivedmessagesinitslocalstate.Wemodelanunbounded
+numberofrunsasafinitemapfromrunidentifierstotheruns’localstates.Therunscommunicate
+over channels with intrinsic security properties. In our case, 𝐴sends her nonce on an insecure
+channel to 𝐵, who returns itwith his own nonce on an authenticchannel back to 𝐴. The attacker
+can read, but not modify, messages on authenticchannels.
+In a second refinement, we represent messages as terms, use digital signatures to implement
+authentic channels, and refine the attacker into a standard Dolev-Yao attacker [ Dolev and Yao
+1983] whocompletely controls the network. Theattacker’s capabilities are defined by a closure
+operatorDY(𝑀), denoting the set of messages he can derive from the set of observed messages 𝑀
+using both message composition (such as encryption) and decomposition (such as decryption). All
+refined models correspond to Igloo protocol models with different levels of detail. The refinement
+proofsimply thatthey all satisfy injectiveagreement.
+4.2.3 Towards an Implementation. We further refine the final protocol model into an interface
+model, where the messages are represented by bitstrings of an abstract type bs, which we later
+instantiate to actual bitstrings. We assume a surjective abstraction function 𝛼:bs→msgfrom
+bitstringstomessages.Aspecialterm Junkrepresentsallunparsablebitstrings.Wedefineaconcrete
+attackeroperatingon(setsof)bitstringsby DY𝑏𝑠=𝛼−1◦DY◦𝛼,where𝛼−1istheinverseof 𝛼lifted
+to message sets. The simulation relation includes the equation 𝛼(CIK)=IK, whereCIKandIK
+respectively represent the concrete attacker’s knowledge and the Dolev-Yao attacker’s knowledge.
+This allowsusto transfer theDolev-Yao model’s security guaranteesto theimplementation.
+Wealsoaugmenteachrole’sstatewithbuffersforreceivingandsendingbitstringmessages.The
+sendandreceiveI/Oeventseachtakeanetworkaddressandabitstringmessage.Thetworoles’
+eventsstilloperateonmessageterms,butexchangemessageswithI/Obuffers.Forexample,we
+refine a guard 𝑚∈IKmodeling a message reception in the protocol model by 𝑏𝑠∈ibuf∧𝛼(𝑏𝑠)=
+𝑚in the interface model. The roles’ events have several parameters, including the run id, the
+participants’ names,and thelong-term key bitstrings, which later become program parameters.
+Finally, we decompose the interface model into an environment and (an unbounded number of)
+initiator and responder components. From these, we derive the initiator’s and the responder’s I/O
+specifications.Ourframework provides lemmasto supportthecorresponding proofs.
+4.2.4 CodeLevel. Weimplementeachcomponenttype(protocolrole)inbothJavaandPython.
+Eachrole’simplementationsendsandreceivesonemessageandchecksthatreceivedmessageshave
+thecorrectform.Ourimplementationprovidesa(trusted)parsingandmarshallingfunctionforeach
+typeofabstractmessage(e.g.,signatures,identifiers,pairs),eachspecifiedbyacontractrelating
+the message to its bitstring representation using 𝛼. This yields a partial definition of 𝛼, which
+weotherwise leaveabstracttoavoidmodelingbit-levelcryptographic operations.Since 𝛼relates
+eachbitstringtoauniquemessageterm(or Junk),weensurethateverybitstringrepresentinga
+non-junk message can be parsed unambiguously by tagging bitstring messages with their type. We
+employ widely-usedcryptographic libraries: PyNaClforPython and Java’s standardlibrary.
+Listing3shows the contract and implementation of the signature verification function. It checks
+the signature’s tag and then calls the cryptographic library’s signature verification function, which
+eitherreturnsthecorrespondingplaintextmessageorraisesanexceptionforinvalidsignatures.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:20 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+def v e r i f y ( signed_msg : bytes , key : b y t e s ) −> b y t e s :
+#@ PRE: alpha ( key ) == Key( publicKey (?a )))
+#@ POST: alpha ( signed_msg ) == Crypt (Key( privateKey (a ))) , alpha ( result ))
+#@ && len ( signed_msg ) == len ( result ) + 1 + SIGNATURE_SIZE
+#@ EXCEPTIONAL POST: forall msg. alpha ( signed_msg ) != Cryp t (Key( privateKey (a )) , alpha (msg ))
+if len ( signed_msg ) == 0 orsigned_msg [ 0 ] ! = SIGNATURE_TAG :
+raise I n v a l i d D a t a E x c e p t i o n ( " I n v a l i d ␣ tag ␣ on ␣ s i g n a t u r e " )
+return n a c l . v e r i f y ( signed_msg [ 1 : ] ) # raises exception if signature is not valid
+Listing 3. Simplified pseudocode implementation of a function for verifying signatures and its (trusted)
+specification. The pre- and postconditions relate the bitstrings to their abstract message representations that
+are used in the I/O specification. Variable ais implicitly existentially quantified (denoted by a question mark).
+Thecontractrequiresthatthekeybitstringrepresentssomeagent’spublickeyandguaranteesthat
+thefunction terminates normally ifftheinput bitstringwas signedwith thatagent’sprivate key.
+WeuseVeriFastandNaginitoprovetheimplementationscorrect.Asanoverallresult,weobtain
+a proof thattheentiresystemsatisfiestheintendedauthenticationproperty.
+5 FROMEVENT SYSTEMS TO I/O SPECIFICATIONSIN SEPARATIONLOGIC
+A central aspect of our methodology is to soundly link protocol models and code. We use I/O
+specificationstobridgethesubstantialsemanticgapbetweenthecomponentmodelsthatresult
+fromtheinterfacemodeldecompositionstepandthecode.Thecomponentmodelsaregivenas
+event systems, whereas I/O specifications are separation logic formulas built over I/O permissions,
+possibly employing co-recursive predicates to specify non-terminating behavior. What event
+systems and I/O specifications share is a trace semantics. We therefore define a translation of
+the components’ event systems into I/O specifications and prove that they are trace-equivalent
+byestablishingasimulationineachdirection.Itisthistraceequivalencethat,togetherwiththe
+verifierassumption (VA)andthecompositionalrefinementtheorem(Corollary 2.4),enablesthe
+seamless switching from modelsto code verification in our methodology(cf.Section 3.9).
+InsteadoftranslatingcomponentmodelsdirectlyintoI/Ospecifications,wewillpassthrough
+an intermediate translation to a sequential process calculus. This intermediate step has several
+benefits. First, it shifts the focus from data (guards and state updates) to I/O interactions. Second, it
+introduces a minimal syntax for these interactions, providing a useful structure for the correctness
+proofs.Third,itbuildsabridgebetweentwopopularspecificationformalisms:processcalculion
+themodeling level and permission-basedI/O specificationsin separation logic on thecode level.
+Themainchallengeinprovingourresultstemsfromthedisparatesemanticsofeventsystems
+andprocessesononehandandI/Ospecificationsontheotherhand.Concretely,wemustshow
+that a process 𝑃can simulate the traces induced by its corresponding assertion 𝜙𝑃. As we shall see,
+an assertion’s behavior is the intersection of all its models’ behaviors. This is challenging as some
+models of 𝜙𝑃exhibit spurious behavior not present in 𝑃and also due to the absence of a single
+model representingexactly thebehaviorof 𝜙𝑃.
+5.1 Background: SemanticsofI/O Specifications forSeparation Logic
+WeslightlyextendthesemanticsoftheI/Ospecificationsof Penninckxetal .[2015]byenforcing
+a typing discipline on inputs by using a typingfunction Ty:Bios×Values→ (P(Values) \ {∅}),
+which assigns to each I/O operation and output value a type, given as a non-empty set of accepted
+inputs. An I/O permission bio(𝑡,𝑣,𝑤,𝑡′)and its input value 𝑤arewell-typed if𝑤∈Ty(bio,𝑣), and
+achunkiswell-typedifitisawell-typedI/Opermissionoratoken.Thetypingfunctionspecifiesa
+relational contract for each I/O operation. The set Ty(𝑏𝑖𝑜,𝑣)typically captures the possible results
+of an I/O operation, which isusefulto matchI/O operations to I/O library functions.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:21
+𝑤∈Ty(bio,𝑣)
+{token(𝑡),bio(𝑡,𝑣,𝑤,𝑡′)}#+#ℎbio(𝑣,𝑤)− −−−−− → H{token(𝑡′)}#+#ℎBio
+𝑤≠𝑤′𝑤,𝑤′∈Ty(bio,𝑣)
+{token(𝑡),bio(𝑡,𝑣,𝑤,𝑡′)}#+#ℎbio(𝑣,𝑤′)− −−−−−− → H⊥Contradict𝑤∈Ty(𝑏𝑖𝑜,𝑣)
+⊥bio(𝑣,𝑤)− −−−−− → H⊥Chaos
+Fig. 4. Heap transition rules.
+AssertionSemantics. Theformalsemanticsofourassertionsisco-inductivelydefinedover heaps
+ℎ∈Heap, whereHeap=Chunks#isthesetof multisetsof chunks(seeSection 2.2),asfollows.
+ℎ|=𝑏 ⇐⇒𝑏=true
+ℎ|=𝑐 ⇐⇒𝑐∈#ℎ∧𝑐iswell-typed
+ℎ|=𝜙1★𝜙2⇐⇒ ∃ℎ1,ℎ2∈Heap.ℎ=ℎ1+#ℎ2∧ℎ1|=𝜙1∧ℎ2|=𝜙2
+ℎ|=∃𝑣.𝜙⇐⇒ ∃𝑣′∈Values.ℎ|=𝜙[𝑣′/𝑣]
+ℎ|=∃𝑡.𝜙⇐⇒ ∃𝑡′∈Places.ℎ|=𝜙[𝑡′/𝑡]
+Notethata heaphereisdifferentfromaprogram’sheapmemory;itschunksrepresentpermissions
+to perform I/O operations or tokens, not memory locations and their values. Here, we elide the
+ordinary program heap forsimplicity and since itisorthogonal to modeling I/O behavior.
+The semantics of assertions satisfiesthefollowing monotonicity property.
+Lemma 5.1 (Monotonicity). Ifℎ|=𝜙then𝑔+#ℎ|=𝜙.
+Example5.2. ConsidertheI/Ospecification 𝜙=token(𝑡)★(∃𝑥,𝑡′,𝑡′′.recv(𝑡,𝑥,𝑡′)★send(𝑡′,2𝑥,𝑡′′))
+fromExample 2.5.Examplesofheapsthatsatisfy 𝜙areℎ1={token(𝑡),recv(𝑡,12,𝑡1),send(𝑡1,24,𝑡2)}#,
+ℎ2={token(𝑡),recv(𝑡,12,𝑡),send(𝑡,24,𝑡)}#, andℎ3=ℎ1+#{send(𝑡1,35,𝑡2)}#. More generally, all
+heaps satisfying 𝜙have the form 𝐻𝜙(𝑥,𝑡′,𝑡′′,ℎ)={token(𝑡),recv(𝑡,𝑥,𝑡′),send(𝑡′,2𝑥,𝑡′′)}#+#ℎ
+forsome value 𝑥, places𝑡′and𝑡′′, and heap ℎ. Wewill returnto this examplebelow.
+Heap Transitions. Heaps have a transition semantics, where I/O permissions are consumed by
+pushingatokenthroughthem.Thissemanticsisgivenbytheeventsystem H=(Heap⊥,Act,− →H)
+with the set of states Heap⊥and the set of events Act={bio(𝑣,𝑤) |bio∈Bios∧𝑣,𝑤∈Values},
+calledI/Oactions .Notethat bioisoverloaded,withthe2-argumentversionyieldingtraceevents
+andthe4-argumentonedefiningachunk.AnI/Oaction bio(𝑣,𝑤)iswell-typed if𝑤∈Ty(bio,𝑣)
+and a trace 𝜏∈Act∗iswell-typedifall its events are.
+The transition relation − →HofHis defined by the rules in Figure 4and mostly matches the
+place-I/O-permission multigraph intuition given in Section 2.2. The rule Biocorresponds to a
+normal heap transition executing an I/O operation. The input read is well-typed. The token moves
+totheI/Opermission’stargetplaceandthepermissionisconsumedandremovedfromtheheap.
+The rule Contradict describes the situation where a transition bio(𝑣,𝑤)would be possible, but the
+environmentprovidesaninput 𝑤′≠𝑤thatisdifferentfromtheonepredictedbythechunk.In
+this case, the heap can perform a transition bio(𝑣,𝑤′)to the special state ⊥. In this state, arbitrary
+(well-typed) behavior is possible by the rule Chaos. Hence, all traces of Hare well-typed. For a set
+of heaps𝐻, wedefine thesetof tracesof 𝐻to containthetracesexecutable in allheaps of𝐻, i.e.,
+tracesH(𝐻)={𝜏| ∀ℎ∈𝐻.𝜏∈traces(H,ℎ)}.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:22 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+The setof tracesof an assertion 𝜙isthendefinedto bethesetof tracesof its heap models,i.e.,
+tracesH(𝜙)=tracesH({ℎ|ℎ|=𝜙}).
+Thisuniversalquantificationoverallheapmodelsof anassertionconstitutes themainchallenge in
+our soundnessproof (Theorem 5.7).Letusnow lookat an exampleillustratingthesedefinitions.
+Example5.3(Heapandassertiontraces). Considertheheapmodels ℎ1,ℎ2,andℎ3oftheI/Ospeci-
+fication𝜙from Example 5.2. First focusing on regular behaviors , i.e., ignoring the rules Contradict
+andChaos, theirtracesaregiven bythefollowing sets,where ↓denotesprefix closure:
+•traces(H,ℎ1)={recv(12) ·send(24)}↓,
+•traces(H,ℎ2)=traces(H,ℎ1) ∪{send(24) ·recv(12)}↓, and
+•traces(H,ℎ3)=traces(H,ℎ1) ∪{recv(12) ·send(35)}↓.
+The first heap, ℎ1, exhibits an instance of the expected behavior: receive a value and send the
+doubledvalue.Theheaps ℎ2andℎ3,however,alsoallowunintendedbehaviors.Heap ℎ2hasatrace
+wherereceiveandsendareinverted.Thiscomesfromthesemanticsofexistentialquantification,
+which does not ensure that the places are distinct. Heap ℎ3can send a value different from the
+doubledinputvalue,whichispossibleduetothemonotonicitypropertyinLemma 5.1.Duetothese
+additional behaviors, which we call spurious, the settracesH(𝜓)of traces of an I/O specification 𝜓
+is defined to contain those traces that are possible in allheap models of 𝜓. The three heaps above
+onlysharethetracesof ℎ1, which correspondsto theintendedbehavior.
+Notethatthesespuriousbehaviorsarenotanartifactoftheparticularformalismweuse,but
+a standard part of the permission-based specification style of separation logics in general. For
+example, allprogram heaps satisfyinga standardpoints-to assertion 𝑥↦→𝑒allow the program to
+dereferencethepointer 𝑥,butsomeheapsmayalsoallowdereferencingthepointer 𝑧because𝑧
+and𝑥happen to alias in a particular interpretation (analogous to łaliasingž places in ℎ2), or, for
+logicswithmonotonicity,maycontain(andthereforeallowaccessto)extramemorypointedto
+by𝑦. However, like in our case, the program logic must not allow dereferencing 𝑦or𝑧because it is
+not possiblein allprogram heaps satisfying theassertion.
+Therules Contradict andChaosadd,foranyregulartraceoftheform 𝜏1·recv(𝑤) ·𝜏2,chaotic
+tracesof theform 𝜏1·recv(𝑤′) ·𝜏foreachwell-typed 𝑤′≠𝑤andwell-typedtrace 𝜏.These rules
+formalizethat aheapreading some(well-typed)input different from the onepredicted bythe I/O
+permissionmaybehavearbitrarily.Forexample,both ℎ′
+1={token(𝑡),recv(𝑡,19,𝑡1),send(𝑡1,38,𝑡2)}#
+andℎ1aremodelsof 𝜙and𝜖istheironlysharedregulartrace.However,theregulartracesof ℎ′
+1are
+alsochaotictracesof ℎ1andviceversa.Hence, tracesH({ℎ1,ℎ′
+1})consistsoftheregulartracesof
+ℎ1andℎ′
+1.Thisensuresthat tracesH(𝜙)={recv(𝑥) ·send(2𝑥) |𝑥∈Values}↓isthetraceproperty
+intendedbytheassertion 𝜙. Withoutthesetworules, wewouldhave tracesH(𝜙)={𝜖}.
+5.2 Embedding I/O-GuardedEventSystemsinto Processes
+Weco-inductivelydefine a simple language of (sequential) processes:
+𝑃::=𝜈Null|bio(𝑣,𝑧).𝑃|𝑃1⊕𝑃2.
+Here, Nullistheinactiveprocess, bio(𝑣,𝑧).𝑃isprefixingwithanI/Ooperation,whichbindsthe
+input variable 𝑧in𝑃, and𝑃1⊕𝑃2isa binary choiceoperator. Let Procbethesetof all processes.
+Wecanthenco-recursivelydefineprocesses.Forexample,wedefineacountablechoiceoperator/circleplustext.1
+𝑣∈𝑆𝑃(𝑣)overasetofvalues 𝑆with Nullastheneutralelement,analogoustothedefinitionof
+theiteratedseparatingconjunction.Wecanalsoco-recursively definenon-terminatingprocesses.
+Example 5.4. A process corresponding to the I/O specification from Example 2.6is specified by
+RSP(0), whereRSP(𝑎)=𝜈recv(𝑧).if𝑧>0thensend(𝑎+𝑧).RSP(𝑎+𝑧)else Null.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:23
+Theoperationalsemanticsofprocessesisgiven bytheeventsystem P=(Proc,Act,− →P),where
+thetransition relation − →Pisinductivelydefinedbythefollowing rules:
+𝑤∈Ty(bio,𝑣)
+bio(𝑣,𝑧).𝑃bio(𝑣,𝑤)− −−−−− → P𝑃[𝑤/𝑧]Pref𝑃1𝑎− →P𝑃′
+1
+𝑃1⊕𝑃2𝑎− →P𝑃′
+1Choice 1𝑃2𝑎− →P𝑃′
+2
+𝑃1⊕𝑃2𝑎− →P𝑃′
+2Choice 2
+Wewrite traces(𝑃)asa shorthandfor traces(P,𝑃).
+Translation. WedefineatranslationfromI/O-guardedeventsystems G=(𝑆,Act,𝐺,𝑈)toprocesses.
+The process proc(G,𝑠)represents Ginstate𝑠and isco-recursivelydefinedby
+proc(G,𝑠)=𝜈/circleplusdisplay.1
+bio∈Bios/circleplusdisplay.1
+𝑣∈Valuesif𝐺(bio,𝑣)(𝑠)thenbio(𝑣,𝑧).proc(G,𝑈bio(𝑣,𝑧)(𝑠))else Null.
+Recallthathereweborrowtheconditionalfromourmeta-languageHOL.Thefollowingcorrectness
+resultisestablishedbya simulation ineach direction.
+Theorem 5.5 (Correctness of event system translation). For any I/O-guarded event system
+G=(𝑆,Act,𝐺,𝑈)and state 𝑠∈𝑆,wehave traces (G,𝑠)=traces(proc(G,𝑠)).
+5.3 Embedding Processesinto I/O Specifications
+Wenowco-recursivelydefinetheembedding embfromprocessesandplacesintoI/Ospecifications:
+emb(Null,𝑡)=𝜈true
+emb(bio(𝑣,𝑧).𝑃,𝑡)=𝜈∃𝑡′,𝑧′.bio(𝑡,𝑣,𝑧′,𝑡′)★emb(𝑃[𝑧′/𝑧],𝑡′)
+emb(𝑃1⊕𝑃2,𝑡)=𝜈emb(𝑃1,𝑡)★emb(𝑃2,𝑡).
+We define the process assertion of𝑃byemb(𝑃)=∃𝑡.token(𝑡)★emb(𝑃,𝑡). We then prove by
+co-induction thatcountable choicetranslatesto iteratedseparating conjunction.
+Lemma 5.6. emb(/circleplustext.1
+𝑣∈𝑆𝑃(𝑣),𝑡)=∀★𝑣∈𝑆.emb(𝑃(𝑣),𝑡).
+Wenowturntoourmainresult,namely,thetraceequivalenceofprocess 𝑃anditsI/Ospecification
+emb(𝑃). Wefocuson theintuitionhereand presenttheformaldetails in [ Sprenger et al. 2020a ].
+Theorem5.7 (Correctnessof processtranslation). traces(𝑃)=tracesH(emb(𝑃)).
+TheprooffollowsfromPropositions 5.8,5.12,and5.13towhichtheremainderofSection 5is
+devoted.TogetherwithTheorem 5.5,thisresultallowsustotranslateanyI/O-guardedeventsystem
+Emodeling some component of our system into an I/O specification 𝜙E=emb(proc(E))with
+identicalbehavior.Wecanthenuse 𝜙Easaspecificationforthecodeimplementing E’sbehavior.
+The left-to-right trace inclusion of this theorem is captured by the following proposition, which
+weprovebya simulation between process 𝑃and heap modelsof emb(𝑃).
+Proposition5.8. traces(𝑃) ⊆tracesH(emb(𝑃)).
+The main difficulty lies in the proof of the reverse set inclusion and stems from the meaning of
+tracesH(emb(𝑃)), which contains exactly those traces 𝜏that are a trace of allmodels of emb(𝑃).
+From Example 5.3, we know that many models of emb(𝑃)(or of any assertion 𝜙for that mat-
+ter) exhibit spurious behaviors that are not in tracesH(emb(𝑃))(or intracesH(𝜙), respectively).
+Therefore, picking an arbitrary heap model of emb(𝑃)and trying to simulate its transitions by the
+process𝑃’stransitionswillfail.Instead,werestrictourattentionto canonical modelsthatdonot
+exhibitspuriousbehaviors.Wedenoteby can(𝑃)thesetofallcanonicalmodelsof 𝑃(introducedin
+Section5.4).Wethendecomposetheproof into thefollowing chain of setinclusions:
+tracesH(emb(𝑃)) ⊆tracesH(can(𝑃)) ⊆traces(𝑃). (2)
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:24 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+⊕
+𝑃1
+⊕𝑃6
+Null
+⊕
+𝑃3
+𝑃4𝑃2
+Null𝑃5
+Null
+Nullin(1) fail
+out(1)
+in(2) drop
+out(3)𝜖·𝜖
+𝜖·𝐿
+𝐿2·𝜖𝜖·𝑅
+𝑅𝐿·𝜖
+𝐿2·𝑅
+𝐿2·𝑅𝐿
+𝐿2𝑅𝐿2·𝜖
+𝐿2𝑅𝐿3·𝜖𝐿2·𝐿
+𝐿4·𝜖𝐿2·𝑅2
+𝐿2𝑅2𝐿·𝜖𝜖
+𝐿2 𝑅𝐿
+𝐿2𝑅𝐿2𝐿4
+𝐿2𝑅2𝐿
+𝐿2𝑅𝐿3in(1) fail
+out(1)
+in(2)drop
+out(3)
+Fig. 5. Process 𝑃and the schedule 𝜌of Example 5.10(left) and resulting canonical model (right). Each process
+(node in the left graph) is annotated with its position 𝑐𝑝𝑜𝑠=𝑝𝑝𝑜𝑠·𝑥.
+The first inclusion expresses that the canonical models cover all behaviors of emb(𝑃). We will
+establishthesecondinclusionbysimulatingthebehaviorofcanonicalmodelsbyprocesstransitions.
+5.4 Canonical Heap Models forProcesses
+Anaturalcanonicalmodelcandidateforaprocess 𝑃wouldbetheheap ℎ𝑃thatisisomorphicto 𝑃’s
+computationtree,whereaprocess bio(𝑣,𝑤).𝑄wouldresultinoneI/Opermission bio(𝑡,𝑣,𝑤,𝑡 𝑤)
+for each input 𝑤on the heap. Although this proposal avoids spurious behaviors due to additional
+permissionsand place identifications(cf.Example 5.3),itfailsasthefollowing exampleshows.
+Example 5.9 (Failed attempt). Let𝑃=𝑖𝑛(𝑥).𝑜𝑢𝑡(𝑥).Null,Values=B, andPlaces={L,R}∗(for
+tree positions). Then ℎ𝑃contains both I/O permissions 𝑖𝑛(𝜖,false,L)and𝑖𝑛(𝜖,true,R). This would
+lead totracesH(can(𝑃))=traces(ℎ𝑃)={𝜖} ∪ {𝑖𝑛(𝑣) ·𝜏|𝑣∈B,𝜏∈Act∗}according to the
+rules Contradict andChaosand henceto tracesH(can(𝑃)) ⊃traces(𝑃).
+Wewillthereforeconstructthecanonicalheapmodelsofaprocess 𝑃withrespecttoaninput
+schedule, which is essentially a prophecy variable that uniquely determines the inputs read by
+the process. An input schedule is a function 𝜌:Act∗×Bios×Values→Valuesmapping an I/O
+trace𝜏, an I/O operation bio, and an output value 𝑣to an input value 𝜌(𝜏,bio,𝑣). Hence, there will
+beacanonicalmodel cmod(𝑃,𝜌)foreachinputschedule 𝜌,whichintuitivelycorrespondstothe
+projection of 𝑃’s computation tree to the inputs prescribed by 𝜌. The set can(𝑃)contains such
+a model for each input schedule 𝜌. Our construction uses the set of places Places={L,R}∗, i.e.,
+the places are positions of a binary tree. The inputs being fixed, the only branching stems from
+the choice operator. The following example illustrates our construction. We present its formal
+definitionand theproofsof thecorresponding results in [ Sprenger et al. 2020a ].
+Example 5.10(Canonicalmodel). Consider theprocess 𝑃definedby
+𝑃=in(𝑥).𝑄(𝑥) ⊕fail.Null𝑄(𝑥)=out(𝑥).Null⊕ (in(𝑦).out(𝑥+𝑦).Null⊕drop.Null).
+For simplicity, the I/O operations dropandfailhave no arguments. Let 𝜌be the input schedule
+defined by 𝜌(𝜏,𝑏𝑖𝑜,𝑣)=len(𝜏) +1. Figure5(left) shows the projection of 𝑃’s syntax tree to the
+input schedule 𝜌. Edges arising from action prefixes are labeled with the corresponding action.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:25
+Eachnodeisannotatedwithitscurrentposition 𝑐𝑝𝑜𝑠=𝑝𝑝𝑜𝑠·𝑥,whichiscomposedof 𝑝𝑝𝑜𝑠,the
+targetpositionofthepreviousaction-labelededgeinthetree(or 𝜖ifthereisnone),andarest 𝑥.
+Each edge labeled by some action bio(𝑣,𝑤)and connecting position 𝑐𝑝𝑜𝑠=𝑝𝑝𝑜𝑠·𝑥to𝑐𝑝𝑜𝑠·L
+translatesintoanI/Opermission bio(𝑝𝑝𝑜𝑠,𝑣,𝑤,𝑐𝑝𝑜𝑠 ·L)intheresultingcanonicalheap cmod(𝑃,𝜌),
+which isshowninFigure 5(right).
+The following result states that the canonical model for a process 𝑃and a schedule 𝜌is indeed a
+model of the assertion corresponding to the process 𝑃. The first inclusion in (2)then easily follows.
+Proposition 5.11 (Canonical model property). cmod(𝑃,𝜌) |=emb(𝑃,𝜖)for all processes 𝑃
+and well-typed schedules 𝜌.
+Proposition5.12. tracesH(emb(𝑃)) ⊆tracesH(can(𝑃)).
+5.5 ProcessesSimulate Canonical Models
+Wenowturntothesecondtraceinclusionin (2):eachtraceofthecanonicalmodelset can(𝑃)is
+alsoatraceof 𝑃.Writing cmodt(𝑃,𝜌)forthecanonicalmodel cmod(𝑃,𝜌)withatokenaddedat
+its root place, we would like transitions of the heap cmodt(𝑃,𝜌)to lead to a heap cmodt(𝑃′,𝜌)for
+some process 𝑃′, so wecan simulate itwith thecorresponding process transition from 𝑃to𝑃′.
+There are two obstaclestothisplan: (1) dead heap parts,which correspond tountakenchoices
+in processes 𝑃⊕𝑄and cannot perform any transitions, and (2) chaotic transitions where, given a
+traceofthesetofcanonicalmodels can(𝑃),someofthemodels cmodt(𝑃,𝜌)incan(𝑃)transitto
+thełchaoticžstate ⊥atsomepointalongthetrace.Theproblemhereisthatagivenprocesscannot
+in generalsimulate the(arbitrary)I/O actionsthatarepossiblein thestate ⊥.
+Our proofs must take such dead heap parts into account to address problem (1) and carefully
+pickaparticularscheduletoavoidproblem(2).Here,wefocusonproblem(2)fromanintuitive
+perspective(see[ Sprengeretal .2020a]foramorepreciseanddetailedaccount).Itssolutionisbased
+on the observation that executing some I/O action bio(𝑣,𝑤𝜌)withscheduled input 𝑤𝜌=𝜌(𝜏,bio,𝑣)
+fromcmodt(𝑃,𝜌)indeedleadstoaheap cmodt(𝑃′,𝜌)forsomeprocess 𝑃′(and,inparticular,not
+to⊥).Hence,tosimulateagiventrace 𝜏oftheheap cmodt(𝑃,𝜌)bytransitionsoftheprocess 𝑃,
+wemustensurethattheschedule 𝜌isconsistentwiththetrace 𝜏.Wethereforedefineawitness
+schedule 𝜌wit(𝜏), which returnstheinputsappearing on thetrace 𝜏and hastheproperty:
+cmodt(𝑃,𝜌wit(𝜏))𝜏− →ℎ=cmodt(𝑃′,𝜌wit(𝜏)) (3)
+for some process 𝑃′, i.e., in particular, ℎ≠⊥. The final trace inclusion in Equation (2)then follows
+immediately, since any trace 𝜏∈tracesH(can(𝑃))isalsoa trace of cmodt(𝑃,𝜌wit(𝜏)).
+Proposition5.13. tracesH(can(𝑃)) ⊆traces(𝑃).
+6 RELATED WORK
+Numerous formalismshave been developed for modeling and verifying systems. In the following,
+wefocuson those approaches thatcombinemodelsand code, and targetdistributedsystems.
+ModelVerification with CodeExtraction. Variousapproaches verify modelsof distributedsystems
+in formalismsthat support the extraction of executablecode. Thefollowing four approaches are all
+embeddedin Coq and supporttheextraction of OCaml programs.
+In Verdi [ Wilcox et al .2015;Woos et al .2016], a system is specified by defining types and
+handlersforexternalI/Oandfornetworkmessages.Thedevelopercanfocusontheapplication
+anditscorrectnessproofbyessentiallyassumingafailure-freeenvironment.Theseassumptions
+can be relaxed by applying Verdi’s verified system transformers to make the application robust
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:26 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+with respect to communication failures or node crash failures. DISEL [ Sergey et al .2018] offers
+a domain-specific language for defining protocols in terms of their invariants and atomic I/O
+primitives.Itenablesthemodularverificationofprogramsthatparticipateindifferentprotocols,
+usingseparation logicto representprotocol state separation. Componentprograms are verifiedin
+the context of one or more protocol models using a Hoare logic embedded in a dependent type
+theory.Theprogramverificationcanbeunderstoodasasinglerefinementstep.Velisarios[ Rahli
+etal.2018]isaframeworkforverifyingByzantinefault-tolerantstate-machinereplicationprotocols
+in Coqbased onalogic ofevents.It models systems asdeterministic statemachines andprovides
+aninfrastructureformodelingandreasoningaboutdistributedknowledgeandquorumsystems.
+Chapar [Lesani et al .2016] is a formal framework in Coq for the verification of causal consistency
+for replicated key-valuestores. The technique uses anabstract operational semantics that defines
+allthecausally-consistentexecutionsofaclientofthestore.Theimplementationofthestoreis
+verifiedbyproving thatits concreteoperational semantics refinesthis abstractsemantics.
+Liu et al.[2020] model distributed systems in Maude’s rewriting logic [ Clavel et al .2007]. These
+are compiled into distributed implementations using mediator objects for the TCP communication.
+Theyprovethatthegeneratedimplementationisstutteringequivalenttotheoriginalmodel,hence
+preserving next-freeCTL*properties.The implementation runsin distributedMaude sessions.
+All of these approaches enable the development of distributed systems that are correct by
+construction. However, code extraction has three major drawbacks. First, the produced code is
+either purely functional or based on rewriting logic, which precludes common optimizations
+(e.g., using mutable heap data structures). Second, it is difficult for extracted code to interface
+existingsoftwaremodules suchaslibraries;incorporatingexisting(possibly unverified)modules
+isoftennecessaryinpractice.Third,theapproachesprescribeafixedimplementationlanguage;
+however,itisoftenusefulinpracticetobeabletocombinecomponents,suchasclientsandservers,
+writtenindifferentlanguages.Ourapproachavoidsallthreeproblemsbysupportingthebottom-up
+development and verification of efficient, flexible implementations.
+PSync [Dragoi et al .2016] is a domain-specific language for implementing round-based dis-
+tributed, fault-tolerant systems. PSync programs are executed via an embedding into Scala. A
+dedicated verifier allows one to prove safety and liveness properties of PSync programs, and a
+refinement result shows that these carry over to the executable system. The focus of PSync is
+mostlyon developing specific verifieddistributed algorithms rather thanentiresoftwaresystems.
+Combinations of Model and Code Verification. The works most closely related to ours are those
+ofKohetal.[2019]andofOortwijnandHuisman [2019].TheformerworkispartofDeepSpec[ Pierce
+2016],whichisaresearchprogramwiththegoalofdevelopingfully-verifiedsoftwareandhardware.
+The DeepSpec developments are based on the Verified Software Toolchain (VST) [ Cao et al.2018],
+aframeworkforverifyingCprogramsviaaseparationlogicembeddedinCoq. Kohetal.[2019]
+useinteraction trees [Xia et al.2020], which are similar to our processes, to specify a program’s
+I/O behavior and directly embed these into VST’s separation logic using a special predicate. In
+contrast,ourembeddingofprocessesintoseparationlogicusingtheencodingof Penninckxetal .
+[2015]allowsustoapplystandardseparationlogicandexistingprogramverifiers.Inboththeirand
+ourwork,asuccessfulprogramverificationguaranteesaninclusionoftheprogram’sI/Otraces
+in those of the I/O specification or interaction tree. Koh et al.[2019] verify a simple networked
+server in a TCP networking environment, for which they use two interaction trees at different
+abstractionlevelsandrelatethembyaformofcontextualrefinementthatestablisheslinearizability.
+Theirpaperleavesopenthequestionwhethertheirapproachcanbeusedtoverifysystem-wide
+global properties of distributed systems with different types of components and operating in
+different environments (e.g.,exhibiting faulty and adversarial behavior).For example,it is unclear
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:27
+whethertheycouldverifyourcasestudyprotocols. OortwijnandHuisman [2019]useaprocess
+calculus for modeling, which they embed into a concurrent separation logic (CSL). Their approach
+reliesonautomatedtoolsandcombinesthemCRL2modelcheckerwithanencodingofCSLinto
+Viper.Themodeling-levelexpressivenessislimitedbymCRL2beingafinite-statemodelchecker.
+Moreover,whilethe soundnessofCSLimpliesthe preservationofstateassertionsfrom modeling
+to implementation level, itisunclear whetherarbitrary trace propertiesarepreserved.
+IronFleet[ Hawblitzeletal .2015]combinesTLA-stylerefinementwithcodeverification.Abstract
+modelsaswellastheimplementationareexpressedinDafny[ Leino2010 ].Dafnyisapowerful
+verificationframeworkthatsupports,amongotherfeatures,mutableheapdatastructures,inductive
+andcoinductivedatatypes,andproofauthoring.ReasoningissupportedbyanSMTsolver,whichis
+restricted to first-order logic. Dafny enables different kinds of higher-order reasoning by encoding
+itintofirst-orderlogicinternally,but neverthelesshassomerestrictionsbothinexpressivityand
+practicality for larger proofs when compared to native higher-order theorem provers. By using
+Isabelle/HOL as modeling language, our approach provides the full expressiveness of higher-order
+logic,whichalsoallowsustoformalizeourmeta-theory.Byusingasingleframework,Ironfleet
+avoidstheproblemswehadtosolvewhenlinkingabstractmodelstoseparationlogicspecifications.
+However, it lacks the flexibility to support different logics or modeling languages. Dafny currently
+compiles to sequential C#, Go, and JavaScript, while existing separation logic based verifiers
+supportconcurrentimplementationsandallowdeveloperstowritethecodedirectlyinfamiliar
+programminglanguagesratherthaninDafny.IronFleetsupportsbothsafetyandlivenessproperties,
+whereas our approach focuseson safety propertiesand leaveslivenessasfuturework.
+ProjectEverest[ Bhargavanetal .2017]usesanapproachsimilartoIronFleettodevelopaverified
+implementation of TLS. An abstract implementation is developed and verified in Low∗[Protzenko
+etal.2017],asubsetofF∗[Swamyetal .2016]gearedtowardimperativeC-likecodethatiscompiled
+toC.Amainfocusofthisprojectisonverifyingcryptographicalgorithms.LikeIronFleet,Low∗
+verification uses an SMT solverand theextractedC code issequential.
+7 CONCLUSIONSANDFUTURE WORK
+Weproposedanovelapproachfortheformaldevelopmentofdistributedsystems.Ourapproach
+combines the top-down development of system models via compositional refinement with bottom-
+up program verification. This supports a clean separation of concerns and simplifies the individual
+verification tasks, which is crucial for managing the additional complexity arising in systems
+operating in faulty or adversarial environments. For program verification, we support state-of-the-
+art separation logics, which support mutable heap data structures, concurrency, and other features
+neededtodevelopefficient,maintainablecode.Wedemonstratedthatourapproachbridgesthegap
+betweenabstractmodelsandconcretecode,boththroughthetheoreticalfoundationsunderpinning
+its soundness and with three complete case studies. The theory and case studies are mechanized in
+Isabelle/HOLand theNagini and VeriFast program verifiers.
+As future work, we plan to reduce the need for boilerplate Isabelle code by automating the
+translationofinterfacemodelsintothecomponents’I/Ospecificationsthatareinputtothecode
+verifiers.Wealsoplantosupportlivenessproperties,whichwillrequireamorecomplexrefinement
+framework in the style of TLA [ Lamport 1994 ], including support for fairness notions. Finally,
+wearecurrentlyapplyingourapproachtoverifysubstantialpartsoftheSCIONsecureInternet
+architecture[ Perrigetal .2017].Weshowprotocol-levelglobalsecuritypropertiesintheDolev-Yao
+symbolic attacker model and verify the I/O behavior (as well as memory safety, secure information
+flow, and other properties)of thecurrently deployedimplementation of SCION routers.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:28 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+REFERENCES
+MartínAbadiandLeslieLamport.1991. TheExistenceofRefinementMappings. Theor.Comput.Sci. 82,2(1991),253ś284.
+https://doi.org/10.1016/0304-3975(91)90224-P
+Jean-RaymondAbrial.2010. ModelinginEvent-B-SystemandSoftwareEngineering . CambridgeUniversityPress. https:
+//doi.org/10.1017/CBO9781139195881
+AndrewW.Appel.2012. VerifiedSoftwareToolchain.In NASAFormalMethods-4thInternationalSymposium,NFM2012,
+Norfolk, VA,USA,April 3-5, 2012. Proceedings . 2.https://doi.org/10.1007/978-3-642-28891-3_2
+KarthikeyanBhargavan,BarryBond,AntoineDelignat-Lavaud,CédricFournet,ChrisHawblitzel,CatalinHritcu,Samin
+Ishtiaq, Markulf Kohlweiss, Rustan Leino, Jay R. Lorch, Kenji Maillard, Jianyang Pan, Bryan Parno, Jonathan Protzenko,
+Tahina Ramananandro, Ashay Rane, Aseem Rastogi, Nikhil Swamy, Laure Thompson, Peng Wang, Santiago Zanella
+Béguelin,andJeanKarimZinzindohoue.2017.Everest:TowardsaVerified,Drop-inReplacementofHTTPS.In 2ndSummit
+onAdvancesinProgrammingLanguages,SNAPL2017,May7-10,2017,Asilomar,CA,USA(LIPIcs,Vol.71) ,BenjaminS.
+Lerner, Rastislav Bodík, and Shriram Krishnamurthi (Eds.). Schloss Dagstuhl - Leibniz-Zentrum für Informatik, 1:1ś1:12.
+https://doi.org/10.4230/LIPIcs.SNAPL.2017.1
+Jasmin Christian Blanchette, Aymeric Bouzy, Andreas Lochbihler, Andrei Popescu, and Dmitriy Traytel. 2017. Friends with
+Benefits-ImplementingCorecursioninFoundationalProofAssistants.In ProgrammingLanguagesandSystems-26th
+European Symposium on Programming,ESOP 2017, Held asPart of the European Joint Conferences on Theory andPractice
+ofSoftware,ETAPS2017,Uppsala,Sweden,April22-29,2017,Proceedings (LectureNotesinComputerScience,Vol.10201) ,
+Hongseok Yang (Ed.). Springer, 111ś140. https://doi.org/10.1007/978-3-662-54434-1_5
+Christian Cachin, Rachid Guerraoui, and Luís E. T. Rodrigues. 2011. Introduction to Reliable and Secure Distributed Program-
+ming (2. ed.) . Springer. https://doi.org/10.1007/978-3-642-15260-3
+QinxiangCao,LennartBeringer,SamuelGruetter,JosiahDodds,andAndrewW.Appel.2018. VST-Floyd:ASeparationLogic
+Tool to Verify Correctness of CPrograms. J. Autom. Reasoning 61, 1-4(2018), 367ś422. https://doi.org/10.1007/s10817-
+018-9457-5
+ErnestJ.H.ChangandRosemaryRoberts.1979. AnImprovedAlgorithmforDecentralizedExtrema-FindinginCircular
+ConfigurationsofProcesses. Commun.ACM 22, 5(1979), 281ś283. https://doi.org/10.1145/359104.359108
+ManuelClavel, FranciscoDurán,StevenEker, PatrickLincoln,Narciso Martí-Oliet,José Meseguer, andCarolyn L.Talcott
+(Eds.).2007. AllAboutMaude-AHigh-PerformanceLogicalFramework,HowtoSpecify,ProgramandVerifySystemsin
+RewritingLogic . LectureNotesin ComputerScience, Vol.4350. Springer. https://doi.org/10.1007/978-3-540-71999-1
+Sjoerd Cranen, Jan Friso Groote, Jeroen J. A. Keiren, Frank P. M. Stappers, Erik P. de Vink, Wieger Wesselink, and Tim A. C.
+Willemse.2013. AnOverviewofthemCRL2ToolsetandItsRecentAdvances.In ToolsandAlgorithmsfortheConstruction
+andAnalysisofSystems-19thInternationalConference,TACAS2013,HeldasPartoftheEuropeanJointConferenceson
+TheoryandPracticeofSoftware,ETAPS2013,Rome,Italy,March16-24,2013.Proceedings(LectureNotesinComputerScience,
+Vol. 7795) , NirPitermanandScott A. Smolka(Eds.).Springer, 199ś213. https://doi.org/10.1007/978-3-642-36742-7_15
+Leonardo Mendonça de Moura and Nikolaj Bjùrner. 2008. Z3: An Efficient SMT Solver. In Tools and Algorithms for the
+Construction and Analysis of Systems, 14th International Conference, TACAS 2008, Held as Part of the Joint European
+Conferences on Theory and Practice of Software, ETAPS 2008, Budapest, Hungary, March 29-April 6, 2008. Proceedings
+(Lecture Notes in Computer Science, Vol. 4963) , C. R. Ramakrishnan and Jakob Rehof (Eds.). Springer, 337ś340. https:
+//doi.org/10.1007/978-3-540-78800-3_24
+DannyDolevandAndrewChi-ChihYao.1983. Onthesecurityofpublickeyprotocols. IEEETrans.InformationTheory 29,2
+(1983), 198ś207. https://doi.org/10.1109/TIT.1983.1056650
+CezaraDragoi,ThomasA.Henzinger,andDamienZufferey.2016. PSync:apartiallysynchronouslanguageforfault-tolerant
+distributedalgorithms.In Proceedingsofthe43rdAnnualACMSIGPLAN-SIGACTSymposiumonPrinciplesofProgramming
+Languages, POPL2016,St. Petersburg,FL, USA,January20- 22,2016 , Rastislav Bodíkand RupakMajumdar(Eds.).ACM,
+400ś415. https://doi.org/10.1145/2837614.2837650
+Marco Eilers and Peter Müller. 2018. Nagini: A Static Verifier for Python. In Computer Aided Verification - 30th International
+Conference, CAV 2018, Held as Part of the Federated Logic Conference, FloC 2018, Oxford, UK, July 14-17, 2018, Proceedings,
+Part I (Lecture Notes in Computer Science, Vol. 10981) , Hana Chockler and Georg Weissenbacher (Eds.). Springer, 596ś603.
+https://doi.org/10.1007/978-3-319-96145-3_33
+ChrisHawblitzel,JonHowell,ManosKapritsos,JacobR.Lorch,BryanParno,MichaelL.Roberts,SrinathT.V.Setty,andBrian
+Zill.2015. IronFleet:provingpracticaldistributedsystemscorrect.In Proceedingsofthe25thSymposiumonOperating
+Systems Principles, SOSP 2015, Monterey, CA, USA, October 4-7, 2015 , EthanL. Miller and Steven Hand (Eds.). ACM, 1ś17.
+https://doi.org/10.1145/2815400.2815428
+Chris Hawblitzel, Jon Howell, Jacob R. Lorch, Arjun Narayan, Bryan Parno, Danfeng Zhang, and Brian Zill. 2014. Ironclad
+Apps:End-to-EndSecurityviaAutomatedFull-SystemVerification.In OperatingSystemsDesignandImplementation
+(OSDI), Jason FlinnandHank Levy (Eds.).USENIXAssociation, 165ś181.
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:29
+C. A. R.Hoare. 2003. The Verifying Compiler: A Grand Challange for Computing Research. In Modular Programming
+Languages, Joint Modular Languages Conference, JMLC 2003, Klagenfurt, Austria, August 25-27, 2003, Proceedings (Lecture
+NotesinComputerScience, Vol.2789) ,László BöszörményiandPeter Schojer (Eds.).Springer,25ś35. https://doi.org/10.
+1007/978-3-540-45213-3_4
+Bart Jacobs, Jan Smans, Pieter Philippaerts, Frédéric Vogels, Willem Penninckx, and Frank Piessens. 2011. VeriFast: A
+Powerful,Sound,Predictable,FastVerifierforCandJava.In NASAFormalMethods-ThirdInternationalSymposium,NFM
+2011, Pasadena, CA, USA, April 18-20, 2011. Proceedings (Lecture Notes in Computer Science, Vol. 6617) , Mihaela Gheorghiu
+Bobaru,KlausHavelund,GerardJ.Holzmann,andRajeevJoshi(Eds.).Springer,41ś55. https://doi.org/10.1007/978-3-
+642-20398-5_4
+GerwinKlein,KevinElphinstone,GernotHeiser,JuneAndronick,DavidCock,PhilipDerrin,DhammikaElkaduwe,Kai
+Engelhardt,RafalKolanski,MichaelNorrish,ThomasSewell,HarveyTuch,andSimonWinwood.2009. seL4:formal
+verification of an OS kernel. In Proceedings of the 22nd ACM Symposium on Operating Systems Principles 2009, SOSP 2009,
+Big Sky, Montana, USA, October 11-14, 2009 , Jeanna Neefe Matthews and Thomas E. Anderson (Eds.). ACM, 207ś220.
+https://doi.org/10.1145/1629575.1629596
+Nicolas Koh, Yao Li, Yishuai Li, Li-yao Xia, Lennart Beringer, Wolf Honoré, William Mansky, Benjamin C. Pierce, and Steve
+Zdancewic. 2019. From C to interaction trees: specifying, verifying, and testing a networked server. In Proceedings of the
+8th ACM SIGPLAN International Conference on Certified Programs and Proofs, CPP 2019, Cascais, Portugal, January 14-15,
+2019, AssiaMahboubi andMagnus O. Myreen (Eds.).ACM, 234ś248. https://doi.org/10.1145/3293880.3294106
+Leslie Lamport. 1994. The Temporal Logic of Actions. ACM Trans. Program. Lang. Syst. 16, 3 (1994), 872ś923. https:
+//doi.org/10.1145/177492.177726
+K.RustanM.Leino.2010. Dafny:An AutomaticProgram VerifierforFunctional Correctness.In Logic forProgramming,
+ArtificialIntelligence,andReasoning-16thInternationalConference,LPAR-16,Dakar,Senegal,April25-May1,2010,Revised
+SelectedPapers (LectureNotesinComputerScience, Vol.6355) ,Edmund M.Clarkeand AndreiVoronkov(Eds.). Springer,
+348ś370. https://doi.org/10.1007/978-3-642-17511-4_20
+K. Rustan M. Leino and Peter Müller. 2009. A Basis for Verifying Multi-threaded Programs. In Programming Languages
+andSystems,18thEuropeanSymposiumonProgramming,ESOP2009,HeldasPartoftheJointEuropeanConferenceson
+Theory and Practice of Software, ETAPS 2009, York, UK, March 22-29, 2009. Proceedings (Lecture Notes in Computer Science,
+Vol. 5502) , GiuseppeCastagna (Ed.). Springer, 378ś393. https://doi.org/10.1007/978-3-642-00590-9_27
+Xavier Leroy. 2006. Formal certification of a compiler back-end or: programming a compiler with a proof assistant.
+InProceedings of the 33rd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages, POPL 2006,
+Charleston,SouthCarolina,USA,January11-13,2006 ,J.GregoryMorrisettandSimonL.PeytonJones(Eds.).ACM,42ś54.
+https://doi.org/10.1145/1111037.1111042
+Mohsen Lesani, Christian J. Bell, and Adam Chlipala. 2016. Chapar: certified causally consistent distributed key-value
+stores.In Proceedingsofthe43rdAnnualACMSIGPLAN-SIGACTSymposiumonPrinciplesofProgrammingLanguages,
+POPL2016,St.Petersburg,FL,USA,January20-22,2016 ,RastislavBodíkandRupakMajumdar(Eds.).ACM,357ś370.
+https://doi.org/10.1145/2837614.2837622
+Si Liu, Atul Sandur, José Meseguer, Peter Csaba Ölveczky, and Qi Wang. 2020. Generating Correct-by-Construction
+Distributed Implementations from Formal Maude Designs. In NASA Formal Methods - 12th International Symposium,
+NFM2020,MoffettField,CA,USA,May11-15,2020,Proceedings (LectureNotesinComputerScience,Vol.12229) ,RitchieLee,
+Susmit Jha, andAnastasia Mavridou(Eds.).Springer, 22ś40. https://doi.org/10.1007/978-3-030-55754-6_2
+GavinLowe.1997. AHierarchyofAuthenticationSpecification.In 10thComputerSecurityFoundationsWorkshop(CSFW’97),
+June10-12,1997,Rockport,Massachusetts,USA .IEEEComputerSociety,31ś44. https://doi.org/10.1109/CSFW.1997.596782
+NancyA.LynchandFritsW.Vaandrager.1995. ForwardandBackwardSimulations:I.UntimedSystems. Inf.Comput. 121,2
+(1995), 214ś233. https://doi.org/10.1006/inco.1995.1134
+William Mansky, Wolf Honoré, and Andrew W. Appel. 2020. Connecting Higher-Order Separation Logic to a First-
+Order Outside World. In Programming Languages and Systems - 29th European Symposium on Programming, ESOP
+2020, Held as Part of the European Joint Conferences on Theory and Practice of Software, ETAPS 2020, Dublin, Ireland,
+April 25-30, 2020, Proceedings (Lecture Notes in Computer Science, Vol. 12075) , Peter Müller (Ed.). Springer, 428ś455.
+https://doi.org/10.1007/978-3-030-44914-8_16
+Peter Müller, Malte Schwerhoff, and Alexander J. Summers. 2016. Viper: A Verification Infrastructure for Permission-Based
+Reasoning.In Verification,ModelChecking,andAbstractInterpretation-17thInternationalConference,VMCAI2016,St.
+Petersburg, FL, USA,January 17-19,2016. Proceedings . 41ś62.https://doi.org/10.1007/978-3-662-49122-5_2
+TobiasNipkow,LawrenceC.Paulson,andMarkusWenzel.2002. Isabelle/HOL-AProofAssistantforHigher-OrderLogic .
+LectureNotesin ComputerScience, Vol.2283. Springer. https://doi.org/10.1007/3-540-45949-9
+Wytse Oortwijn and Marieke Huisman. 2019. Practical Abstractions for Automated Verification of Message Passing
+Concurrency. In Integrated Formal Methods - 15th International Conference, IFM 2019, Bergen, Norway, December 2-6,
+2019, Proceedings (Lecture Notes in Computer Science, Vol. 11918) , Wolfgang Ahrendt and Silvia Lizeth Tapia Tarifa (Eds.).
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.152:30 Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin
+Springer, 399ś417. https://doi.org/10.1007/978-3-030-34968-4_22
+Matthew J. Parkinson and Gavin M. Bierman. 2005. Separation logic and abstraction. In Proceedings of the 32nd ACM
+SIGPLAN-SIGACT Symposium on Principles of Programming Languages, POPL 2005, Long Beach, California, USA, January
+12-14,2005 , JensPalsberg andMartínAbadi (Eds.).ACM, 247ś258. https://doi.org/10.1145/1040305.1040326
+WillemPenninckx,BartJacobs,andFrankPiessens.2015.Sound,ModularandCompositionalVerificationoftheInput/Output
+Behavior of Programs. In Programming Languages and Systems - 24th European Symposium on Programming, ESOP 2015,
+HeldasPartoftheEuropeanJointConferencesonTheoryandPracticeofSoftware,ETAPS2015,London,UK,April11-18,2015.
+Proceedings (LectureNotesinComputerScience,Vol.9032) ,JanVitek(Ed.).Springer,158ś182. https://doi.org/10.1007/978-
+3-662-46669-8_7
+AdrianPerrig,PawelSzalachowski,RaphaelM.Reischuk,andLaurentChuat.2017. SCION:ASecureInternetArchitecture .
+Springer. https://doi.org/10.1007/978-3-319-67080-5
+Benjamin C. Pierce. 2016. The science of deep specification (keynote). In Companion Proceedings of the 2016 ACM SIGPLAN
+InternationalConferenceonSystems,Programming,LanguagesandApplications:SoftwareforHumanity,SPLASH2016,
+Amsterdam, Netherlands, October 30 - November 4, 2016 , Eelco Visser (Ed.). ACM, 1. https://doi.org/10.1145/2984043.
+2998388
+Ruzica Piskac, Thomas Wies, and Damien Zufferey. 2013. Automating Separation Logic Using SMT. In Computer Aided
+Verification-25thInternationalConference,CAV2013,SaintPetersburg,Russia,July13-19,2013.Proceedings(LectureNotesin
+ComputerScience,Vol.8044) ,NatashaSharyginaandHelmutVeith(Eds.).Springer,773ś789. https://doi.org/10.1007/978-
+3-642-39799-8_54
+Jonathan Protzenko, Jean Karim Zinzindohoué, Aseem Rastogi, Tahina Ramananandro, Peng Wang, Santiago Zanella
+Béguelin,AntoineDelignat-Lavaud,CatalinHritcu,KarthikeyanBhargavan,CédricFournet,andNikhilSwamy.2017.
+Verified low-level programming embedded in F. PACMPL 1,ICFP(2017), 17:1ś17:29. https://doi.org/10.1145/3110261
+VincentRahli,Ivana Vukotic,MarcusVölp, andPauloJorgeEstevesVeríssimo.2018. Velisarios:ByzantineFault-Tolerant
+ProtocolsPowered by Coq. In ProgrammingLanguages and Systems - 27thEuropeanSymposiumon Programming,ESOP
+2018, Held as Part of the European Joint Conferences on Theory and Practice of Software, ETAPS 2018, Thessaloniki, Greece,
+April 14-20, 2018, Proceedings (Lecture Notes in Computer Science, Vol. 10801) , Amal Ahmed (Ed.). Springer, 619ś650.
+https://doi.org/10.1007/978-3-319-89884-1_22
+JohnC.Reynolds.2002. SeparationLogic:ALogicforSharedMutableDataStructures.In 17thIEEESymposiumonLogic
+in Computer Science (LICS 2002), 22-25 July 2002, Copenhagen, Denmark, Proceedings . IEEE Computer Society, 55ś74.
+https://doi.org/10.1109/LICS.2002.1029817
+Ilya Sergey, James R. Wilcox, and Zachary Tatlock. 2018. Programming and proving with distributed protocols. PACMPL2,
+POPL (2018), 28:1ś28:30. https://doi.org/10.1145/3158116
+Renato Silva and Michael J. Butler. 2010. Shared Event Composition/Decomposition in Event-B. In Formal Methods for
+ComponentsandObjects-9thInternationalSymposium,FMCO2010,Graz,Austria,November29-December1,2010.Revised
+Papers(LectureNotesinComputerScience,Vol.6957) ,BernhardK.Aichernig,FrankS.deBoer,andMarcelloM.Bonsangue
+(Eds.).Springer, 122ś141. https://doi.org/10.1007/978-3-642-25271-6_7
+ChristophSprengerandDavidA.Basin.2018. Refiningsecurityprotocols. JournalofComputerSecurity 26,1(2018),71ś120.
+https://doi.org/10.3233/JCS-16814
+Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin. 2020a.
+Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed Systems Verification. CoRR
+abs/2010.04749 (October2020). arXiv: 2010.04749 http://arxiv.org/abs/2010.04749
+Christoph Sprenger, Tobias Klenze, Marco Eilers, Felix A. Wolf, Peter Müller, Martin Clochard, and David Basin. 2020b.
+Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification (Artifact) .
+https://doi.org/10.5281/zenodo.4039826
+Nikhil Swamy, Catalin Hritcu, Chantal Keller, Aseem Rastogi, Antoine Delignat-Lavaud, Simon Forest, Karthikeyan Bharga-
+van,CédricFournet,Pierre-YvesStrub,MarkulfKohlweiss,JeanKarimZinzindohoue,andSantiagoZanellaBéguelin.
+2016. Dependent types and multi-monadic effects in F∗. InProceedings of the 43rd Annual ACM SIGPLAN-SIGACT
+Symposium on Principles of Programming Languages, POPL 2016, St. Petersburg, FL, USA, January 20 - 22, 2016 , Rastislav
+Bodík andRupakMajumdar(Eds.).ACM, 256ś270. https://doi.org/10.1145/2837614.2837655
+RobbertvanRenesseandRachidGuerraoui.2010. ReplicationTechniquesforAvailability.In Replication:TheoryandPractice
+(Lecture Notes in Computer Science, Vol. 5959) , Bernadette Charron-Bost, Fernando Pedone, and André Schiper (Eds.).
+Springer, 19ś40. https://doi.org/10.1007/978-3-642-11294-2_2
+JamesR.Wilcox,DougWoos,PavelPanchekha,ZacharyTatlock,XiWang,MichaelD.Ernst,andThomasE.Anderson.
+2015. Verdi: aframework forimplementing andformallyverifying distributed systems. In Proceedingsof the 36th ACM
+SIGPLAN Conferenceon ProgrammingLanguage Design andImplementation, Portland, OR,USA, June15-17, 2015 ,David
+GroveandSteveBlackburn(Eds.).ACM, 357ś368. https://doi.org/10.1145/2737924.2737958
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.Igloo: Soundly Linking Compositional Refinement and Separation Logic for Distributed System Verification 152:31
+DougWoos,JamesR.Wilcox,SteveAnton,ZacharyTatlock,MichaelD.Ernst,andThomasE.Anderson.2016. Planningfor
+changeinaformalverificationoftheRaftconsensusprotocol.In Proceedingsofthe5thACMSIGPLANConferenceon
+CertifiedProgramsandProofs,SaintPetersburg,FL,USA,January20-22,2016 ,JeremyAvigadandAdamChlipala(Eds.).
+ACM, 154ś165. https://doi.org/10.1145/2854065.2854081
+Li-yao Xia, Yannick Zakowski, Paul He, Chung-Kil Hur, Gregory Malecha, Benjamin C. Pierce, and Steve Zdancewic.
+2020. Interaction trees: representingrecursive and impure programs inCoq. Proc. ACM Program.Lang. 4,POPL (2020),
+51:1ś51:32. https://doi.org/10.1145/3371119
+Proc. ACM Program. Lang.,Vol. 4,No. OOPSLA,Article 152. Publication date: November2020.

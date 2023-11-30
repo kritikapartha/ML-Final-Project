@@ -1,0 +1,1009 @@
+16Algorithm 959: VBF: A Library of C++ Classes for Vector Boolean
+Functions in Cryptography
+JOS ´E ANTONIO ´ALVAREZ-CUBERO and PEDRO J. ZUFIRIA , Depto. Matem ´atica Aplicada a
+las TIC, ETSI Telecomunicaci ´on, Universidad Polit ´ecnica de Madrid
+VBF is a collection of C++ classes designed for analyzing vector Boolean functions (functions that map a
+Boolean vector to another Boolean vector) from a cryptographic perspective. This implementation uses the
+NTL library from Victor Shoup, adding new modules that call NTL functions and complement the existing
+ones, making it better suited to cryptography. The class representing a vector Boolean function can be
+initialized by several alternative types of data structures such as Truth Table, Trace Representation, and
+Algebraic Normal Form (ANF) , among others. The most relevant cryptographic criteria for both block and
+stream ciphers as well as for hash functions can be evaluated with VBF: it obtains the nonlinearity, lin-
+earity distance, algebraic degree, linear structures, and frequency distribution of the absolute values of the
+Walsh Spectrum or the Autocorrelation Spectrum, among others. In addition, operations such as equality
+testing, composition, inversion, sum, direct sum, bricklayering (parallel application of vector Boolean func-
+tions as employed in Rijndael cipher), and adding coordinate functions of two vector Boolean functions are
+presented. Finally, three real applications of the library are described: the ﬁrst one analyzes the KASUMI
+block cipher, the second one analyzes the Mini-AES cipher, and the third one ﬁnds Boolean functions with
+very high nonlinearity, a key property for robustness against linear attacks.
+Categories and Subject Descriptors: G.4 [ Mathematical Software ]: Algorithm design and analysis; E.3
+[Data Encryption ]: Code breaking
+General Terms: Design, Algorithms
+Additional Key Words and Phrases: Boolean functions, cryptography, nontrigonometric Fourier analysis,
+software
+ACM Reference Format:
+Jos´eA n t o n i o ´Alvarez-Cubero and Pedro J. Zuﬁria. 2016. Algorithm 959: VBF: A library of C++ classes for
+vector boolean functions in cryptography. ACM Trans. Math. Softw. 42, 2, Article 16 (May 2016), 22 pages.
+DOI: http://dx.doi.org/10.1145/2794077
+1. INTRODUCTION
+Nowadays, vector Boolean functions (functions that map a Boolean vector to another
+Boolean vector) play an important role in various ﬁelds of science and engineering,
+such as Coding Theory [MacWilliams and Sloane 1977], Switching Theory [Davio et al.
+1978], and Cryptography [Carlet 2008a, 2008c]. Conventional secret key cryptosystems
+can be expressed as a certain composition of vector Boolean functions. Thus, in cipher
+design, it is essential to deﬁne criteria that measure the cryptographic strength (i.e.,
+This work has been partially supported by projects MTM2007-62064 of MEyC and MTM2010-15102 of
+Ministerio de Ciencia e Innovaci ´on, CCG10-UPM/ESP-5236 of Comunidad de Madrid/UPM, and Ayuda Q10
+0930-144 of the Universidad Polit ´ecnica de Madrid (UPM), Spain.
+Authors’ addresses: J. A. ´Alvarez-Cubero and P. J. Zuﬁria, Depto. Matem ´atica Aplicada a las Tecnolog ´ıas
+de la Informaci ´on y las Comunicaciones, ETSIT-UPM, Avda. Complutense 30, 28040 Madrid, Spain; emails:
+jaacubero@gmail.com, pedro.zuﬁria@upm.es.
+Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted
+without fee provided that copies are not made or distributed for proﬁt or commercial advantage and that
+copies show this notice on the ﬁrst page or initial screen of a display along with the full citation. Copyrights for
+components of this work owned by others than ACM must be honored. Abstracting with credit is permitted.
+To copy otherwise, to republish, to post on servers, to redistribute to lists, or to use any component of this
+work in other works requires prior speciﬁc permission and/or a fee. Permissions may be requested from
+Publications Dept., ACM, Inc., 2 Penn Plaza, Suite 701, New York, NY 10121-0701 USA, fax +1 (212)
+869-0481, or permissions@acm.org.
+c/circlecopyrt2016 ACM 0098-3500/2016/05-ART16 $15.00
+DOI: http://dx.doi.org/10.1145/2794077
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:2 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+the robustness against attacks) of Boolean and vector Boolean functions. Moreover,
+because of the size and complexity of modern ciphers, automatic analysis programs are
+very helpful in reducing the time required to study cryptographic properties of vector
+Boolean functions.
+In this article, a library of C++ classes for analyzing cryptographic properties of vector
+Boolean functions (VBFs) is presented. This library is called VBF and uses some mod-
+ules from the well-known Number Theory Library (NTL) implemented by Victor Shoup
+(VBF works with any version of NTL, up to the latest one [NTL 2015]). A preliminary
+version of VBF, lacking several of the modules and features in the current package, was
+presented in ´Alvarez-Cubero and Zuﬁria [2010]. NTL is a high-performance, portable
+C++ library providing data structures and algorithms for manipulating signed, arbi-
+trary length integers, as well as vectors, matrices, and polynomials over the integers
+and over ﬁnite ﬁelds. The decision to use this library is mainly based on four reasons:
+(1) It is free software, and may be used according to the terms of the GNU General
+Public License.
+(2) It provides high-quality implementations of state-of-the-art algorithms for the
+Galois ﬁeld of order 2.
+(3) It may be easily installed in a wide range of platforms.
+(4) It provides a clean and consistent interface to a large variety of classes representing
+mathematical objects that are useful in cryptology.
+The VBF library makes use of all the Boolean mathematical objects deﬁned in NTL
+modules as a starting point. However, it necessarily introduces several new algorithms
+and structures associated with cryptographic criteria in order to address the charac-
+terization of real systems, as shown later in this article.
+The main advantages of this approach are derived from the object-oriented im-
+plementation and the use of effective algorithms; such advantages are reusability,
+maintainability, extensibility, and ﬂexibility in the analysis of a broad range of vec-
+tor Boolean functions employed in symmetric ciphers. The size of the vector Boolean
+functions that can be analyzed by VBF is restricted by the computational resources
+(memory, disk space, CPU, etc.) of the platform on which it is executed. However, the
+maximum value for nand mto be handled by the different functions is conditioned
+by the maximum value attainable by long int variables (for the computer employed in
+this work, it is approximately 230,s ot h a t nmax=mmax≈30). Note that, although these
+size functions would be compatible with the VBF resource management procedures,
+the runtime requirements for computing the characteristics would exceed any realistic
+bound. In order to illustrate VBF applicability in this article, S-boxes used in modern
+symmetric primitives are studied: a modern cipher used very widely in mobile commu-
+nications called KASUMI [3rd Generation Partnership Project 2005] is characterized
+together with a Mini version of the AES (Advanced Encryption Standard); also, highly
+nonlinear Boolean functions robust against linear attacks are designed.
+At the present time, several other packages are available for analyzing vector Boolean
+functions from the cryptographical point of view, for example:
+(1) CRYPTOOL [2014] is a free, open-source e-learning application, used in the im-
+plementation and analysis of cryptographic algorithms. It provides cryptanalytical
+measurement methods (entropy, n-grams, autocorrelation, etc.), but it does not al-
+low the calculation of cryptographic criteria. The current release version, CrypTool
+2, is based on the latest .NET Framework (currently .NET 4.0) and it has a pure-
+plugin architecture. There is also another project called JCrypTool developed in
+Java and based on Eclipse RCP.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:3
+(2) MatPack [2006] is a C++ numerics and graphics library implementing compu-
+tational methods that are needed in engineering. The cryptographic algorithms
+are included in the commercial library; these can only be used to analyze some
+cryptographic properties of Boolean functions and do not address vector Boolean
+functions.
+(3) In Bibliowicz et al. [2003], a system for assisting in the analysis of some criteria
+of DES-like ciphers is described. This system analyzes only a small subset of the
+criteria considered by VBF.
+(4) bma [Pommerening 2005a, 2005b] outputs the value table, Walsh Spectrum (WS)
+(a generalized Fourier spectrum), linear proﬁle, differential proﬁle, and some
+linearity/nonlinearity measures, given the ANF of a vector Boolean function. It
+is an open-source executable program written in C, computationally very efﬁcient
+for speciﬁc S-boxes analysis.
+(5) The boolfun package [BOOLFUN 2010] is open-source software, written in R, to
+assess cryptographic properties of Boolean functions. It implements three repre-
+sentations: Truth Table, ANF, and WS. It can calculate cryptographic properties
+of Boolean functions that are relevant for the design of stream ciphers (i.e., cryp-
+tographic pseudo-random generators), namely, nonlinearity, algebraic immunity,
+correlation immunity, and resiliency. Unfortunately, it does not provide speciﬁc
+tools for analyzing vector functions.
+(6) SAGE [2014] is free open-source mathematical software that supports research and
+teaching in algebra, geometry, number theory, cryptography, and related areas. The
+Cryptography module contains some descriptions of classical ciphers and simpliﬁed
+modern ciphers such as Simpliﬁed DES and Mini-AES. Compared with the VBF
+library, SAGE lacks much useful functionality.
+In summary, the packages cited present one (or more) of the following disadvantages:
+they are commercial, they do not beneﬁt from the new paradigms of object orientation
+and generic programming, and/or they do not cover the broad spectrum of representa-
+tion and cryptographic criteria for both Boolean and vector Boolean functions that VBF
+does. The aim of the VBF package presented in this article is to provide an easy-to-use
+tool both for the designer and the cryptanalyst of symmetric ciphers. The user only
+needs to code the basic features related to the vector Boolean functions associated with
+a cipher (e.g., Truth Table, ANF table, polynomial in ANF, etc.).
+This article is structured as follows: Section 2 is devoted to the presentation of the
+main vector Boolean function concepts. Section 3 starts with the general principles that
+inﬂuenced the design of VBF and describes the VBF classes related to the initialization,
+cryptographic criteria, and operations over vector Boolean functions. Section 4 gives
+examples of applications of the VBF framework, analyzing the modern cipher KASUMI
+together with the Mini-AES, and designing highly nonlinear Boolean functions. Finally,
+concluding remarks are summarized in Section 5.
+2. PRELIMINARIES
+The mathematical theory of vector Boolean functions starts with the formal deﬁnition
+of vector spaces whose elements (vectors) have binary elements. Let <GF(2) ,+,·>
+be the ﬁnite ﬁeld of order 2, where GF(2) =Z2={0,1},“+” the “integer addition
+modulo 2,” and “ ·” the “integer multiplication modulo 2.” V nis the vector space of n-
+tuples of elements from GF(2). The direct sum ofx∈Vn1andy∈Vn2is deﬁned as
+x⊕y=(x1,..., xn1,y1,..., yn2)∈Vn1+n2. The inner product ofx,y∈Vnis denoted by x·y,
+and the inner product of real vectors x,y∈Rnis denoted by /angbracketleftx,y/angbracketright.
+One can now deﬁne binary functions between this type of vector spaces, whose
+linearity analysis (for robustness-against-attacks purposes) becomes very important.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:4 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+f:Vn→GF(2) is called a Boolean function andFnis the set of all Boolean functions on
+Vn.Lnis the set of all linear Boolean functions on V n:Ln={lu∀u∈Vn|lu(x)=u·x}
+andAnis the set of all afﬁne Boolean functions on V n.
+It is possible to characterize Boolean functions via alternative and very useful associ-
+ated mappings. In the following, some of these mappings are presented. The real-valued
+mapping χu(x)=(−1)/summationtexti=n
+i=1uixi=(−1)u·xforx,u∈Vnis called a character . The character
+form of f∈Fnis deﬁned as χf(x)=(−1)f(x). The Truth Table of χfis deﬁned as the
+(1,−1)-sequence vector orsequence vector offand is denoted by ξf∈R2n.
+Let f∈Fnbe a Boolean function; the Walsh transform offatu∈Vnis an n-dimensional
+Discrete Fourier Transform and can be obtained as follows:
+ˆχf(u)=/angbracketleftbig
+ξf,ξlu/angbracketrightbig
+=/summationdisplay
+x∈Vn(−1)f(x)+ux. (1)
+The autocorrelation off∈Fnwith respect to the shift u∈Vnis a measure of the
+statistical dependency among the involved variables (indicating robustness against
+randomness-based attacks). It is the cross-correlation of fwith itself, denoted by rf(u):
+Vn→Zand deﬁned by
+rf(u)=/summationdisplay
+x∈Vnχf(x)χf(x+u)=/summationdisplay
+x∈Vn(−1)f(x)+f(u+x). (2)
+The factor1
+2nis generally omitted (see Carlet [2004]).
+The directional derivative off∈Fnin the direction of u∈Vnis deﬁned by
+/Delta1uf(x)=f(x+u)+f(x),x∈Vn. (3)
+We call the linear kernel of fthe set of those vectors usuch that /Delta1ufis a constant
+function. The linear kernel of any Boolean function is a subspace of V n. Any element u
+of the linear kernel of fis said to be a linear structure of f.
+Given f∈Fn, a nonzero function g∈Fnis called an annihilator of fiffg=0.
+We now extend the scope of the study by considering functions between any pair
+of binary-valued vector spaces. F:V n→Vm,F(x)=(f1(x),..., fm(x)) is called a
+vector Boolean function andFn,mis the set of all vector Boolean functions F:Vn→Vm.
+Each fi:Vn→GF(2) ∀i∈{1,..., m}is a coordinate function of F. The indicator function
+ofF∈Fn,m, denoted by θF:Vn×Vm→{0,1}, is deﬁned in Chabaud and Vaudenay
+[1995] as
+θF(x,y)=/braceleftbigg
+1i fy=F(x)
+0i fy/negationslash=F(x).(4)
+Again, several mappings associated with a vector Boolean function can be deﬁned,
+in similar terms to the case of binary functions. Hence, the character form of ( u,v)∈
+Vn×Vmcan be deﬁned as follows: χ(u,v)(x,y)=(−1)u·x+v·y. Similarly, let F∈Fn,mbe
+a vector Boolean function; its Walsh Transform is the two-dimensional Walsh transform
+deﬁned by
+ˆθF(u,v)=/summationdisplay
+x∈Vn/summationdisplay
+y∈VmθF(x,y)χ(u,v)(x,y)=/summationdisplay
+x∈Vn(−1)ux+vF(x). (5)
+Also, the autocorrelation ofF∈Fn,mwith respect to the shift ( u,v)∈Vn×Vmis the
+cross-correlation of Fwith itself, denoted by rF(u,v):V n×Vm→Z, so that [Nyberg
+1995]
+rF(u,v)=/summationdisplay
+x∈VnχvF(x+u)χvF(x)=/summationdisplay
+x∈Vn(−1)vF(x+u)+vF(x). (6)
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:5
+LetF∈Fn,mandu∈Vn; then the difference vector Boolean function ofFin the direction
+ofu∈Vn, denoted by /Delta1uF∈Fn,m, is deﬁned as follows: /Delta1uF(x)=F(x+u)+F(x),x∈
+Vn. If the following equality is satisﬁed: /Delta1uF(x)=c,c∈Vn,∀x∈Vn,t h e n u∈Vnis
+called a linear structure of F.
+Finally, we deﬁne the simplifying notation for the maximum of the absolute values
+of a set of real numbers {auv}u,v, characterized by vectors uandv,a sm a x( auv)=
+max (u,v){|auv|}. Using the same simplifying notation, we can deﬁne the∗max ( ·) operator
+on a set of real numbers {auv}u,v,a s∗max ( auv)=max (u,v)/negationslash=(0,0){|auv|}. This notation will
+be used in some criteria deﬁnitions.
+3. DESIGN PHILOSOPHY: CLASSES, CRYPTOGRAPHIC CRITERIA, AND OPERATIONS
+The core of the VBF library is the VBF class, which represents vector Boolean functions
+whose data members and member functions make use of the NTL modules listed in
+Table 1.1 of the User Manual that accompanies the software [VBF 2015]. However, some
+new cryptography-related member functions were added to the previous modules. New
+modules, which are not present in NTL, are deﬁned and they are listed in Table 1.2
+of VBF [2015].
+The main ﬁle in the library, called VBF. h, has the deﬁnitions of the objects described
+in the next subsection and makes use of the cited modules.
+3.1. VBF Class: Initialization and Representations
+Here we describe the methods that can be used to represent a VBF class related to a
+vector Boolean function F∈Fn,m. Some of these representations can be used to initialize
+a VBF class.
+(1) Truth Table , deﬁned as TF∈M2n×m(GF(2)) ,where
+TF=⎡
+⎢⎣f1(α0)··· fm(α0)
+f1(α1)··· fm(α1)
+... ... ...
+f1(α2n−1)···fm(α2n−1)⎤
+⎥⎦, (7)
+satisfying that fii∈{1,..., m}are its component functions; each αi=
+(x1,..., xn)∈Vni∈{1,..., 2n−1}is a vector whose decimal equivalent is
+dec(αi)=i=/summationtextn
+j=1xj2n−j, and all the vectors of V ncan be listed so that
+α0<α1<···<α2n−1.
+The Truth Table for an n-variable Boolean function fshould be in lexicograph-
+ical form, that is, Tf=(Tf(0),Tf(1),Tf(2),..., Tf(2n−1)). Since the Truth Table
+length might be too large, we represent it in hexadecimal rather than in binary
+notation. The hexadecimal Truth Table is obtained by replacing each 4 bits by their
+corresponding hexadecimal form. For instance, to enter f=(0,0,1,1,1,1,1,1),
+one should just write 3 F.
+(2) Trace representation .W h e n m=n, we endow V nwith the structure of the ﬁeld GF(2n).
+Any F∈Fn,nadmits a unique univariate polynomial representation over GF(2n), of
+degree at most 2n−1:
+F(x)=2n−1/summationdisplay
+i=0δixi,δi∈GF(2n). (8)
+A general way to derive this polynomial representation is given by a Lagrange
+interpolation from the knowledge of the irreducible polynomial of degree nover
+GF(2) associated with the ﬁeld GF(2n) and the Truth Table of F.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:6 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+The interpolation attack [Jakobsen and Knudsen 1997] is efﬁcient when the degree
+of the univariate polynomial representation of the S-box over GF(2n) is low or
+when the distance of the S-box to the set of low univariate degree functions is
+small. This attack exploits the low degree of the algebraic relation between some
+input (output, respectively) and intermediate data to infer some keybits relating
+the output (input, respectively) and the intermediate data.
+(3) Polynomials in ANF .Fcan be uniquely represented by mmultivariate polynomials
+over GF(2) (called coordinate functions), where each variable has power at most
+one. Each of these polynomials can be expressed as a sum of all distinct kth-order
+product terms (0 <k≤n) of the variables in the form
+f(x1,..., xn)=a0+a1x1+···+ anxn+a12x1x2+···+ an−1,nxn−1xn+···
++a12...nx1x2...xn=/summationdisplay
+I∈P(N)aI/parenleftBigg/productdisplay
+i∈Ixi/parenrightBigg
+=/summationdisplay
+I∈P(N)aIxI,aI∈GF(2) ,(9)
+where P(N) denotes the power set of N={1,..., n}. This representation of fis
+called the algebraic normal form (ANF) off.
+(4)ANF table ofF, denoted by ANF F∈M2n×m(GF(2)), represents the 2ncoefﬁcients of
+the polynomials of each of the mcoordinate functions in AN F .
+(5) Characteristic function , which is a matrix whose rows are indexed by x∈Vnand
+whose columns are indexed by y∈Vmin lexicographic order, is denoted by Img(F)∈
+M2n×2m(GF(2)) and deﬁned as follows:
+Img(F)=⎡
+⎢⎣θF(α0,α0)···θF(α0,α2m−1)
+θF(α1,α0)···θF(α1,α2m−1)
+... ... ...
+θF(α2n−1,α0)···θF(α2n−1,α2m−1)⎤
+⎥⎦, (10)
+where θF(x,y) stands for the indicator function deﬁned in Equation (4).
+(6) Walsh Spectrum , which is a matrix whose rows are characterized by u∈Vnand
+whose columns are characterized by v∈Vmin lexicographic order, is denoted by
+WS(F)∈M2n×2m(R). It holds that ˆθF(u,v)=WS(F)(u,v).
+(7) Linear proﬁle , which is a matrix whose rows are characterized by u∈Vnand
+whose columns are characterized by v∈Vmin lexicographic order, is denoted by
+LP(F)∈M2n×2m(R). It holds that LP(F)(u,v)=1
+2n+m|WS(F)(u,v)|2.
+(8) Differential Proﬁle , denoted by DP(F)∈M2n×2m(R), results from the application of
+the Walsh transform to the linear proﬁle.
+(9) Autocorrelation Spectrum , denoted by R(F)∈M2n×2m(Z), is obtained by Equation (6).
+(10) Permutation vector .I fFis a Boolean permutation, that is, it is bijective and has
+the same number of input bits as output bits ( n=m), then it can be deﬁned as a
+vector: v=(F(1),..., F(n)),where F(i) is the image of the bit iforF.
+(11) Expansion and Compression DES permutations .I fFis an afﬁne vector Boolean func-
+tion with n/negationslash=min the form of Expansion and Compression DES permutations
+[National Institute of Standards and Technology 1999], then it can be deﬁned as
+an array with melements, which are the output bits.
+(12) DES-like S-box representation . The VBF class also supports the deﬁnition of Fas
+given in National Institute of Standards and Technology [1999] for the DES
+S-boxes.
+3.2. Cryptographic Criteria
+The cryptographic criteria that can be evaluated by means of the VBF class are the
+following:
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:7
+(1) Nonlinearity , deﬁned as the minimum among the nonlinearities of all nonzero linear
+combinations of the coordinate functions of F; it can be evaluated from the Walsh
+Spectrum in the following way:
+NL(F)=min
+v/negationslash=0∈VmNL(v·F)=2n−1−1
+2∗max ( WS(F)(u,v)), (11)
+where the same symbol NLis employed to denote the nonlinearity of either a scalar
+or a vector function. This criterion is a measure of the distance of a vector Boolean
+function and all afﬁne vector Boolean functions. If this distance is small, it is pos-
+sible to mount afﬁne approximations of the vector Boolean functions involved in a
+cryptosystem to build attacks on this system [Matsui 1994]. Thus, this property is
+useful to assess the resistance of a vector Boolean function to linear attacks (in-
+cluding correlation attacks), that is, attacks where the function Fis approximated
+by an afﬁne function.
+(2) For every positive integer r,t h e rth-order nonlinearity of a vector Boolean function Fis
+the minimum rth-order nonlinearity of its component functions; the rth-order non-
+linearity of a Boolean function equals its minimum Hamming distance to functions
+of algebraic degrees at most r(see Carlet [2008b] for details):
+NL r(F)=min
+v/negationslash=0∈VmNL r(v·F)=min
+v/negationslash=0∈Vmmin
+f∈Fnd(f,v·F). (12)
+Computing rth-order nonlinearity is not an easy task for r≥2. Unlike the ﬁrst-
+order nonlinearity, there are no efﬁcient algorithms to compute second-order non-
+linearities for n≥11. VBF library naive exhaustive search is employed for this
+purpose.
+(3) Linearity distance , deﬁned as the minimum among the linearity distances of all
+nonzero linear combinations of the coordinate functions of F, may be computed
+from the Differential Proﬁle using
+LD(F)=min
+v/negationslash=0∈VmLD(v·F). (13)
+The linearity distance of a Boolean function is a characteristic deﬁned by the distance
+to the set of all Boolean functions admitting nonzero linear structures. These in-
+clude, among others, all the afﬁne functions and all nonbent quadratic functions
+and are deﬁned as follows [Meier and Staffelbach 1990]:
+LD(f)=d(f,LSn)=min
+S∈LSnd(f,S). (14)
+S-boxes used in block ciphers should have no nonzero linear structures (see Evertse
+[1988]). The existence of nonzero linear structures, for the functions implemented
+in stream ciphers, is a potential risk that should also be avoided, despite the fact
+that such existence could not be used in attacks, so far.
+(4) Balancedness .F∈Fn,mis balanced (or has balanced output) if each possible output m-
+tuple occurs with equal probability 2−m; that is, its output is uniformly distributed
+in V m. This criterion can be evaluated from the Walsh Spectrum in the following
+way:
+ˆθF(0,v)=0,∀v/negationslash=0∈Vm. (15)
+Cryptographic functions must be balanced; that is, their output must be uniformly
+distributed over {0,1}to avoid statistical dependence between the input and the
+output (which can be used in attacks).
+(5) Correlation immunity .F∈Fn,mis an ( n,m,t)−CIfunction if and only if every nonzero
+linear combination f(x)=/summationtextm
+i=1vifi(x) of coordinate functions of Fis an ( n,1,t)−CI
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:8 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+function or a t−CIfunction, where x∈Vn,v i∈GF(2) i=1,..., mand not all
+zeroes. This criterion can be obtained from the Walsh Spectrum as follows:
+ˆθF(u,v)=0,∀u∈Vn,1≤wt(u)≤t,∀v/negationslash=0∈Vm. (16)
+A function f∈Fnist−CIif its output is statistically independent of any sub-
+set of at most tinput bits. Correlation immunity is used to assess the resistance
+to correlation attacks [Siegenthaler 1985]. Note that the statistical measure used
+to assess independency between input and output bits is (conditional) mutual in-
+formation. F∈Fn,mist−CIif its output distribution does not change when we
+ﬁxtvariables xi.At−CIfunction, which is also balanced, is called a t-resilient
+function. This criterion is related to an attack on pseudo-random generators using
+combining functions, called a correlation attack. If fis not t-resilient, then there
+exists a correlation between the output of the function and (at most) tbits of its
+input; if tis small, fis prone to a divide-and-conquer attack due to Siegenthaler
+[1985] and later improved by several authors with fast correlation attacks.
+For the pseudo-random generators, the best-known cryptanalytic technique is
+the correlation attack , which is based on the idea of ﬁnding correlation between the
+outputs and the inputs, that is, ﬁnding S-boxes with low resiliency.
+(6) Propagation .F∈Fn,msatisﬁes the propagation criterion of degree l(PC(l)) if any
+nonzero linear combination of the component Boolean functions satisﬁes the PC(l).
+This criterion can be obtained from the Autocorrelation Spectrum in the following
+way:
+rF(u,v)=0,∀u∈Vn,1≤wt(u)≤l,∀v/negationslash=0∈Vm. (17)
+This criterion is based on the properties of the derivatives of Boolean functions and
+describes the behavior of a function whenever some input bits are complemented.
+F∈Fn,mis said to satisfy the propagation characteristics with respect to u∈Vnif
+and only if F(x)+F(x+u) is balanced.
+(7) Global avalanche is deﬁned by two indicators [Zhang and Zheng 1995]. First, the
+absolute indicator ofF, denoted by MAXAC (F), deﬁnes the maximum absolute
+nonzero value of the Autocorrelation Spectrum and quantiﬁes the distance to the
+setLSn. Second, the sum-of-squares indicator , denoted by σ, is the second moment of
+the autocorrelation coefﬁcients. In order to achieve good diffusion, cryptographic
+functions should achieve low values of both indicators.
+(8) Algebraic degree is deﬁned as the minimum among the algebraic degrees of all
+nonzero linear combinations of the coordinate functions of F[Nyberg 1993], namely:
+DEG(F)=min
+g⎧
+⎨
+⎩DEG(g)|g=m/summationdisplay
+j=1vjfj,v/negationslash=0∈Vm⎫
+⎬
+⎭, (18)
+where the algebraic order or degree of a Boolean function is the order of the largest
+product term in the AN F . This criterion is obtained by generating the ANF table
+and then analyzing the order of all the linear combinations of coordinate functions.
+Cryptographic functions must have high algebraic degrees. Indeed, cryptosystems
+using vector Boolean functions for confusion (S-boxes in block ciphers, combining
+functions in stream ciphers, etc.) can be attacked if the functions have low degrees.
+Higher-order differential attack [Lai 1994] exploits the fact that the algebraic degree of
+the S-box is low.
+(9) Algebraic immunity of a Boolean function f∈Fnis deﬁned as the minimum degree
+of all annihilators of for 1+fand it is denoted by AI(f) [Courtois 2003; Courtois
+and Meier 2002; Faug `ere and Ars 2003]. A function fshould not be used if for
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:9
+1+fhas a low-degree annihilator. If this happens, algebraic attacks [Courtois
+and Pieprzyk 2002] can be executed. Algebraic attacks recover the secret key, or at
+least the initialization of the system, by solving a system of multivariate algebraic
+equations.
+The component algebraic immunity of any F∈Fn,m, denoted by AI(F), is the
+minimal algebraic immunity of the component functions v·F(v/negationslash=0∈Vm)o ft h e
+vector Boolean function.
+Other useful information in cryptanalysis can be obtained by means of the VBF class
+(see the member functions in Table 4.2 of VBF [2015]):
+(1) The linear potential ofF, deﬁned as LP(F)=1
+22n·∗max ( WS(F)(u,v)2) ,i sam e a s u r e
+of linearity in linear cryptanalysis and satisﬁes [Chabaud and Vaudenay 1995]
+2−n≤LP(F)≤1 so that the lower bound holds if and only if Fhas maximum
+nonlinearity ( Fis bent) and the upper bound is reached when Fis linear or afﬁne.
+Linear cryptanalysis is based on the idea of ﬁnding high-probable linear or afﬁne
+relations between the inputs and outputs of S-boxes present in the cipher, that
+is, ﬁnding S-boxes with low nonlinearity. The attack is mounted by ﬁnding high-
+probability parity of the sum of some input, output, and key bits, and hence
+deducing one bit of information about the key.
+(2) Linear relations associated with a speciﬁc value of the linear proﬁle.
+(3) The Differential Potential ofF, deﬁned as DP(F)=∗max ( DP(F)(u,v)),i sam e a s u r e
+of the robustness against differential cryptanalysis where 2−m≤DP(F)≤1a n d
+the lower bound holds if and only if Fis bent and the upper bound is reached when
+Fis linear or afﬁne. The differential uniformity of F∈Fn,mand its differential
+potential are related by DP(F)=2−nDU(F).
+Differential cryptanalysis is based on the idea of ﬁnding high-probable differential
+pairs between the inputs and outputs of S-boxes present in the cipher, that is,
+ﬁnding S-boxes with low linearity distance. Differential cryptanalysis [Biham
+and Shamir 1990] can be seen as an extension of the ideas of attacks based on the
+presence of linear structures [Nyberg 1991]. If uis a linear structure of f,t h e n
+the inputs of difference uresult in output differences of 1 or −1 with probability
+1. In differential cryptanalysis, it is only required that inputs of difference /Delta1x
+lead to a known difference /Delta1ywith high probability, or with a probability that
+noticeably exceeds the mean, and hence deducing some information about the key.
+(4) Differential relations associated with a speciﬁc value of the Differential Proﬁle.
+(5) The linear structures ofF, deﬁned as the vectors for which associated rows in the
+Differential Proﬁle coincide with the vector zero.
+Lai [1990] showed that if f∈Fnhas k<nlinearly independent vectors
+b1,...,bkthat are linear structures, then fcan be mapped to g∈Fnvia a linear
+transformation where
+g(x1,..., xn)=m1x1+···+ mkxk+g/prime(xk+1,..., xn). (19)
+The cryptanalyst may be able to take advantage of the linear structures in f
+if some of the mi,i=1,..., kin Equation (19) are zero, thus eliminating the
+inﬂuence of some variables (possibly key bits) on the ciphertext.
+The cryptanalytic value of linear structures lies in their potential to map a
+nonlinear function to a degenerate function via a linear transformation, which
+may reduce the size of the keyspace.
+(6) The maximum possible (for neven) nonlinearity for a vector Boolean function with the
+same dimensions as F∈Fn,m(when nis even). The functions with maximum
+possible nonlinearity are called bent functions and their nonlinearity is equal to
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:10 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+2n−1−2n/2−1[Rothaus 1976]. The nonlinearity of a vector Boolean function is de-
+ﬁned as the minimum among the nonlinearities of all nonzero linear combinations
+of its coordinate functions. Thus, the maximum possible nonlinearity for a vector
+Boolean function coincides with the maximum possible nonlinearity for a Boolean
+function.
+(7) The type of function in terms of nonlinearity of a Boolean function (only for m=1), that
+is, if it is linear, almost optimal, or a bent function ( Fwith maximum nonlinearity
+and neven).
+Let fbe a Boolean function with nvariables. Then fis said to be almost optimal
+if∗max ( WS(F)(u,v))≤2(n+1)/2when nis odd, and∗max ( WS(F)(u,v))≤2(n+1)/2
+when nis even.
+(8) The maximum possible linearity distance for a vector Boolean function with the same
+dimensions as F.
+(9) The frequency distribution of the absolute values of the Walsh Spectrum .
+(10) The frequency distribution of the absolute values of the Autocorrelation Spectrum .
+(11) The cycle structure of an invertible vector Boolean function F∈Fn,n(permutation)
+describes the number of cycles and their length.
+A cycle structure with a low number of cycles of high length is considered well
+suited to be used in cipher design. This fact means that many transpositions are
+present.
+(12) Fixed points ofF,t h a ti s , {x|F(x)=x}.
+(13) Negated ﬁxed points ofF,t h a ti s , {x|F(x)=x}.
+A cryptographic primitive with a high number of ﬁxed and/or negated ﬁxed
+points is considered to be not well designed, since it lacks the needed randomness.
+A list of the member functions related to these criteria may be found in Tables 4.1
+and 4.2 of VBF [2015]. For a detailed explanation of the cryptographic criteria and
+their properties, see ´Alvarez-Cubero and Zuﬁria [2012].
+3.3. Operations Over Vector Boolean Functions
+In this subsection, the operations over vector Boolean functions supported by the VBF
+class are described. Some of them correspond to secondary constructions, which build
+(n,m) variable vector Boolean functions from ( n/prime,m/prime) variable ones (with n/prime≤n,m/prime≤m).
+The direct sum has been used to construct resilient and bent Boolean functions [Carlet
+2004]. Adding coordinate functions and bricklayering (also called concatenation) are
+operations used to build modern ciphers such as CAST [Adams and Tavares 1993],
+DES [National Institute of Standards and Technology 1999] and AES [Daemen and
+Rijmen 2002]. Additionally, VBF provides operations for identiﬁcation if two vector
+Boolean functions are equal, the sum of two vector Boolean functions and the compo-
+sition of two vector Boolean functions. The deﬁnitions of all the supported operations
+are as follows:
+(1) Let n≥1,m≥1,F,G∈Fn,m.Fand Gare equal if their Truth Tables are the same.
+(2) Let F∈Fn,p,G∈Fp,m; then the composition function isG◦F∈Fn,m.
+(3) Let n≥1,F∈Fn,n.F−1is the functional inverse ofFif the composition of both
+functions results in the identity function.
+(4) Let n≥1,m≥1,F,G∈Fn,m. The sumofFand G(denoted by F+G) is the vector
+Boolean function whose Truth Table results from the addition of the Truth Tables
+ofFand G:TF+G=TF+TG. It can be proved that the Walsh Spectrum of the sum
+can be obtained by the convolution of the columns vectors of the respective Walsh
+Spectra.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:11
+(5) Let n=n1+n2,n1,n2≥1,m≥1,F∈Fn1,m,a n d G∈Fn2,m. The Direct Sum ofFand
+Gis the function
+(F⊕G):V n1×Vn2→Vm
+(x,y)→(F⊕G)(x,y)=F(x)+G(y).(20)
+This is a generalization for vector Boolean functions of the construction of Boolean
+functions ﬁrst introduced in Rothaus [1976].
+(6) Let n≥1,m=m1+m2,m1,m2≥1a n d F∈Fn,m1and G∈Fn,m2. The result
+ofadding coordinate functions ofFand Gis the function ( F,G)∈Fn,m1+m2, where
+(F,G)(x)=(f1(x),..., fm1(x),g1(x),..., gm2(x)). This is a generalization for vector
+Boolean functions of the method used in the CAST algorithm and studied in Nyberg
+[1995] by adding more than one coordinate function at the same time.
+(7) Let n=n1+n2,n1,n2≥1,m=m1+m2,m1,m2≥1,F∈Fn1,m1,a n d G∈Fn2,m2. The
+bricklayer ofFand Gis the function F|G∈Fn,m, where
+(F|G):V n1×Vn2→Vm1×Vm2
+(x,y)→F|G(x,y)=(f1(x),..., fm1(x),g1(y),..., gm2(y)).(21)
+This construction corresponds to the bricklayer function [Daemen and Rijmen 2002]
+as a parallel application of a number of vector Boolean functions operating on
+smaller inputs. Some authors call this construction concatenation.
+Table 5.1 in VBF [2015] lists the member functions related to the previous charac-
+terizing elements.
+4. EXAMPLES OF APPLICATION OF THE VBF LIBRARY
+4.1. KASUMI Cipher Algorithm Evaluation
+This section studies the block cipher called KASUMI; it is used in UMTS [2014], GSM
+[2014], and GPRS [2014] mobile communications systems. UMTS uses KASUMI
+[2014] in the conﬁdentiality (f8) and integrity (f9) algorithms named UEA1 and UIA1
+[KASUMI 2014], respectively. GSM employs KASUMI in the A5/3 key stream genera-
+tor, whereas GPRS does so in the GEA3 key stream generator.
+KASUMI encrypts a 64-bit input by iterating a round function 8 times. The round
+function consists of the composition of a 32-bit nonlinear mixing function (FO) and
+a 32-bit linear mixing function (FL). The FO function is again an iterated ladder
+design consisting of three rounds of a 16-bit nonlinear mixing function FI. In turn,
+FI is deﬁned as a four-round structure using nonlinear lookup tables S7 and S9. All
+functions involved will mix the data input with key material.
+In the following, each functional component of KASUMI is studied using VBF with
+the aim to reveal any weakness that could be used as a basis for an attack on the entire
+algorithm. Such study characterizes the S-boxes as well as the FI function.
+4.1.1. S-boxes Characterization. The study of S-boxes S7a n d S9 shows that they are
+Almost Perfect Nonlinear (APN) bijective Boolean mappings. In fact, a linear approx-
+imation analysis shows that the S7 nonlinearity (Item NLin Table II) is equal to 56 ,
+which is the maximum value for an S-box with seven input variables. Its linear poten-
+tial (Item LPin Table II) is equal to 0 .015625 and it has a second-order nonlinearity
+(Item NL 2in Table II) of 36. Concerning S9, the value for the nonlinearity is equal to
+240 over the best-known bound for an S-box with nine input variables, which is 242.
+Its linear potential is equal to 0 .00390625.
+From these results, we can conclude that S7 offers the best immunity against linear
+attacks for a 7 ×7 S-box; in addition, S9 immunity against this type of attack is almost
+optimal.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:12 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+A differential approximation analysis shows that the S7 linearity distance is equal
+to 28 over a maximum value of 32 and its differential potential is equal to 0 .015625.
+Finally, the value for the linearity distance of S9 is equal to 0 and its differential
+potential is equal to 0 .00390625.
+From these results, we can conclude that S7a n d S9 do not have an optimal immunity
+against differential attacks.
+The algebraic normal forms of S7a n d S9 are given by Equations (22) and (23),
+respectively:
+f1=x5x6+x4x6x7+x3x7+x2x6+x2x4+x1+x1x6x7+x1x4x5+x1x3x6+x1x2x7
+f2=1+x5+x5x7+x4x7+x4x5x6+x3x5x7+x2x7+x2x5+x2x3+x1x6+x1x5x6
++x1x4x7+x1x3x4+x1x2x5
+f3=1+x5x7+x4+x4x6+x3x6+x3x6x7+x3x4x5+x2x7+x2x4x6+x2x3x7+x1x6
++x1x4+x1x4x7+x1x2
+f4=x6+x5x6x7+x3x6+x3x4+x2x7+x2x6x7+x2x4x5+x2x3x6+x1x5+x1x4x6
+f5=1+x7+x4x7+x4x5+x3x5x6+x3x4x7+x2x6+x2x5x7+x1x7+x1x6x7+x1x5
++x1x3
+f6=1+x6x7+x3x7+x3x5+x2+x2x5x6+x2x4x7+x1+x1x5x7+x1x4+x1x2x3
+f7=x4x6+x3+x3x6x7+x2+x2x5+x2x3x4+x1+x1x7+x1x6+x1x4+x1x3x5
++x1x2x6+x1x2x3 (22)
+f1=x8x9+x7+x7x8+x5x6+x4x8+x4x7+x3x8+x3x5+x2+x1x7+x1x6
+f2=1+x8x9+x7x9+x7x8+x6+x6x9+x6x7+x4x5+x3x7+x3x6+x2x7+x2x4+x1
+f3=x9+x6x7+x4x8+x4x7+x4x5+x3x6+x3x5+x3x4+x2+x1x8+x1x6+x1x4
++x1x2
+f4=1+x7+x5x8+x4x5+x3x9+x3x8+x2x6+x2x5+x2x3+x1x4+x1x3+x1x2
+f5=x8x9+x6x8+x5+x4x9+x3x6+x2x9+x2x3+x1x8+x1x7+x1x6
+f6=x9+x7x8+x6x9+x5x7+x4+x3x9+x3x8+x2x5+x1x9+x1x8+x1x2
+f7=1+x8+x6x9+x5x6+x4x9+x3x7+x3x6+x3x4+x2x5+x2x4+x2x3+x1+x1x9
+f8=1+x8+x8x9+x6x7+x5x9+x5x8+x4x9+x4x6+x3+x2x8+x2x7+x1x4
+f9=1+x7x9+x6+x4x7+x3x4+x2x9+x2x8+x2x7+x1x5+x1x4+x1x2. (23)
+These forms show that the algebraic degree of S7 is 3 and the algebraic degree of S9
+is 2. The algebraic degree of both S-boxes is low and higher-order differential attack
+can be executed against them. The component algebraic immunity of S7 is equal to 3
+and for S9 is 2. As a consequence, algebraic attacks by solving a system of multivariate
+algebraic equations can be executed against S7 and especially against S9.
+Concerning the cycle structure, S7a n d S9 have no obvious deﬁciencies, for example,
+a large number of transpositions. S7 has one ﬁxed point, (0 ,0,1,1,0,1,1) and has no
+negated ﬁxed points. S9 has one ﬁxed point, (0 ,1,0,0,1,0,1,1,1) and one negated
+ﬁxed point, (1 ,0,0,0,1,1,0,0,0). The cycle structure of the S7a n d S9 permutations
+is shown in Table I.
+Regarding the second moment of the autocorrelation coefﬁcients, for S7 the absolute
+indicator is 16 and the sum-of-squares indicator is 32 ,768. For S9 the absolute indicator
+is 512 and the sum-of-squares indicator is 524 ,288.
+From these results, we can conclude that S7 achieves a fairly good diffusion since its
+absolute indicator is nearer the lower theoretical bound, 0, than the upper bound, 128,
+and similarly for the sum-of-squares indicator where the theoretical bounds are 16 ,384
+and 2 ,097,152. S9 does not achieve a good diffusion because its absolute indicator
+coincides with the upper bound, 512, while its sum-of-squares indicator is quite close
+to the lower bound of 262 ,144.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:13
+T a b l eI .C y c l eS t r u c t u r ef o r S7 and S9
+Cycle Length for S7Number of Cycles for S7
+1 1
+13 1
+22 1
+92 1
+– –
+– –
+– –Cycle Length for S9Number of Cycles for S9
+1 2
+2 1
+12 1
+26 1
+74 1
+121 1
+275 1
+Table II. S7 and S9 Cryptographic Criteria
+S-box NLNL 2LDDEG AIMAXAC σ LP DP
+S7 56 36 63 3 3 16 32768 0.015625 0.015625
+S9 240 0 0 2 2 512 524288 0.00390625 0.00390625
+A summary of these criteria is given in Table II.
+The Walsh Spectra of the S7a n d S9 mappings are three valued (except from the
+ﬁrst row and column value): 16 ,0, and −16 for S7, and 32 ,0, and −32 for S9. The
+Linear Proﬁles of the S7a n d S9 mappings are two-valued (except from the ﬁrst row
+and column value): 0 and 256 for S7, and 0 and 1 ,024 for S9. The Differential Proﬁle of
+theS7a n d S9 mappings are two-valued (except from the ﬁrst row and column value): 0
+and 32 ,768 for S7, and 0 and 524 ,288 for S9. The Autocorrelation Spectrum of the S7
+mapping is four-valued: 128 ,16,−16,and 0 for S7, and three-valued for S9: 512 ,−512,
+and 0. Having a few-valued WS indicates good cryptographic properties (see Gong et al.
+[2014]).
+The cryptanalysis performed in this section provides, to the best of our knowledge,
+new results about S7a n d S9 that do not appear in 3rd Generation Partnership Project
+[2001]. For example, representations of both S-boxes as Truth Table, polynomials in
+ANF, ANF tables, and Walsh Spectrum are calculated (via the Truth Table); in addi-
+tion, cryptographic criteria such as nonlinearity, second-order nonlinearity, linearity
+distance, algebraic immunity, absolute indicator, and sum-of-squares indicator are also
+computed.
+4.1.2. FI Function Characterization. The FI function is a 16 ×16-vector Boolean function
+that constitutes the basic randomizing function of KASUMI. It is composed of a four-
+round structure using the S-boxes S7a n d S9 as shown in Figure 1.
+The function FI takes a 16-bit data input Iand 16-bit subkey KIi,j. The input I
+is split into two unequal components, a 9-bit left half L0and a 7-bit right half R0,
+where I=L0||R0. Similarly, the key KIi,jis split into a 7-bit component KIi,j,1and a
+9-bit component KIi,j,2, where KIi,j=KIi,j,1||KIi,j,2. The function uses two S-boxes, S7,
+which maps a 7-bit input to a 7-bit output, and S9, which maps a 9-bit input to a 9-bit
+output. It also uses two additional functions that are designated ZE() and TR(),where
+ZE(x) takes the 7-bit value xand converts it to a 9-bit value by adding two 0 bits to
+the most-signiﬁcant end and TR(x) takes the 9-bit value x and converts it to a 7-bit
+value by discarding the two most signiﬁcant bits. The following equations summarize
+the implementation of function FI:
+I =L0||R0
+KIi,j=KIi,j,1||KIi,j,2(24)
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:14 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+Fig. 1. FI function of KASUMI.
+L1=R0R1=S9(L0)+ZE(R0)
+L2=R1+KIi,j,2R2=S7(L1)+TR(R1)+KIi,j,1
+L3=R2R3=S9(L2)+ZE(R2)
+L4=S7(L3)+TR(R3)R4=R3(25)
+L4=S7(S7(R0)+TR(S9(L0)+ZE(R0))+KIi,j,1)+TR(S9(S9(L0)+ZE(R0)
++KIi,j,2)+ZE(S7(R0)+TR(S9(L0)+ZE(R0))+KIi,j,1))
+R4=S9(R1+KIi,j,2)+ZE(S7(R0)+TR(S9(L0)+ZE(R0))+KIi,j,1).(26)
+The algebraic degree of the FI function for all the possible 65 ,536 values of the key
+was analyzed. This study reveals that two values of algebraic degree are obtained: 15
+and 16 with a frequency of 32 ,931 and 32 ,605,respectively. Such degrees reveal that
+FI has a very good resistance against higher-order differential attacks as the maximum
+possible algebraic degree is 16.
+Concerning the cycle structure, the FI function was analyzed for all the possible
+65,536 values of the key. There are key values for which the number of cycles is quite
+high; for example, the key 0x a77bhas the maximum number of cycles, 2 ,907. This
+number of cycles is more than three times the proportion that was present in S9. In
+this case, a higher number of transpositions was expected and it could reveal some
+kind of deﬁciency.
+For several keys, this function has a signiﬁcant amount of ﬁxed points and/or negated
+ﬁxed points. The maximum number of ﬁxed points is six for key values:
+0x57 bc,0x5c38,0x6bfe,0x7b4b,0x85 c2,0x987 e,0x9a32,0xa3ef,0xa5ab,0xacbb,
+0xb0b4,0xb0e5,0xb327,0xb5c7,0xb90d,0xc4ee,0xc7e4,0xca74,0xcb5d,0xcb5d,
+0xcd11,0xcdbe,0xce24,0xd5da,0xe3ce,0xe4eb,0xe531,0xea3b,0xef5c,0xf276,
+0xf59e,0xfd44. (27)
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:15
+Table III. NibbleSub Truth Table
+Input 0000 0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 1101 1110 1111
+Output 1110 0100 1101 0001 0010 1111 1011 1000 0011 1010 0110 1100 0101 1001 0000 0111
+The maximum number of negated ﬁxed points is seven for key values:
+0x2c3c,0x4041 ,0x4343 ,0x06 e9,0x518 f,0x59 ac,0xa161,0xa244,0xab77,0xe1d1,
+0x1aee,0x1df0. (28)
+The key value 0x b0b4 has 10 ﬁxed or negated ﬁxed points and a number of key values
+have nine ﬁxed or negated ﬁxed points:
+0x3bd0,0x4343 ,0x5e94,0x5ff3,0x6271 ,0x682 d,0x6e45,0x99 e3,0xab77,0xb750,
+0xc5da,0xd5da,0x167 d,0x1df0. (29)
+This number of ﬁxed and/or negated ﬁxed points is not very high compared with the
+total number of possible inputs/outputs, 65 ,536, and we may, therefore, conclude that
+the FI function is reasonably well designed.
+The Walsh Spectra of FI for several keys have also been computed and from this,
+the nonlinearities and linear potentials of FI for the 65 ,536 keys have been obtained.
+Nonlinearities range from 31 ,534 (with the keys 081 e,2d71,and 52 c4) to 32 ,049 (with
+the key c6a6) and linear potentials from 0 .00048146 to 0 .00141818. Although these
+nonlinearity values are far from the maximum possible, 32 ,640, the linear potentials
+do not reveal an obvious vulnerability to linear attacks.
+As a summary, the KASUMI analysis with VBF provides values for the character-
+istics analyzed that are similar to those obtained in previous studies [3rd Generation
+Partnership Project 2001]. In addition, new characteristics such as the algebraic degree,
+cycle structure, ﬁxed points, negated ﬁxed points, and nonlinearities are also provided.
+A detailed description of KASUMI cipher analysis within “KASUMI Analysis” in the
+“Examples” menu can be found in VBFlib [2015].
+4.2. Mini-AES Cipher Algorithm Evaluation
+Raphael Chung-Wei Phan presented a version of the AES [Phan 2002], with all the
+parameters signiﬁcantly reduced while preserving its original structure. This Mini ver-
+sion is purely educational and is designed to grasp the underlying concepts of Rijndael-
+like ciphers. It may also serve as a testbed for starting cryptanalysts to experiment
+with various cryptanalytic attacks. The Mini-AES cipher is a 16 ×16-vector Boolean
+function and the Mini-AES encryption is performed with a secret key of 16 bits.
+4.2.1. S-box Characterization. The Mini-AES S-box is called NibbleSub, and it deﬁnes
+a simple operation that substitutes each input with an output according to a 4 ×4
+substitution table (S-box) given in Table III. These values are, in fact, taken from the
+ﬁrst row of the ﬁrst S-box in DES.
+The study of the S-box shows that it deﬁnes APN bijective Boolean mappings. In
+fact, a linear approximation analysis shows that the nonlinearity is equal to 2 while
+the maximum value for an S-box with four input variables is 6. Its linear potential is
+equal to 0 .5625 and it has a second-order nonlinearity of 0. From these results, we can
+conclude that NibbleSub does not offer good immunity against linear attacks for a 4 ×4
+S-box.
+A differential approximation analysis shows that the NibbleSub linearity distance is
+equal to 0 over a maximum value of 4 and its differential potential is equal to 0 .5. From
+the previous results, we can conclude that NibbleSub does not have optimal immunity
+against differential attacks.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:16 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+Table IV. Cycle Structure
+Cycle Length Number of Cycles
+2 1
+14 1
+Table V. NibbleSub Cryptographic Criteria
+S-box NL NL 2LD DEG AI MAXAC σ LP DP
+NibbleSub 2 0 0 2 2 16 1408 0.5625 0.5
+The algebraic normal form of NibbleSub is
+f1=1+x4+x2+x2x3+x2x3x4+x1+x1x2+x1x2x3
+f2=1+x3x4+x2+x2x4+x1+x1x3+x1x3x4
+f3=1+x4+x3+x3x4+x2x4+x2x3+x1x4+x1x3+x1x2+x1x2x4+x1x2x3
+f4=x3+x2x4+x1+x1x4+x1x3x4.(30)
+These forms show that the algebraic degree of NibbleSub is 2, which is not high
+enough to be immune against higher-order differential attacks. The component alge-
+braic immunity is equal to 2: as a consequence, algebraic attacks by solving a system
+of multivariate algebraic equations can be easily executed.
+Concerning the cycle structure, it has no obvious deﬁciencies, for example, a large
+number of transpositions; in addition, it has no ﬁxed points and two negated ﬁxed
+points (0 ,0,1,0) and (0 ,1,1,1). The cycle structure is given in Table IV.
+Regarding the second moment of the autocorrelation coefﬁcients, the absolute indi-
+cator is equal to 16 and the sum-of-squares indicator is 1 ,408. Hence, NibbleSub does
+not achieve a good diffusion because its absolute indicator reaches the upper bound of
+16 while its sum-of-squares indicator is quite close to the upper bound of 4 ,096.
+A summary of the results for these criteria is represented in Table V.
+Excluding the value of the ﬁrst row and column, the Walsh Spectrum of the
+NibbleSub mapping takes values among 12 ,8,4,0,−4,−8, and −12; the Linear Pro-
+ﬁle takes values among 144 ,64,16,and 0; the Differential Proﬁle takes values among
+2,048,1,536,1,024,512,and 0; ﬁnally, the Autocorrelation Spectrum is ﬁve-valued:
+16,8,0,−8,and−16.
+4.2.2. Mini-AES Cipher Characterization. The algebraic degree of Mini-AES for all the
+possible 65 ,536 values of the key was analyzed. This study reveals that only one
+value of algebraic degree is obtained: 14 ,which indicates that Mini-AES has a fairly
+good resistance against higher-order differential attacks since the maximum possible
+algebraic degree is 16.
+In addition, the cycle structure of Mini-AES was analyzed for all the possible 65 ,536
+values of the key. It was found that no key values provide a high number of cycles: the
+key (expressed in hexadecimal representation) 0 x9e06 has the maximum number of
+cycles, 28. No deﬁciency is expected with respect to this criterion.
+For several keys, this cipher has a relevant amount of ﬁxed points and/or negated
+ﬁxed points. The maximum number of ﬁxed points is 7 for key values 0x0352, 0x4661,
+0x5557, and 0x783 f. The maximum number of negated ﬁxed points is 9 for key values
+0x1d9band 0x7734. The key values 0 x1d9band 0 x4661 have 11 ﬁxed or negated ﬁxed
+and several values have 10 ﬁxed or negated ﬁxed points:
+0x010 a,0x0164 ,0x1ce9,0x24 cd,0x2e38,0x4a15,0x5015 ,0x7734 ,0x783 f,0x9868 ,
+0x9f18,0xa8af,0xaec4,0xbc85,0xc9ca,0xdb09,0xf580. (31)
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:17
+Table VI. Frequency Distribution of the Absolute Values
+of the Walsh Spectrum
+f Values
+f1 (4,30),(12,46),(20,226),(28,210)
+f2 (4,30),(12,46),(20,226),(28,210)
+f3 (4,30),(12,46),(20,226),(28,210)
+f4 (4,56),(12,58),(20,154),(28,244)
+f5 (4,57),(12,91),(20,97),(28,267)
+Table VII. Frequency Distribution of the Absolute Values of the Autocorrelation Spectrum
+f Values
+f1 (0,129),(8,298),(16,60),(24,9),(32,2),(40,13),(512,1)
+f2 (0,150),(8,196),(16,148),(24,12),(32,5),(512,1)
+f3 (0,183),(8,223),(16,84),(24,6),(32,4),(40,10),(56,1),(512,1)
+f4 (0,157),(8,232),(16,84),(24,8),(32,17),(40,10),(48,3),(512,1)
+f5 (0,192),(8,156),(16,129),(24,9),(32,13),(40,3),(48,6),(64,3),(512,1)
+This number of ﬁxed and/or negated ﬁxed points is not very high when compared
+with the total number of possible inputs/outputs (65 ,536). We can conclude that the
+Mini-AES cipher is reasonably well designed from this point of view.
+Several Walsh Spectra of Mini-AES for different keys have also been computed, and
+from these the nonlinearities and linear potentials of Mini-AES for more of the 65 ,536
+keys have been obtained. Nonlinearities range from 31 ,432 (with the key 69 b0) to
+32,040 (with the key f7de) and linear potentials from 0 .000493586 to 0 .001662314.
+Although these nonlinearities are far from the maximum possible nonlinearity, 32 ,640,
+the linear potentials do not reveal an obvious vulnerability to linear attacks.
+4.3. Search for Vector Boolean Functions with Excellent Proﬁles
+Boolean functions with very high nonlinearity pose some of the most challenging prob-
+lems in the area of symmetric cryptography and combinatorics. For functions with an
+even number of variables, n, the maximum possible nonlinearity 2n−1−2n/2−1is attained
+for the well-known bent functions. However, for the case when nis odd, constructing
+Boolean functions with maximum possible nonlinearity is an unsettled open problem.
+Hence, so far suboptimal results have been mainly obtained via heuristic search; for
+example, for n=9 the best-known nonlinearity result is 242 [Kavut and Yucel 2010].
+In this section, we illustrate how the VBF library can be employed to apply a steepest
+descent for a search of nine-variable Boolean functions with the highest nonlinearity.
+Using this algorithm, we have found 5 ,121 Boolean functions with nonlinearity 242,
+which can be grouped into ﬁve different afﬁne equivalence classes. Two Boolean func-
+tions f,gare afﬁne equivalent if the following equality holds:
+g(x)=f(Ax+b)+cx+d, (32)
+where A∈Mn×n(GF(2)), b,c∈Vn,a n d d∈GF(2).
+There are some function properties that are invariant over the mapping deﬁned in
+Equation (32). In fact, the ﬁve obtained afﬁne equivalence classes can be identiﬁed by
+invariant properties such as the frequency distribution of the absolute values of the
+Walsh Spectrum or the Autocorrelation Spectrum. These invariants have been obtained
+for the ﬁve afﬁne equivalence classes with the VBF library, providing the results shown
+in Table VI.
+We have found millions Boolean functions within the classes f1,f2,f3,f4,f5. The
+Truth Tables of all these Boolean functions are available from VBFlib [2015].
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:18 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+Table VIII. Additional Cryptographic Criteria
+Class LD DEG AI MAXAC σ
+f1 118 7 4 40 324608
+f2 120−122 7 4 32 324608
+f3 114,118 7 4 56 324608
+f4 116,118 7 4 48 343424
+f5 112 7 4 64 354560
+Fig. 2. Overall CPU time in seconds for cryptographic characterization of n×mS-boxes.
+Using the VBF library, the value of other cryptographic criteria (linearity distance,
+second-order nonlinearity, algebraic degree, algebraic immunity, absolute indicator, and
+sum-of-squares indicator) are easily computed for each one of these Boolean functions.
+Table VIII shows the range of values such criteria take for the functions within each
+class.
+This information allows for an appropriate function selection for cipher design. For
+instance, among all these functions with the highest nonlinearity, we can determine
+those with highest linearity distance ( LD=122, located in the second class). The
+hexadecimal representation of the Truth Tables of these ﬁnally selected two functions
+are
+B8FE8F795F6CDA 63FA26AC2B2EBB 477B7058 C266BE53DC0480 DF6BFC B 8
+A70E54A4E7EFDF 91788517 C9CF410DA90A10EB CE 7A663C2B1F4B2C634DA
+1C1DE5C54AA
+E2A42ADC F AC 980395 F83F67174 E1E2DED 5FD983CE40979 A1DA85CE591D0
+2540 EFEBD 4A7A34DDDF 4D6C6A1B57F350B54E6BDF 3C667145 EE89391704
+647BF90EF0.
+These speciﬁc functions may be used in the construction of high-performance S-boxes
+for cipher design.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:19
+Fig. 3. CPU timing measurements for all functions in Algorithm 1.
+5. COMPUTATIONAL COST RESULTS
+This section assesses and displays the computational performance of the VBF library
+algorithms via its application to a cryptographic characterization of S-boxes with dif-
+ferent size n×m. The program, described in Algorithm I in VBF [2015], ﬁrst generates
+random Truth Tables, which correspond to vector Boolean functions with dimensions
+ranging from n =4t on =17 and from m =1t om =15. It then calculates the
+cryptographic criteria of the vector Boolean functions given from these Truth Tables.
+The calculations were performed on an Intel(R) Core(TM) i7-2600K CPU @3.40GHz,
+16GB RAM, 1TB Debian Linux. Figure 2 presents the corresponding computing times
+graphically, which happen to be a good measure of the computational complexity, pro-
+vided the computer resources are not exhausted. (If m+nis too large for the whole
+computation to take place in the available RAM, then the compute time will increase
+drastically due to hard disk swapping.)
+As expected, in normal computer conditions, the computational complexity grows
+exponentially in the bit length of the vector Boolean functions.
+In Figure 3, we present detailed timing measurements corresponding to the different
+functions tested for the values n=17 and m=1. This heterogeneous distribution of
+the computing times reﬂects the diverse complexity of the different routines provided
+by the VBF library.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:20 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+6. CONCLUSIONS
+In this article, a C++ library designed to analyze vector Boolean functions from a cryp-
+tographic perspective has been presented. It represents a very useful tool for analyzing
+cryptographic primitives expressed as vector Boolean functions in a very efﬁcient way.
+This class supports as input a broad range of vector Boolean function representation
+data structures such as Truth Tables, ANF tables, polynomials in ANF, trace represen-
+tations, permutation and linear matrices, and DES-like S-boxes. Then it can provide
+new structures that represent cryptographic criteria such as the Walsh Spectrum, Dif-
+ferential Proﬁle, and Autocorrelation Spectrum, among others. Cryptographic criteria
+such as nonlinearity, linearity distance, correlation immunity, balancedness, algebraic
+degree, algebraic immunity, and propagation criterion are easily obtained. The behav-
+ior of the cryptographic properties of secondary constructions resulting from operations
+over vector Boolean functions can also be studied by means of the VBF class. The ap-
+plicability of the library has been illustrated by analyzing real systems such as the
+KASUMI and Mini-AES block ciphers, and by determining Boolean functions with
+very high nonlinearity that are robust against linear attacks.
+REFERENCES
+3rd Generation Partnership Project. 2001. Security Algorithms Group of Experts (SAGE); Report on the
+Evaluation of 3GPP Standard Conﬁdentiality and Integrity Algorithms (SAGE version 2.0) . Technical
+Report. 3GPP.
+3rd Generation Partnership Project. 2005. Speciﬁcation of the 3GPP Conﬁdentiality and Integrity Algorithms
+- Document 2: KASUMI Speciﬁcation (Release 6) No. 3GPP TS 35.202 V6.1.0 (2005-09) . Technical Report.
+3GPP.
+C. M. Adams and S. E. Tavares. 1993. Designing s-boxes for ciphers resistant to differential cryptanaly-
+sis (extended abstract). In Proceedings of the 3rd Symposium on State and Progress of Research in
+Cryptography . 181–190.
+J. A. ´Alvarez-Cubero and P. J. Zuﬁria. 2010. A C++ class for analysing vector boolean functions from a
+cryptographic perspective. In Proceedings of the International Conference on Security and Cryptography
+(SECRYPT ’10), SECRYPT is part of The International Joint Conference on e-Business and Telecommu-
+nications , Sokratis K. Katsikas and Pierangela Samarati (Eds.). SciTePress, 512–520.
+J. A. ´Alvarez-Cubero and P. J. Zuﬁria. 2012. Cryptographic criteria on vector boolean functions. In Cryptog-
+raphy and Security in Computing , Jaydip Sen (Ed.). InTech, 51–70.
+A. Bibliowicz, P. Cohen, and E. Biham. 2003. A System for Assisting Analysis of some Block Ciphers . Technical
+Report NES/DOC/TEC/WP2/007/2. Israel Institute of Technology, Haifa, Israel.
+E. Biham and A. Shamir. 1990. Differential cryptanalysis of DES-like cryptosystems. In Proceedings of
+the 10th Annual International Cryptology Conference on Advances in Cryptology (CRYPTO’90). 2–21.
+DOI: http://dx.doi.org/10.1007/3-540-38424-3_1
+BOOLFUN 2010. Cryptographic Boolean Functions. Retrieved from http://cran.r-project.org/web/packages/
+boolfun/index.html.
+C. Carlet. 2004. On the secondary constructions of resilient and bent functions. Progress in Computer Science
+and Applied Logic 23 (2004), 3–28.
+C. Carlet. 2008a. Boolean Functions for Cryptography and Error Correcting Codes . Technical Report. Uni-
+versity of Paris, BP 105-78153, Le Chesnay Cedex, FRANCE.
+C. Carlet. 2008b. On the higher order nonlinearities of boolean functions and s-boxes, and their generaliza-
+tions. In Sequences and Their Applications (SETA’08) . Springer, New York, NY, 345–367.
+C. Carlet. 2008c. Vectorial Boolean functions for Cryptography . Technical Report. University of Paris, BP
+105-78153, Le Chesnay Cedex, FRANCE.
+F. Chabaud and S. Vaudenay. 1995. Links between differential and linear cryptanalysis. In Advances in
+Cryptology (EUROCRYPT’94) (Lecture Notes in Computer Science) , Alfredo De Santis (Ed.), Vol. 950.
+Springer, Berlin, 356–365.
+N. Courtois. 2003. Fast algebraic attacks on stream ciphers with linear feedback. In Advances in Cryptology
+(CRYPTO’03) (Lecture Notes in Computer Science) , Vol. 2729. Springer, Berlin, 177–194.
+N. Courtois and W. Meier. 2002. Algebraic attacks on stream ciphers with linear feedback. In Advances in
+Cryptology (EUROCRYPT’03) (Lecture Notes in Computer Science) , Vol. 2656. Springer, Berlin, 346–359.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.VBF: A Library of C++ Classes of Algorithms for Vector Boolean Functions in Cryptography 16:21
+N. T. Courtois and J. Pieprzyk. 2002. Cryptanalysis of block ciphers with overdeﬁned systems of equations.
+InAdvances in Cryptology (ASIACRYPT’02) . Lecture Notes in Computer Science, Vol. 2501. Springer,
+Berlin, 267–287.
+CRYPTOOL 2014. Educational Framework for Cryptography and Cryptanalysis. Retrieved from http://www.
+cryptool.org/.
+J. Daemen and V. Rijmen. 2002. The Design of Rijndael . Springer-Verlag New York, Secaucus, NJ.
+M. Davio, A. Thayse, and J. P. Deschamps. 1978. Discrete and Switching Functions . McGraw-Hill, New York,
+NY.
+J.-H. Evertse. 1988. Linear structures in blockciphers. In Advances in Cryptology (EUROCRYPT’87 ,D a v i d
+Chaum and WynL. Price (Eds.). Lecture Notes in Computer Science, Vol. 304. Springer, Berlin, 249–266.
+DOI: http://dx.doi.org/10.1007/3-540-39118-5_23
+J.-C. Faug `ere and G. Ars. 2003. An Algebraic Cryptanalysis of Nonlinear Filter Generators Using Gr¨ obner
+Bases . Technical Report. INRIA 4739.
+G. Gong, T. Helleseth, H. Hu, and C. Li. 2014. New three-valued walsh transforms from decimations of
+helleseth-gong sequences. In Sequences and Their Applications, (SETA’12) (Lecture Notes in Computer
+Science) , Vol. 7280. Springer, Berlin, 327–337.
+GPRS 2014. General Packet Radio Service. Retrievevd from http://www.etsi.org/index.php/technologies-
+clusters/technologies/mobile/gprs.
+GSM 2014. Global System for Mobile Communications. Retrieved from http://www.etsi.org/index.php/
+technologies-clusters/technologies/mobile/gsm.
+T. Jakobsen and L.R. Knudsen. 1997. The interpolation attack on block ciphers. In Proceedings of Fast
+Software Encryption (Lecture Notes in Computer Science) , Vol. 1267. Springer, Berlin, 28–40.
+KASUMI 2014. Block Cipher Used in UMTS, GSM and GPRS. Retrieved from http://www.3gpp.org/
+DynaReport/35202.htm.
+S. Kavut and M. D. Yucel. 2010. 9-variable boolean functions with nonlinearity 242 in the generalized rotation
+symmetric class. Information and Computation 208, 4 (April 2010), 341–350.
+X. Lai. 1990. Linear structures of functions over prime ﬁelds. (1990). Unpublished.
+X. Lai. 1994. Higher order derivatives and differential cryptanalysis. In Communications and Cryptog-
+raphy , Richard E. Blahut, Jr. Costello, Daniel J., Ueli Maurer, and Thomas Mittelholzer (Eds.). The
+Springer International Series in Engineering and Computer Science, Vol. 276. Springer, Berlin, 227–
+233. DOI: http://dx.doi.org/10.1007/978-1-4615-2694-0_23
+F. J. MacWilliams and N. J. A. Sloane. 1977. The Theory of Error Correcting Codes .N u m b e rp t s .1 - 2i n
+North-Holland Mathematical Library. North-Holland Publishing Company, Amsterdam, Netherlands.
+MatPack 2006. MatPack C++ Numerics and Graphics Library. Retrieved from http://www.matpack.de/.
+M. Matsui. 1994. Linear cryptanalysis method for DES cipher. In Advances in Cryptology (EURO-
+CRYPT’93) , Tor Helleseth (Ed.). Lecture Notes in Computer Science, Vol. 765. Springer, Berlin, 386–397.
+DOI: http://dx.doi.org/10.1007/3-540-48285-7_33
+W. Meier and O. Staffelbach. 1990. Nonlinearity criteria for cryptographic functions. In Advances in Cryptol-
+ogy (EUROCRYPT’89) , Jean-Jacques Quisquater and Joos Vandewalle (Eds.). Lecture Notes in Computer
+Science, Vol. 434. Springer, Berlin, 549–562. DOI: http://dx.doi.org/10.1007/3-540-46885-4_53
+NTL 2015. NTL: A Library for doing Number Theory. Version 9.2.0 (2015.5.23). Retrieved from http://www.
+shoup.net/ntl/.
+K. Nyberg. 1991. Perfect nonlinear s-boxes. In Advances in Cryptology (EUROCRYPT’91) ,D o n a l dW .D a v i e s
+(Ed.). Lecture Notes in Computer Science, Vol. 547. Springer, Berlin, 378–386. DOI: http://dx.doi.org/
+10.1007/3-540-46416-6_32
+K. Nyberg. 1993. On the construction of highly nonlinear permutations. In Advances in Cryptology (EURO-
+CRYPT’92) , Rainer A. Rueppel (Ed.). Lecture Notes in Computer Science, Vol. 658. Springer, Berlin,
+92–98. DOI: http://dx.doi.org/10.1007/3-540-47555-9_8
+K. Nyberg. 1995. S-boxes and round functions with controllable linearity and differential uniformity. In Fast
+Software Encryption , Bart Preneel (Ed.). Lecture Notes in Computer Science, Vol. 1008. Springer, Berlin,
+111–130.
+National Institute of Standards and Technology. 1999. FIPS PUB 46-3: Data Encryption Standard (DES) .
+National Institute for Standards and Technology, Gaithersburg, MD.
+R. C.-W. Phan. 2002. Mini advanced encryption standard (mini-AES): A testbed for cryptanalysis. Cryptologia
+26, 4 (Oct. 2002), 283–306.
+K. Pommerening. 2005a. Fourier Analysis and Boolean Maps – A Tutorial. (2005). http://www.staff.unimainz.
+de/pommeren/Kryptologie/Bitblock/A_Nonlin/Fourier.pdf.
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.16:22 J. A. ´Alvarez-Cubero and P . J. Zuﬁria
+K. Pommerening. 2005b. Linearit¨ atsmaße f ¨ urBOOLE sche Abbildungen . Technical Report. Fachbereich Math-
+ematik der Johannes-Gutenberg-Universit ¨at.
+O. S. Rothaus. 1976. On “bent” functions. Journal of Combinatorial Theory, Series A 20, 3 (1976), 300–305.
+SAGE 2014. Open-source mathematics software. Retrieved from http://www.sagemath.org.
+T. Siegenthaler. 1985. Decrypting a class of stream ciphers using ciphertext only. IEEE Transactions on
+Computers 34, 1 (1985), 81–85.
+UMTS. 2014. Universal Mobile Telecommunications System. Retrieved from http://www.3gpp.org/Dyna
+Report/25816.htm.
+VBF. 2015. Vector Boolean Functions (VBF) Library. User Manual. (2015).
+VBFlib. 2015. VBF: Vector Boolean Functions Library: User Manual and Analysis of Cryptanalytic Algo-
+rithms. Retrieved from http://vbﬂibrary.tk.
+X.-M. Zhang and Y. Zheng. 1995. GAC—the criterion for global avalanche characteristics of cryptographic
+functions. Journal of Universal Computer Science 1, 5 (1995), 320–337.
+Received February 2012; revised June 2015; accepted June 2015
+ACM Transactions on Mathematical Software, Vol. 42, No. 2, Article 16, Publication date: May 2016.

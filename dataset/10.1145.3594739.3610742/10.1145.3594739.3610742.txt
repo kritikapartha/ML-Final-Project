@@ -1,0 +1,656 @@
+Investigating the Effect of Orientation Variability in Deep
+Learning-based Human Activity Recognition
+Azhar Ali Khaked
+azharali.khaked@mail.concordia.ca
+Department of Electrical and Computer Engineering
+Montreal, QC, CanadaNobuyuki Oishi
+n.oishi@sussex.ac.uk
+Wearable Technologies Lab, University of Sussex
+United Kingdom
+Daniel Roggen
+daniel.roggen@ieee.org
+Wearable Technologies Lab, University of Sussex
+United KingdomPaula Lago
+paula.lago@concordia.ca
+Department of Electrical and Computer Engineering
+Montreal, QC, Canada
+ABSTRACT
+Deep Learning (DL) has enabled considerable increases in the accu-
+racy of classification tasks in several domains, including Human
+Activity Recognition (HAR). It is well-known that when data dis-
+tribution changes between the training and test datasets, the accu-
+racy can drop, sometimes significantly. However, some variability
+sources in HAR, such as sensor orientation, are only sometimes
+considered when evaluating these models. Therefore, we must un-
+derstand how much such changes could impact current DL archi-
+tectures. In this paper, under an orientation variability scenario, we
+evaluate three common DL architectures, DeepConvLSTM, Tiny-
+HAR, and Attend-and-Discriminate, to quantify the performance
+drop attributed to this shift. Our results show that all architectures
+show performance drops on average, as expected, but participants
+are affected differently from them, so they would fall short for some
+in classification accuracy in real-life settings where orientation can
+change across the wearing sessions of one participant or across
+participants. The performance change is related to the difference
+in distribution distance.
+CCS CONCEPTS
+•Human-centered computing →Ubiquitous computing ;•
+Computing methodologies →Supervised learning by classi-
+fication .
+KEYWORDS
+human activity recognition, wearable sensors, deep learning, do-
+main shift
+ACM Reference Format:
+Azhar Ali Khaked, Nobuyuki Oishi, Daniel Roggen, and Paula Lago. 2023.
+Investigating the Effect of Orientation Variability in Deep Learning-based
+Human Activity Recognition. In Adjunct Proceedings of the 2023 ACM Inter-
+national Joint Conference on Pervasive and Ubiquitous Computing & the 2023
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than the
+author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or
+republish, to post on servers or to redistribute to lists, requires prior specific permission
+and/or a fee. Request permissions from permissions@acm.org.
+UbiComp/ISWC ’23 Adjunct, October 08–12, 2023, Cancun, Quintana Roo, Mexico
+©2023 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+ACM ISBN 979-8-4007-0200-6/23/10. . . $15.00
+https://doi.org/10.1145/3594739.3610742ACM International Symposium on Wearable Computing (UbiComp/ISWC ’23
+Adjunct), October 08–12, 2023, Cancun, Quintana Roo, Mexico. ACM, New
+York, NY, USA, 6 pages. https://doi.org/10.1145/3594739.3610742
+1 INTRODUCTION
+Human Activity Recognition (HAR), the automatic identification
+of what an individual is doing from sensor data, has several ap-
+plications in healthcare, including physical activity monitoring,
+sleep monitoring, elderly care, and mental health monitoring. By
+correctly identifying activity measures such as duration and inter-
+ruptions, activity patterns, and changes in them, researchers can
+study the relations between behavior and health at home, with
+more ecological validity than in laboratory settings. Inertial Mea-
+surement Units embedded in various devices are typically used as
+input for HAR models. However, differences in the metrics obtained
+with different devices or across studies undermined the trust of
+clinical researchers.
+0 200 400 600 800 1000
+Time (ms)2.0
+1.5
+1.0
+0.5
+0.00.51.01.52.0Acceleration (g)Blue-sense-RWR1-walking
+x
+y
+z
+0 200 400 600 800 1000
+Time (ms)2.0
+1.5
+1.0
+0.5
+0.00.51.01.52.0Acceleration (g)Blue-sense-RWR1-not_walking
+x
+y
+z
+0 200 400 600 800 1000
+Time (ms)2.0
+1.5
+1.0
+0.5
+0.00.51.01.52.0Acceleration (g)Blue-sense-RWR2-walking
+x
+y
+z
+0 200 400 600 800 1000
+Time (ms)2.0
+1.5
+1.0
+0.5
+0.00.51.01.52.0Acceleration (g)Blue-sense-RWR2-not_walking
+x
+y
+z
+Figure 1: Walking (left) and non-walking (right) accelerome-
+ter data captured at the same time from two identical devices
+with orientation changed along the Z axis.
+In wearable-based HAR systems, three main sources of data
+variability can affect a model’s performance and generate disparate
+metrics:
+(1)device variability [ 24], due to differences in device properties;
+480UbiComp/ISWC ’23 Adjunct, October 08–12, 2023, Cancun, Quintana Roo, Mexico Azhar Ali Khaked, Nobuyuki Oishi, Daniel Roggen & Paula Lago
+(2)wearing variability [ 15], due to differences in placement and
+orientation of the sensors across wearing events; and
+(3)subject variability [ 10], due to personal differences in how
+an activity is performed.
+In particular, given the inertial nature of IMUs, orientation changes
+can drastically change raw data values, especially when each axis is
+considered separately (see Figure 1). Data variability results in the
+inevitable performance degradation of HAR models, as they face
+distribution shifts in the test data, while machine learning models
+assume no distribution changes. Despite the growing number of
+studies in HAR, the issue of variability continues to be understudied
+and poorly understood.
+In the past decade, variability was recognized as a challenge
+for shallow machine learning models’ generalizability and "in-the-
+wild" deployment of HAR [ 20]. One common strategy to overcome
+problems with evaluating HAR was to engineer "orientation inde-
+pendent" features such as those based on the vector magnitude.
+With the advent of Deep Learning (DL) architectures for HAR [ 26],
+which promise to reduce feature engineering work by automatically
+learning robust representations of the data, understanding their
+robustness to orientation changes is again crucial for "in-the-wild"
+deployments. Despite this, DL model evaluation usually focuses
+on subject variability by following leave-one-subject-out cross-
+validation but fixing the other two sources of variability. The lack
+of evaluation under variability settings limits our understanding of
+the robustness of DL architectures for HAR in real-world scenarios,
+where variability arises as people wear their devices differently
+each time.
+Here, we present a study of orientation variability in DL models
+for HAR. This study aims to evaluate the change in performance
+under the domain shift of current DL architectures for HAR. We
+show that current DL architectures for Human Activity Recognition
+do not generalize well when confronted with orientation variabil-
+ity. Given the inertial nature of IMUs, their orientation affects the
+raw data and the distribution of features obtained with these archi-
+tectures. While we expected a consistent performance drop across
+subjects, we found that the effect of orientation variability is subject-
+dependent, showing performance improvements for some subjects
+and performance decreases for others. Our findings demonstrate
+a need for more studies of data drifts in wearable-based HAR to
+understand better how orientation variability affects these models.
+2 RELATED WORK
+Recent DL architectures for human activity recognition combine
+multiple convolutional networks for feature learning with layers of
+sequential modeling [ 9], e.g. Long-short term memory (LSTM), for
+activity classification [ 19], with variations in the number of LSTM
+layers [ 3], attention layers [ 1] and filters [ 27]. Although most works
+have been evaluated on several benchmark datasets, the evaluation
+protocol follows a setting in which the testing sensor configuration
+is the same as the one used for training, mainly due to limitations
+in current datasets to capture various variability sources [ 14]. This
+means that the performance of these architectures under common
+distribution shifts is not well-understood.Distributions shifts occur when a model is trained on a source
+distribution but deployed in a different target distribution, for exam-
+ple, using a different device. Distributions shifts have been shown
+to degrade the accuracy of machine learning systems deployed in
+the wild in various settings, such as predicting health from mobile
+sensing [16] and in multiple visual tasks [12].
+IMU on wearable or mobile devices is subject to various sources
+of variability and errors in real-life settings [ 6], causing distribution
+shifts even for the same person and device. Device variability refers
+to differences in device properties such as sensitivity, range of
+values, sampling rate, and noise levels, among other properties that
+affect measurement quality from device to device [ 24].Wearing
+variability refers to "the variations of the device orientation and
+placement across wearing events" [ 15], which cause significant
+changes in the data distribution due both to the inertial nature of
+IMU sensors and to the differences in the movement of each body
+part during the same activity. Finally, subject variability refers to
+differences in how activities are performed (i.e. differences in speed,
+duration, order of actions and other mannerisms) from one person
+to another [ 10] caused by age, sex, fitness level, culture and other
+factors. This is the most widely explored type of variability.
+The first option to deal with orientation changes is to use orienta-
+tion invariant features such as vector magnitude [ 11,22] or to trans-
+form the reference system so that it is consistent across all wearing
+events (such as using a world reference system instead of the in-
+ertial reference systems) [ 7]. A recent related trend is using data
+augmentation techniques, especially for DL networks [ 17,23,25].
+Instead of transforming the data to homogenize signals, the idea of
+data augmentation is to apply a transformation to the original data
+to reflect a possible variation of the same activity.
+The second option to deal with orientation changes is to adapt
+the model so that changes are identified before inference. For in-
+stance, Chavarriaga et al. [ 5] proposed an adaptation method based
+on feature distribution changes, which shifts back the features to
+the distribution expected by the classification model when changes
+are detected. Recently, there has been an increased interest in do-
+main adaptation in HAR. Chang et al. [ 4] performed an evaluation
+of unsupervised domain adaptation techniques for HAR focusing
+on wearing placement variability. They evaluate a single model and
+do not evaluate wearing orientation variability. Similarly, Zhuo et
+al. [28] propose an adversarial DL framework to tackle device and
+subject variability in domain adaptation. They use a similarity mea-
+sure to compare different domains and measure the effectiveness
+of the adaptation in proportion to the similarity. However, orienta-
+tion is not usually considered a different domain because openly
+available datasets usually do not represent orientation changes. In
+this work, we evaluate the effect of orientation changes in three
+state-of-the-art models.
+This paper focuses on orientation variability, part of wearing
+variability, as subject variability is often considered in leave-one-
+subject-out cross-validation evaluation settings. To understand the
+effects of variability and how to address them, controlled exper-
+imentation is needed to measure and understand the impact on
+current DL architectures. Banos et al [2] previously demonstrated
+that sensor displacements, which refer to small placement and ori-
+entation changes, cause performance drops in traditional human
+activity recognition models. However, no evaluation focuses on
+481Investigating the Effect of Orientation Variability in Deep Learning-based Human Activity
+Recognition UbiComp/ISWC ’23 Adjunct, October 08–12, 2023, Cancun, Quintana Roo, Mexico
+the effect on the performance of orientation variability for the DL
+architectures that are most commonly used now.
+3 METHODS
+This study evaluates the performance drop under domain shift
+of current DL architectures for HAR. This section describes the
+dataset, evaluation protocol and the DL architectures used.
+3.1 Datasets
+For this study, we collected a dataset in which participants first
+walked on a treadmill at 4 different speeds and then performed a
+cooking session. The tasks were chosen to showcase a controlled
+and simple activity (walking on a treadmill) and a free-living, com-
+plex activity (cooking) highlighting individual variations in the
+sequence of actions and ways of performing them.
+For the walking activity, participants were asked to walk on a
+treadmill at 3.2, 4.0, 4.8, 5.6, and 6.4 Km/h for 2 minutes for each
+speed. We asked participants if they wanted to increase the speed
+at the end of the 2 minutes and stop at the speed at which they felt
+uncomfortable.
+To record the data, we employed two BlueSense IMUs. BlueSense
+[21] is a 9-axis IMU with an accelerometer, gyroscope, and magne-
+tometer. The bluesense IMUs were positioned on the right wrist
+(RWR), and the two devices were placed with a slightly different
+orientation each (RWR1, RWR2). Bluesense has a sampling rate
+of 100Hz, range is ±4g and a 16 bit resolution. We use only the
+accelerometer sensor of the IMU.
+The dataset was collected from 8 participants, ages 21 to 74, 5
+males and 3 females, from different backgrounds and weights, each
+wearing 10 sensors. In this study, we use data from the participants
+described in Table 1, as other participants’ data requires manual
+labeling.
+Participant id age sex weight (in Kg)
+P1 59 m 84
+P2 74 f 66
+P3 60 f 50
+P4 71 m 80
+P5 26 f 73
+P6 25 m 73
+P7 26 m 71
+P8 21 m 75
+Table 1: Participant characteristics for the dataset used in
+this study. Age, sex and weight were self-reported
+Figure 2 shows the placement of the two sensors in this study.
+3.2 Deep learning models
+We chose 3 commonly used DL architectures in HAR:
+DeepConvLSTM [18]: This was one of the first and most popular
+DL architectures for HAR, which combines recurrent and convo-
+lution layers. It employs a 2-layered LSTM with 128 hidden units
+each. Although numerous modifications have been proposed since
+it was proposed, DeepConvLSTM remains the basis for most state-
+of-the-art architectures. Recently, Shallow LSTM [ 3] proposed to
+Figure 2: Sensor position and orientation used in this study.
+RWR2 is rotated along axis Z with respect to RWR1.
+use only 1-layer LSTM, but we evaluate the original architecture
+only as it has been more widely used.
+Attend-and-Discriminate [1]: This employs self-attention to learn
+the relationship between different channels and the relationship
+between the different timestamps in a time window. It uses 4 con-
+volution layers with 64 filters to extract the features from the input
+channels and performs self-attention on the output of the con-
+volution layer. Self-attention allows the model to understand the
+interaction between various channels. The model then uses Atten-
+tional GRU Encoder to extract the temporal information from the
+refined input features and performs the classification, which is done
+by a fully connected linear layer.
+TinyHAR [27]: This lightweight model considers cross-channel
+interaction and uses temporal information enhancement techniques
+to perform HAR. The structure of TinyHAR consists of 4 Convo-
+lution layers with 20 filters that extract feature information from
+input channels. The features extracted are passed through a self-
+encoder block to allow the model to understand cross-channel
+interaction. A fully connected layer combines the information from
+all the channels, and a single LSTM layer is used to extract the
+temporal information. A temporal attention layer enhances the
+temporal information from the LSTM layer, and a softmax layer
+predicts the activity classification.
+3.3 Preprocessing and training
+We use the code provided by Zhou et.al. [ 27] to evaluate these
+architectures. The data has been filtered to remove noise and stan-
+dardized. We use windows of 1 second (100 samples) with 50%
+overlap. We train the models for 50 epochs max with early stopping.
+All models were trained on a single Nvidia GTX 1660 Ti (Max-Q).
+3.4 Evaluation settings
+We design one orientation variability scenario for the evaluation
+protocol, using the two BlueSense devices in the right lower arm,
+namely RWR1 and RWR2. We compare a setting in which there is
+no orientation change to one where there is an orientation change.
+To isolate the effect of the orientation change, we keep the evalua-
+tion data distribution fixed in both settings by changing the training
+device, not the testing device [ 13]. We fix the test data distribution
+to assess the performance changes due only to orientation changes
+and not to other factors, such as the task being more difficult due
+482UbiComp/ISWC ’23 Adjunct, October 08–12, 2023, Cancun, Quintana Roo, Mexico Azhar Ali Khaked, Nobuyuki Oishi, Daniel Roggen & Paula Lago
+to changes in the test data. In this case, we evaluate using RWR1
+for training and testing and compare it to a setting where RWR2 is
+used for training and RWR1 is used for testing. As such, we ensure
+that test data distribution is the same in both scenarios to avoid
+effects due to other factors.
+We evaluate using leave-one-subject-out cross-validation to avoid
+data leaks and to facilitate comparison with other studies that use
+this evaluation setting. While this introduces subject-variability in
+the testing environment, we present the results by subject to enable
+a comprehensive understanding of orientation change effects.
+To evaluate classification performance, we use the F1-score met-
+ric and compare the performance of models under no domain shift
+and with domain shift.
+3.5 Measure of distribution change
+We hypothesize that the performance difference between the two
+settings is correlated to the distribution distance between the train
+and test sets. To evaluate this, we measure the distance between the
+distribution of the training and testing datasets using the Maximum
+Mean Discrepancy (MMD) metric [ 8]. MMD is a nonparametric
+distance metric that quantifies the difference between two proba-
+bility distributions by calculating the difference of their means in a
+Reproducing Kernel Hilbert Space. We use a multiscale kernel to
+calculate the MMD. While the MMD has no units associated with
+it, it is zero only if the distributions are identical and larger values
+indicate larger differences between the two distributions.
+We calculate the MMD for each participant, using the same train-
+ing and test splits for the evaluation and preprocessing of the data as
+for model training. We calculate an MMD per axis and obtain a mag-
+nitude as a total MMD. We use each axis instead of the magnitude of
+the vector to maintain differences due to orientation, as calculating
+the acceleration magnitude would remove such differences.
+4 RESULTS
+As mentioned in the methods, to evaluate the impact on the perfor-
+mance of orientation variability, we use the two BlueSense devices
+on the right lower arm (RWR1-RWR2) in a binary classification
+task: walking vs. no walking activity. We evaluate the DeepConvL-
+STM, TinyHAR, and Attend-and-Discriminate architectures using
+leave-one-subject-out cross-validation. Figure 3 shows the average
+F1-Score for each architecture when the training and test data come
+from the same orientation (dark purple bar) and when their orien-
+tation differs (light blue bar). For all models, we observe a slight
+performance drop.
+In Figure 5 and Figure 4, we show the average F1-Score of all
+models per participant and the F1-Score per model per participant,
+respectively. To our surprise, the results show that orientation
+variability does not affect all participants similarly. We expected
+performance drops across all participants, but a participant exhibits
+performance increases under the orientation change scenario (P1)
+while others show significant performance drops (P3, P5, P6). For
+other participants, the results are either mixed (P4, P8) or minimal
+changes are observed (P2, P7).
+The trends in performance change are almost the same for
+all models, although there are some differences. For participant
+TinyHAR DeepConvLSTM Attend&Discriminate
+Participants0.00.20.40.60.81.0F1 ScoreEvaluation F1 scores
+train b-RWR1 & test b-RWR1
+train b-RWR2 & test b-RWR1Figure 3: Average macro F1-Score for each model when the
+training and test data come from the same orientation (dark
+purple bar) and when their orientation differs (light blue bar).
+All models use a single tri-axial sensor as input.
+P1, both TinyHAR and DeepConvLSTM exhibit significant perfor-
+mance improvement, but Attend-and-Discriminate shows a slight
+performance decrease.
+To evaluate if there is a correlation with the distribution distance,
+we show the performance difference against the MMD value for
+each participant in Figure 6. The graph shows the difference in
+MMD between the same orientation and orientation change sce-
+narios vs. the difference in the average F1-Score. Interestingly, for
+participant P1, the difference in MMD is negative, meaning that
+when the orientation changes, the test distribution becomes more
+similar to the train distribution, and this causes the performance
+to increase. For participant P3, we observe the opposite, the MMD
+increases, and the performance drop is associated with this increase
+in distribution difference. For participants P2, P4, and P7, the dif-
+ference in distribution are close to 0, meaning that the orientation
+change hardly affects the distance between the training and test
+data, corresponding to no change in the model’s performance.
+5 DISCUSSION AND CONCLUSION
+Through this study, we have measured the effect of orientation vari-
+ability on the performance of DL based HAR. The results showed a
+slight average performance decrease, measured by F1-score, for the
+DeepConvLSTM, Attend and Discriminate, and TinyHAR architec-
+tures. This result means that the performance of DL architectures
+for HAR in real-life situations can degrade under everyday situa-
+tions, such as when the devices are worn in slightly different ways.
+DeepConvLSTM, TinyHAR, and Attend-and-Discriminate are
+three famous and commonly used DL architectures that have proven
+to give state-of-the-art results over various benchmark HAR datasets.
+Nonetheless, they show some performance drops when evaluated
+under the orientation variability scenario. This observation is com-
+mon in studies showing that the heterogeneity in data hinders
+483Investigating the Effect of Orientation Variability in Deep Learning-based Human Activity
+Recognition UbiComp/ISWC ’23 Adjunct, October 08–12, 2023, Cancun, Quintana Roo, Mexico
+Tiny
+HARDeep
+Conv
+LSTM
+P1Att
+&
+DiscTiny
+HARDeep
+Conv
+LSTM
+P2Att
+&
+DiscTiny
+HARDeep
+Conv
+LSTM
+P3Att
+&
+DiscTiny
+HARDeep
+Conv
+LSTM
+P4Att
+&
+DiscTiny
+HARDeep
+Conv
+LSTM
+P5Att
+&
+DiscTiny
+HARDeep
+Conv
+LSTM
+P6Att
+&
+DiscTiny
+HARDeep
+Conv
+LSTM
+P7Att
+&
+DiscTiny
+HARDeep
+Conv
+LSTM
+P8Att
+&
+Disc
+Participants0.00.20.40.60.81.0F1 ScoreEvaluation F1 scores participants
+trained with b-RWR1 and tested with b-RWR1
+trained with b-RWR2 and tested with b-RWR1
+Figure 4: F1-Score (macro) of TinyHAR (THAR), DeepConvLSTM (DCLSTM) and Attend-and-Discriminate(Att&Dis) per partici-
+pant when the training and test data come from the same orientation (dark purple bar) and when their orientation differs
+(light blue bar). All models use a single tri-axial sensor as input.
+P1 P2 P3 P4 P5 P6 P7 P8
+Participants0.00.20.40.60.81.0F1 ScoreMean Evaluation F1 macro
+train b-RWR1 & test b-RWR1
+train b-RWR2 & test b-RWR1
+Figure 5: Average F1-Score of all models per participant under
+same orientation (dark purple bar) and orientation change
+(light blue bar) setting.
+studies of applications of HAR to healthcare. Such results indicate
+a need for more flexibility in the deep neural network models and
+a more thorough understanding of when data variability affects
+model performance, why and by how much. It is essential to under-
+stand, measure and model such performance degradation so that
+the model’s usefulness can be predicted with some confidence on a
+new task.
+Surprisingly, we observed that the performance of HAR models
+changes differently for different participants when the orienta-
+tion changes. This difference suggests that some individuals may
+be more affected by subtle changes and highlights the need to
+evaluate the models on diverse populations, particularly end-user
+populations. The compounding effects of orientation and subject
+variabilities need to be further studied.
+50
+ 0 50 100 150
+MMD RWR2_RWR1 - RWR1_RWR10.3
+0.2
+0.1
+0.00.10.2Macro F1 RWR2_RWR1 - RWR1_RWR1P1
+P2
+P3P4
+P5P6P7 P8Delta F1 score vs Delta MMD (Train-T est)Figure 6: Difference in Maximum Mean Discrepancy (x axis)
+vs difference in average F1-score (y-axis) between the two
+scenarios. Each point in the plot represents a participant.
+Our results suggest that differences in the MMD between train
+and test sets can be correlated with the difference in performance.
+The performance increased when the difference in MMD was nega-
+tive, meaning the test dataset became more similar to the training
+dataset under the orientation change scenario. The performance
+dropped with larger MMD differences. When the difference in MMD
+was close to zero, so was the difference in performance. These re-
+sults indicate the need for further investigation to understand when
+performance drops are likely to occur and how much this might
+help design better domain adaptation methods for HAR.
+The current study is subject to limitations concerning the com-
+plexity and exhaustiveness of the evaluation task, as well as the
+number of variability sources considered. Our evaluation focused
+solely on the classification of walking versus not walking, which,
+484UbiComp/ISWC ’23 Adjunct, October 08–12, 2023, Cancun, Quintana Roo, Mexico Azhar Ali Khaked, Nobuyuki Oishi, Daniel Roggen & Paula Lago
+although a straightforward task, holds significant relevance in var-
+ious applications. Therefore, a more comprehensive examination
+of the impacts of variability in free-living conditions can greatly
+enhance the understanding and practical implications of walking
+detection in such scenarios. We only evaluated one source of vari-
+ability using a single pair of devices, which restricts the scope of
+analysis. While other studies have explored sources like subject and
+placement in more depth, we specifically focused on orientation
+due to its relatively lesser understanding and consideration. Our
+findings provide valuable insights into this overlooked aspect and
+lay the groundwork for future comprehensive evaluations in this
+area, filling a gap left by previous research.
+Understanding distribution shifts in wearable sensor data and the
+robustness of models in such real-life settings is important for ad-
+vancement in the field. We showed how the performance drops are
+unevenly distributed across participants and the difference in clas-
+sification performance is less pronounced in the orientation shift
+scenarios suggesting that creating models that are more robust to
+sources of variability can help create more equitable behavior recog-
+nition models. A thorough understanding of variability sources and
+their impact on performance will facilitate the development of Deep
+Learning models that are robust to real-world distribution shifts
+and can be deployed reliably in the wild.
+ACKNOWLEDGMENTS
+This study was financed by the Startup Grant number: 300010133
+provided by Concordia University.
+REFERENCES
+[1]Alireza Abedin, Mahsa Ehsanpour, Qinfeng Shi, Hamid Rezatofighi, and Damith C.
+Ranasinghe. 2021. Attend and Discriminate: Beyond the State-of-the-Art for
+HAR Using Wear. Sensors. Proc. ACM Interact. Mob. Wear. Ubiqu. Technol. 5, 1,
+Article 1 (mar 2021), 22 pages. https://doi.org/10.1145/3448083
+[2]Oresti Banos, Mate Attila Toth, Miguel Damas, Hector Pomares, and Ignacio
+Rojas. 2014. Dealing with the Effects of Sensor Displacement in Wearable Activity
+Recognition. Sensors 14, 6 (2014), 9995–10023. https://doi.org/10.3390/s140609995
+[3]Marius Bock, Alexander Hölzemann, Michael Moeller, and Kristof Van Laerhoven.
+2021. Improving Deep Learning for HAR with Shallow LSTMs. In Proc. of the
+2021 ACM Intern. Symp. on Wear. Comp. (Virtual, USA) (ISWC ’21) . ACM, New
+York, NY, USA, 7–12. https://doi.org/10.1145/3460421.3480419
+[4]Youngjae Chang, Akhil Mathur, Anton Isopoussu, Junehwa Song, and Fahim
+Kawsar. 2020. A Systematic Study of Unsupervised Domain Adaptation for Robust
+Human-Activity Recognition. Proceedings of the ACM on Interactive, Mobile, Wear.
+and Ubiqu. Technologies 4, 1 (March 2020), 1–30. https://doi.org/10.1145/3380985
+[5]Ricardo Chavarriaga, Hamidreza Bayati, and José del R. Millán. 2013. Unsuper-
+vised adaptation for acceleration-based activity recognition: robustness to sensor
+displacement and rotation. Pers. and Ubiqu. Comp. 17 (3 2013), 479–490. Issue 3.
+https://doi.org/10.1007/s00779-011-0493-y
+[6]Sylvia Cho, Ipek Ensari, Chunhua Weng, Michael G. Kahn, and Karthik Natarajan.
+2021. Factors affecting the quality of person-generated Wear. device data and
+associated challenges: Rapid systematic review. JMIR mHealth and uHealth 9, 3
+(2021), 1–21. https://doi.org/10.2196/20738
+[7]Manuel Gil-Martín, Javier López-Iniesta, Fernando Fernández-Martínez, and
+Rubén San-Segundo. 2023. Reducing the Impact of Sensor Orientation Variability
+in HAR Using a Consistent Reference System. Sensors 23, 13 (2023). https:
+//doi.org/10.3390/s23135845
+[8]Arthur Gretton, Karsten M. Borgwardt, Malte J. Rasch, Bernhard Schölkopf, and
+Alexander Smola. 2012. A Kernel Two-Sample Test. Journal of Machine Learning
+Research 13, 25 (2012), 723–773.
+[9]Fuqiang Gu, Mu-Huan Chung, Mark Chignell, Shahrokh Valaee, Baoding Zhou,
+and Xue Liu. 2021. A Survey on Deep Learning for HAR. ACM Comput. Surv. 54,
+8, Article 177 (oct 2021), 34 pages. https://doi.org/10.1145/3472290
+[10] Ali Olow Jimale and Mohd Halim Mohd Noor. 2021. Subject variability in sensor-
+based activity recognition. Journal of Ambient Intelligence and Humanized Comp.
+14, 4 (Sept. 2021), 3261–3274. https://doi.org/10.1007/s12652-021-03465-6
+[11] Jacob W. Kamminga, Duc V. Le, Jan Pieter Meijers, Helena Bisby, Nirvana Mer-
+atnia, and Paul J.M. Havinga. 2018. Robust Sensor-Orientation-IndependentFeature Selection for Animal Activity Recognition on Collar Tags. Proc. ACM
+Interact. Mob. Wear. Ubiqu. Technol. 2, 1, Article 15 (March 2018), 27 pages.
+https://doi.org/10.1145/3191747
+[12] Pang Wei Koh, Shiori Sagawa, Henrik Marklund, Sang Michael Xie, Marvin Zhang,
+Akshay Balsubramani, Weihua Hu, Michihiro Yasunaga, Richard Lanas Phillips,
+Irena Gao, Tony Lee, Etienne David, Ian Stavness, Wei Guo, Berton Earnshaw,
+Imran Haque, Sara Beery, Jure Leskovec, Anshul Kundaje, Emma Pierson, Sergey
+Levine, Chelsea Finn, and Percy Liang. 2021. WILDS: A Benchmark of in-the-Wild
+Distribution Shifts. In 2021 Intern. Conf. on Machine Learning .
+[13] Pang Wei Koh, Shiori Sagawa, Henrik Marklund, Sang Michael Xie, Marvin Zhang,
+Akshay Balsubramani, Weihua Hu, Michihiro Yasunaga, Richard Lanas Phillips,
+Irena Gao, Tony Lee, Etienne David, Ian Stavness, Wei Guo, Berton Earnshaw,
+Imran Haque, Sara M Beery, Jure Leskovec, Anshul Kundaje, Emma Pierson,
+Sergey Levine, Chelsea Finn, and Percy Liang. 2021. WILDS: A Benchmark
+of in-the-Wild Distribution Shifts. In Proc. of the 38th Intern. Conf. on Machine
+Learning (Proc. of Machine Learning Research, Vol. 139) , Marina Meila and Tong
+Zhang (Eds.). PMLR, 5637–5664.
+[14] Oscar D. Lara and Miguel A. Labrador. 2013. A Survey on HAR using Wear.
+Sensors. IEEE Communications Surveys & Tutorials 15, 3 (2013), 1192–1209.
+[15] Chulhong Min, Akhil Mathur, Alessandro Montanari, and Fahim Kawsar. 2019.
+An Early Characterisation of Wearing Variability on Motion Signals for Wear.s. In
+Proc. of the 23rd Intern. Symp. on Wear. Comp. (London, United Kingdom) (ISWC
+’19). ACM, New York, NY, USA, 166–168. https://doi.org/10.1145/3341163.3347716
+[16] Sandrine R. Müller, Xi Chen, Heinrich Peters, Augustin Chaintreau, and Sandra C.
+Matz. 2021. Depression predictions from GPS-based mobility do not generalize
+well to large demographically heterogeneous samples. Scientific Reports 11, 1
+(2021), 1–10. https://doi.org/10.1038/s41598-021-93087-x
+[17] Hiroki Ohashi, Mohammad Osamh Adel Al-Naser, Sheraz Ahmed, Takayuki
+Akiyama, Takuto Sato, Phong Nguyen, Katsuyuki Nakamura, and Andreas Dengel.
+2017. Augmenting Wear. Sensor Data with Physical Constraint for DNN-Based
+Human-Action Recognition. In Time Series Workshop.ICML 2017 .
+[18] Francisco Ordóñez and Daniel Roggen. 2016. Deep Convolutional and LSTM
+Recurrent Neural Networks for Multimodal Wear. Activity Recognition. Sensors
+16, 1 (Jan 2016), 115. https://doi.org/10.3390/s16010115
+[19] Francisco Javier Ordóñez and Daniel Roggen. 2016. Deep Convolutional and
+LSTM Recurrent Neural Networks for Multimodal Wear. Activity Recognition.
+Sensors 16, 1 (2016). https://doi.org/10.3390/s16010115
+[20] Daniel Roggen, Kilian Förster, Alberto Calatroni, Andreas Bulling, and Gerhard
+Tröster. 2010. On the issue of variability in labels and sensor configurations
+in activity recognition systems. In Proc. "How to do good activity recognition re-
+search? Experimental methodologies, evaluation metrics, and reproducibility issues"
+(Pervasive) . 1–4.
+[21] Daniel Roggen, Arash Pouryazdan, and Mathias Ciliberto. 2018. Poster: BlueSense
+- Designing an Extensible Platform for Wear. Motion Sensing, Sensor Research
+and IoT Applications. In Proc. of the 2018 Intern. Conf. on Embedded Wireless
+Systems and Networks (Madrid, Spain) (EWSN ’18) . USA, 177–178.
+[22] Pekka Siirtola and Juha Röning. 2012. Recognizing Human Activities User-
+independently on Smartphones Based on Accelerometer Data. Intl. Journal of
+Interact. Mult. and Art. Intel. 1, 5 (2012), 38. https://doi.org/10.9781/ijimai.2012.155
+[23] Odongo Steven Eyobu and Dong Seog Han. 2018. Feature Representation and
+Data Augmentation for Human Activity Classification Based on Wearable IMU
+Sensor Data Using a Deep LSTM Neural Network. Sensors 18, 9 (2018). https:
+//doi.org/10.3390/s18092892
+[24] Allan Stisen, Henrik Blunck, Sourav Bhattacharya, Thor Siiger Prentow,
+Mikkel Baun Kjærgaard, Anind Dey, Tobias Sonne, and Mads Møller Jensen.
+2015. Smart Devices are Different:Assessing and Mitigating Mobile Sensing
+Heterogeneities for Activity Recognition. In Proceedings of the 13th ACM Conf.
+on Embedded Networked Sensor Systems - SenSys ’15 . ACM Press, New York, New
+York, USA, 127–140. https://doi.org/10.1145/2809695.2809718
+[25] Terry T. Um, Franz M. J. Pfister, Daniel Pichler, Satoshi Endo, Muriel Lang, Sandra
+Hirche, Urban Fietzek, and Dana Kulić. 2017. Data Augmentation of Wear. Sensor
+Data for Parkinson’s Disease Monitoring Using Convolutional Neural Networks.
+InProc. 19th ACM Intl. Conf. on Multimodal Interact. (Glasgow, UK) (ICMI ’17) .
+ACM, New York, NY, USA, 216–220. https://doi.org/10.1145/3136755.3136817
+[26] J. Wang, Y. Chen, S. Hao, X. Peng, and L. Hu. 2019. Deep learning for sensor-
+based activity recognition: A survey. Pattern Recognition Letters 119 (2019), 3–11.
+https://doi.org/10.1016/j.patrec.2018.02.010
+[27] Yexu Zhou, Haibin Zhao, Yiran Huang, Till Riedel, Michael Hefenbrock, and
+Michael Beigl. 2022. TinyHAR: A Lightweight Deep Learning Model Designed
+for HAR. In Proc. of the 2022 ACM Intern. Symp. on Wear. Comp. (Cambridge,
+United Kingdom) (ISWC ’22) . Association for Comp. Machinery, New York, NY,
+USA, 89–93. https://doi.org/10.1145/3544794.3558467
+[28] Zhijun Zhou, Yingtian Zhang, Xiaojing Yu, Panlong Yang, Xiang-Yang Li, Jing
+Zhao, and Hao Zhou. 2020. XHAR: Deep Domain Adaptation for HAR with Smart
+Devices. In 2020 17th Annual IEEE Intern. Conf. on Sensing, Communication, and
+Networking (SECON) . IEEE. https://doi.org/10.1109/secon48991.2020.9158431
+485

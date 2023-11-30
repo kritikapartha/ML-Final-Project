@@ -1,0 +1,133 @@
+Peer-to-Peer Multimedia Applications
+ 
+ 
+ 
+ Jin Li 
+Microsoft Research 
+ 
+ 
+ABSTRACT  
+In both academia and industry, p eer-to-peer (P2P) applications 
+have attracted great attention. Pee r-to-peer file sharing applications, 
+such as Napster, Gnutella, Kazaa, BitTorrent, Skype and PPLive, have witnessed tremendous success among end users. And the uses of peer-to-peer network for multimedia streaming, conferencing, gaming, file backup, information retrieval is on the rise. Recent statistics suggests that P2P traffi c accounts for as much as 70% of 
+Internet traffic. Unlike a client-server based system, peers bring with them serving capacity. Therefore, as the demand of a peer-to-peer system grows, the capacity of the network grows, too. This enables 
+a peer-to-peer multimedia application to be cheap to build and su-perb in scalability.  
+The purpose of the tutorial is to examine issues associated with 
+the successful building and deployment of a P2P multimedia appli-cation. The technologies discussed can  be applied to P2P file shar-
+ing, P2P conference, P2P media streaming, P2P VoIP, and P2P storage applications. We start by examining two popular P2P appli-cations, BitTorrent and Skype. The study of the two P2P applica-tions helps us to understand the design principles of P2P applica-tions in general. We then inves tigate a number of tools for building 
+P2P multimedia applications, such as the overlay network, the scheduling algorithm, the erasure resilient coding, and NAT/firewall traversal. Finally, we move on to critical deployment decisions that 
+make or break the P2P applications, such as P2P economy, security issues in P2P application, peer  selection, monitoring and debugging 
+utilities in P2P application.  
+Categories and Subject Descriptors  
+D.4.7 [ Distributed systems ] 
+General Terms: Algorithms 
+Keywords: Peer-to-peer, overlay, scheduling, NAT/firewall 
+traversal, erasure resilient coding, P2P economy, attack, peer selec-
+tion, distributed debugging 
+ 
+1. INTRODUCTION 
+A unique characteristic of a P2P application is that the peers bring 
+with them serving capacity when th ey join the network. Therefore, 
+as more peers join the system and the demand of a peer-to-peer system grows, the capacity of the syst em grows, too. This is in sharp 
+contrast to the traditional client-server system, where the server capacity is fixed and paid for by the provider.  P2P application is the result of decentralizing trends in software 
+engineering. Although the term, “P2P ”, is new, basic P2P technol-
+ogy has been around for quite a while. We will examine earlier P2P-like systems, such as USENET and DNS, and also review the his-tory of the developments in P2P application.  
+ 
+2. ANATOMY OF POPULAR P2P  
+APPLICATIONS 
+In this section, we will examin e two popular P2P applications, and 
+learn from these the critical components for the successful P2P ap-plications. We will also briefly discuss other popular P2P applica-
+tions on the market. The first P2P application examined is BitTor-
+rent. It is a popular file-sharing protocol and tool. Written by Bram Cohen, BitTorrent breaks the file into smaller fragments and distrib-
+utes the fragments in a P2P fashion. To use BitTorrent, each user first downloads a torrent file, which contains the address of a tracker 
+node and the hashes of the fragments . The hash prevents a malicious 
+attacker from corrupting the P2P content in distribution. The tracker node maintains a log of which users are downloading the file and what their progresses are in the download. BitTorrent uses two unique mechanisms for efficient P2P sharing. First, it distributes the fragments that are the “local rarest” to the peers. This ensures that the fragment distributed to the peers can be redistributed to the other peers, thus fully using the pee r’s bandwidth resource. Second, a 
+BitTorrent peer x will upload to the connecting peers that are also 
+uploading content to the peer x itself. This tit-for-tat strategy gets rid 
+of the leech behavior that plagues the common P2P networks.  
+The second P2P application we exam ine is Skype. It is a proprie-
+tary P2P internet telephony (VoIP)  network developed by Niklas 
+Zennström and Janus Friis, the creat ors of KaZaA. Compared with 
+public VoIP standard, such as H.323 and SIP, Skype routes VoIP calls through other Skype peers on the network. As a result, Skype can serve users behind the symme tric NATs and firewalls, which 
+makes Skype ubiquitous. Skype enables free computer-to-computer voice communication, instant messaging, and sending/receiving files. Skype also has a number of paid features. SkypeOut enables Skype users to call non-computer-bas ed landlines or mobile tele-
+phone numbers at around €0.02  per minute. SkypeIn enables a user 
+to receive calls on their computer dialed by regular phone subscrib-
+ers (at around €30 per 12 month subscription or €10 per 3 month 
+subscription.) It is shown that Sk ype carries 7% of the world’s long-
+distance phone traffic as of 2006.  
+Based on the study of BitTorrent  and Skype, we may learn a 
+number of valuable lessons that can  guide us to successfully develop 
+P2P multimedia applications: First,  P2P applications are not neces-
+sarily evil. Second, the proper use of servers in P2P applications 
+may significantly simplify P2P sy stem design and improve the 
+overall performance and security of a P2P system. Third, security is crucial in the successful deployme nt of the P2P applications, and 
+ 
+Copyright is held by the author/owner(s). MM’06 , October 23–27, 2006, Santa Barbara, California, USA. 
+ACM 1-59593-447-2/06/0010.
+ 
+ 
+3may make or break a particular P2P application. Fourth, proper 
+incentive is essential to encourage cooperation of the users and to improve system performance. Fifth, NAT/Firewall traversal is cru-cial for a widely deployed P2P application.   
+ 
+3. COMPONENTS AND TOOLS  
+FOR P2P APPLICATION 
+We continue by examining a number of components and tools 
+commonly used in P2P applications . This includes the overlay net-
+work, the scheduling algorithm, the erasure resilient coding, and NAT/firewall traversal. 
+3.1 Overlay Network 
+The first component that we ex amine is the overlay network, 
+which is the network of peers built on top of the general internet. We will examine a number of overlays used in the practical P2P systems, including the unstructured overlay and structured overlays 
+(DHT based overlays, such as C hord and Pastry). We will compare 
+the structured and unstructured overlays in the aspect of overlay maintenance, heterogeneity, da ta query and delivery throughput. 
+We show that the additional structure provided by the structured overlay has improved the scalability and data delivery throughput in the network.  
+3.2 Scheduling algorithm 
+We then move on to the scheduling algorithm. In P2P applica-
+tions, the scheduling algorithm is the method by which the peers distribute data within the networ k. Current implementation of the 
+scheduling algorithm can be generally classified into two categories: 
+tree-based delivery and mesh-based delivery. In the tree-based de-livery, data delivery follows pre-defined routes, which can be for-mulated as a spanning tree in the overlay network. In mesh-based delivery, the route of data deliver y is flexible. The peer exchange 
+“Have” information with its local ne ighbors, and the data delivery is 
+based on the “Have” information. The two data delivery schemes 
+are compared in the tutorial.  
+3.3 Erasure resilient coding  
+The third component that we will i nvestigate is the use of erasure 
+resilient coding in P2P application.  We will cover the mathematical 
+definition of the erasure resilient coding and examine a number of erasure resilient coding technol ogies: Reed-Solomon coding, net-
+work coding (random linear coding), and RAID-6 coding (EvenOdd, X-Code, etc). We will compare the erasure resilient 
+codes with respect to capability (systematic vs. non systematic ERC), implementation complexity and operation throughput, and operation in failover recovery. We will also introduce the concept of adaptive erasure resilient codes a nd demonstrate their usage in P2P 
+application.  
+ 3.4 NAT/Firewall traversal 
+In a computing network, a NAT st ands for network address trans-
+lator, and a firewall is a piece of hardware or software that prevents communications forbidden by certain  security policies. It is esti-
+mated that 46% of all computers are behind some sort of NAT/firewall; therefore, a good P2P application should handle NAT/Firewall intelligently. NAT/fir ewall traversal follows three 
+steps: NAT/firewall discover, peer advertisement and traversal. We will investigate the current state- of-the-art of NAT/firewall tra-
+versal, including the STUN (simple-traversal of UDP through NATs) protocol, the traversal of symmetric NAT and TCP NAT 
+traversal.  
+ 
+4. P2P DEPLOYMENT ISSUES 
+In this section, we examine a number of issues that affect the suc-
+cessful deployment of the P2P app lication. This includes the follow-
+ing: P2P economy, attacks on P2P applications, and P2P monitoring 
+and debugging tools.  
+4.1 P2P Economy 
+We first explore the economies and the incentives in the P2P net-
+work. We start by examining the incentive mechanism used in the BitTorrent, the tit-for-tat strategy, and showing its relationship with 
+the iterated prisoner dilemma problem . We then discuss a number of 
+practical incentives issues in a P2P network.  
+4.2 Attack on P2P applications 
+We dig into a number of security issues in P2P applications. We 
+focus on two primary attack scenarios: the Denial-of-Service (DoS) attack and pollution attack, and discuss the counter measures. 
+4.3 Peer selection and proximity measure 
+Peer selection may be based on different capacity and proximity 
+measure. We will investigate how to estimate various measures of 
+peer capacity and proximity, e.g., peer latency, ISP locality, peer bandwidth and throughput, and how to  apply the measure in peer 
+selection.  
+4.4 P2P monitoring and debugging tools 
+Debugging a distributed P2P appli cation can be a daunting task. 
+In this section, we explore the logs and the counters that can be deployed to monitor the progress of a P2P application, as well as logging and replaying tools that may convert the distributed debug-
+ging of a P2P application into the debugging of an isolated applica-tion.  
+ 
+5. SUMMARY AND REFERENCES 
+We will give a summary and list the references used in the course.  
+ 
+ 
+4

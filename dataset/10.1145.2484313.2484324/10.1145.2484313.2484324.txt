@@ -1,0 +1,1205 @@
+Blank Digital Signatures
+Christian Hanser
+Institute for Applied Information Processing and
+Communications (IAIK)
+Graz University of Technology (TUG)
+Inffeldgasse 16a, 8010 Graz, Austria
+christian.hanser@iaik.tugraz.atDaniel Slamanig
+Institute for Applied Information Processing and
+Communications (IAIK)
+Graz University of Technology (TUG)
+Inffeldgasse 16a, 8010 Graz, Austria
+daniel.slamanig@iaik.tugraz.at
+ABSTRACT
+In this paper we present a novel type of digital signatures,
+which we call blank digital signatures . The basic idea be-
+hind this scheme is that an originator can deﬁne and sign
+amessage template , describing ﬁxed parts of a message as
+well as multiple choices for exchangeable parts of a message.
+One may think of a form with blank ﬁelds, where for suchﬁelds the originator speciﬁes all the allowed strings to choosefrom. Then, a proxy is given the power to sign an instantia-
+tionof the template signed by the originator by using some
+secret information. By an instantiation, the proxy commitsto one allowed choice per blank ﬁeld in the template. Theresulting message signature can be publicly veriﬁed under
+the originator’s and the proxy’s signature veriﬁcation keys.Thereby, no verifying party except the originator and theproxy learn anything about the “unused” choices from the
+message template given a message signature. Consequently,
+the template is hidden from veriﬁers.
+We discuss several applications, provide a formal deﬁni-
+tion ofblank digital signature schemes and introduce a secu-
+rity model. Furthermore, we provide an eﬃcient construc-tion of such a blank digital signature scheme from any se-
+cure digital signature scheme, pairing-friendly elliptic curves
+and polynomial commitments, which we prove secure in ourmodel. We also provide a detailed eﬃciency analysis ofour proposed construction supporting its practicality. Fi-nally, we outline several open issues and extensions for fu-ture work.
+Categories and Subject Descriptors
+[Security and privacy ]: Digital signatures
+General Terms
+Algorithms, Design, Security, Theory
+Permission to make digital or hard copies of all or part of this work for
+personal or classroom use is granted w ithout fee provided that copies are
+not made or distributed for proﬁt or c ommercial advantage and that copies
+bear this notice and the full citation on the ﬁrst page. To copy otherwise, torepublish, to post on servers or to redist ribute to lists, requires prior speciﬁc
+permission and/or a fee.ASIA CCS’13, May 8–10, 2013, Hangzhou, China.
+Copyright 2013 ACM 978-1- 4503-1767-2/13/ 05 ...$15.00.Keywords
+Digital signature scheme, blank digital signatures, elliptic
+curves, pairings, po lynomial commitments
+1. INTRODUCTION
+Digital signatures provide the means to achieve source
+authentication and data integrity for digital messages in
+a publicly veriﬁable way meaning that at signing time a
+signer commits himself to a co ncrete message. In this pa-
+per, we propose thenovelconcept of a blank digital signature
+scheme. Here, an originator can deﬁne and sign a message
+template , describing ﬁxed parts of a message as well as sev-
+eral choices for exchangeable parts of a message (one may
+think of a form with blank ﬁelds, where for such ﬁelds theoriginator speciﬁes all the allowed strings to choose from),for which he can delegate signing permissions to a proxy.This proxy is given the power to sign template instantia-
+tionsof the template given by the originator by using some
+secret information. The resulting message signature can be
+publicly veriﬁed under the originator’s and the proxy’s sig-
+nature veriﬁcation keys. Thereby, no verifying party exceptthe originator and the proxy learn anything about the“un-used”choices from the message template and, consequently,about the template when given a message signature. In or-
+dertoconstructsuchaschemeitishelpfultolook atexisting
+variants of digital signature schemes to ﬁgure out, whetherthey can be used to instantiate blank digital signatures.
+Conventional digital signatures require the signer to be
+available during signature creation, e.g., when a contract is
+signed. To overcome this limitation, the concept of proxy
+signatures [16] has been introduced. Basically, a proxy sig-
+nature scheme allows an entity (the delegator) to delegatehis signing capabilities to another entity (the proxy) thatcan then construct signatures on behalf of the delegator.Thisconcepthasseenaconsiderableamountofinterestsince
+then [7]. Surprisingly, only quite recently a suitable security
+modelfor proxysignatureshasbeenintroduced[6], andbeenextended to multi-level and identity-based proxy signatureschemes later on [21]. Since in a practical application, thedelegator may not want to give the proxy the power to signanymessage on behalf of the signer, the delegation by war-
+rant[16] approach was proposed. Here, a signed warrant is
+used to describe the delegation. Thereby, any type of secu-rity policy may be included in the warrant to describe therestrictions under which the delegation is valid. This ap-proach seems to be particularly attractive and received themost attention, since the designator can deﬁne a message
+space for which he delegates his signing rights. In state of
+95the art schemes [21, 7], a warrant consists of the description
+ωof the message space for which signing is being delegated,
+together with a “certiﬁcate”, which is a signature on ωun-
+der the delegators private signing key. We are given a simi-
+lar requirement and, consequently, could ask whether proxysignatures can be used in this setting. In proxy signatures,this warrant is an abstract description, which could, for in-
+stance, be a context-free grammar, a regular expression, or
+as in [6], the description of a polynomial-time Turing ma-chine computing the characteristic function of all potentialmessages, i.e., given a message to decide, whether the mes-sage is covered by ωor not. However, in proxy signatures
+the proxy is allowed to sign arbitrary messages from this
+abstract message space with the downside that the veriﬁer
+learns the entire message space. Consequently, our require-ment that the proxy can sign instantiations of a templatewithout a veriﬁer learning the corresponding template cannot be realized by using existing proxy signature schemes.
+Conventional digital signature schemes do not allow alter-
+ations of a signed document without invalidating the signa-ture. Since it may be valuable to have the possibility to re-place or remove (speciﬁed)parts of a message after signaturecreation such that the original signature stays valid (and nointeraction with the original signer is required), redactable[23, 13] as well as sanitizable signature schemes [3] havebeen
+introduced. Signature schemes, which allow removal of con-
+tent (replacement by some special symbol ⊥)b yanyparty
+are called redactable [23, 13], while signature schemes allow-
+ing (arbitrary) replacements ofadmissible parts by a desig-
+natedparty are called sanitizable signature schemes [3], cf.
+[20] for a comparison. As in our setting, the proxy should
+be allowed to choose from a list of predeﬁned replacementsfor designated parts of the message, one could ask whetherredactable or sanitizable signatures can be used in this set-ting. Since in redactable signature schemes any party isallowed to modify signed messages by removing message
+parts, such signature schemes are obviously not compatible
+with our requirements. The original concept of sanitizablesignatures [3] allows designated sanitizers to replace desig-nated parts of a message. However, here the sanitizer doesnot have the role of a proxy meaning that it does not signthe modiﬁed message. Furthermore, a sanitizer can replace
+the designated parts with arbitrary strings, which is clearly
+not meeting our requirements. The concept of sanitizablesignatures was later on extended to allow only permitted re-placements [15], yet, the Bloom ﬁlter [5] based constructiondoes not meet cryptographic security requirements and thecryptographic accumulator [4] based approach [15, 9] allows
+to securely restrict replacements. Yet, both approaches are
+not designed and also do not support the hiding of the setof accumulated values (allowed replacements) and, thus, arenot suitable for our construction.
+To sum this up, our concept has more in common with
+proxy signatures than with sanitizable signatures. This isdue to our requirements that the signature of the originatoris not publicly veriﬁable as it is the case in sanitizable sig-natures and only instantiations can be publicly veriﬁed as iti st h ec a s ef o rp r o x ys i g n a t u r e s .
+1.1 Contribution
+Since, however, none of the existing concepts covers all
+our requirements, we propose the novel concept of a blank
+digital signature scheme . Here, an originator, i.e., the signerdelegating signing permissions, can deﬁne and sign a mes-
+sage template , describing ﬁxed parts of a message as well
+as several choices for exchangeable parts of a message. One
+may think of a form with blank ﬁelds, where for such ﬁeldstheoriginator speciﬁesalltheallowed stringstochoose from.Then, a proxy is given the power to sign template instantia-
+tionsof the template given by the originator by using some
+secret information. The resulting message signature can be
+publicly veriﬁed under the originator’s and the proxy’s sig-nature veriﬁcation keys. Thereby, no verifying party exceptthe originator and the proxy learn anything about the“un-used”choices from the message template and, consequently,about the template given a message signature. Since this
+setting is quite diﬀerent from the security requirements of
+proxy signatures and sanitizable signatures, most impor-tantly, the template should be hidden from veriﬁers, we de-ﬁne a novel type of signature scheme along with a suitablesecurity model. Similar to proxy signatures and sanitizablesignatures, we require a public key infrastructure meaning
+that the originator and proxy are in possession of authentic
+signing keys. Moreover, since we use polynomial commit-ments in our construction, we need the parameters to begenerated by a trusted third party.
+Anaiveapproach torealize blankdigital signaturesis that
+theoriginator produces nsignatures for all npossibleinstan-
+tiations together with the public key of the proxy using a
+standard digital signature scheme, whereas theproxy simplysigns the originator’s signature for the chosen instantiations.However, the number of signatures issued by the originatorwould then be O(n), which gets impractical very soon with
+increasing number of choices in exchangeable parts. By us-ing randomized Merkle hash trees [17] as in redactable sig-natures, the number of signatures of the originator could bereduced to O(1), whereas the signature of the proxy would
+then, however, be of size O(logn). At ﬁrst glance, this may
+seem attractive, yet in Section 5.4 we illustrate that this
+approach also becomes soon impractical with an increasing
+numberof choices. In our construction, the numberof signa-tures of the originator is O(1), whereas the size of both sig-
+natures, of the originator and the proxy, are also O(1) and,
+in particular, very small and constant. Clearly, this is far
+more appealing than the aforementioned naive approaches.
+1.2 Outline
+In Section 2, we sketch some application scenarios for
+blank digital signatures. Section 3 discusses the mathemat-
+ical and cryptographic preliminaries. Then, in Section 4 weintroduce the notion of blank digital signatures and the cor-
+responding security model. A construction of a blank digital
+signature scheme along with its security proof, an eﬃciencyanalysis and a comparison to the naive approaches are givenin Section 5. Finally, Section 6 concludes the paper and listsopen issues for future work.
+2. APPLICATIONS
+Here, we sketch some application scenarios which we en-
+vision for this novel type of digital signatures.
+Partially blank signed contracts: Suppose a person is
+willing to sign a cont ract under certain predeﬁned condi-
+tions, e.g., set of potential prices, range of possible contract
+dates, but is not able to sign the contract in person. Then,
+this person can elegantly delegate this task to another semi-
+96trusted party, e.g., his attorney, by using blank digital signa-
+tures. The third party is then able to conclude the contract
+on behalf of his client. The client can do so by deﬁning acontract template thereby leaving certain positions“blank”,i.e., deﬁning certain potential choices for the position with-out committing to one, and signing the template. Then, ata later point in time, the attorney is able to“ﬁll in the gaps”
+by choosing from predeﬁned choices, whereas the original
+signature of the client remains valid, and then signing theresulting contract as a proxy.
+“Sanitizable”signatures: Wemay interpretexchangeable
+parts of message templates as replacements (with a poten-tially empty string) and, thus, can achieve a scheme withsimilar capabilities, but diﬀerent meaning and strength asa non-interactive publicly accountable sanitizable signaturescheme [8]
+1, which supports controlled replacements [9, 15].
+Note that such a sanitizable signature scheme does not yet
+exist. However, there are some key diﬀerences. In contrast
+to sanitizable signatures, our template signature is not in-tended to be publicly veriﬁable, i.e., can only be veriﬁedby the proxy and, thus, the originator does not commit toa concrete instantiation of the template. Furthermore, in
+blank digital signatures, the allowed replacements are hid-
+den, which is not supported by sanitizable signatures allow-ing such replacements [9, 15]. Consequently, blank digitalsignatures may beseen as signature schemessupportingsan-itizing capabilities, but are a diﬀerent concept as it is clearfrom the diﬀerences mentioned above.
+3. PRELIMINARIES
+In this section we ﬁrstly provide an overview of required
+mathematical and cryptographic preliminaries.
+3.1 Mathematical Background
+An elliptic curve over the ﬁnite ﬁeld Fqis a plane, smooth
+curve described by the Weierstrass equation:
+E:Y2+a1XY+a3Y=X3+a2X2+a4X+a6,(1)
+wherea1,a2,a3,a4,a6∈Fq.T h es e t E(Fq)ofpoin ts( x,y)∈
+F2
+qsatisfying Equation (1) plus the point at inﬁnity ∞,
+which is the neutral element, forms an additive Abelian
+group, whereas the group law is determined by the chord-
+and-tangent method [22].
+LetGbe a cyclic group and pbe a divisor of its group
+order, then there exists a subgroup of order p,w h i c hw e
+subsequently denote by G[p].
+Definition 1 (Bilinear Map). LetG1,G2andGTbe
+three cyclic groups of the same prime order p,w h e r eG1,G2
+are additive groups and GTis a multiplicative group. We
+call the map e:G1×G2→GTa bilinear map or pairing, if
+the following conditions hold:
+Bilinearity: For allP1,P2∈G1andP/prime
+1,P/prime
+2∈G2we have:
+•e(P1+P2,P/prime)=e(P1,P/prime)·e(P2,P/prime)for allP/prime∈
+G2,
+•e(P,P/prime
+1+P/prime
+2)=e(P,P/prime
+1)·e(P,P/prime
+2)for allP∈G1.
+1In such a sanitizable signature scheme, when given a sig-
+nature anybody can verify, whether a modiﬁcation has been
+conducted by the original signer or the sanitizer without in-teracting with any party.Non-degeneracy: IfPis a generator of G
+1andP/primea gen-
+erator of G2,t h e ne(P,P/prime)is a generator of GT, i.e.,
+e(P,P/prime)/negationslash=1GT.
+Eﬃciently computable: ecan be computed eﬃciently.
+IfG1=G2,t h e neis called symmetric andasymmetric
+otherwise. The former type is also called Type-1pairing,
+whereas in case of the latter we distinguish between Type-2
+andType-3pairings. For Type-2 pairings there is an eﬃ-
+ciently computable isomorphism Ψ : G2→G1[10] and for
+Type-3 pairings such an eﬃciently computable isomorphism
+does not exist. In our setting, G1andG2arep-order ellip-
+tic curve group over FqandGT=F∗
+qk[p], which is an order
+psubgroup of F∗
+qk.N o t e t h a t k, the so called embedding
+degree, is deﬁned as k=m i n{/lscript∈N:p|q/lscript−1}.
+3.2 Digital Signatures
+Here, we brieﬂy recall the deﬁnition of a standard digital
+signature scheme.
+Definition 2 (Digita l Signature Scheme). A digi-
+tal signature scheme is a tuple (KeyGenDSS,SignDSS,VerifyDSS)
+of polynomial-time algorithms:
+KeyGenDSS(κ): Is a key generation algorithm that takes as
+input a security parameter κ∈Nand outputs a pri-
+vate (signing) key skDSSand a public (veriﬁcation) key
+pkDSS.
+SignDSS(M,skDSS): Is a (probabilistic) algorithm taking in-
+put a message M∈{0,1}∗, a private key skDSSand
+outputs a signature σ.
+VerifyDSS(σ,M, pkDSS): Is a deterministic algorithm taking
+input a signature σ, a message M∈{0,1}∗,ap u b l i c
+keypkDSSand outputs a single bit b∈{true, false}
+indicating whether σis a valid signature for M.
+Furthermore, we require the digital signature scheme to be
+correct, i.e., for all ( skDSS,pkDSS)∈KeyGen(κ)a n da l l M∈
+{0,1}∗,VerifyDSS(SignDSS(M,skDSS),M,pkDSS)= truemust
+hold. A digital signature scheme is secure, if it is existen-tially unforgeable under adaptively chosen-message attacks(UF-CMA ) [12]. Note that in practice, the sign and verify
+algorithms will typically use a hash function to map input
+messages to constant size strings, which is also known as the
+hash-then-sign paradigm .
+3.3 Polynomial Commitments
+In [14], Kate et al. introduced the notion of constant-
+size polynomial commitments. The authors present two dis-tinct commitment schemes, whereas one is unconditionally
+bindingandcomputationallyhiding( PolyCommit
+DL)andthe
+other is unconditionally hiding as well as computationallybinding ( PolyCommit
+Ped). For our scheme, we are using
+PolyCommit Ped,whic hisbasedonP edersencommitmen ts[19].
+The constructions of [14] use an algebraic property of poly-
+nomials f(X)∈Zp[X]. Namely, that ( X−λ)p e r f e c t l y
+divides the polynomial f(X)−f(λ)f o rλ∈Zp:N o w ,w e
+brieﬂy present the PolyCommit Pedconstruction of [14].
+Setup(κ,t) : Pick two groups G,GTof the same prime or-
+derp(withpbeing a prime of bitlength κ)h a v i n g
+a symmetric pairing e:G×G→GT.C h o o s e t w o
+97generators P,Q∈Gandα∈RZ∗
+pand output pk=
+(G,GT,p,e,P,αP,...,αtP,Q,αQ,...,αtQ)a sw e l la s
+sk=α.
+Commit(pk,f(X)) : Given f(X)∈Zp[X]w i t hd e g ( f)≤
+t, choose a random polynomial r(X)∈Zp[X]w i t h
+deg(f)≤deg(r)≤t, compute the commitment C=
+f(α)P+r(α)Q∈Gand output C.
+Open(pk,C,f(X),r(X)) : Output ( f(X),r(X)).
+VerifyPoly (pk,C,f(X),r(X)) : Verify whether
+C=deg(f)/summationdisplay
+i=0f(i)(αiP)+deg(r)/summationdisplay
+i=0r(i)(αiQ)
+holdsandoutput trueon success and falseotherwise.
+CreateWit (pk,f(X),r(X),λ) : Compute φ(X)=f(X)−f(λ)
+X−λ,
+ˆφ(X)=r(X)−r(λ)
+X−λandWλ=φ(α)P+ˆφ(α)Qand out-
+put (λ,f(λ),r(λ),Wλ).
+VerifyEval (pk,C,λ,f(λ),r(λ),Wλ):V e r i f yt h a t f(λ)i st h e
+evaluation of fat point λ.T h i si sd o n eb yc h e c k i n g
+whether
+e(C,P)=e(Wλ,αP−λP)·e(f(λ)P+r(λ)Q,P)
+holds. Output trueon success and falseotherwise.
+This scheme can be proven secure under the t-SDH assump-
+tion inG,a sl o n ga s t<√
+2κ. For the proof we refer the
+reader to [14]. Notice that αmust remain unknown to the
+committer (and thus the setup has to be run by a trusted
+third party), since, otherwise, it would be a trapdoor com-mitment scheme.
+M o r e o v e r ,w en o t et h a tw ed on o tn e e dt h ea l g o r i t h m s
+CreateWit andVerifyEval in ourconstruction, since we donot
+need toprovevalidevaluationsofthepolynomial f(X)w i t h -
+out revealing the polynomial itself. For the same reason, we
+simply use a random point Rinstead of/summationtext
+deg(r)
+i=0r(i)(αiQ),
+which obviously also yields an unconditionally hiding Ped-
+ersen commitment.
+4. BLANK DIGITAL SIGNATURES
+In this section we introduce the notion of blank digital
+signatures as well as the according security model. As a pre-requisite we ﬁrst need to introduce representations and en-codings for message templates and template instantiations.
+4.1 Template and Message Representation
+In the following we introduce a representation for message
+templates. A message template Tdescribes all potential
+template instantiationsthatcorrespondtoasingle template.
+More formally, a message template is deﬁned as follows.
+Definition 3 (Message Template). A message tem-
+plateTis a sequence of non-empty sets Ti={Mi1,...,M il}
+of bitstrings Mijand uniquely identiﬁed by idT. If the size
+ofTiis one, then the set Tiis called ﬁxed element ofT
+andexchangeable element otherwise. The set of all mes-
+sage templates is denoted by T.
+An exchangeable element Tirepresents allowed substitu-
+tions, i.e., Tican be replaced by any of its elements Mijin
+order to obtain an instantiation of the template. Let nbethe sequence length of T,t h e nnis called length of template
+T.F u r t h e r m o r e ,w i t h |T |we denote the size of template T,
+that is|T |=/summationtextn
+i=1|Ti|. Finally, we call max 1≤i≤n|Ti|the
+depth of template T=(Ti)n
+i=1.
+Definition 4 (Template Instantation). Atemplate
+instantiation Mof some template T=(Ti)n
+i=1is derived
+fromTas follows. For each 1≤i≤nchoose exactly one
+element Mi∈Tiand setM=(Mi)n
+i=1. A template instan-
+tiationMis called valid, which we denote by M/precedesequalT,i f
+it represents choices that were intended by the originator of
+template T.F u r t h e r m o r e , w e u s e MT={M:M/precedesequalT}
+to denote the set of all possible template instantiations of a
+template T.
+A message template Tis called
+•trivialif it does not contain any exchangeable ele-
+ments. Note that this implies |T |=n,a n d
+•minimal if no two ﬁxed elements are adjacent.
+Theminimal property guarantees that the number of ﬁxed
+elements is kept minimal. The complement of the template
+instantiation Mdenoted as
+ Mis a sequence of sets of bit-
+strings and representsall unusedchoices in theexchangeable
+elements, that is
+ M=(Ti\{Mi})n
+i=1for an instantiation
+M=(Mi)ni=1ofT=(Ti)ni=1.
+Now, we give a short example to illustrate our concept.
+Example 1.LetT=(T1,T2,T3)with
+•T1={“I, hereby, declare to pay ” },
+•T2={“100$”, “120$”, “150$”}and
+•T3={“ for this tablet device.” }.
+Here,T1andT3are ﬁxed elements and T2is an exchangeable
+element with three choices. A template instantiation could,
+for instance, be M=(“I, hereby, declare to pay ”, “120 $”,
+“ for this tablet device.” ). The complement of template in-
+stantiation Mis then
+M=(∅,{“100$”, “150$”},∅).
+In the following, we deﬁne encodings of templates and
+template instantiations, for which we use polynomials in the
+Euclidean ring Zp[X]. This allows us to perform polynomial
+division with remainder, which is essential to our construc-
+tion.
+Definition 5 (Template Encoding). LetT=(Ti)n
+i=1
+be a message template and H:{0,1}∗→Zpbe a full-domain
+cryptographic hash function. A template encoding function
+t:T→Zp[X]is deﬁned as follows:
+T /mapsto→n/productdisplay
+i=1/productdisplay
+M∈Ti/parenleftbig
+X−H(M/bardblidT/bardbli)/parenrightbig
+.
+The evaluation t(T)results in a so-called template encoding
+polynomial tT∈Zp[X]of degree |T |.
+Note that the degree of the resulting polynomial needs to be
+boundedby√
+2κ, asotherwise thesecurityof thepolynomial
+commitment scheme is no longer guaranteed. However, this
+has no impact in practice, since the polynomial can only be
+created by a polynomial time algorithm.
+98Definition 6 (Message Encoding). Similar to Deﬁ-
+nition 5, a message encoding function mT:MT→Zp[X]
+with respect to a message template Tis deﬁned as follows:
+M /mapsto→n/productdisplay
+i=1(X−H(Mi/bardblidT/bardbli)),
+whereM=(Mi)n
+i=1is an instantiation of T=(Ti)ni=1.W e
+callmM=mT(M)∈Zp[X] message encoding polynomial .
+Furthermore, we deﬁne the complementary message encod-
+ing function
+ mT:MT→Zp[X]:
+M /mapsto→n/productdisplay
+i=1/productdisplay
+M∈(Ti\{M i})/parenleftbig
+X−H(M/bardblidT/bardbli)/parenrightbig
+.
+We call m
+M=
+mT(M)=(tT
+mM)∈Zp[X]thecomplemen-
+tary message encoding polynomial ofmMwith respect to
+template T.
+Inthefollowing, weconsiderall polynomialstobeexpanded.
+To do so, we assume that an algorithm Exp, which carries
+out the polynomial expansion, is applied implicitly to all
+polynomials.
+Typically, a template instantiation M=(Mi)n
+i=1/precedesequalT
+will be mapped to a single bitstring M=M1/bardbl.../bardblMn.W e
+denote themappingleading from MtoMbyλ(M,I)=M,
+whereI=(|Mi|)n
+i=1is a descriptional sequence holding the
+lengths of the nelements of Mas given by template T.
+For sake of simplicity, we consider all templates to be non-
+trivial as well as minimal and do not diﬀerentiate between
+a template instantiation Mand its corresponding bitstring
+M.
+4.2 Blank Digital Signature Scheme
+Now, we are able to formally deﬁne what we mean by a
+blank digital signature scheme.
+Definition 7 (Blank Digi tal Signature Scheme).
+Ablank digital signature scheme BDSSconsists of a tuple
+(KeyGen,Sign, VerifyT,Inst,VerifyM)of polynomial-time al-
+gorithms:
+KeyGen(κ,t):This probabilistic algorithm gets the security
+parameter κ∈Nand a value t∈Nspecifying the max-
+imum template size. It generates private and public
+keys(pkorig,skorig)for the originator and returns them.
+Sign(T,skorig,pkorig,skDSS
+orig,pkDSS
+proxy):This probabilistic algo-
+rithm takes a message template T, the originator’s
+private key skorig, the originator’s public key pkorig,t h e
+originator’s signing key skDSS
+orig, the proxy’s veriﬁcation
+keypkDSS
+proxyand outputs a template signature σTand a
+template dependent private key for the proxy skTproxy.
+VerifyT(T,σT,pkorig,pkDSS
+orig,skT
+proxy,pkDSSproxy):This determin-
+istic algorithm takes a template T,i t ss i g n a t u r e σT,
+the originator’s public key pkorig, the originator’s sig-
+nature veriﬁcation key pkDSS
+orig, the private key of the
+proxy skT
+proxy, and the proxy’s veriﬁcation key pkDSSproxy.I t
+outputs a bit b∈{true,false}indicating whether σT
+is a valid signature for T.
+Inst(T,M,σT,pkorig,skTproxy,skDSSproxy,pkDSSproxy):This probabilistic
+algorithm takes a template T, an instantiation M,a
+template signature σT, the public key of the originatorpkorig, the private key of the proxy skT
+proxy,t h es i g n i n g
+key pair(skDSS
+proxy,pkDSSproxy)of the proxy and outputs a mes-
+sage signature σM.
+VerifyM(M,σM,pkorig,pkDSSproxy,pkDSS
+orig):This deterministic al-
+gorithm takes a template instantiation MofT,t h e
+signature σM, the public key of the originator pkorig,
+the signature veriﬁcation key of the proxy pkDSS
+proxy,a n d
+the signature veriﬁcation key of the originator pkDSS
+orig.
+It outputs a bit b∈{true,false}indicating whether
+σMis a valid signature for M/precedesequalT.
+4.3 Security Deﬁnitions
+In the following, we deﬁne the security properties a blank
+digital signature scheme needs to satisfy in order to be se-
+cure. Therefore, we start with a brief overview of the re-
+quired properties.
+Correctness: The scheme must be correct in terms of sig-
+nature correctness, signature soundness and instantia-
+tioncorrectness, i.e., bothtemplateandmessage signa-tures are accepted when valid and template signaturesof the originator are binding.
+Unforgeability: No entity without knowledge of the pri-
+vate key sk
+origand the signing keys skDSS
+origand skDSS
+proxy
+should be able to forge a valid template or message sig-
+nature. This is analogous to the security of traditionaldigital signatures. In particular, this means that it isinfeasible to produce forgeries of the following types:
+T1ﬁnding a template T
+∗yielding the same template
+signature σT∗=σTifor one queried template Ti.
+T2forging a valid template signature σT∗for some
+unqueried template T∗.
+M1ﬁndinganothermessage M∗/negationslash=Mijyieldingmes-
+sage signature σM∗such that σM∗=σMijfor
+some previously queried message Mij.
+M2forging a valid message signature σMfor some
+non-queried Mfrom template signature σTifor
+some previously queried template Ti.T h e r e a r e
+two cases:
+•M/precedesequalT ifor some queried template Ti,
+•M/notprecedesoreqlTifor some queried template Ti.
+Immutability: Theproxyhavingaccessto skT
+proxyandskDSSproxy,
+when given a template signature σTfor template T
+should not be able to forge signatures. Here, cases
+T1,T2andM2from above apply.
+Privacy: No entity should be able to restore template T
+from a message signature σMrepresenting a signature
+for an instantiation Mof template T.
+4.3.1 Correctness
+For a blank digital signature scheme the usual correctness
+properties are required to hold, i.e., genuinely signed tem-plates and message signatures are accepted. Furthermore,we require template signatures to be sound, i.e., the origina-
+tor commits to exactly one template by creating a template
+signature.
+Signature correctness: For any key pairs ( sk
+DSS
+orig,pkDSSorig)∈
+KeyGenDSS(κ)and( skDSS
+proxy,pkDSSproxy)∈KeyGenDSS(κ),any BDSS
+99key ( pkorig,skorig)∈KeyGen(κ,t), any template Tand any
+honestly computed template signature
+σT=Sign(T,skorig,pkorig,skDSS
+orig,pkDSSproxy),
+we require that the veriﬁcation
+VerifyT(T,σT,pkorig,pkDSSorig,skTproxy,pkDSSproxy)=true
+holds.
+Signature soundness: For any key pairs ( skDSS
+orig,pkDSSorig)∈
+KeyGenDSS(κ)and( skDSS
+proxy,pkDSSproxy)∈KeyGenDSS(κ),any BDSS
+key ( pkorig,skorig)∈KeyGen(κ,t), any template Tand any
+honestly computed template signature
+σT=Sign(T,skorig,pkorig,skDSS
+orig,pkDSSproxy),
+we require that for any T∗/negationslash=Tthe probability that the
+veriﬁcation
+VerifyT(T∗,σT,pkorig,pkDSSorig,skTproxy,pkDSSproxy)=true
+holds is negligibly small as a function of the security param-
+eterκ.
+Instantiation correctness: For any key pairs ( skDSS
+orig,pkDSSorig)
+∈KeyGenDSS(κ)a n d( skDSS
+proxy,pkDSSproxy)∈KeyGenDSS(κ), any
+BDSSkey ( pkorig,skorig)∈KeyGen(κ,t), any template T,a n y
+honestly computed signature σTand corresponding skTproxy
+such that
+VerifyT(T,σT,pkorig,pkDSS
+orig,skTproxy,pkDSSproxy)=true,
+any honestly computed message signature
+σM=Inst(T,M,σT,pkorig,skTproxy,skDSSproxy,pkDSSproxy),
+we require that the veriﬁcation
+VerifyM(M,σM,pkorig,pkDSSproxy,pkDSSorig)=true
+holds.
+4.3.2 Unforgeability
+Unforgeability in the context of blank digital signatures
+resembles the notion of existential unforgeability against
+adaptive chosen message attacks ( UF-CMA ) in classic dig-
+ital signature schemes. We adapt the classical notion to our
+setting in Game 1. Unforgeability is a protection againstattacks mounted by parties not having access to any secretinformation.
+Definition 8 (Unforgeability). ABDSSis called
+unforgeable , if for any polynomial-time algorithm Athe prob-
+ability of winning Game 1 is negligible as a function of se-
+curity parameter κ.
+4.3.3 Immutability
+Immutabilityguaranteesthatnomalicious proxycancom-
+pute message templates or template instantiations not in-
+tended by the signer. In contrast to unforgeability, im-mutability deals with malicious insiders.
+The immutability game diﬀers only slightly from the un-
+forgeability game. Therefore, we only brieﬂy discuss the
+diﬀerences. Here, the adversary additionally obtains sk
+T
+proxy
+andskDSSproxyfrom the challenger in the setup phase. In the
+query phase, Ahas access to a template signing oracle and
+can query signatures for arbitrary templates. Acan com-
+pute valid template instantiations locally. In this game, A
+wins if he outputs valid forgeries of type T1,T2orM2.
+Setup: The challenger Bruns KeyGen(κ,t)t oo b t a i n
+(pkorig,skorig). Furthermore, Bruns KeyGenDSS(κ)o f
+a secure digital signature scheme twice to generate
+(skDSS
+orig,pkDSSorig)a n d( skDSS
+proxy,pkDSSproxy). It gives the adver-
+saryAthe resulting public keys pkorig,pkDSS
+origandpkDSS
+proxy
+and keeps the private keys skorig,skDSS
+origandskDSS
+proxyto it-
+self.
+Query: The adversary Ahas access to an oracle O,
+which is simulated by the challenger and an-
+swers to queries of the form ( Ti,MTi)a sf o l -
+lows. For each template Tithe challenger
+chooses idTi, computes and stores ( σTi,skT
+proxy)=
+Sign(Ti,skorig,pkorig,skDSS
+orig,pkDSS
+proxy). Next, Bcomputes
+σMij=Inst(Ti,Mij,σT,pkorig,skTproxy,skDSSproxy,pkDSSproxy)
+and returns σMij.Acan issue these queries for diﬀer-
+ent templates as well as template instantiations in an
+adaptively interleaved manner.
+Output: The adversary Aoutputs either a triple
+(T∗,σT∗,skT∗
+proxy)o rap a i r( M∗,σM∗).Awins if
+either VerifyT(T∗,σT∗,pkorig,pkDSS
+orig,skT∗
+proxy,pkDSS
+proxy)
+or VerifyM(M∗,σM∗,pkorig,pkDSSproxy,pkDSS
+orig) accepts,
+whereas the forgeries must be of type T1,T2or
+M1,M2.
+Game 1: Unforgeability Game
+Definition 9 (Immutability). ABDSSis called im-
+mutable, if for any polynomial-time algorithm Athe prob-
+ability of winning the immutability game is negligible as a
+function of security parameter κ.
+4.3.4 Privacy
+Privacy captures thatany veriﬁerexceptfor theoriginator
+and the proxy, which is given a signature for a template
+instantiation Mof a non-trivial template T, can not gain
+any information about
+ Mand thereby learn about T.T h i s
+means that even if all butone choice of a single exchangeable
+element has been revealed no veriﬁer should be able to gaincomplete knowledge of T.M o r ep r e c i s e l y ,l e t kbe the depth
+oftemplate T, which isthesmallest numberof instantiations
+necessary to reveal all choices of T, then no veriﬁer should
+be able to derive information about the remaining unseen
+choices inside Tby knowing k−1 instantiations.
+Definition 10 (Privacy). ABDSSis called private,
+if for any polynomial-time algorithm Athe probability of
+winning Game 2 is negligible as a function of security pa-
+rameter κ.
+4.3.5 Security
+Now, we can deﬁnewhat constitutes a secure blank digital
+signature scheme.
+Definition 11.We call a BDSSsecure,i fi ti sc o r r e c t ,
+unforgeable, immutable and private.
+5. CONSTRUCTION
+In this section we detail our construction and present an
+analysis of its eﬃciency in terms of computational eﬀort aswell as key and signature sizes. Moreover, we prove its secu-rity, i.e., we show that our presented construction is correct,
+unforgeable, immutable and private.
+100KeyGen:On input ( κ,t), choose an elliptic curve E(Fq) with a subgroup of large prime order pgenerated by P∈E(Fq)[p],
+such that the bitlength of pisκ. Choose a pairing e:E(Fq)[p]×E(Fq)[p]→F∗
+qk[p], a full-domain crypto-
+graphic hash function H:{0,1}∗→Zpfor use with the encoding functions and a full-domain cryptographic
+hash function H/prime:F∗qk[p]→{0,1}κ.L e tP∈E(Fq)[p] be a generator and let g=e(P,P)b eag e n e r a t o ro f
+F∗
+qk[p]. Pick two elements α,δ∈RZ∗
+p, compute ( αP,...,αtP)a sw e l la s( δP,αδP,...,αtδP) and output skorig=δ,
+pkorig=(H,H/prime,E(Fq),e,p,P,g,αP,...,αtP,δP,αδP,...,αtδP).
+Sign:GivenT,skorig,pkorig,skDSS
+origandpkDSS
+proxy,w h e r eTis a template of size |T |=/lscriptand length nwith/lscript>n, this algorithm
+picks a unique idT∈R{0,1}κ, computes tT=t(T)∈Zp[X], picks a random point R∈E(Fq)[p], computes R0=δR,
+C=H/prime(e(/lscript/summationdisplay
+i=0t(i)
+T(αiP)+R,δP)) and τ=SignDSS(idT/bardblC/bardblR 0/bardblR2/bardbln/bardblpkDSS
+proxy,skDSSorig).
+It picks a point R1∈RE(Fq)[p], computes R2=R−R1, and returns the template signature σT=(idT,C,R0,R2,n,τ)
+as well as skT
+proxy=R1.
+VerifyT:GivenT,σT,pkorig,pkDSS
+orig,skT
+proxyandpkDSSproxy,w h e r e Tis a template of size |T |=/lscriptand length nwith/lscript>n,t h i s
+algorithm checks whether |T | ≤t. If not, it returns false. Otherwise, it computes tT=t(T) and checks whether
+VerifyDSS(τ,idT/bardblC/bardblR 0/bardblR2/bardbln/bardblpkDSS
+proxy,pkDSSorig)=true∧e(R0,P)=e(R1+R2,δP)∧H/prime(e(/lscript/summationdisplay
+i=0t(i)
+T(αiδP)+R0,P)) =C
+wheret(i)
+Tis thei’th coeﬃcient of tT. If so, return trueand falseotherwise.
+Inst:GivenT,M,σT,pkorig,skT
+proxyandskDSSproxy,pkDSSproxy,w h e r e Tis a template of size |T |=/lscriptand length nwith/lscript>n,t h i s
+algorithm, chooses γ∈RZ∗p, and computes m
+M=
+mT(M)∈Zp[X]. Then, it computes
+C
+M=/lscript−n/summationdisplay
+i=0m(i)
+M(αiP)+γR1andμ=SignDSS(τ/bardblC
+M/bardblγ/bardblI,skDSS
+proxy),
+wherem(i)
+Mis thei’th coeﬃcient of m
+M. It returns σM=(μ,C
+M,γ,I,σT).
+VerifyM:GivenM,σM=(μ,C
+M,γ,I=(|Mi|)n
+i=1,σT),pkorig,pkDSS
+proxyandpkDSS
+origthis algorithm veriﬁes whether
+VerifyDSS(τ,idT/bardblC/bardblR 0/bardblR2/bardbln/bardblpkDSS
+proxy,pkDSSorig)=true∧VerifyDSS(μ,τ/bardblC
+M/bardblγ/bardblI,pkDSSproxy)=true∧|I|=n∧n/summationdisplay
+i=1|Mi|=|M|
+On failure return false, otherwise evaluate mM=mT(M), letm(i)
+Mbe thei’th coeﬃcient of mM, and compute
+CM=n/summationdisplay
+i=0m(i)
+M(αiP)a n dC/prime
+M=n/summationdisplay
+i=0m(i)
+M(αiδP)
+and check whether
+H/prime(e(C
+M+γR2,C/prime
+M)·e((1−γ)R0,CM)·e(P−CM,R0)) =C
+On success return trueand falseotherwise.
+Scheme 1: Blank Digital Signature Scheme
+5.1 Intuition
+Before we present the detailed construction, we provide
+some intuition in order to make our design choices compre-
+hensible. As already noted, we use standard digital signa-tures, such as ECDSA [11], as a building block assumingthe respective signature keys to be available to every par-ticipant in an authentic fashion. Note that this requires the
+availability of public key infra structures, which are, how-
+ever, commonly used in practice today. In our construction,
+DSSsignatures provide authenticity of template and mes-
+sage signatures.
+As already discussed in Section 4, we use polynomials to
+represent templates and template instantiations. The intu-ition is that the originator commits to a template polyno-mial. By construction every allowed template instantiationis represented by a message encoding polynomial that per-fectly divides the template polynomial. A proxy can nowcommit to a message polynomial, by computing and sign-ing a commitment to the comple mentary message encoding
+polynomial. However, he can not choose arbitrary divisors
+of the template polynomial, as the indexes of message ele-ments are incorporated into the encoding and the length ofthe message, i.e., the degree of the message polynomial, isﬁxed by the originator.
+In the veriﬁcation, the veriﬁer computes a commitment to
+the message polynomial and checks whether the computedcommitment and the commitment given by the proxy re-
+101We assume that the originator as well as the proxy both own an authentic key pair for a secure digital signature scheme
+(skDSS
+orig,pkDSSorig)a n d( skDSS
+proxy,pkDSSproxy), respectively.
+SetupT:The trusted third party Tchooses a suitable security parameter κand a value t∈Nrepresenting the maximum
+template length, runs KeyGen(κ,t), sends skorigto the originator Oand publishes pkorigin an authentic fashion.
+Issue O:Odeﬁnes a message template T, runs Sign(T,skorig,pkorig,skDSS
+orig,pkDSS
+proxy)a n dg i v e s σT=(idT,C,n,τ)a sw e l la s skTproxy
+toP.
+Issue P:Pruns VerifyT(T,σT,pkorig,pkDSS
+orig,skT
+proxy,pkDSSproxy) to check whether σTis a valid signature for Tissued by O.O n
+success, P,o nb e h a l fo f O, deﬁnes a template instantiation M/precedesequalT and runs Inst(T,M,σT,pkorig,skTproxy,skDSSproxy,pkDSSproxy)
+and publishes ( M,σM).
+Verify:Anybody in possession of the public keys can now take ( M,σM)a n dr u n VerifyM(M,σM,pkorig,pkDSSproxy,pkDSS
+orig)t oc h e c k
+whether σMis a valid signature for Missued by OandP.
+Protocol 1: Blank Digital Signature Protocol
+Setup: The challenger Bruns KeyGen(κ,t)t oo b t a i n
+(pkorig,skorig). Furthermore, Bruns KeyGenDSS(κ)o f
+a secure digital signature scheme twice to generate
+(skDSS
+orig,pkDSSorig)a n d( skDSS
+proxy,pkDSSproxy). It gives the adver-
+saryAthe resulting public keys pkorig,pkDSS
+origandpkDSS
+proxy
+and keeps the private keys skorig,skDSS
+origandskDSS
+proxyto it-
+self.
+Query 1: The adversary Aissues template signature
+queriesT1,...,T q.T o e a c h q u e r y Tithe challenger
+responds by running Sign(Ti,skorig,pkorig,skDSS
+orig,pkDSS
+proxy)
+to generate a signature σTiforTiand sending it to-
+gether with skTiproxyto the adversary. For each tem-
+plate signature query Ti,Acan issue an arbitrary
+number of signature instantiation queries of the form
+(Ti,Mij). To every such query Bresponds by run-
+ning Inst(Ti,Mij,σT,pkorig,skTiproxy,skDSS
+proxy,pkDSSproxy)a n d
+returning σMij.Allofthesequeriescanbemadeadap-
+tively interleaved.
+Challenge: At some point AsignalsBthat he is ready
+to be challenged. Bconstructs a non-queried random
+template Tof depth kand produces a template signa-
+ture forT, but keeps TandskTproxyto itself.
+Query 2: The adversary Ais allowed to issue queries as in
+query phase 1 and at most k−1 instantiation queries
+to the unknown template T. All of these queries can
+be made adaptively interleaved.
+Output: The adversary AoutputsT∗and wins if T∗=T.
+Game 2: Privacy Game
+late to the commitment given by the originator, whereas
+the originator’s commitment is given as hash value in order
+to prevent arithmetics. We need a trusted third party, asthe originator should not know the value α.O t h e r w i s e ,h e
+could exchangethetemplatepolynomial after signature gen-eration for another polynomial having the same evaluationat the point α. Note that in the context of polynomial com-
+mitments the setup must always be run by a trusted thirdparty, as otherwise these commitments represent trapdoorcommitments, i.e., the knowledge of αallows to open the
+commitment to arbitrary polynomials.
+We use polynomial Pedersen commitments of the form
+C=f(α)P+Rto hide the committed polynomials. Ped-
+ersen commitments provide computational binding as longas the discrete logarithm between the values RandPis un-
+known. Typically, this is achieved by letting a third party
+compute these parameters. In our scenario, Ris chosen by
+the originator, which requires us to additionally commit to
+a multiple of Rand to use an additive decomposition of R
+in order to ﬁx it.
+5.2 Scheme
+In Scheme 1, we present the detailed construction of our
+proposed BDSS. Moreover, inProtocol 1, we illustrateatyp-
+ical scenario for the interaction of the originator, the proxyand the veriﬁer.
+We note that Scheme 1 can easily be turned into a scheme
+using asymmetric pairings giving ﬂexibility in the choice of
+c u r v e sa n dp a i r i n g sa sw e l la si m p r o v e de ﬃ c i e n c y .I nc a s eof Type-2 pairings there are only minor modiﬁcations neces-sary, as there is an eﬃciently computable isomorphism be-tweenG
+1andG2, whereas in the Type-3 setting this comes
+at the costs of doubling the size of pkorig.T h i si sb e c a u s et h e
+valuesαP,...,αtP,δP,αδP,...,αtδP∈G1also need to be
+mapped to elements of group G2, i.e., we need to put the
+additional points αP/prime,...,αtP/prime,δP/prime,α δ P/prime,...,αtδP/prime∈G2
+intopkorig,w h e r eP/primeis a generator of G2.
+5.3 Efﬁciency
+In the following, we give a detailed analysis of the eﬃ-
+ciency of our scheme in terms of computational eﬀort aswell as key and signature sizes. We use P,S,Aand mto de-
+note the costs of a pairing evaluation, the costs of an elliptic
+curve scalar multiplication, the costs of a point addition and
+the costs of one multiplication in Z
+p,r e s p e c t i v e l y . M o r e -
+over, we use Exp(d),sand vfor the costs of the expansion
+of a polynomial of degree d, the costs of a signing opera-
+tion and the costs of a signature veriﬁcation, respectively.
+Note that Exp(d)i s d(d+1)/2mwhen ignoring shifts and
+ﬁeld additions, which are inexpensive. The costs of the al-
+gorithms of Scheme 1 are summarized in Table 1. Figure 1
+illustrates the performance of the algorithms in Scheme 1for varying template size |T |=/lscriptand template length nset
+to/lscript/4, meaning that on average there are three choices per
+exchangeable element. We conducted the experiments on
+an Intel Core i5-2540M equi pped with 8GB RAM running
+Ubuntu 12.10/amd64 and OpenJDK 6/amd64. For ECDSA
+andbasicellipticcurvearithmeticswewereusingtheJavaTM
+library ECCelerateTM2.0 [1], which is freely available for
+102/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle/SolidCircle
+/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare/SolidSquare
+/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond/MedSolidDiamond
+/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle/SolidUpTriangle
+500 1000 1500 2000Template size5001000150020002500Time /LBracket1ms/RBracket1
+/SolidUpTriangle Verify_M/MedSolidDiamond Inst/SolidSquare Verify_T/SolidCircle Sign
+Figure 1: Performance Evaluation of the Algorithms
+in Scheme 1.
+purposes of research, as well as the jPBC library [2] version
+1.2.1 for the pairing evaluations. Thereby, we are using theNIST P-224 curve [11] for ECDSA and the Tate pairing onan MNT curve [18] with a group size of 224 bits and em-
+bedding degree k= 6 in order to perform our benchmarks,
+respectively. Note that we have chosen the asymmetric ver-
+sion of Scheme 1 to gain improved eﬃciency.
+Algorithm
+ Costs
+KeyGen
+ (2t+1)S
+Sign
+ P+(/lscript+1)S+(/lscript+2)A+Exp(/lscript)+s
+VerifyT
+ 3P+(/lscript+1)S+(/lscript+2)A+Exp(/lscript)+v
+Inst
+ 3P+(/lscript−n+2)S+(/lscript−n+1)A+Exp(/lscript−n)+s+v
+VerifyM
+ 3P+( 2n+4)S+(2n+2)A+Exp(n)+2v
+Table 1: Costs of the Algorithms of Scheme 1 fortemplates of size /lscriptand length n.
+In Table 2, we analyze the sizes of keys and signatures
+of Scheme 1. We use a pairing-friendly curve of bitsize κ,
+assume all points to be compressed and for the DSSwe use
+ECDSA with key sizes of κbits. Consequently, the public
+and private keys of the DSSare of size κbits and the sig-
+nature is of size 2 κ. Note that we only count values that
+are related to the security parameter κand, consequently,
+no small values, such as integers and the like.
+Component
+ Size
+skorig
+ κ
+pkorig
+ 2(t+1)κ
+skproxy
+ κ
+σT
+ 6κ
+σM
+ 10κ
+Table 2: Sizes of Keys and Signatures in Scheme 1.
+Observe that only pkorigdepends on the maximum degree
+/lscriptof the template polynomial tT. For instance, given a tem-
+plateTwith20 ﬁxedelements and25exchangeable elements
+with 5 choices each, we obtain a template of size /lscript= 145
+yieldingatemplatepolynomial tTwith deg( tT) = 145. Con-
+sequently, we have t≥145 and the size of pkorigwould be
+approximately 8 .1kB for κ= 224, which is absolutely rea-
+sonable.5.4 Comparison to the Naive Approaches
+Recall that the ﬁrst naive approach given in Section 1.1
+would require the originator to produce one signature for
+every possible template instantiation. Let us look at the
+above example, where we have 20 ﬁxed elements and 25exchangeable elements with 5 choices each. Note that thisis an absolutely reasonable example, which is far from beingoverstated. Then, the originator would have to compute5
+25≈298·1015signatures, which is obviously impractical.
+The second naive approach we have mentioned is the use
+of Merkle hash trees to reduce the number of signaturesthat need to be computed by the originator at the expenseof higher computational costs and an increased size of thesignature. This means that the originator needs to build
+a complete binary tree, where the number of leaves equals
+the number of possible template instantiations. Further-more, each leaf would need to include a random string asadditional input to the hash function in order to hide theinstantiations from a veriﬁer as it is done in redactable sig-natures [13]. In our above example, the number of leaves
+would then be 5
+25≈298·1015. In order to build the hash
+tree, the originator would need to perform one hash evalua-
+tion per node in the tree. Note that for a complete binarytree with nleaves there would be at most 2 n−1n o d e si n
+the tree. For our above example, this would yield at most2·5
+25−1 hash evaluations and the same number of PRF
+evaluations to randomize the tree (see [13] for more details
+on how to compute the random strings using a PRF). Al-though the veriﬁcation of a signature for an instantiation inthis construction would be quite eﬃcient, as it can be car-ried in logarithmic time in the number of possible instanti-ations, the Sign, Verify
+TandInstalgorithms all require the
+computation of the full hash tree rendering this approachimpractical.
+We emphasize that in our approach the signature size
+stays constant, regardless of the number of possible tem-
+plate instantiations. This is due to the fact that the tem-
+plate polynomial, whose degree grows only linearly in the
+template size, is mapped to a point on the curve, which isf u r t h e rm a p p e dt oaﬁ e l de l e m e n ta n dt h e nh a s h e d .N o t i c ethat in our construction, the computational eﬀort is inde-pendent of the number of potential template instantiation.Instead, it grows only linearly with the template size, i.e.,
+with the number and the cardinality of exchangeable ele-
+ments and the number of ﬁxed elements.
+5.5 Security
+Subsequently, we investigate the security of our construc-
+tion in the proposed security model by considering all therequired security properties.
+Theorem 1.Assuming the hardness of the ECDLP as
+well as the existence of second preimage resistant hash func-tions, Scheme 1 is correct with respect to Deﬁnition 8.
+Proof. See Appendix A.2.
+Theorem 2.Assuming the hardness of the ECDLP as
+well as the existence of second preimage resistant hash func-tions and secure digital signature schemes, Scheme 1 is un-
+forgeable with respect to Deﬁnition 8.
+Proof. See Appendix A.1.
+103Theorem 3.Assuming the hardness of the ECDLP as
+well as the existence of second preimage resistant hash func-
+tions and secure digital signature schemes, Scheme 1 is im-mutable with respect to Deﬁnition 9.
+Proof. See Appendix A.3.
+Theorem 4.Scheme 1 is private with respect to Deﬁni-
+tion 10.
+Proof. See Appendix A.4.
+Taking Theorem 1-Theorem 4 together, we obtain the fol-lowing corollary.
+Corollary 1.Scheme 1 is a secure BDSS.
+6. CONCLUSIONS
+In this paper we have introduced a new notion of digital
+signatures, namely so-called blank digital signatures. Wehave provided the abstract scheme, a security model anda concrete construction of such a scheme from any securedigital signature scheme, pairing-friendly elliptic curves and
+polynomial commitments. Moreover, we have proven the se-
+curity of our construction, have analyzed its eﬃciency sup-portingitspracticality andhavegiven severalusecases, suchas delegated contract signing.
+6.1 Future Work
+Since blank digital signatures are a novel concept, there
+are several open issues for future work, which we outlinesubsequently. One issue for future work is to get rid of
+the trusted third party for key generation. Furthermore,
+it would be desirable to generalize the blank digital signa-ture scheme and its security model to multiple designatedproxies, which seems to be straight-forward by inclusion ofmultiple proxy signature veriﬁcation keys into the templatesignature. However, in this naive construction every proxy
+and every veriﬁer can determine the set of designated prox-
+ies. Thismaynotbedesirableinpractice, whereastoachievethis goal does not seem to be that straight-forward. Anotherissue is to ﬁnd alternative designated constructions for blanksignatures potentially without relying on standard digitalsignature schemes. Additionally, it would be desirable to
+prove the security of our construction underweaker assump-
+tions and to impose further restrictions on allowed templateinstantiations, i.e., to further limit the allowed combinationsof choices over all exchangeable elements of templates. Also,allowing blank ﬁelds, which can be substituted with arbi-trary strings, would be desirable. Finally, it may be inter-
+esting to investigate concepts applied in the construction of
+blank digital signatures in the proxy signature setting.
+7. ACKNOWLEDGEMENTS
+We would like to thank Jiangtao Li for his many valu-
+able suggestions for improving the presentation of this pa-
+per. The work of both authors has been supported by theEuropeanCommission throughprojectFP7-FutureID,grant
+agreement number 318424.
+8. REFERENCES
+[1] ECCelerate 2.0.
+http://jce.iaik.tugraz.at/sic/Products/Core-Crypto-Toolkits/ECCelerate , 2012.[2] jPBC 1.2.1.
+http://gas.dia.unisa.it/projects/jpbc , 2012.
+[ 3 ]G .A t e n i e s e ,D .H .C h o u ,B .d eM e d e i r o s ,a n d
+G. Tsudik. Sanitizable Signatures. In ESORICS ,
+volume 3679 of LNCS, pages 159–177. Springer, 2005.
+[4] J. C. Benaloh and M. de Mare. One-way
+accumulators: A decentralized alternative to digital
+sinatures (extended abstract). In Advances in
+Cryptology - EUROCRYPT ’93 , volume 765 of Lecture
+Notes in Computer Science , pages 274–285, 1993.
+[5] B. H. Bloom. Space/time trade-oﬀs in hash coding
+with allowable errors. Commun. ACM, 13(7):422–426,
+1970.
+[6] A. Boldyreva, A. Palacio, and B. Warinschi. Secure
+proxy signature schemes for delegation of signing
+rights.IACR Cryptology ePrint Archive, 2003:96,
+2003.
+[7] A. Boldyreva, A. Palacio, and B. Warinschi. Secure
+Proxy Signature Schemes for Delegation of Signing
+Rights.J. Cryptology, 25(1):57–115, 2012.
+[ 8 ]C .B r z u s k a ,H .C .P ¨ohls, and K. Samelin.
+Non-interactive public accountability for sanitizable
+signatures. In Proc. of the 9th European PKI
+Workshop: Research and Applications (EuroPKI
+2012), LNCS. Springer-Verlag, 2012.
+[9] S. Canard and A. Jambert. On Extended Sanitizable
+Signature Schemes. In Topics in Cryptology - CT-RSA
+2010, volume 5985 of LNCS, pages 179–194, 2010.
+[10] S. Chatterjee and A. Menezes. On cryptographic
+protocols employing asymmetric pairings - the role ofψrevisited. Discrete Applied Mathematics ,
+159(13):1311–1322, 2011.
+[11] P. Gallagher and C. Furlani. FIPS PUB 186-3 federal
+information processing standards publication digitalsignature standard (dss), 2009.
+[12] S. Goldwasser, S. Micali, and R. L. Rivest. A Digital
+Signature Scheme Secure Against AdaptiveChosen-Message Attacks. SIAM J. Comput. ,
+17(2):281–308, 1988.
+[13] R. Johnson, D. Molnar, D. X. Song, and D. Wagner.
+Homomorphic Signature Schemes. In Topics in
+Cryptology - CT-RSA 2002 , volume 2271 of LNCS,
+pages 244–262, 2002.
+[ 1 4 ]A .K a t e ,G .M .Z a v e r u c h a ,a n dI .G o l d b e r g .
+Constant-size commitments to polynomials and their
+applications. In Advances in Cryptology -
+ASIACRYPT 2010 , pages 177–194, 2010.
+[15] M. Klonowski and A. Lauks. Extended sanitizable
+signatures. In ICISC, pages 343–355, 2006.
+[16] M. Mambo, K. Usuda, and E. Okamoto. Proxy
+Signatures for Delegating Signing Operation. In ACM
+Conference on Computer and Communications
+Security (CCS 1996) , pages 48–57, 1996.
+[17] R. C. Merkle. A digital signature based on a
+conventional encryption function. In CRYPTO, pages
+369–378, 1987.
+[18] Miyaji, Nakabayashi, and Takano. New Explicit
+Conditions of Elliptic Curve Traces for FR-Reduction.
+TIEICE: IEICE Transactions onCommunications/Electronics/Information and
+Systems, 2001.
+104[19] T. P. Pedersen. Non-interactive and
+information-theoretic secure veriﬁable secret sharing.
+InCRYPTO, pages 129–140, 1991.
+[20] K. Samelin, H. C. Poehls, J. Posegga, and H. de Meer.
+Redactable vs. Sanitizable Signatures. Technical
+Report Number MIP-1208, Department of Informatics
+and Mathematics, University of Passau, 2012.
+[21] J. C. N. Schuldt, K. Matsuura, and K. G. Paterson.
+Proxy Signatures Secure Against Proxy Key
+Exposure. In 11th International Workshop on Practice
+and Theory in Public-Key (PKC 2008) , volume 4939
+ofLNCS, pages 141–161, 2008.
+[22] J. Silverman. The Arithmetic of Elliptic Curves ,
+volume 106 of Graduate Texts in Mathematics .
+Springer, 1986.
+[23] R. Steinfeld, L. Bull, and Y. Zheng. Content
+Extraction Signatures. In ICISC 2001, volume 2288 of
+LNCS, pages 285–304. Springer, 2001.
+APPENDIX
+A. PROOFS
+This section contains the proofs of Theorem 1-Theorem 4.
+A.1 Proof of Theorem 2 (Sketch)
+The proof consists of two parts. The ﬁrst part covers un-
+forgeability of template signatures, whereas the second part
+covers unforgeability of message signatures. Both parts con-sist of two cases covering the reuse of queried signatures and
+existential forging of signatures as detailed in Section 4.3.
+During the query phase, Ais allowed to issue an arbitrary
+number of template instantiation queries for every previ-
+ously queried template T
+i.
+Case T1. This case covers the inf easability of ﬁnding some
+T∗/negationslash=Tifor all previously queried Tisuch that T∗veriﬁes
+under some queried template signature σTi.I fAwas able
+to ﬁnd - with non-negligible probability - a T∗/negationslash=Tifor all
+1≤i≤qsuch that
+Ci=H/prime(e(/lscript/summationdisplay
+i=0t(i)
+T∗(αiP)+Ri),δP)),
+for some 1 ≤i≤q,t h e nAhas either
+1. found a template T∗/negationslash=Tisuch that tTi(X)=tT∗(X),
+or
+2. found a second polynomial tT∗with deg( tT∗)≤twith
+tTi(α)=tT∗(α) and the corresponding template T∗.
+In case one, Ahas found second preimages in Hwith non-
+negligible probability. More precisely, skT
+proxyandσTiare
+ﬁxed. If Ais able to generate a T∗/negationslash=TiwithtTi(X)=
+tT∗(X) with non-negligible probability, then he must have
+found second preimages in Hwith non-negligible probability
+for/lscriptiroots oft(Ti), whereas the suﬃx of each preimage must
+be of the form idT∗/bardbljand only the value of Mis arbitrary.
+In the second case, if Ais able to do so, then Amust
+have found a polynomial tT∗withtTi(α)=tT∗(α), i.e.,
+having the same evaluation at the unknown point αastTi
+for some 1 ≤i≤q.I fAis able to extract the value αfrom
+αPby breaking the ECDLP, for which the probability is
+negligibly small, then he could construct a polynomial tT∗
+withtTi(α)=tT∗(α). However, then Awould still needto ﬁnd second preimages in Ha si nc a s e1t oc o n s t r u c ta
+corresponding template T∗.
+Taking all together, gives us the desired contradiction.
+Case T2. This case covers the infeasability of computing
+a valid signature σT∗for some T∗givingC∗(which may be
+computed by A), which diﬀers from all previously queried
+signatures. If Awas able to ﬁnd a pair ( T∗,σT∗)/negationslash=(Ti,σTi)
+for all 1 ≤i≤qsuch that
+VerifyDSS(τ,idT∗/bardblC∗/bardblR∗
+0/bardblR∗
+2/bardbln∗/bardblpkDSS
+proxy,pkDSSorig)=true
+thenAmust be able to forge signatures of the digital sig-
+nature scheme DSSunder skDSS
+orig. This gives us the desired
+contradiction.
+Case M1. This case covers the inf easability of ﬁnding some
+M∗/negationslash=Mijfor all previouslyqueried Mijsuchthat M∗ver-
+iﬁes under some issued message signature σMij.I fAwas
+able to ﬁnd - with non-negligible probability - an M∗/negationslash=Mij
+for all 1 ≤i≤qand 1≤j≤qisuch that
+|M∗|=|Mij|∧deg(mM∗)=n∧
+H/prime(e(C
+Mij+γijR2,i,C/prime
+M∗)·e((1−γij)R0,i,CM∗)·
+·e(P−CM∗,R0,i)) =Ci
+for some 1 ≤i≤qand 1≤j≤qithenAhas found
+secondpreimagesin Hwith non-negligibleprobability. More
+precisely, since due to μall values in the veriﬁcation relation
+are ﬁxed, the only way for Ato output an M∗that passes
+the signature veriﬁcation for an existing signature, is to ﬁnd
+anM∗such that m(M∗)=m(Mij)a n d|M∗|=|Mij|,
+i.e.,
+H(M∗
+l/bardblidTi/bardbll)=H(Mijl/bardblidTi/bardbll)
+for allnroots of the polynomial mMij, whereas the suﬃx
+of each preimage must be of the form idTi/bardblland only the
+value of M∗
+lis arbitrary.
+Case M2. This case covers the infeasability of computing a
+valid signature σM∗for some M∗, which diﬀersfrom all pre-
+viouslyqueriedsignatures. Aneedstoﬁndapair( M∗,σM∗)
+/negationslash=(Mij,σMij) for all 1 ≤j≤qisuch that deg( mM∗)=n
+and
+H/prime(e(C
+M∗+γ∗R∗
+2,C/prime
+M∗)·e((1−γ∗)R∗
+0,CM∗)·
+·e(P−CM∗,R∗
+0)) =Ci
+First we consider ﬁnding M∗/precedesequalTifor some i,f o rw h i c h
+σM∗/negationslash=σMijfor all 1 ≤j≤qi.I n o r d e r f o r t h i s t o h o l d
+for a given Ci,Amust construct C
+M∗.S i n c e Aknows all
+templates, Acan choose M∗/precedesequalTiand compute C
+M∗=/summationtext/lscripti−ni
+l=0m(l)
+M∗(αlP)+γ∗R1,w h e r e a s R1can be extracted
+from previous queries as γijandm
+Mijare known. Still,
+Amust be able to forge signatures of the digital signature
+scheme DSSunder skDSS
+proxy.
+Secondly, we consider ﬁnding M∗/notprecedesoreqlTi,f o rw h i c h σM∗/negationslash=
+σMijfor all 1 ≤j≤qi. Finding such an M∗implies that
+Ahas found a polynomial mM∗such that mM∗does not
+perfectly divide tTi. This means that tTi=m
+M∗·mM∗+ξ
+withξ/negationslash= 0. Note that the only way for Ato include the
+remainder ξfor the veriﬁcation relation is to put ξ(α)i n t o
+C
+M∗. However, since the only place where C
+M∗is input
+to the veriﬁcation is the ﬁrst pairing e(C
+M∗+γR2,C/prime
+M∗),
+105this will result in C
+M∗=/summationtext/lscripti−ni
+l=0m(l)
+M∗(αlP)+ξ(α)
+mM∗(α)R1.
+Furthermore, Athen needs to compute γasξ(α)
+mM∗(α),a s
+these are the only values Acan inﬂuence. However, this
+requires Atohaveknowledgeof α,w h i c hr e q u i r e s Atobreak
+theECDLP. Another strategy, Acan follow is to use non-
+intended perfect divisors of tTi, i.e., constructing an M∗
+such that deg( mM∗)/negationslash=nand/or the elements of M∗are
+not consecutive. However, the degree nof all valid message
+polynomials as well as the index values iin the message
+encoding are ﬁxed by the originator. Thus, the veriﬁcation
+can never be satisﬁed, unless Ahas the power to compute
+second preimages.
+In all cases, Amust be able to forge signatures of the
+digital signature scheme DSSunder skDSS
+proxy. This gives us
+the desired contradictions.
+Sinceallcasesgaveusthedesiredcontradictions, theproof
+is complete.
+A.2 Proof of Theorem 1 (Sketch)
+Weshowthesignatureandinstantiationcorrectness, where
+we omit showing that the DSSveriﬁcation works, since it is
+clear from the construction. The signature correctness is
+obvious, and we now show the signature soundness. Thismeans that we have to show that the originator commitsto exactly one template polynomial by issuing a templatesignature. Similarly to case T1in the proof of unforge-
+ability, the originator would need to ﬁnd second preimages
+or another polynomial having the same evaluation at theunknown point α. Moreover, since he commits to Rby sign-
+ingR
+0along with R2and gives R1to the proxy, the proxy
+can check this commitment by verifying whether e(R0,P)=
+e(R1+R2,δP) holds, which prevents the originator from
+changing Rafter signature generation.
+It remains to show that the message signature veriﬁcation
+works, i.e., we have to prove the correctness of
+H/prime(e(C
+M+γR2,C/prime
+M)·e((1−γ)R0,CM)·e(P−CM,R0)) =C,
+whereas C=H/prime(e(tT(α)P+R,δP)). The left-hand-side
+yields
+g(
+m+γr1+γr2)·δm+((1−γ)·δr)·m+(1−m)·δr=
+g(δm
+m+γδrm )+(δrm −γδrm )+(δr−δrm)=
+gδt+δr=e(tT(α)P+R,δP),whereas we assume R1,R2andRto ber1P,r 2PandrP
+for some unknown values r1,r2andr, respectively. Further-
+more, we write t,mand
+minstead of tT(α),mM(α), and
+m
+M(α), respectively. This completes the proof.
+A.3 Proof of Theorem 3 (Sketch)
+Case T1 & T2. The proofs for these two cases are analo-
+gous to the proof in Appendix A.1, since Ahas exactly the
+same knowledge as in the previous proof. More precisely,
+this is due to the knowledge of all templates in the unforge-ability game.
+Case M2. The only diﬀerence to the power of the adver-
+saryAin the proof in Appendix A.1 is that AknowsR
+1and
+skDSS
+proxybeforehand. However, as we have shown in the proof
+in Appendix A.1, due to our strong adversary model, Acan
+obtainR1anyway. Therefore, the proof is analogous to the
+proof of case M2above.
+A.4 Proof of Theorem 4 (Sketch)
+LetTbe a template and let kbe the depth of T.N o w ,w e
+assume that Aonly knows at most k−1 instantiations and,
+thus,Ahas not full knowledge of T.W h a tAcan try to do is
+to guess the remaining choices based on Cand the instanti-
+ation dependent values C
+M. However, note that γR1as well
+asRare random values with unknown discrete logarithms,
+which can not be computed using any values from signa-
+tures or public keys. Thus, the values tT(α)P+RandδP
+are uniformly random and, consequently, e(tT(α)P+R,δP)
+as well as C=H/prime(e(tT(α)P+R,δP))are also uniformly ran-
+dom. Moreover, in the same fashion also C
+Mis a uniformly
+random value. As a consequence, CandC
+Mconstitute un-
+conditionally hiding Pedersen commitments. Note that theinstantiation dependent value γguarantees that the values
+γR
+1in the commitments C
+Mof diﬀerent template instanti-
+ations diﬀer. Thus, an adversary can gain no knowledge by
+using diﬀerences of distinct values C
+M. Note also that since
+Cis a hash value this prevents Afrom performing arithmetic
+with values C
+Mand thereby gaining knowledge of tT.F r o m
+this follows the privacy of Scheme 1.
+106

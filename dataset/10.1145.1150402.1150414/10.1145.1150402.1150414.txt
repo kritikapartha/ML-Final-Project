@@ -1,0 +1,844 @@
+Robust Information-theoretic Clustering
+Christian B ¨ohm1, Christos Faloutsos2, Jia-Yu Pan2, Claudia Plant3
+1: University of Munich, Germany,2: CMU, Pittsburgh, PA, USA,3: UMIT, Hall, Austria
+1: boehm@iﬁ.lmu.de,2:{christos, jypan }@cs.cmu.edu,3: claudia.plant@umit.at
+ABSTRACT
+How do we ﬁnd a natural clustering of a real world point
+set, which contains an unknown number of clusters with
+diﬀerent shapes, and which may be contaminated by noise?
+Most clustering algorithms were designed with certain as-
+sumptions (Gaussianity), they often require the user to giveinput parameters, and they are sensitive to noise. In this pa-per, we propose a robust framework for determining a nat-
+ural clustering of a given data set, based on the minimum
+description length (MDL) principle. The proposed frame-work, Robust Information-theoretic Clustering (RIC) , is or-
+thogonal to any known clustering algorithm: given a pre-liminary clustering, RIC puriﬁes these clusters from noise,and adjusts the clusterings such that it simultaneously de-termines the most natural amount and shape (subspace) of
+the clusters. Our RIC method can be combined with anyclustering technique ranging from K-means and K-medoidsto advanced methods such as spectral clustering. In fact,RIC is even able to purify and improve an initial coarseclustering, even if we start with very simple methods suchas grid-based space partitioning. Moreover, RIC scales wellwith the data set size. Extensive experiments on syntheticand real world data sets validate the proposed RIC frame-work.
+Categories and Subject Descriptors
+H.2.8 [ Database Management ]: Database Applications -
+Data Mining
+General Terms
+Algorithms, Performance
+Keywords
+Clustering, Noise-robustness, Parameter-free Data Mining,
+Data Summarization
+Permission to make digital or hard copies of all or part of this work for
+personal or classroom use is granted without fee provided that copies arenot made or distributed for proﬁt or commercial advantage and that copiesbear this notice and the full citation on the ﬁrst page. To copy otherwise, torepublish, to post on servers or to redistribute to lists, requires prior speciﬁcpermission and/or a fee.KDD’06, August 20–23, 2006, Philadelphia, Pennsylvania, USA.
+Copyright 2006 ACM 1-59593-339-5/06/0008 ...
+$5.00.(a) ‘good’ (b) ‘bad’
+Figure 1: A ﬁctitious dataset, (a) with a good clus-
+tering of one Gaussian cluster, one sub-space clus-ter, and noise; and (b) a bad clustering.
+1. INTRODUCTION
+The problem of clustering has attracted a huge volume
+of attention for several decades, with multiple books [ 11,
+20], surveys [ 13] and papers (X-means [ 16], G-means [ 10],
+CLARANS [ 15], CURE [ 9], CLIQUE [ 2], BIRCH [ 22], DB-
+SCAN [ 7], to name a few). Recent interest in clustering has
+been on ﬁnding clusters that have non-Gaussian correlations
+in subspaces of the attributes, e. g. [ 5,19,1]. Finding corre-
+lation clusters has diverse applications ranging from spatialdatabases to bio-informatics. The hard part of clustering isto decide what is a good group of clusters, and which datapoints to label as outliers and thus ignore from clustering.
+For example, in Figure 1, we show a ﬁctitious set of points
+in 2-d. Figure 1(a) shows a grouping of points that most hu-
+mans would agree is ’good’: a Gaussian-like cluster at the
+left, a line-like cluster at the right, and a few noise points(’outliers’) scattered throughout. However, typical cluster-ing algorithms, like K-means may produce a clustering likethe one in Figure 1(b): a bad number of clusters (ﬁve, in
+this example), with Gaussian-like shapes, fooled by a fewoutliers. There are two questions we try to answer in thiswork:
+Q1: goodness How can we quantify the ’goodness’ of a
+grouping? We would like a function that will give a
+good score to the grouping of Figure 1(a) and a bad
+score to the one of Figure 1(b).
+Q2: eﬃciency How can we write an algorithm that will
+produce good groupings, eﬃciently and without get-ting distracted by outliers.
+65
+Research Track PaperThe overview and contributions, of this paper, are exactly
+the answers to the above two questions: For the ﬁrst, wepropose to envision the problem of clustering as a com-
+pression problem and use information-theoretic arguments.
+The grouping of Figure 1(a) is ’good’, because it can suc-
+cinctly describe the given dataset, with few exceptions: Thepoints of the left cluster can be described by their (short)
+distances from the cluster center; the points on the right
+line-like cluster can be described by just one coordinate (thelocation on the line), instead of two; the remaining outlierseach need two coordinates, with near-random (and thus un-compressible) values. Our proposal is to measure the good-ness of a grouping as the Volume after Compression (VAC):
+that is, record the bytes to describe the number of clus-
+tersk; the bytes to record their type (Gaussian, line-like,
+or something else, from a ﬁxed vocabulary of distributions);the bytes to describe the parameters of each distribution(e.g., mean, variance, covariance, slope, intercept) and thenthe location of each point, compressed according to the dis-tribution it belongs to.
+Notice that the VAC criterion does not specify howto ﬁnd
+a good grouping; it can only say which of two groupings is
+better. This brings us to the next contribution of this pa-per: We propose to start from a sub-optimal grouping (e.g.,using K-means, with some arbitrary k). Then, we propose
+to use two novel algorithms:
+•Robust ﬁtting (RF) , instead of the fragile PCA, to ﬁnd
+low-dimensionality sub-space clusters and
+•Cluster merging (CM) , to stitch promising clusters to-
+gether.
+We continue ﬁtting and merging, until our VAC criterionreaches a plateau. The sketch of our algorithm above has agradient descent ﬂavor. Notice that we can use anyand all
+of the known optimization methods, like simulated anneal-ing, genetic algorithms, and everything else that we want:our goal is to optimize our VAC criterion, within the user-acceptable time frame. We propose the gradient-descent ver-sion, because we believe it strikes a good balance betweenspeed of computation and cluster quality.
+1.1 Contributions
+The proposed method, RIC, answers both questions that
+we stated earlier: For cluster quality, it uses the information-
+theoretic VAC criterion; for searching, it uses the two new
+algorithms (Robust Fit, and Cluster Merge). The resulting
+method has the following advantages:
+1. It is fully automatic, i.e. no diﬃcult or sensitive para-
+meters must be selected by the user.
+2. It returns a natural partitioning of the data set, thanks
+to the intuitive information theoretic principle of max-imizing the data compression.
+3. It can detect clusters beyond Gaussians: clusters in
+full-dimensional data space as well as clusters in axis-
+parallel subspaces (so called subspace-clusters) and inarbitrarily oriented subspaces (correlation clusters), andcombinations and mixtures of clusters of all diﬀerenttypes during one single run of the algorithm.4. It can assign model distribution functions such as uni-
+form, Gaussian, Laplacian (etc.) distribution to thediﬀerent subspace coordinates and gives thus a de-tailed description of the cluster content.
+5. It is robust against noise. Our Robust Fitting (RF)
+method is speciﬁcally designed to spot and ignore noisepoints.
+6. It is space and time eﬃcient, and thus scalable to large
+data sets.
+To the best of our knowledge, no other clustering methodmeets all of the above properties. The rest of the paper is or-ganized as follows: Section 2gives a brief survey of the large
+previous work. Section 3describes our proposed framework
+and algorithms. Section 4illustrates our algorithms on real
+and synthetic data and Section 5concludes our paper.
+2. SURVEY
+As mentioned, clustering has attracted a huge volume of
+interest over the past several decades. Recently, there are
+several papers focusing on scalable clustering algorithms, e.
+g. CLARANS [ 15], CURE [ 9], CLIQUE [ 2], BIRCH [ 22],
+DBSCAN [ 7] and OPTICS [ 3]. There are also algorithms
+that try to use no user-deﬁned parameters, like X-means
+[16] and G-means [ 10]. However, they all suﬀer from one
+or more of the following drawbacks: they focus on sphericalor Gaussian clusters, and/or they are sensitive to outliers,and/or they need user-deﬁned thresholds and parameters.
+Gaussian clusters: Most algorithms are geared towards
+Gaussian, or plain spherical clusters: For example, the well
+known K-means algorithm, BIRCH [ 22] (which is suitable
+for spherical clusters), X-means [ 16] and G-means [ 10]. These
+algorithms tend to be sensitive to outliers, because they try
+to optimize the log-likelihood of a Gaussian, which is equiv-alent to the Euclidean (or Mahalanobis) distance - eitherway, an outlier has high impact on the clustering.
+Non-Gaussian clusters: Density based clustering meth-
+ods, such as DBSCAN and OPTICS can detect clusters
+of arbitrary shape and data distribution and are robustagainst noise. For DBSCAN the user has to select a densitythreshold, and also for OPTICS to derive clusters from thereachability-plot. K-harmonic means [ 21] avoids the prob-
+lem of outliers, but still needs k. Spectral clustering al-
+gorithms [ 14] perform K-means or similar algorithms after
+decomposing the n×ngram matrix of the data (typically us-
+ing PCA). Clusters of arbitrary shape in the original spacecorrespond to Gaussian clusters in the transformed space.Here also kneeds to be selected by the user. Recent in-
+terest in clustering has been on ﬁnding clusters that havenon-Gaussian correlations in subspaces of the attributes [ 5,
+19,1]. Finding correlation clusters has diverse applications
+ranging from spatial databases to bio-informatics.
+Parameter-free methods: A disproportionately small num-
+ber of papers has focused on the subtle, but important prob-
+lem of choosing k, the number clusters to shoot for. Such
+methods include the above mentioned X-means [ 16] and G-
+means [ 10], which try to balance the (Gaussian) likelihood
+error with the model complexity. Both X-means and G-means are extensions of the K-means algorithm, which can
+66
+Research Track Paperonly ﬁnd Gaussian clusters and cannot handle correlation
+clusters and outliers. Instead, they will force correlationclusters into un-natural, Gaussian-like clusters.
+In our opinion, the most intuitive criterion is based on infor-
+mation theory and compression. There is a family of closelyrelated ideas, such as the Information Bottleneck Method[18], which is used by Slonim and Tishby for clustering terms
+and documents [ 17]. Based on information theory they de-
+rive a suitable distance function for co-clustering, but thenumber of clusters still needs to be speciﬁed in advance bythe user.
+There are numerous information theoretic criterions for model
+selection, such as the Akaike Information Criterion (AIC),
+the Bayesian Information Criterion (BIC), and MinimumDescription Language (MDL) [ 8]. Among them, MDL is
+the inspiration behind our VAC criterion, because MDL alsoenvisions the size of total, lossless compression as a mea-sure of goodness. The idea behind AIC, BIC and MDLis to penalize model complexity, in addition to deviationsfrom the cluster centers. However, MDL is a general frame-work, and it does not specify which distributions to shootfor (Gaussian, uniform, or Laplacian), nor how to searchfor a good ﬁt. In fact, all four methods (BIC, G-means,X-means and RIC) are near-identical for the speciﬁc settingof noise-free mixture of Gaussians. The diﬀerence is thatour RIC can also handle noise, as well as additional datadistributions (uniform, etc.).
+PCA: Principal Component Analysis (PCA) is a powerful
+method for dimensionality reduction, and is optimal under
+the Euclidean norm. PCA assumes a Gaussian data distrib-ution and identiﬁes the best hyper-plane to project the dataonto, so that the Euclidean projection error is minimized.That is, PCA ﬁnds global correlation structures of a dataset [12]. Recent work have extended PCA to identify local
+correlation structures that are linear [ 5] or nonlinear [ 19],
+however, some method-speciﬁc parameters such as neigh-borhood size or the dimensionality of microclusters, are stillrequired. It is desirable to have a method that is eﬃcientand robust to outliers, minimizing the need of pre-speciﬁedparameters.
+3. PROPOSED METHOD
+The quality of a clustering usually depends on noise in
+the data set, wrong algorithm parameters (e.g., number of
+clusters), or limitations on the method used (e.g., unable
+to detect correlation clusters), and resulting in a un-natural
+partition of the data set. Given an intial clustering of a dataset, how do we systematically adjust the clustering, over-come the inﬂuence of noise, recognize correlation patterns
+for cluster formation, and to eventually obtain a natural
+clustering?
+In this section, we introduce our proposed framework, RIC,
+for reﬁning a clustering and discovering a most natural clus-tering of a data set. In particular, we propose a novel cri-terion, VAC, for determining the goodness of a cluster, andpropose algorithms for:
+•(M1) robust estimation of the correlation structure of
+a cluster in the presense of noise,•(M2) identiﬁcation and separation of noise using VAC,and
+•(M3) construction of natural correlation clusters by amerging procedure guided by VAC.
+The proposed algorithms and the criterion VAC are de-scribed in details in the following subsections. Table 1gives
+a list of symbols used in this paper.
+Symbol Deﬁnition
+VA C Volume After Compression
+RF Robust Fit
+CM Cluster Merge
+RIC Robust Information-based Clustering
+n The number of points in the data set.
+d The dimensionality of the data set.
+C The clusters of a data set, C={Ci|i=
+1,...,k }.
+C A cluster of data points, C=Ccore ∪
+Cout.
+Ccore The set of core points in C.
+Cout The set of noise points (outliers) in C.
+/vectorx A data point in S.
+xi Thei-th attribute of the data point /vectorx.
+/vectorμ A cluster center of cluster S.
+/vectorμR A robust cluster center of cluster S.
+Σ( Σ i) The covariance matrix of points in clus-
+terC(orCi).
+ΣC The conventional version of Σ (from av-eraging).
+ΣR The robust version of Σ (from takingmedians).
+V(orVi) The candidate direction matrix derivedfrom Σ (or Σ
+i).
+VA C(C) The VAC value of points in cluster C.
+Small VAC value indicates that Cis a
+good cluster.
+saveCost (Ci,Cj)The improvement on the VAC value ofthe overall clustering if C
+iandCjare
+merged.
+Table 1: Table of Symbols and Acronyms
+3.1 Goodness Criterion: V AC
+The idea is to invent a compression scheme, and to de-
+clare as winner the method that minimizes the compression
+cost, including everything : the encoding for the number of
+clusters k, the encoding for the shape of each cluster (e.g.,
+mean and covariance, if it is a Gaussian cluster), the encod-
+ings for the cluster-id and the (relative) coordinates of thedata points.
+We assume that all coordinates are integers, since we have
+ﬁnite precision, anyway. That is, we assume that our datapoints are on a d-dimensional grid. The resolution of the
+grid can be chosen arbitrarily.
+The description of the method consists of the following parts:
+(a) how to encode integers (b) how to encode the points,
+once we determine that they belong in a given cluster.
+The idea is best illustrated with an example. Suppose we
+have the dataset of Figure 1. Suppose that the available
+distributions in our RIC framework are two: Gaussian, anduniform (within a Minimum Bounding Rectangle). Once we
+67
+Research Track Paperdecide to assign a point to a cluster, we can store it more
+economically, by storing its oﬀset from the center of thecluster, and using Huﬀman-like coding, since we know the
+distribution of points around the center of the cluster.
+Self-delimiting encoding of integers. The idea is that
+small integers will require fewer bytes: we use the Elias
+codes, or self-delimiting codes [ 6], where integer iis repre-
+sented using O(logi) bits. As Table 2shows, we can encode
+the length of the integer in unary (using log izeros), and
+then the actual value, using log imore bits. Notice that the
+ﬁrst bit of the value part is always ’1’, which helps us decode
+a string of integers, without ambiguity. The system can beeasily extended to handle negative numbers, as well as zero
+itself.
+number coding
+length value
+1 01
+2 00 10
+3 00 11
+8 0000 1000
+Table 2: Self-delimiting integer coding
+Encoding of points. Associated with each cluster Cis
+the following information: Rotatedness R(either false or a
+orthonormal rotation matrix to decorrelate the cluster), and
+for each attribute (regardless if rotated or not) the type T
+(Gaussian, Laplacian, uniform) and parameters of the data
+distribution. Once we decide that point Pbelongs to cluster
+C, we can encode the point coordinates succinctly, exploit-
+ing the fact that it belongs to the known distribution. If p
+is the value of the probability density function for attribute
+Pithen we need O(log 1/p) bits to encode it. For a white
+Gaussian distribution, this is proportional to the Euclidean
+distance; for an arbitrary Gaussian distribution, this is pro-
+portional to the Mahalanobis distance. For a uniform dis-
+tribution in, say, the Minimum Bounding Rectangle (MBR)(lb
+i,ubi, with 0 ≤i<d andlbfor lower bound, ubfor up-
+per bound, respectively), the encoding will be proportional
+to the area of the MBR.
+The objective of this section is to develop a coding scheme
+for the points /vectorxof a cluster Cwhich represents the points in
+a maximally compact way if the points belong to the clustersubspace and to the characteristic distribution functions ofthe cluster. Later, we will inversely deﬁne that probabilitydensity function which gives the highest compression rate tobe the right choice. For this section, we assume that all at-tributes of the points of the cluster have been decorrelatedby PCA, and that a distribution function along with thecorresponding parameters has already been selected for eachattribute. For the example in Figure 2we have a Laplacian
+distribution for the x-coordinate and a Gaussian distribu-
+tion for the y-coordinate. Both distributions are assumed
+with μ=3.5a n d σ= 1. We need to assign code pat-
+terns to the coordinate values such that coordinate values
+with a high probability (such as 3 <x< 4) are assigned
+short patterns, and coordinate values with a low probability(such as y= 12 to give a more extreme example) are as-
+signed longer patterns. Provided that a coordinate is really5%Æ4.3 bit
+19%Æ2.3 bitpdfLapl(3.5,1) (x)pdfGauss(3.5,1) (y)1234567 00.20.412 345 67 00.20.4
+Figure 2: Example of VAC.
+distributed according to the assumed distribution function,
+Huﬀman codes optimize the overall compression of the data
+set. Huﬀman codes associate to each coordinate xiab i t
+string of length l=l o g2(1/P(xi)) where P(xi) is the prob-
+ability of the (discretized) coordinate value. Let us ﬁx this
+in the following deﬁnition:
+Definition 1 (V AC of a point /vectorx).Let/vectorx∈Rdbe a
+point of a cluster Cand−→pd f(/vectorx)be ad-dimensional vector
+of probability density functions which are associated to C.
+Each pd fi(xi)is selected from a set of predeﬁned probabil-
+ity density functions with the corresponding parameters, i.e.PDF ={pd f
+Gauss (μi,σi),p d f uniform (lbi,ub i),p d f Lapl(ai,bi),. . .},
+μi,lbi,u bi,ai∈R,σi,bi∈R+.L e t γbe the grid constant
+(distance between grid cells). The VAC i(volume after com-
+pression) of coordinate iof point /vectorxcorresponds to
+VA C i(x)=l o g21
+pd fi(xi)·γ
+The VAC (volume after compression) of point /vectorxcorresponds
+to
+VA C(x)=( l o g2n
+|C|)+X
+0≤i<dVA C i(x)
+In Figure 2this is shown for the marked example point: The
+x-coordinate (between 2 and 3) has a probability of 19%.
+Thus, Huﬀman compression needs a total of log2(1/0.19) =
+2.3 bits. The y-coordinate of this point is in a range of lower
+probability (5%) and needs a longer bit string (4.3 bits). In
+addition to 6.6 bits for the coordinates, the Huﬀman-coded
+cluster-Id is stored for each point with log2(n/|C|) bits.
+Naturally, the question arises to what extent this coding
+depends on the choice of the grid resolution. The absolute
+value of the code length clearly depends on the grid reso-lution. It can easily be shown that the code length of eachcoordinate is increased by 1 bit if the number of grid cells
+68
+Research Track Paperper dimension is doubled ( γis divided by 2). This is in-
+dependent of the applied probability distribution function,
+number of clusters, etc. Since we only compare the VAC
+of diﬀerent cluster structures, distribution functions, sub-
+spaces, etc, and leave the grid resolution at a constant level,high enough to distinguish the diﬀerent points from eachother, the overall result of our algorithm is not sensitive to
+the grid resolution.
+Next, we address the question, which set of probability den-
+sity functions has to be associated to a given cluster C.O u r
+optimization goal is data compression, so we should, for eachcoordinate, select that pd f(and corresponding parameter
+setting) which minimizes the overall VAC of the cluster. Itis well known that for a ﬁxed type of pd f(e.g. Gaussian)
+the optimal parameter setting can correspond to the sta-
+tistics (e.g. mean, variance, boundaries) of the data set.Therefore, if the Gaussian pd fis selected for an attribute i,
+we use the mean and variance of the i-th coordinate of the
+points as parameters of the pd f. Likewise, for the Laplacian
+distribution, we apply a
+i=μiandbi=σi/√
+2. For the
+uniform distribution, we apply the lower and upper limit of
+the range of the coordinate values. For the selection of the
+type of probability density function, we explicitly minimize
+the VAC of the cluster, i.e.:
+Definition 2 (characteristic−→pd f(/vectorx)of cluster C).
+LetCbe a cluster with points /vectorx∈C.
+Letstat=(μi,σi,lbi,u bi,. . .)be the statistics of the data
+required in the set of allowed probability density functions
+PDF .T h e n ,−→pd f is composed from pd fi∈PDF where
+pd fi= argmin
+pd f stat∈PDFX
+/vectorx∈Clog21
+pd fstat(xi)·γ
+For the x-coordinate of the example in Figure 2that means
+the following: First required statistics, i.e. mean (3.5), vari-
+ance (1.0), and lower and upper limit (1.4, 6.2) of the dataset is determined. Then, VA C
+xis determined for all allowed
+pd f∈PDF, i.e. for pd funiform (1.4,6.2),pd fGauss (3.5,1.0)and
+pd fLapl(3.5,0.7). The function yielding the lowest VA X xis
+selected. Then, the same is done for VA C y. Throughout
+the paper we focuss on three widespread distributions of
+high practical relevance: Gaussian, Laplacian and uniform.
+Deﬁnition 2can easily be extended to other pd f-functions.
+Finally, we deﬁne when to use a decorrelation matrix. A
+decorrelation matrix is needed whenever a cluster is a cor-relation cluster, i.e. if one (or more) attribute value of thepoints of the cluster depends on the value of one (or more)other attribute. The decorrelation matrix can be gainedfrom principal component analysis (PCA) of the d×dcovari-
+ance matrix Σ of the points of the cluster and correspondsto the transpose of the orthonormal matrix V
+Tgained from
+PCA diagonalization VΛVT= Σ. We give more details
+on estimating the covariance matrix in a noise robust way
+in Section 3.2. Decorrelating data can greatly reduce the
+VAC of the cluster because, instead of having two attributes
+with a high variance (which incurs high coding cost for anymodel pd f) and a high correlation, we obtain two new vari-
+ables without any correlation, one having variance close to
+zero (VAC of almost 0 bit). Intuitively, we want to use a
+decorrelation matrix if (and only if) the VAC improvementis considerable. To obtain a fully automatic method withoutuser-deﬁned limits we use decorrelation iﬀ the VAC savings
+at least compensate the eﬀort of storing the decorrelationmatrix:
+Definition 3 (Decorrelation of a cluster). LetC
+be a cluster of points /vectorx(in the original coordinate system), Σ
+be a covariance matrix associated to CandVthe decorrela-
+tion matrix obtained by PCA diagonalization of Σ.L e t Ybe
+the set of decorrelated points, i.e. for each /vectory∈Y:/vectory=V
+T·/vectorx.
+Let−→pd f(/vectorx)be the characteristic pdf of the original cluster and−→pd f(/vectory)that of the decorrelated set Y. The decorrelation of
+Cis
+dec(C)=(
+IifP
+/vectory∈YVA C(y)+d2f>P
+/vectorx∈CVA C(x)
+Votherwise
+The information which of the two cases is true, is coded by 1
+bit. The matrix Vis coded using d×dﬂoating values using
+fbits. The identity matrix needs no coding (0 bits):
+VA C(dec(C)) =(
+1i fP
+/vectory∈YVA C(y)+d2f>P
+/vectorx∈CVA C(x)
+d2·f+ 1 otherwise
+The following deﬁnition puts these things together.
+Definition 4 (Cluster Model). The cluster model of
+a cluster Cis composed from the decorrelation dec(C)and
+the characteristic−→pd f(/vectory)where /vectory=dec(C)·/vectorxfor every
+point /vectorx∈C. The Volume After Compression of the cluster
+VA C(C)corresponds to
+VA C(C)=VA C(dec(C)) +X
+/vectorx∈CVA C(dec(C)·/vectorx)
+3.2 Robust Fitting (RF)
+We consider the combination of the cluster’s subspace
+and the characteristic probability distribution as the clus-
+ter model . A data point in a (tentative) cluster could be
+either a core point or an outlier , where core points are de-
+ﬁned as points in the cluster’s subspace which follow thecharacteristic probability distribution of the cluster model,while the outliers are points that do not follow the distrib-
+ution speciﬁed by the cluster model. We will also call the
+outliers noise (points) .
+Having outliers is one reason that prevents conventionalclustering methods from ﬁnding the right cluster model (us-ing e.g. PCA). If the cluster model is known, ﬁltering out-liers is relatively easy – just remove the points which ﬁt theworst according to the cluster model. Likewise, determining
+the model when clusters are already puriﬁed from outliersis equally simple. What makes the problem diﬃcult and in-teresting is that we have to ﬁlter outliers without knowledgeof the cluster model and vice versa.
+Partitioning clustering algorithms such as those based on
+K-means or K-medoids typically produce clusters that aremixed with noise and core points. The quality of these clus-ters is hurt by the existence of noise, which lead to a biasedestimation of the cluster model.
+We propose an algorithm for purifying a cluster that, after
+the processing, noise points are separated from their origi-nal cluster and form a cluster of their own. We start with
+69
+Research Track PaperConventional estimation
+Robust estimation140015001600170018001900
+0 5 10 15 20 25number of core pointsVAC
+Figure 3: Conventional and robust estimation.
+a short overview of our puriﬁcation method before going
+into the details. The procedure starts with getting as input
+a set of clusters C={C1,...,C k}by an arbitrary clustering
+method. Each cluster Ciis puriﬁed one by one: First, the
+algorithm estimates an orthonormal matrix called decorre-
+lation matrix ( V)to deﬁne the subspace of cluster Ci.A
+decorrelation matrix deﬁnes a similarity measure (an ellip-
+soid) which can be used to determine the boundary that
+separates the core points and outliers. Our procedure will
+pick the boundary which corresponds to the lowest overallVAC value of all points in cluster C
+i. The noise points are
+then removed from the cluster and stored in a new cluster.
+Next, we elaborate on the steps for purifying a cluster of
+points.
+3.2.1 Robust Estimation of the Decorrelation Matrix
+The decorrelation matrix of a cluster Cicontains the vec-
+tors that deﬁne (span) the space in which points in cluster
+Cireside. By diagonalizing the covariance matrix Σ of these
+points using PCA (Σ = VΛVT), we obtain an orthonormal
+Eigenvector matrix V, which we deﬁned as the decorrelation
+matrix . The matrices Vand Λ have the following proper-
+ties: the decorrelation matrix Vspans the space of points
+inC, and all Eigenvalues in the diagonal matrix Λ are pos-
+itive. To measure the distance between two points /vectorxand/vectory,
+taking into account the structure of the cluster, we use the
+Mahalanobis distance deﬁned by Λ and V:
+dΣC(/vectorx,/vectory)=(/vectorx−/vectory)T·V·Λ−1·VT·(/vectorx−/vectory).
+Given a cluster of points Cwith center /vectorμ, the conventional
+way to estimate the covariance matrix Σ is by computing a
+matrix Σ Cfrom points /vectorx∈Cby the following averaging:
+ΣC=1/|C|X
+/vectorx∈C(/vectorx−/vectorμ)·(/vectorx−/vectorμ)T,
+where ( /vectorx−/vectorμ)·(/vectorx−/vectorμ)Tis the outer vector product of the
+centered data. In other words, the ( i, j)-entry of the ma-
+trix Σ C,( Σ C)i,j, is the covariance between the i-th and
+j-th attributes, which is the product of the attribute values
+(xi−μi)·(xj−μj), averaged over all data points /vectorx∈C.
+ΣCis ad×dmatrix where dis the dimension of the data
+space.
+The two main problems of this computation when confronted
+with clusters containing outliers are that (1) the centeringstep is very sensitive to outliers, i.e. outliers may heav-ily move the determined center away from the center of thecore points, and (2) the covariances are heavily aﬀected from
+wrongly centered data and from the outliers as well. Evena small number of outliers may thus completely change thecomplete decorrelation matrix. This eﬀect can be seen inFigure 3where the center has been wrongly estimated using
+the conventional estimation. In addition, the ellipsoid whichshows the estimated “data spread” corresponding to the co-variance matrix has a completely wrong direction which isnot followed by the core points of the clusters.
+To improve the robustness of the estimation, we apply an
+averaging technique which is much more outlier robust thanthe arithmetic means: The coordinate-wise median. To cen-ter the data, we determine the median of each attribute in-dependently. The result is a data set where the origin isclose to the center of the core points of the cluster ( /vectorμ
+R),
+rather than the center of all points ( /vectorμ).
+A similar approach is applied for the covariance matrix:
+Here, each entry of the robust covariance matrix (Σ R)i,jis
+formed by the median of ( xi−μRi)·(xj−μRj) over all points
+/vectorxof the cluster. The matrix Σ Rreﬂects more faithfully the
+covariances of the core points, compared to the covariance
+matrix obtained by the arithmetic means.
+The arithmetic-mean covariance matrix Σ Chas the diag-
+onal dominance property, where the each diagonal element
+Σi,iis greater than the sum of the other elements of the
+row Σ ∗,i. The direct consequence is that all Eigenvalues in
+the corresponding diagonal matrix Λ are positive, which is
+essential for the deﬁnition of dΣ(/vectorx,/vectory).
+However, the robust covariance matrix Σ Rmight not have
+the diagonal dominance property. If Σ Ris not diagonally
+dominant, we can safely add a matrix φ·Ito it without
+aﬀecting the decorrelation matrix. The value φcan be cho-
+sen as the maximum diﬀerence of all column sums and the
+corresponding diagonal element (plus some small value, say10%):
+φ=1.1·max
+0≤i<d{(X
+0≤j<d,i/negationslash=j(ΣC)i,j)−(ΣC)i,i}.
+It can easily be seen that adding the matrix φIdoes only af-
+fect the Eigenvalues and not the Eigenvectors: If Σ = VΛVT
+then Σ + φI=VΛVT+φI. Since Vis orthonormal, φI
+can also be written as Vφ IVT, and due to the distributive
+l a ww eh a v eΣ+ φI=V(Λ +φI)VT, i.e. each Eigenvalue is
+increased by φand matrix Vis unaﬀected by this operation.
+Using our robust estimation technique, the center in Fig-ure3is correctly positioned and the ellipsoid which repre-
+sents the covariance matrix follows the distribution of thecore points. The safe decorrelation matrix V(cf. Figure 4)
+which has been generated from the safely estimated covari-ance matrix is composed from Eigenvectors which indicatethe directions of maximum variance of the core of the clus-ter. When transforming the data by multiplication of V
+T
+we remove the correlations of the attributes. Note that we
+do not decide about a projection into a lower dimensionalspace at this stage, i.e. no information loss.
+70
+Research Track PaperV=[v1,v2]xVT . x
+Îv2
+v1
+Figure 4: The decorrelation matrix.
+3.2.2 Partitioning Points into Core and Noise
+The ﬁrst step of purifying a cluster of points is to iden-
+tify the proper decorrelation matrix. We generate several
+estimates (called candidates ) of the covariance matrix, us-
+ing various estimation methods, and pick the one with the
+best overall VAC value. In our experiments, the candidatesinclude the matrix Σ
+Cfrom the conventional method us-
+ing arithmetic average, matrix Σ Rfrom the robust method
+described above. We also determine a conventional and a
+robust candidate, matrices Σ C,50and Σ R,50respectively, by
+considering only a certain percentage (e.g. 50%) of pointsin the cluster being closest to the robustly estimated center
+/vectorμ
+R. In addition, we always have the identity matrix Ias one
+candidate decorrelation matrix. Among these matrices, ouralgorithm selects the matrix giving the best (lowest) over-
+all VAC. For our example in Figure 3, the diagram at the
+right shows that the lowest VAC value of 1480 is reached
+for robust estimation in contrast to 1600 for conventionalestimation.
+The next step is to detect noise points in the cluster. By
+now, we have computed the robust center /vectorμ
+R, and chosen
+a candidate covariance matrix, which we call Σ ∗(the corre-
+sponding decorrelation matrix is V∗). The goal is to parti-
+tion the set of points in cluster Cinto two new sets: Ccore
+(for the core points) and Cout(outliers). First, our method
+orders the points of Caccording to the Mahalanobis distance
+deﬁned by the candidate covariance matrix Σ ∗. Initially, we
+deﬁne all points to be outliers ( Cout=C,C core={}). Then,
+we iteratively remove points /vectorxfromCout(according to Ma-
+halonobis sort order starting with the point closest to the
+center) and insert them into Ccore, and compute the coding
+costs before and after moving the point /vectorx.
+At each iteration, the point /vectorxbeing moved from Coutto
+Ccore, is ﬁrst projected to the space deﬁned by the selected
+candidate decorrelation matrix V∗. Then, the coding cost
+of the new conﬁguration ( Ccore∪{/vectorx},Cout−{/vectorx}) is de-
+termined as the cost where each of the coordinates is mod-eled using that distribution function which gives least coding
+costs. Outlier points are always coded using uniform distri-
+bution. So each of these conﬁgurations corresponds to onegiven radius of the ellipsoid partitioning the set into coreand noise objects. The partition which had the least overall
+cost in this algorithm is ﬁnally returned (cf. Figure 3where
+at the minimum (1480) we have 24 objects in the core set
+and 6 objects in the noise set). The diagram in Figure 3
+depicts the VAC value (Y-axis) of the diﬀerent conﬁgura-tion (C
+core,Cout) at each iteration (X-axis). Figure 3showsData structure clusters C={C1,...,C k}
+Each cluster Ci, has two members:
+Ci.points: points in cluster Ci.
+Ci.VAC: the VAC value of cluster Ci.
+algorithm reﬁned clusters R= RIC (initial clusters C)
+clusters P:= RobustFitting( C);
+clusters R:= ClusterMerging( P);
+return reﬁned clusters R;
+algorithm clusters P= RobustFitting(initial clusters C)
+// Purifying clusters from noise.
+Initialize the output clusters P={}. for each cluster C∈C
+Estimate the direction matrix;
+Search for the best split of Cinto Ccore (core objects) and Cout
+(noise objects), according to the minimal VAC value;
+Initialize the VAC values of Ccore and Cout .
+P=P∪{ Ccore ,C out};
+return puriﬁed clusters P;
+algorithm clusters C= ClusterMerging(clusters C,i n t t)
+//Merging puriﬁed clusters.
+while |C|>1and savedCost > 0
+Find the best pair of clusters to merge:
+[(C∗1,C∗2), mergedVAC( C∗1,C∗2)]= ﬁndMergePair(clusters C);
+Merge C∗1and C∗2asCnew ={C∗1∪C∗2}:
+C=C−{ C∗1,C∗2}∪{ Cnew}.
+Set VAC( Cnew ) := mergedVAC( C∗1,C∗2);
+end while
+while |C|>1and counter < t
+//Improved search: Getting out of local minimum
+Find the best pair of clusters to merge:
+[(C∗1,C∗2), mergedVAC( C∗1,C∗2)]= ﬁndMergePair(clusters C);
+counter ++ ;
+Merge C∗1and C∗2asCnew ={C∗1∪C∗2}
+Set VAC( Cnew ) := mergedVAC( C∗1,C∗2);
+end while
+return the clustering Cwith the minimum overall VAC value, found during
+the titerations;
+subroutine [(C∗1,C∗2), mergedCost( C∗1,C∗2)]= ﬁndMergePair(clusters
+C)
+// Find cluster pair with the best (maximal savedCost).
+for all cluster pairs (Ci,C j)∈C×C
+mergedVAC( Ci,Cj): =V A C ( Ci∪Cj);
+savedCost( Ci,Cj):=(VAC( Ci)+VAC( Cj))-mergedVAC( Ci,Cj);
+ﬁnd the cluster pair to merge:
+(C∗1,C∗2)=argmax (Ci,Cj)savedCost( Ci,C j);
+return The cluster pair (C∗1,C∗2), and their mergedCost( C∗1,C∗2);
+Figure 5: RIC algorithm.
+two VAC-value curves, one for the conventional candidate
+decorrelation matrix ( VC) and the other for the robust es-
+timation ( VR). At the beginning, all points are regarded as
+noise points, yielding a VAC value of approximately 1800
+for both candidate matrices. As more and more points are
+moved from Coutto the set of core points Ccore,t h eV A C
+value improves (decreases). For the robust decorrelation ma-
+trix (VR), the VAC value reaches the minimum of 1480 when
+there are 24 core points. After this, the VAC value increasesagain to approximately 1800.
+3.3 Cluster Merging (CM)
+Our RIC framework is designed to reﬁne the result of any
+clustering algorithm (e.g., K-means). Due to imperfectionof the clusters given by an algorithm, our cluster purifying
+algorithm may lead to redundant clusters containing noise
+objects that ﬁt well to other neighboring noise clusters. Inthis section we describe our proposed cluster merging proce-
+71
+Research Track PaperVAC = 78,956
+(a) K-means.
+VAC = 78,222
+(b) After purifying.
+VAC = 76,940
+(c) RIC result.
+Correlation Cl.
+ Gaussian Cl.
+Laplacian Cl. Noise
+(d) Detailed view.
+Figure 6: 2-d synthetic data.
+VAC = 202,078
+(a) K-means.
+VAC = 195,276
+(b) DBSCAN.
+VAC = 153,393
+(c) RIC result.
+1D Cluster 1D Cluster 1D Cluster 1D Cluster
+2D Cluster 3D Noise
+(d) Detailed view.
+Figure 7: 3-d synthetic data.
+dure in more detail, to correct the wrong cluster assignments
+caused by the original clustering algorithm.
+For example, the K-means clustering algorithm tends to
+partition data incorrectly, when the true clusters are non-compact. These clusters are often split up into several partsby K-means. A typical, inappropriate partitioning is shownin Figure 6(a). Our algorithm corrects the wrong partitions
+by merging clusters that share common characteristics, takesinto account the subspace orientation and data distribution.
+We use the proposed VAC value to evaluate how well two
+clusters ﬁt together. The idea is to check whether the merg-ing of a pair of clusters could decrease the correspondingVAC values. Mathematically, let VA C(C)b et h eV A Cv a l u e
+for a cluster C. We also deﬁne savedCost (C
+i,Cj) of a clus-
+ter pair ( Ci,Cj)a s
+savedCost (Ci,Cj)=VA C(Ci)+VA C(Cj)−VA C(Ci∪Cj).
+IfsavedCost (Ci,Cj)>0, then we consider the cluster pair
+(Ci,Cj) a potential pair for merging.
+Our proposed merging process is an iterative procedure.
+At each iteration, our algorithm merges the two clusterswhich have the maximum savedCost (., .) value, resulting
+in a greedy search toward a clustering that has the mini-mum overall cost. To avoid this greedy algorithm from get-ting stuck in a local minimum, we do not stop immediately,even when there is no saving of savedCost (., .) value can be
+achieved by merging pairs of clusters. That is, we do notstop when savedCost (., .)≤0. Instead, the algorithm con-
+tinues for another titerations, continuous to merge cluster
+pairs ( C
+i,Cj)w i t ht h em a x i m u m savedCost (Ci,Cj)v a l u e ,even though now the savedCost (Ci,Cj) value is negative,
+and merging CiandCjwill increase the VAC value of the
+overall data set. Whenever a new minimum is reached the
+counter is reset to zero. Pseudocode for the RIC algorithm
+is given in Figure 5.
+4. EXPERIMENTS
+4.1 Results on Synthetic Data
+Especially widespread K-means and K-medoid clustering
+methods often fail to separate clusters from noise and, there-
+fore produce results where the actual clusters are contam-
+inated by noise points. Figure 6(a)shows the result of K-
+means with k= 8 on a synthetic 2-d data set consisting
+of 4751 data objects. Two of the resulting clusters con-
+tain many noise objects, among them the one dimensional
+correlation cluster. In Figure 6(b)the result of the cluster
+purifying algorithm is depicted. Five of the eight initial clus-
+ters have been split up into clusters containing noise objectsand clusters with core points. Three of the initial clusterscontain only noise objects. No objects need to be ﬁlteredout, so these partitions remain unchanged. The purifyingalgorithm reduces the overall VAC from 78,956 to 78,222.
+As a building block we provide fully automatic noise ﬁl-
+tering and outlier detection. Our approach is model based,supports subspace and correlation clusters and various datadistributions. It provides a natural cut-oﬀ point for theproperty of being an outlier based on the coding cost.
+After the initial clusters have been puriﬁed our algorithm
+merges together clusters with common characteristics, suchas common subspace orientation or data distribution. In the
+72
+Research Track Paperexample depicted in Figure 6(a)the cluster in the center has
+been split up into three parts by K-means. This inappro-
+priate partitioning is corrected by the cluster merging algo-
+rithm (cf. Figure 6(c)). Also the noise clusters generated by
+the previously applied cluster purifying algorithm are now
+merged. The resulting clustering in our example consistsof four clusters. The cluster merging algorithm drastically
+reduces the VAC-score by removing redundant clusters.
+As a particular value-added over conventional clustering,
+RIC provides information on the data distribution of thecoordinates. In our example, the x-coordinate of the correla-
+tion cluster (top left in Figure 6(d)) is uniformly distributed,
+they-coordinate Gaussian. Both coordinates of the top right
+cluster follow a Gaussian distribution. Both coordinates of
+the bottom left cluster are Laplacian and both coordinatesof the bottom right cluster (representing the noise objects)are uniformly distributed.
+We demonstrate the performance of the cluster ﬁltering and
+merging algorithm on a 3-d synthetic data containing 7500data objects (cf. Figure 7). This data set consists of one
+plane (2-d correlation cluster, 2000 objects) and 3 lines (1-dcorrelation clusters, two with 2000 objects each, one with1000 objects) and 500 noise objects. Note that one of thelines is embedded in the plane. Figure 7(a)shows the clus-
+tering result of K-means with k= 20. The correlation clus-
+ters are split up in several parts and the noise objects aredistributed among all clusters. This initial clustering ob-tains a VAC-score of 202,078. After applying the clusterpurifying and merging algorithm, we obtain a much betterclustering result with VAC 153,393. 98.6% of the noise ob-jects are correctly assigned to the noise cluster. The planeis 94.6% pure and the lines, even the one embedded in theplane, are from 99.5% to 100% pure.
+The DBSCAN algorithm ( MinPts =4,/epsilon1=0.1) correctly
+detects the lines but fails to separate the plane from the
+noise objects, and creates many small clusters in dense ar-eas of the plane (cf. Figure 7(b)). There are 34 initial clus-
+ters in total. This result has a VAC-score of 195,276. Afterthe purifying and merging algorithm we obtain a VAC of155,412 and a very similar result as depicted in 7(c).T h i s
+demonstrates that the RIC framework can be applied withvarious partitioning clustering methods. Since the data sethas been artiﬁcially generated, we can determine the VACfor the ideal clustering (exactly corresponding to the gener-ated clusters): The VAC of the ideal clustering (151 637) isalmost reached by RIC after K-means as well as RIC afterDBSCAN.
+The gready fashion optimization process is eﬃcient. We
+implemented the RIC algorithm in Java. Runtimes for thesynthetic data sets are 147 s for the 2-d data set and 567 sfor the 3-d data set on a PC with 3 GHz CPU and 1 GBRAM.
+4.2 Performance on Real Data
+4.2.1 Metabolome Data
+We evaluate the RIC framework using a high dimensional
+metabolic data set. This 14-dimensional data set (643 in-
+stances) was produced by modern screening methodologiesTable 3: Clusters found by RIC.
+method c-id control PKU VAC IMP
+RIC+K-means 1 0275
+2 337 31 74,298 31
+K-means k=2 1 0222
+2 337 8475, 497 84
+RIC+spectral 1 2282
+2 335 24 72,131 26
+spectral k=2 1 2224
+2 335 82 75,922 84
+and represents 306 cases of PKU, a metabolic disorder, and337 objects from a healthy control group. As initial cluster-ings, we used spectral clustering (with d= 12 dimensions),
+and K-means; in both cases we used k= 6 initial clusters.
+To evaluate class purity of the clusterings, we report IMP,
+the count of ’ impurities ’, deﬁned as the count of minority
+points in each cluster. The initial clusterings have an IMP of
+31 and a VAC of 77,822 for K-means and an IMP of 26 and a
+VAC of 78,184 for spectral clustering, respectively. Table 3
+shows the the same quantities and the clustering results afterwe apply RIC. Notice that in all cases, RIC achieved every-thing we wanted: (a) it found the correct number of clus-ters, (b) it achieved better compression (lower VAC score,as expected). For comparison, we also show the results of
+K-means and spectral clustering, after setting k=2 (which
+gives an unfair advantage to them over RIC). Even so, noticethat RIC achieves both lower VAC score, as well as betterimpurity count IMP. Using k= 2, both, K-means and spec-
+tral clustering assign many instances of class PKU to thecluster of the control group.
+4.2.2 Cat Retina Images
+The data we considered here are image blocks in retinal
+images from the UCSB BioImage ( http://bioimage.ucsb.
+edu/) database. The blocks are taken from 219 images of
+retina under 9 diﬀerent conditions (healthy, diseased, etc.).
+Each image is of size 512-by-768. We take non-overlappedpixel blocks (which are called tiles) of size 64-by-64 from
+each image, and collect in 96 tiles per image, or 21,024 tiles
+in total. Each tile is represented as a vector of 7 features,
+(a)0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 100.10.20.30.40.50.60.70.80.91
+(b)
+Figure 8: (a): Visualizing the distribution of the
+7-dimensional retinal image tiles. Each subﬁgure
+shows the distribution of two dimensions. The dataset contains non-Gaussian clusters. (b): The 13clusters found by RIC. Figures look best in color.
+73
+Research Track Paper0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 100.10.20.30.40.50.60.70.80.91
+A 
+(a)0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 100.10.20.30.40.50.60.70.80.91
+(b)0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 100.10.20.30.40.50.60.70.80.91
+(c)
+0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 100.10.20.30.40.50.60.70.80.91
+B
+(d)0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 100.10.20.30.40.50.60.70.80.91
+(e)0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 100.10.20.30.40.50.60.70.80.91
+(f)
+Figure 9: Example clusters on retinal image tiles
+found by RIC.
+(a) (b)
+Figure 10: The white boxes in the two retinal images
+indicate example tiles in selected clusters. Left (a):Tiles at position A of cluster of Figure 9(a)Right
+(b): Tiles at position B of cluster of Figure 9(d).
+Best viewed in color.
+exactly as suggested in [ 4]. Figure 8(a)visualizes the distri-
+bution of the image tiles. The distribution is viewed from all
+possible pairs of dimensions – the ( i, j)-subﬁgure plots the i-
+th dimension versus the j-th dimension. The histograms at
+the diagonal subﬁgures depict the distribution of values in
+each dimension. The retina image tiles clearly have a non-Gaussian distribution with correlation clusters. Some viewsshow strong correlation patterns, for example, the view ofthe ﬁrst and 5-th dimensions (the subﬁgure at the ﬁrst rowand the ﬁfth column). In the following discussion, we willfocus on the view of the ﬁrst and 5-th dimensions, and showthat our RIC framework is able to ﬁnd the non-Gaussian,correlation clusters in this data set.
+Moreover, most of the coordinates in the detected clusters
+clearly show a supergaussian distribution, which is reportedas Laplacian by RIC. Let us note that our framework isextensible and can incorporate every data distribution thathas a pd f. Figure 8(b)shows the RIC clustering result on
+the retinal tiles, where points of a cluster are plotted withan unique symbol. In total, RIC produces 13 clusters forthis data set. We plot each cluster separately in diﬀerentﬁgures, for better visualization of the clustering result.
+Some plots of individual clusters are shown in Figure 9(a)-
+(f). It can be easily seen that the proposed RIC method
+successfully ﬁnds the correlation clusters in this data set,and, unlike other methods like K-means, it will neither over-cluster nor under-cluster the data set.
+The question is: is there any biological meaning to the clus-
+ters derived by RIC? The answer is ’yes’: Tiles from cluster(A) (see Figure 9(a)) are shown in Figure 10(a), and tend
+to correspond to the so-called “M¨ uller cells”. Similarly, tiles
+from cluster (B) (see Figure 9(d)) are shown in Figure 10(b),
+and tend to correspond to the so-called “rod photorecep-tors”.
+Speciﬁcally, Figure 10shows the layers of cells of a cat’s
+retina. The red and green colors in the image indicate the
+distribution of two proteins (“rod opsin” and “GFAP”). InFigure 10(a), the white boxes highlight two tiles at position
+Aof the cluster shown in Figure 9(a). The image shows the
+situation of a layer-detached retina being treated with oxy-gen exposition. The tiles highlighted are “M¨ uller cells”, with
+protein GFAP propagated from the inner layer of the retina.
+In Figure 10(b), the white boxes highlight two tiles at posi-
+tionBof the cluster shown at Figure 9(d). The image shows
+the case of a retina which has suﬀered layer detachment for
+3 months. The tiles highlighted are the “rod photorecep-tors”, with the protein rod opsin redistributed into the cell
+bodies, which are typical for detached retinas.
+The point is that our clustering method, without anydo-
+main knowledge, manages to derive groups of tiles that do
+have biological meaning (M¨ uller cells and rod photorecep-
+tors, respectively).
+5. CONCLUSIONS
+The contributions of this work are the answers to the two
+questions we posed in the introduction, organized in our RIC
+framework.
+•(Q1) Goodness measure: We propose the VAC-
+criterion using information-theory concepts and specif-
+ically, the volume after compression.
+•(Q2) Eﬃciency: We introduce two novel algorithms,
+which, together, can help us ﬁnd good groupings, in afast, “greedy” fashion
+–the Robust Fitting (RF) algorithm, which care-fully avoids outliers. Outliers plague all the meth-ods that use the Euclidean distance (or, equiva-
+lently, try to maximize the likelihood for Gaussianclusters)
+–the Cluster Merging (CM) algorithm, which stitchesclusters together, if the stitching gives a betterVAC score
+We show that our RIC framework is very ﬂexible, with
+several desirable properties that previous clustering algo-rithms don’t have:
+•it can handle any of the known distributions (Gaussian,uniform, Laplacian) The vast majority of clustering al-gorithms focus on the Gaussian distributions, only.
+•it can be extended to any other distribution we want
+74
+Research Track Paper•it is orthogonal to the searching algorithm that will
+look for clusters.
+•it naturally gives outliers (single-member clusters)
+•it gives more information: not only it gives the clus-
+ters, but also the cluster shapes (uniform, Gaussian,Laplacian)
+•it is fully automatic (no complex parameter setting)and time and space eﬃcient.
+More importantly, the RIC framework does notcompete
+with existing (or future) clustering methods: in fact, it canbeneﬁt from them! If a clustering algorithm is good, our RICframework will use its grouping as a starting point, it will
+try to improve on it (through the ’Robust Fit’ and ’ClusterMerge’ algorithms), and, it will either improve it, or declareit as the winner. In short, the RIC framework can not lose
+- at worst, it will tie!
+We also presented experiments on real and synthetic data,
+where we showed that our RIC framework and algorithmsgive intuitive results, while typical clustering algorithms fail.
+6. ACKNOWLEDGMENTS
+This material is based upon work supported by the Na-
+tional Science Foundation under Grants No. IIS-0209107,
+SENSOR-0329549, EF-0331657, IIS-0326322, IIS-0534205.
+This work is also supported in part by the Pennsylvania In-
+frastructure Technology Alliance (PITA), a partnership ofCarnegie Mellon, Lehigh University and the Commonwealthof Pennsylvania’s Department of Community and Economic
+Development (DCED). Additional funding was provided by
+donations from Intel, NTT and Hewlett-Packard. Any opin-ions, ﬁndings, and conclusions or recommendations expressedin this material are those of the author(s) and do not neces-sarily reﬂect the views of the National Science Foundation,or other funding parties.
+7. REFERENCES
+[1] C. C. Aggarwal and P. S. Yu. Finding generalized
+projected clusters in high dimensional spaces. In
+SIGMOD Conference , pages 70–81, 2000.
+[2] R. Agrawal, J. Gehrke, D. Gunopulos, and
+P. Raghavan. Automatic subspace clustering of high
+dimensional data for data mining applications. InSIGMOD Conference , pages 94–105, 1998.
+[3] M. Ankerst, M. M. Breunig, H.-P. Kriegel, and
+J. Sander. OPTICS: Ordering points to identify theclustering structure. In SIGMOD Conference , 1999.
+[4] A. Bhattacharya, V. Ljosa, J.-Y. Pan, M. R. Verardo,
+H. Yang, C. Faloutsos, and A. K. Singh. ViVo: Visualvocabulary construction for mining biomedical images.InProceedings of the Fifth IEEE International
+Conference on Data Mining (ICDM) , 2005.[5] C. B¨ ohm, K. Kailing, P. Kr¨ oger, and A. Zimek.
+Computing clusters of correlation connected objects.
+InSIGMOD Conference , pages 455–466, 2004.
+[6] D. Chakrabarti, S. Papadimitriou, D. S. Modha, and
+C. Faloutsos. Fully automatic cross-associations. InKDD Conference , pages 79–88, 2004.
+[7] M. Ester, H.-P. Kriegel, J. Sander, and X. Xu. A
+density-based algorithm for discovering clusters inlarge spatial databases with noise. In KDD
+Conference , 1996.
+[8] P. Gr¨ unwald. A tutorial introduction to the minimum
+description length principle. Advances in Minimum
+Description Length: Theory and Applications , 2005.
+[9] S. Guha, R. Rastogi, and K. Shim. CURE: An
+eﬃcient clustering algorithm for large databases. InSIGMOD Conference , pages 73–84, 1998.
+[10] G. Hamerly and C. Elkan. Learning the k in k-means.
+InProceedings of NIPS , 2003.
+[11] J. A. Hartigan. Clustering Algorithms . John Wiley &
+Sons, 1975.
+[12] I. Jolliﬀe. Principal Component Analysis . Springer
+Verlag, 1986.
+[13] F. Murtagh. A survey of recent advances in
+hierarchical clustering algorithms. The Computer
+Journal , 26(4):354–359, 1983.
+[14] A. Ng, M. Jordan, and Y. Weiss. On spectral
+clustering: Analysis and an algorithm. In Advances in
+Neural Information Processing Systems , 2001.
+[15] R. T. Ng and J. Han. Eﬃcient and eﬀective clustering
+methods for spatial data mining. In Proc. of VLDB
+Conference. , pages 144–155, 1994.
+[16] D. Pelleg and A. Moore. X-means: Extending
+K-means with eﬃcient estimation of the number of
+clusters. In Proceedings of the Seventeenth
+International Conference on Machine Learning(ICML) , pages 727–734, 2000.
+[17] N. Slonim and N. Tishby. Document clustering using
+word clusters via the information bottleneck method.
+InSIGIR , pages 208–215, 2000.
+[18] N. Tishby, F. C. Pereira, and W. Bialek. The
+information bottleneck method. CoRR ,
+physics/0004057, 2000.
+[19] A. K. Tung, X. Xu, and B. C. Ooi. CURLER: Finding
+and visualizing nonlinear correlation clusters. In
+SIGMOD Conference , pages 467–478, 2005.
+[20] C. Van-Rijsbergen. Information Retrieval .
+Butterworths, London, England, 2nd edition, 1979.
+[21] B. Zhang, M. Hsu, and U. Dayal. K-harmonic means -
+A spatial clustering algorithm with boosting. TSDM ,
+pages 31–45, 2000.
+[22] T. Zhang, R. Ramakrishnan, and M. Livny. BIRCH:
+An eﬃcient data clustering method for very largedatabases. In SIGMOD Conference , pages 103–114,
+1996.
+75
+Research Track Paper

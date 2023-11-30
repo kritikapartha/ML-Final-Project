@@ -1,0 +1,461 @@
+Adversarial Domain Adaptation for Cross-lingual Information
+Retrieval with Multilingual BERT
+Runchuan Wang1,2, Zhao Zhang3,7, Fuzhen Zhuang4,5,∗, Dehong Gao6, Yi Wei6, Qing He1,2
+1Key Lab of Intelligent Information Processing of Chinese Academy of Sciences (CAS), Institute of Computing
+Technology, CAS, Beijing 100190, China2University of Chinese Academy of Sciences, Beijing 100049, China
+3Institute of Computing Technology, Chinese Academy of Sciences, Beijing 100190, China
+4Institute of Artificial Intelligence, Beihang University
+5SKLSDE, School of Computer Science, Beihang University, Beijing 100191, China
+6Alibaba Group7Zhejiang Lab
+{wangrunchuan19s, zhangzhao2021, heqing}@ict.ac.cn, zhuangfuzhen@buaa.edu.cn,
+{dehong.gdh, yi.weiy}@alibaba-inc.com
+ABSTRACT
+Transformer-based language models (e.g. BERT, RoBERT, GPT, etc)
+have shown remarkable performance in many natural language pro-
+cessing tasks and their multilingual variants make it easier to handle
+cross-lingual tasks without using machine translation system. In
+this paper, we apply multilingual BERT in cross-lingual information
+retrieval (CLIR) task with triplet loss to learn the relevance between
+queries and documents written in different languages. Moreover,
+we align the token embeddings from different languages via adver-
+sarial networks to help the language model to learn cross-lingual
+sentence representation. We achieve the state-of-the-art result on
+the newly published CLIR dataset: CLIRMatrix. Furthermore, we
+show that the adversarial multilingual BERT can also get the com-
+petitive result in the zero-shot setting in some specific languages
+when we are lack of CLIR training data in a specific language.
+CCS CONCEPTS
+•Information systems →Retrieval models and ranking.
+KEYWORDS
+Cross-lingual Information Retrieval, BERT, Adversarial Networks,
+Domain Adaptation
+ACM Reference Format:
+Runchuan Wang, Zhao Zhang, Fuzhen Zhuang, Dehong Gao, Yi Wei, Qing
+He. 2021. Adversarial Domain Adaptation for Cross-lingual Information
+Retrieval with Multilingual BERT. In Proceedings of the 30th ACM Int’l
+Conf. on Information and Knowledge Management (CIKM ’21), November
+1–5, 2021, Virtual Event, Australia. ACM, New York, NY, USA, 5 pages.
+https://doi.org/10.1145/3459637.3482050
+*Fuzhen Zhuang is the corresponding author.
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than ACM
+must be honored. Abstracting with credit is permitted. To copy otherwise, or republish,
+to post on servers or to redistribute to lists, requires prior specific permission and/or a
+fee. Request permissions from permissions@acm.org.
+CIKM ’21, November 1–5, 2021, Virtual Event, Australia.
+©2021 Association for Computing Machinery.
+ACM ISBN 978-1-4503-8446-9/21/11. . . $15.00
+https://doi.org/10.1145/3459637.34820501 INTRODUCTION
+Cross-lingual Information Retrieval is the task of retrieving relevant
+information when the document collection is written in a different
+language from the user query. Traditional approaches to CLIR rely
+on machine translation systems or bilingual dictionaries to map
+queries and documents to the same language [ 16]. However, the per-
+formance of traditional system is limited by the quality of machine
+translation. Moreover, the searching framework is too heavy to be
+globally optimized. Our work aims to learn aligned cross-lingual
+sentence representations for both queries and documents without
+machine translation.
+With the development of neural networks, deep semantic match-
+ing models are widely used in information retrieval. These methods
+could be roughly divided into two categories: the representation-
+based method and the interaction-based method [ 19]. The repre-
+sentation based method uses deep learning model to obtain the
+representation or embedding of a single text (i.e. a query or a doc-
+ument) and calculates the distance between embeddings as the
+semantic similarity score [ 8,13,21]. The interaction-based method
+does not learn the embedding of a single text directly but first
+builds local interactions between two pieces of text, and then uses
+deep neural networks to learn hierarchical interaction patterns for
+matching [7, 9, 17, 23].
+In the past several years, BERT [ 3], the pre-trained bidirectional
+transformers language model, has shown remarkable performance
+in many natural language processing tasks, including information
+retrieval. The interaction-based method with BERT [ 2,9,11,24,26]
+takes advantage of the abundant semantic information between
+text pairs. However, this method has to repeatedly encode queries
+with each of the retrieved documents, which is time-consuming
+and needs high online calculation resources.
+In this paper, for simplicity and convenience, we choose represen-
+tation based method and use multilingual BERT (mBERT) as the fea-
+ture extractor to encode multilingual texts into embeddings. How-
+ever, the embedding feature spaces from different languages have
+different underlying distributions, which creates many language
+domains and affects the ranking results. Therefore, we introduce do-
+main adversarial neural networks (DANNs)[ 5] to eliminate the do-
+main differences. DANNs, using the idea of Generative Adversarial
+Networks (GANs) [ 6], is an effective way to align cross-lingual em-
+beddings for many applications in NLP research[ 1,4,10,12,13,25].
+Short Paper Track
+CIKM ’21, November 1–5, 2021, Virtual Event, Australia
+3498𝑑+𝑞 𝑑−mBERT mBERT mBERTshare
+weight
+sshare
+weight
+s𝑑+ 𝑞 𝑑− cos cos𝑟𝑠𝑞,𝑑+𝑟𝑠𝑞,𝑑−Triplet LossFigure 1: Neural architecture of triplet loss model. Three
+mBERT models share weights.
+However, as far as we know, there is no work applying adversarial
+network with pretrained language model to CLIR task. In DANNs,
+there is a discriminator Daiming to tell the language of each embed-
+ding, while a generator G(i.e. the top transformer layer in mBERT)
+aims to fool the discriminator. Unlike the generator in GANs, the
+generator in DANNs does not generate new sample, but adapts
+different language domains to one common domain.
+2 APPROACHES
+2.1 CLIR with mBERT
+For a pair of query and document (q, d), its relevance label is rel(q,
+d). The more relevant pair has the higher score. The query and doc-
+ument are encoded by mBERT independently and are represented
+as®𝑞and®𝑑, which are the embeddings of [CLS] token. The ranking
+score between®𝑞and®𝑑is
+𝑟𝑠(𝑞,𝑑)=cos(®𝑞,®𝑑)=®𝑞·®𝑑
+∥®𝑞∥®𝑑(1)
+We fine-tune mBERT with triplet loss. As shown in figure 1, a
+triplet sample consists of three texts: a query q, a positive document
+𝑑+and a negative document 𝑑−, where rel(q,𝑑+)>rel(q,𝑑−). We
+use their difference, rel(q,𝑑+) -rel(q,𝑑−), as the margin of triplet
+loss. The loss function is
+𝐿𝑇(𝜃𝐵)=max(𝜂(𝑟𝑒𝑙(𝑞,𝑑+)−𝑟𝑒𝑙(𝑞,𝑑−))−(𝑟𝑠(𝑞,𝑑+)−𝑟𝑠(𝑞,𝑑−)),0)
+(2)
+where𝜃𝐵is the parameter of mBERT and 𝜂is a positive constant to
+control the margin. It is a pairwise loss function aiming to increase
+the ranking score between qand𝑑+and decrease the ranking score
+between qand𝑑−.
+2.2 Adversarial Training
+Vanilla mBERT has shown strong ability on cross-lingual transfer
+[14,18,22]. However, different languages still own different embed-
+ding spaces in mBERT. We apply adversarial training for aligning
+embedding spaces to one common space. Let 𝑋={𝑥1,...,𝑥𝑛}and
+𝑌={𝑦1,...,𝑦𝑚}be two sets of nandmdocuments coming from
+a source and a target language respectively. These documents arefirstly encoded by mBERT. In the discrimination step, we train a bi-
+nary classifier as the discriminator D, and𝐷(®𝑧)shows the probabil-
+ity of the document embedding ®𝑧belonging to the source language.
+The discriminator loss can be written as:
+𝐿𝐷(𝜃𝐷|𝑚𝐵𝐸𝑅𝑇)=−1
+𝑛𝑛Õ
+𝑖=1log(𝐷(®𝑥𝑖))−1
+𝑚𝑚Õ
+𝑖=1log(1−𝐷(®𝑦𝑖))(3)
+where𝜃𝐷is the parameter of D. In generation step, we freeze the D
+and view the top transformer layer of mBERT as a generator. The
+generator loss is:
+𝐿𝐺(𝜃𝑡𝑜𝑝
+𝐵|𝐷)=−1
+𝑛𝑛Õ
+𝑖=1log(1−𝐷(®𝑥𝑖))−1
+𝑚𝑚Õ
+𝑖=1log(𝐷(®𝑦𝑖)) (4)
+where𝜃𝑡𝑜𝑝
+𝐵is the parameter of top layer of mBERT and the lower
+layers of mBERT are also frozen in the generator training step.
+3 EXPERIMENTS
+3.1 Dataset
+We use a newly published CLIR dataset: MULTI-8 from CLIRMa-
+trix[20].MULTI-8 is a CLIR dataset comprising of queries and
+documents jointly aligned 8 languages: Arabic (ar), German (de),
+English (en), Spanish (es), French (fr), Japanese (ja), Russian (ru),
+Chinese (zh). Each query will have relevant documents in other 7
+languages. For every query, there are 100 candidate documents and
+the relevance label ranges from 0 to 6, with 0 being irrelevant and
+6 being most relevant. The training set of MULTI-8 contains up to
+10,000 queries for each language, while validation, test1, and test2
+sets each contain up to 1,000 queries. We use the test1 set as the
+test dataset. The queries in MULTI-8 are parallel across languages.
+MULTI-8 extracts data from Wikipedia. The queries and doc-
+uments are from Wikipedia titles and articles. For each query, it
+has a corresponding document written in the same language which
+is the article linking to the query title. We use the corresponding
+documents to train the adversarial networks.
+3.2 Baseline
+We reproduce the baseline in [ 20], an interaction-based method,
+which views the input of mBERT as a concatenation of query to-
+kens and document tokens, with a token [SEP] separating the two
+segments. A linear combination layer and a softmax layer are added
+on top of the [CLS] token to give the ranking score of the query
+and document pair. The loss function is hinge loss with margin.
+3.3 Implementation Details
+We choose English as the query language (source language) and
+the other 7 languages as the document language (target language).
+Aside from the baseline, we conduct three experiments with our
+model:
+The first is fine-tuning mBERT by triplet architecture without
+adversarial networks, a typical representation-based method which
+can be compared to the baseline.
+The second experiment is training mBERT with triplet architec-
+ture and adversarial networks. For the queries in source and target
+languages in the training dataset, we choose their corresponding
+documents as the samples for adversarial training. We use two
+Short Paper Track
+CIKM ’21, November 1–5, 2021, Virtual Event, Australia
+3499English queries
+Chinese documents
+English documentsmBERT
+𝜃𝐵Triplet Loss
+Discriminator
+𝜃𝐷𝐿𝑇
+𝐿𝐷
+𝐿𝐺[CLS] embeddings
+[CLS] embeddings / 
+term embeddingsTraining data for adversarial networksTraining data for triplet lossFigure 2: Overview of the multi-task training process. The second experiment chooses different document embeddings as the
+input of discriminator.
+Chinese documents
+Chinese queries
+English queriesmBERT
+𝜃𝐵Triplet Loss
+Discriminator
+𝜃𝐷𝐿𝑇
+𝐿𝐷
+𝐿𝐺[CLS] embeddings
+Term embeddings Training data for adversarial networksTraining data for triplet loss
+Figure 3: Overview of the third experiment. We trained a mono-lingual IR model in Chinese with a adversarial network be-
+tween English and Chinese queries.
+different kinds of document embedding as the input of the discrim-
+inator. The first is the [CLS] embedding, which summarizes the
+semantic information of a document. The second is the embeddings
+of the terms existing in both query and document. As is shown in
+previous research [ 2,9], these terms would gain stronger attention
+after fine-tuning on information retrieval task. These key term em-
+beddings may be also effective to train the adversarial network and
+could provide more samples.
+The discriminator Dis a single layer perceptron with softmax.
+As is shown in figure 2, this experiment is a multi-task learning
+setting and we use the alternative learning strategy, i.e., the triplet
+loss and adversarial loss are iterated by turns. The set of triplet
+architecture training is the same as the first experiment. In the test
+stage, we use English queries to search Chinese documents.
+The third experiment tests the transfer ability of adversarial net-
+works in the zero-shot setting. Firstly, we train a mono-lingual IR
+model in target language directly. Besides, as an example shown
+in figure 3, we add an adversarial task between source and tar-
+get languages to the mono-lingual IR model. The samples for the
+adversarial network are the term embeddings of queries. We still
+test with cross-lingual data, i.e., use English queries to search Chi-
+nese documents, and compare the performance difference between
+whether there is an adversarial network or not.
+The pre-trained model is BERT-base, multilingual, uncased, and
+the dimension of token embedding is 768. All mBERT models are
+trained using Adam optimizer. We set 𝜂=0.1in the triplet loss
+function.
+3.4 Results
+We rerank the documents in the test dataset and report all results
+in nDCG@10 (normalized discounted cumulative gain).
+Table 1 shows the performance of the baseline and triplet models.
+First, we can see the representation-based method is comparable to
+the interaction-based method. The model only fine-tuned by triplet
+loss performs on par with the baseline. We randomly choose 10pairs of English and Chinese queries in the same meaning and ex-
+tract their corresponding documents. Therefore, we get 10 pairs of
+comparable corpus. Figure 4 shows the t-SNE figure of the embed-
+dings encoded by mBERT models. The points of English and Chi-
+nese are well separated without fine-tuning, while after fine-tuning
+mBERT with triplet loss, the points show great geometric similar-
+ity across language, just the same as the static word embedding
+like word2vec[ 15]. mBERT has already studied some knowledge of
+semantic similarity from the triplet architecture.
+Second, the multi-task models with adversarial networks, both
+using [CLS] embeddings and key term embeddings, outperform
+the baseline and triplet models. These results show the adversar-
+ial networks could help to improve performance. To illustrate the
+effectiveness, table 2 shows an example of the similarity of embed-
+dings between query and document terms. The cosine similarity
+between the query and document reduced sharply after fine-tuning
+on adversarial networks. Moreover, the [CLS] embedding of query
+’Crossword’ is more close to its corresponding Chinese terms ’填字
+游戏’ than other terms in the document in the adversarial setting.
+The cross-lingual adversarial network allows mBERT to extract a
+variety of cross-lingual parallel features.
+Table 3 presents the results of the third experiment. The first
+data row shows that mBERT could get acceptable result in cross-
+lingual task even if there is no source language used in training
+step, perhaps because the mono-lingual model has already studied
+a good representation for document, which has the information of
+arrangement. The second row shows that the mono-lingual model
+with adversarial network could get better results in most target
+language in cross-lingual task. The adversarial network aligns the
+embeddings of queries in different languages. The result again
+validates the effectiveness of the adversarial module.
+4 CONCLUSION
+In this paper, we propose to use mBERT with adversarial alignment
+for CLIR task. Our purpose is to adapt the embedding space of
+target language to the space of source language to improve the
+Short Paper Track
+CIKM ’21, November 1–5, 2021, Virtual Event, Australia
+3500Table 1: Performance of the baseline and different models used in the first two experiments.
+Target language ar de es fr ja ru zh
+Baseline 80.67% 80.55% 81.24% 80.52% 84.06% 79.49% 84.44%
+Triplet 82.99% 81.23% 82.72% 81.47% 84.81% 79.95% 84.63%
+Triplet + [CLS] adv 83.76% 81.98% 83.89% 81.80% 84.91% 80.81% 85.41%
+Triplet + term adv 84.29% 82.42% 83.75% 82.56% 85.87% 80.87% 85.35%
+-60
+-50
+-40
+-30
+-20
+-10
+0
+10
+20
+30
+40
+-50
+-40
+-30
+-20
+-10
+0
+10
+en
+zh
+215
+6
+34
+108971
+563
+410
+8
+92
+7
+(a) Before fine-tuning
+-50
+-40
+-30
+-20
+-10
+0
+10
+20
+30
+40
+50
+60
+-60
+-40
+-20
+0
+20
+40
+60
+80
+en
+zh
+15
+63410
+89
+2
+15
+634 10
+89
+2
+77 (b) After fine-tuning
+Figure 4: The t-SNE figures on comparable corpus. We reduce the dimension of [CLS] embedding from 768 to 2. Figure 4(a)
+shows the embeddings encoded by mBERT without any fine-tuning and figure 4(b) shows the embeddings encoded by mBERT
+fine-tuned with triplet loss. The same index means the documents are from the same comparable pair.
+Table 2: The cosine similarity between the [CLS] embedding of query ’Crossword’ and the term embeddings of its correspond-
+ing document in Chinese. The terms ’填字游戏’mean ’Crossword’ in Chinese. The document means ’Crossword is a common
+puzzle game on paper.’ in English.
+Document term [CLS] 填字游戏是一种常见的纸上益智游戏 . . .
+Triplet 0.29 0.21 0.26 0.25 0.25 0.26 0.29 0.29 0.28 0.26 0.26 0.26 0.26 0.25 0.23 0.25 0.27
+Triplet + term adv 0.57 0.46 0.53 0.46 0.51 0.51 0.48 0.39 0.26 0.28 0.40 0.40 0.36 0.40 0.39 0.41 0.44
+Table 3: Performance of the adversarial transfer model in zero-shot setting. The first data row is the results of models trained
+on mono-lingual samples directly and the second row are models added with adversarial network.
+Target language ar de es fr ja ru zh
+No adv 74.21% 77.65% 80.97% 78.81% 72.16% 73.53% 75.83%
+adv 75.70% 78.08% 80.67% 79.82% 72.74% 74.50% 78.55%
+performance with adversarial networks. Experimental results on
+CLIRMatrix dataset demonstrate the effectiveness of our model.
+Furthermore, we find the adversarial alignment could also be used
+in zero-shot learning. It is significant because we are lack of a
+large-scale, easily accessible CLIR dataset.5 ACKNOWLEDGEMENT
+The research work is supported by the National Natural Science
+Foundation of China under Grant No. U1836206, U1811461, 61773361.
+Short Paper Track
+CIKM ’21, November 1–5, 2021, Virtual Event, Australia
+3501REFERENCES
+[1]Alexis Conneau, Guillaume Lample, Marc’Aurelio Ranzato, Ludovic Denoyer,
+and Hervé Jégou. 2017. Word translation without parallel data. arXiv preprint
+arXiv:1710.04087 (2017).
+[2]Zhuyun Dai and Jamie Callan. 2019. Deeper text understanding for IR with
+contextual neural language modeling. In Proceedings of the 42nd International
+ACM SIGIR Conference on Research and Development in Information Retrieval.
+985–988.
+[3]Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2018. Bert:
+Pre-training of deep bidirectional transformers for language understanding. arXiv
+preprint arXiv:1810.04805 (2018).
+[4]Chunning Du, Haifeng Sun, Jingyu Wang, Qi Qi, and Jianxin Liao. 2020. Adver-
+sarial and domain-aware bert for cross-domain sentiment analysis. In Proceedings
+of the 58th Annual Meeting of the Association for Computational Linguistics. 4019–
+4028.
+[5]Yaroslav Ganin, Evgeniya Ustinova, Hana Ajakan, Pascal Germain, Hugo
+Larochelle, François Laviolette, Mario Marchand, and Victor Lempitsky. 2016.
+Domain-adversarial training of neural networks. The journal of machine learning
+research 17, 1 (2016), 2096–2030.
+[6]Ian J Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley,
+Sherjil Ozair, Aaron Courville, and Yoshua Bengio. 2014. Generative adversarial
+networks. arXiv preprint arXiv:1406.2661 (2014).
+[7]Jiafeng Guo, Yixing Fan, Qingyao Ai, and W Bruce Croft. 2016. A deep relevance
+matching model for ad-hoc retrieval. In Proceedings of the 25th ACM international
+on conference on information and knowledge management. 55–64.
+[8]Po-Sen Huang, Xiaodong He, Jianfeng Gao, Li Deng, Alex Acero, and Larry
+Heck. 2013. Learning deep structured semantic models for web search using
+clickthrough data. In Proceedings of the 22nd ACM international conference on
+Information & Knowledge Management. 2333–2338.
+[9]Zhuolin Jiang, Amro El-Jaroudi, William Hartmann, Damianos Karakos, and
+Lingjun Zhao. 2020. Cross-lingual Information Retrieval with BERT. arXiv
+preprint arXiv:2004.13005 (2020).
+[10] Phillip Keung, Yichao Lu, and Vikas Bhardwaj. 2019. Adversarial learning with
+contextual embeddings for zero-resource cross-lingual classification and NER.
+arXiv preprint arXiv:1909.00153 (2019).
+[11] Omar Khattab and Matei Zaharia. 2020. Colbert: Efficient and effective passage
+search via contextualized late interaction over bert. In Proceedings of the 43rd
+International ACM SIGIR Conference on Research and Development in Information
+Retrieval. 39–48.
+[12] Lukas Lange, Anastasiia Iurshina, Heike Adel, and Jannik Strötgen. 2020. Ad-
+versarial alignment of multilingual models for extracting temporal expressions
+from text. arXiv preprint arXiv:2005.09392 (2020).[13] Robert Litschko, Goran Glavaš, Simone Paolo Ponzetto, and Ivan Vulić. 2018.
+Unsupervised cross-lingual information retrieval using monolingual data only.
+InThe 41st International ACM SIGIR Conference on Research & Development in
+Information Retrieval. 1253–1256.
+[14] Chi-Liang Liu, Tsung-Yuan Hsu, Yung-Sung Chuang, and Hung-Yi Lee. 2020. A
+study of cross-lingual ability and language-specific information in multilingual
+BERT. arXiv preprint arXiv:2004.09205 (2020).
+[15] Tomas Mikolov, Quoc V Le, and Ilya Sutskever. 2013. Exploiting similarities
+among languages for machine translation. arXiv preprint arXiv:1309.4168 (2013).
+[16] Jian-Yun Nie. 2010. Cross-language information retrieval. Synthesis Lectures on
+Human Language Technologies 3, 1 (2010), 1–125.
+[17] Liang Pang, Yanyan Lan, Jiafeng Guo, Jun Xu, Shengxian Wan, and Xueqi Cheng.
+2016. Text matching as image recognition. In Proceedings of the AAAI Conference
+on Artificial Intelligence, Vol. 30.
+[18] Telmo Pires, Eva Schlinger, and Dan Garrette. 2019. How multilingual is multi-
+lingual bert? arXiv preprint arXiv:1906.01502 (2019).
+[19] Yifan Qiao, Chenyan Xiong, Zhenghao Liu, and Zhiyuan Liu. 2019. Understanding
+the Behaviors of BERT in Ranking. arXiv preprint arXiv:1904.07531 (2019).
+[20] Shuo Sun and Kevin Duh. 2020. CLIRMatrix: A massively large collection of
+bilingual and multilingual datasets for Cross-Lingual Information Retrieval. In
+Proceedings of the 2020 Conference on Empirical Methods in Natural Language
+Processing (EMNLP). 4160–4170.
+[21] Ivan Vulić and Marie-Francine Moens. 2015. Monolingual and cross-lingual in-
+formation retrieval models based on (bilingual) word embeddings. In Proceedings
+of the 38th international ACM SIGIR conference on research and development in
+information retrieval. 363–372.
+[22] Shijie Wu and Mark Dredze. 2019. Beto, bentz, becas: The surprising cross-lingual
+effectiveness of BERT. arXiv preprint arXiv:1904.09077 (2019).
+[23] Chenyan Xiong, Zhuyun Dai, Jamie Callan, Zhiyuan Liu, and Russell Power. 2017.
+End-to-end neural ad-hoc ranking with kernel pooling. In Proceedings of the 40th
+International ACM SIGIR conference on research and development in information
+retrieval. 55–64.
+[24] Zeynep Akkalyoncu Yilmaz, Shengjin Wang, Wei Yang, Haotian Zhang, and
+Jimmy Lin. 2019. Applying BERT to document retrieval with birch. In Proceedings
+of the 2019 Conference on Empirical Methods in Natural Language Processing and
+the 9th International Joint Conference on Natural Language Processing (EMNLP-
+IJCNLP): System Demonstrations. 19–24.
+[25] Meng Zhang, Yang Liu, Huanbo Luan, and Maosong Sun. 2017. Adversarial
+training for unsupervised bilingual lexicon induction. In Proceedings of the 55th
+Annual Meeting of the Association for Computational Linguistics (Volume 1: Long
+Papers). 1959–1970.
+[26] Yuyu Zhang, Ping Nie, Xiubo Geng, Arun Ramamurthy, Le Song, and Daxin Jiang.
+2020. DC-BERT: Decoupling Question and Document for Efficient Contextual
+Encoding. arXiv preprint arXiv:2002.12591 (2020).
+Short Paper Track
+CIKM ’21, November 1–5, 2021, Virtual Event, Australia
+3502

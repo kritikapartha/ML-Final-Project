@@ -1,0 +1,600 @@
+What are Security Patterns?
+A Formal Model for Security and Design of Software
+Anika Behrens
+University of Bremen
+Bremen, Germany
+anikab@informatik.uni-bremen.de
+ABSTRACT
+Security patterns aim to be best practices for avoiding security-
+related design flaws in software. There is a potential demand for
+model-driven software tools processing security patterns automati-
+cally to support designers, developers, and auditors. Automatically
+generating or detecting security pattern instances in source code
+requires a formal specification of instructions how to implement
+secure software, instead of a description form that is designed for
+humans. We present a formal definition of security patterns more
+suitable for automated processes of code generation or code veri-
+fication. We demonstrate that security patterns theoretically lead
+to formal constraints that range over all Chomsky types and show
+how formal security patterns of Chomsky type 3 can be reduced to
+particular expressions under some assumptions. Finally, we formal-
+ize abstractions of security patterns and give a mathematical model
+as a basis for a data structure for security patterns to be processed
+by software tools.
+CCS CONCEPTS
+•Security and privacy →Formal security models ;Software
+security engineering ;Security requirements ;•Software and its
+engineering →Design patterns ;Model-driven software engineer-
+ing;
+KEYWORDS
+Security Patterns, Design Patterns, Formal Model, Formal Language,
+Formal Alphabet, Finite State Machine, Chomsky Type
+ACM Reference Format:
+Anika Behrens. 2018. What are Security Patterns?: A Formal Model for
+Security and Design of Software. In ARES 2018: International Conference on
+Availability, Reliability and Security, August 27–30, 2018, Hamburg, Germany.
+ACM, New York, NY, USA, 6 pages. https://doi.org/10.1145/3230833.3230834
+1 INTRODUCTION
+Security patterns aim to help humans to design secure architectures
+and to develop secure software. We conjecture that security patterns
+would gain additional value if their textual and graphical descrip-
+tion form was supplemented by a formal mathematical model of
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than the
+author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or
+republish, to post on servers or to redistribute to lists, requires prior specific permission
+and/or a fee. Request permissions from permissions@acm.org.
+ARES 2018, August 27–30, 2018, Hamburg, Germany
+©2018 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+ACM ISBN 978-1-4503-6448-5/18/08. . . $15.00
+https://doi.org/10.1145/3230833.3230834executable instructions representing the set of solutions. Although
+this model might not be as intuitive as the current representation,
+it could be processed automatically within model-driven tools for
+designers and auditors. Supporting designers with tools might help
+them to implement security patterns step-by-step. Furthermore,
+we might provide guidelines for auditors to detect security pat-
+tern instances in software. We give a definition of formal security
+patterns and show formal language properties that should be re-
+spected for automated processes, such as security pattern detection
+or code generation. The Chomsky hierarchy provides four types of
+formal grammars: 0 (recursively enumerable), 1 (context-sensitive),
+2 (context-free), 3 (regular). We show that formal security pat-
+terns cover structures ranging over all Chomsky types not limited
+to sequences or regular expressions in general. This paper does
+not aim to give a concrete syntax for a description language, but
+demonstrates properties of this model that need to be respected
+before defining any formal security pattern syntax, and before im-
+plementing security pattern tools. Security patterns mostly present
+solutions independently from particular programming languages
+and implementations, such that it is not possible to extract concrete
+source code from the pattern description directly. Therefore, we de-
+fine alphabets that can be transformed into different abstractions to
+define model transformations that formalize the abstraction process
+from concrete implementation structures to a library-independent
+programming structure. As for the title of this paper, we focus on a
+formal definition of the structures that are given by the concept of
+security patterns:
+(1) What are security patterns?
+We will also address the following research questions:
+(2)How can the formal structure of security patterns be charac-
+terized?
+(3) Which language properties do security patterns have?
+(4)How can we define transformations between different ab-
+stractions of security patterns?
+2 STATE OF THE ART
+There are several collections of security patterns. Yoder et al. [17],
+Schumacher et al. [14], Fernandez-Buglioni [ 10], Steel et al. [16],
+Okubo et al. [13], and the Open Group Security Forum [ 4] present
+security patterns in a textual and graphical form, readable for hu-
+mans. The text is written in a natural language (English) and is
+grouped by sections similar to the GoF template for design patterns
+of Gamma et al. [11]. The graphical description form is mainly
+characterized by UML class and sequence diagrams, or their deriva-
+tives: Okubo et al. [13] use other graphical visualizations different
+from UML. The Open Group Security Forum [ 4] uses diagramsARES 2018, August 27–30, 2018, Hamburg, Germany A. Behrens
+different from UML for their secure proxy pattern. Yoder et al. [17]
+demonstrate graphical user interfaces (GUI). Security pattern re-
+lations are shown in diagrams with textual attributes: Yoder et al.
+[17] denote this by Pattern Interaction Diagram, Steel et al. [16] by
+Core Security Patterns Catalog, Fernandez-Buglioni [ 10] by Pattern
+Diagram. To describe security patterns, Steel et al. [16] added con-
+crete Java libraries and source code snippets. Bunke et al. [7] use
+UML sequence diagrams to describe structures in source code that
+represent security pattern instances. Späth et al. [15] do not use
+the term security pattern, but some of their structures are similar
+to a sub-model of our approach. More concretely, they use finite
+state machines (FSM) to encode typestate properties of their model.
+Bartussek et al. [3] refer to sequences of calls similar to our alphabet
+and define an equivalence relation on traces by using assertions.
+We use formal languages and define abstractions to be sets of maps
+between alphabets, instead. Dougherty et al. [9] show the concept
+of security design patterns and fill a gap between security patterns
+and design patterns, but they do not give a mathematical model of
+security patterns or design patterns. Krüger et al. [12] describe a
+language for correct usage of cryptographic APIs. Yskout et al. [18]
+performed an empirical study that did not prove that security pat-
+terns really improve productivity of designers and security of their
+software. They propose to improve the state of the art in the field
+of security patterns, but do not suggest any particular approach.
+There is work on software tools to detect security patterns in source
+code by Bunke et al. [7] and Alvi et al. [2], but we have not found
+any work on model-driven software tools to implement security
+patterns in source code step-by-step. There is one approach to for-
+malize security patterns by da Silva Júnior et al. [8], suggesting
+Petri nets as a formal language for security patterns to evolve a
+security pattern detection tool. We give a formal definition of se-
+curity patterns to analyze characteristic language properties first,
+necessary for any approach to security pattern detection. We con-
+jecture that security pattern tools would strongly improve the state
+of the art in the field of software security and design. The formal
+abstraction maps provided in this paper allow to construct a data
+structure for security patterns suitable for automated processes,
+such as model-driven software tools.
+3 FORMALIZATION
+3.1 Terminology
+We start with a short literature research on the terms Pattern, Secu-
+rity Pattern andDesign Pattern : Gamma et al. [11] cite the following
+statement, which was originally given by Alexander et al. [1], deal-
+ing with patterns for construction of towns and buildings: “Each
+pattern describes a problem which occurs over and over again in our
+environment, and then describes the core of the solution to that prob-
+lem, in such way that you can use this solution a million times over,
+without ever doing the same way twice. ” Schumacher et al. [14] sum-
+marize their pattern definition as follows: “A pattern for software
+architecture describes a particular recurring design problem that arises
+in specific design contexts, and presents a well-proven generic solution
+for it. The solution consists of a set of interacting roles that can be ar-
+ranged to form multiple concrete design structures, as well as a process
+for creating any particular structure. ” Gamma et al. [11] define the
+following patterns to be design patterns :“The design patterns inthis book are descriptions of communicating objects and classes that
+are customized to solve a general design problem in a particular con-
+text”. Schumacher et al. [14] give a similar definition for security
+patterns :“A security pattern describes a particular recurring security
+problem that arises in specific contexts, and presents a well-proven
+generic solution for it. The solution consists of a set of interacting roles
+that can be arranged into multiple concrete design structures, as well
+as a process to create one particular such structure. ” Furthermore,
+Schumacher et al. [14] says: “Note that security patterns are not
+limited to architectural or design patterns. Depending of the type of
+the problem, the fundamental solution principle can be at one or more
+different levels – organization, architecture, operations, processes, and
+so on. ” Bunke [ 5] gives the following property of security patterns:
+“Security patterns describe best practices to handle recurring secu-
+rity problems. ” Bunke et al. [6] define software-security patterns as
+follows: “Later on we will use the terminology software-security pat-
+terns that describe software-related security patterns. These patterns
+describe security aspects relevant in software design, development,
+and maintenance. ” Later they specify “Software-security patterns
+describe mostly how to structure parts of software to ensure security
+requirements. ” We see that the definitions for security patterns are
+given in a natural language (English) and do not provide any formal
+definition or formal properties that characterize security patterns.
+Unfortunately, the definitions differ in their choice of words. Fi-
+nally, we conclude that it seems to be unclear what is commonly
+understood to be a security pattern. In the following section we
+show why we conjecture that it is possible to formalize the secu-
+rity pattern properties and we give a formal definition of security
+patterns.
+3.2 Formal Definition
+To overcome the discrepancy between textual and mathematical
+models, we state the following conjecture:
+Conjecture 3.1. The solutions given by security patterns or de-
+sign patterns, that are currently described in textual and graphical
+form, can be described with a formal language over an alphabet of
+executable instructions. In this case, we define executable instructions
+to be any information addressed to machines or humans advising
+them to run a particular, well-defined step of a procedure.
+For example, an executable instruction might be a concrete advise
+which lines of code should be implemented in which order. It might
+also be some part of a step-by-step instruction specifying how to
+configure a router or firewall using a particular user interface.
+Unfortunately, as we have not found any formal definition of
+security patterns yet, one needs to interpret existing descriptions
+rather than being able to prove this conjecture formally. We assume
+that security patterns aim to propagate ideas to help designers or
+developers implementing secure software. Furthermore, we assume
+that security patterns contain a solution that can be executed, or
+that can be at least extracted from the security pattern and that
+can be defined somehow, although it is not directly given as an
+example. If Conjecture 3.1 did not hold, this would interfere with
+the original idea of the pattern properties given by Alexander et al.
+[1] and cited by Gamma et al. [11].What are Security Patterns? ARES 2018, August 27–30, 2018, Hamburg, Germany
+Definition 3.2. LetLbe a set of programming languages. Then
+we define a formal pattern to be a formal language
+P=P*.
+,[
+L∈LA(L)+/
+-over the alphabet[
+L∈LA(L),
+where each A(L)is an alphabet dependent on L∈L.
+Note that the alphabet is not limited to be finite, and the formal
+language Pis not limited to a particular Chomsky type here.
+For this general pattern definition one could allow a quite ab-
+stract definition of programming language. It could be a formal
+language leading to instructions for a computer, but, as security
+patterns can be at organizational or operational levels [ 14], it might
+also contain operations that can be executed by humans, e.g. instruc-
+tions for secure systems integration or correct usage of a particular
+software interface. This allows us to extend the first conjecture:
+Conjecture 3.3. The problems addressed by a security pattern
+can be identified with a set of attacks described with a formal language
+over an alphabet of executable instructions.
+Now we are able to express what we understand to be the char-
+acteristic property of a security pattern:
+Conjecture 3.4. Assume that Conjecture 3.1 and 3.3 hold. Then
+every prefix of every sequence of executable instructions accepted by
+the solution of a security pattern is equivalent to a system state that
+is reproducibly secure. Secure means in this context that there is no
+attack described by the problem of the security pattern that would
+terminate and succeed.
+As described above, we are not able to prove these conjectures
+formally, because we need to interpret the pattern description and
+need to formalize what is commonly understood to be security. In
+the following, we assume that Conjecture 3.1, 3.3, and 3.4 hold.
+Addressing the first research question “How can the formal
+structure of security patterns be characterized?” we give the
+following definition:
+Definition 3.5. Aformal security pattern is a pair of two formal
+patterns, one representing a security problem and one representing
+a solution for that problem, such that the security property of
+Conjecture 3.4 holds.
+In the following examples, we do not focus on formal models for
+attacks or executable instructions at organizational or operational
+levels. We concentrate on solutions of software-related security
+patterns. In the next section we construct an alphabet of instructions
+over which software-security patterns can be defined.
+3.3 Constructing an Alphabet
+In the following, we consider classes and interfaces as used in
+L=Java . Let libbe a countable set of interfaces or abstract or
+implemented classes in L, and let prim denote the set of primi-
+tive data types in L. Further, let type :=lib∪prim and let ident
+be a countable set of identifiers for objects, e.g. variables, such
+that there is a map inst :ident→type. For c∈libletmeth (c)
+denote the set of method signatures provided by c. Further, let
+static (c)⊂meth (c)be the subset of static methods and con-
+structors and let void (c)⊂meth (c)be the subset of void methods.Letn(m)∈N0denote the number of parameters of a method
+m∈meth (c). Define param (m)∈typen(m)to be the parameter
+structure of a method m. Let result (m)∈type denote a set of al-
+lowed return types of a method m∈meth (c)\void (c), including
+interface implementations or extended classes or extended inter-
+faces of the return type. Finally, write instn:identn→typen,
+n∈N0for the map from instances to types defined on a list.
+Definition 3.6. We define an alphabet A(L,lib,ident, inst )for
+software pattern instances to be the union A:=A0∪A1∪A2∪A3,
+where
+A0:= Set of static method calls on a class or interface
+A1:= Set of non-static method calls on an identifier
+A2:= Set of non-static method calls on an identifier
+with an identifier representing the return value
+A3:= Set of static method calls on a class or interface
+with an identifier representing the return value .
+Note that A2andA3differ from A0andA1in tracking some return
+value. More concretely, we define the following:
+A0:={(c,m,S)|c∈lib∧m∈static (c)∧
+S∈identn(m)∧instn(m)(S)=param (m)}
+A1:={(s,m,S)|s∈ident∧inst (s)∈lib∧
+m∈meth (inst (s))∧S∈identn(m)∧
+instn(m)(S)=param (m)}
+A2:={(r,s,m,S)|r,s∈ident∧inst (s)∈lib∧
+m∈meth (inst (s))\void (inst (s))∧
+inst (r)∈result (m)∧S∈identn(m)∧
+instn(m)(S)=param (m)}
+A3:={(r,c,m,S)|r∈ident∧c∈lib∧
+m∈static (c)\void (c)∧inst (r)∈result (m)
+∧S∈identn(m)∧instn(m)(S)=param (m)}.
+Note that the alphabet Ais countable, since we defined ident
+andlibto be countable, and if we assume any fixed library interface
+to be countable.
+3.4 Notation
+To make examples more readable, we will use a pseudocode nota-
+tion for security patterns:
+Letc∈lib,m∈meth (c),S=(s1, . . . , sn)∈identn(m), and let
+x,r∈ident. For elements u∈A we write:
+u: c.m(s1,..,sn) ≃ (c,m,S)=:u∈A0
+u: s.m(s1,..,sn) ≃ (s,m,S)=:u∈A1
+u: r=s.m(s1,..,sn) ≃ (r,s,m,S)=:u∈A2
+u: r=c.m(s1,..,sn) ≃ (r,c,m,S)=:u∈A3
+For any constructor C∈meth (c)we write u: new C(s1,..,sn)
+oru: r = new C(s1,..,sn). For inst : s7→c, we write s : c.
+In the following example, we use a finite state machine to denote
+a formal pattern of Chomsky type 3.ARES 2018, August 27–30, 2018, Hamburg, Germany A. Behrens
+3.5 Example: URL Connection
+Now we formalize a pattern that describes how to connect to a host
+via an URL object.
+Example 3.7. LetL=java and let libbe identified with the pack-
+ages java.lang andjava.net . Any method signatures are given
+due to the API. As an example, we take the following identifiers:
+u r l : j a v a . net . URL
+p r o t o c o l : j a v a . l a n g . S t r i n g
+p o r t : i n t
+base : j a v a . l a n g . S t r i n g
+spec : j a v a . l a n g . S t r i n g
+h a n d l e r : j a v a . net . URLStreamHandler
+u r l 1 : j a v a . net . URL
+We define the following statements u0, . . . , u5representing ele-
+ments from A3:
+u0 : u r l = new URL ( spec )
+u1 : u r l = new URL ( p r o t o c o l ,
+base , port , spec )
+u2 : u r l = new URL ( p r o t o c o l ,
+base , port , spec , h a n d l e r )
+u3 : u r l = new URL ( p r o t o c o l ,
+base , spec )
+u4 : u r l = new URL ( u r l 1 , spec )
+u5 : u r l = new URL ( u r l 1 , spec , h a n d l e r )
+Now set u:={u0,u1,u2,u3,u4,u5 }and define u6inA1as follows:
+u6 : u r l . openConnection ( )
+Then the finite state machine given in Fig. 1 defines a formal Pattern,
+where q0,q1,q2represent the following states:
+q0: start
+q1: url is set
+q2: connection is open
+q0 start q1 q2u u6
+Figure 1: Finite state machine for a URL connection
+This pattern is equivalent to the following regular expression:
+( u0|u1|u2|u3|u4|u5 ) u6
+3.6 Kripke Structures
+In the previous example we used a finite state machine to express
+a formal language. Referring to Conjecture 3.4, security patterns
+can be defined by security constraints on particular system states.
+Kripke structures can be used to express relations between system
+states and to bind particular requirements on these states. In the
+following, we apply Kripke structures to security patterns.
+Example 3.8. The previous Example 3.7 can be defined to be inse-
+cure, if a connection is opened without a secure protocol. Hence, we
+like to express that the protocol of URLhas to be equal to "https"before opening the connection. Reading the Java API, we see that
+there are multiple ways to set this protocol. We use Java syntax
+to express three statements p1,p2, and p3and define the security
+constraint as follows: At least one of the following statements would
+return true, if it was executed before the connection is opened:
+p1 : p r o t o c o l . e q u a l s ( " h t t p s " )
+p2 : spec . s t a r t s W i t h ( " h t t p s " )
+p3 : u r l 1 . g e t P r o t o c o l ( ) . e q u a l s ( " h t t p s " )
+Now we add these constraints on system states to our description
+form and identify security patterns with Kripke structures as fol-
+lows: Figure 2 shows a FSM that is equivalent to the FSM given in
+p0 startp1
+p2
+p3p4
+p5ε
+ε
+ε{u1,u2,u3}
+u0
+{u4,u5} u6
+Figure 2: FSM representing a Kripke Structure
+Figure 1, but contains more states p0(initial state), p1(protocol is
+secure), p2(spec is secure), p3(url1 is secure), p4(urlis set), and
+p5(connection is open). The labels u0,...,u6refer to Example 3.7.
+The empty word is denoted by the symbol ε. The constraints given
+byp1,p2andp3can be related to the states p1,p2, and p3of the
+automaton. Note that the constraints refer to particular values of
+String objects. The constraint given by p3is quite complex since
+it refers to an object of URLitself.
+The pattern does not determine how to build each String in detail,
+but says that it has to have a particular value or property leading
+to a secure system state. It might be possible that its value is not
+constant, but dependent on the execution path of the program.
+Other constraints might be thinkable. For example, one could
+demand that a String value passed to another particular method
+inLcauses a certain value (e.g. true ) to be returned. Hence, the
+following theorem holds, addressing the research question “Which
+language properties do security patterns have?”.
+Theorem 3.9. Security patterns described by Kripke structures
+using constraints in Lcan lead to formal patterns that range over all
+Chomsky types.
+Proof. This is obvious, because security patterns can be defined
+by constraints on system states according to Conjecture 3.4 and
+because Lis Turing-complete. □What are Security Patterns? ARES 2018, August 27–30, 2018, Hamburg, Germany
+Corollary 3.10. If we allow security patterns to be described by
+Kripke structures using constraints in L, it can be undecidable if a
+given source code is an implementation of a security pattern or not.
+Proof. This follows directly from Theorem 3.9 by considering
+the halting problem. □
+Hence, formal security patterns of Chomsky type 0 (accepted by
+Turing machines) are not always suitable for automated processes
+of security pattern detection. We need a data structure that can
+be used as an input for software tools, though. So, we advise to
+characterize security patterns by Chomsky type and to respect
+the fact that it is theoretically not possible to detect all of them.
+Defining the alphabet of formal security patterns to be possibly
+infinite might cause similar problems. For example, algorithms that
+iterate over an infinite subset of elements of the alphabet may not
+terminate, either. In the following section we show how to reduce
+the alphabet for the pattern definition to a possibly finite subset.
+3.7 Spanning Alphabet
+The alphabet of a formal security pattern is not limited to be finite,
+because the set of all executable instructions that can be imple-
+mented in Lis not finite. In this section we define the infinite
+alphabet covering all possible implementations in Land show how
+to extract those elements from this general alphabet that are neces-
+sarily used to describe the pattern. If this subset is finite, it will be
+suitable for pattern definition in practice. For L=Java letLIB (L)be
+the set of all possible libraries programmable in L, and let IDENT (L)
+be the set of all possible identifiers allowed in L. Note that LIBand
+IDENT are countable sets. Let INST : IDENT→LIBbe a map. Fur-
+ther, let ident⊂IDENT andlib⊂LIBbe countable sets and let
+inst : ident→lib.
+Definition 3.11. We define a complementary alphabet Crepre-
+senting all letters that have nothing in common with elements from
+A(L,lib,ident, inst ):
+C:=C0∪C1∪C2∪C3,
+where
+C0:={(c,m,S)∈A0(L,LIB,IDENT, INST )|
+c<lib∧∀i∈{1, . . . , n(m)}:Si<ident}
+C1:={(s,m,S)∈A1(L,LIB,IDENT, INST )|
+s<ident∧∀i∈{1, . . . , n(m)}:Si<ident}
+C2:={(r,s,m,S)∈A2(L,LIB,IDENT, INST )|
+r,s<ident∧∀i∈{1, . . . , n(m)}:Si<ident}
+C3:={(r,c,m,S)∈A3(L,LIB,IDENT, INST )|
+r<ident∧c<lib∧∀i∈{1, . . . , n(m)}:Si<ident}.
+Definition 3.12. LetCbe the complementary alphabet according
+to Definition 3.11. Let Pbe a pattern overA(L,LIB,IDENT, INST ).
+We callA(L,lib,ident, inst )spanning alphabet forP, iff for all
+x,y∈A (L,LIB,IDENT, INST )the following four properties hold:
+•inst=INST|ident: ident→lib
+•P⊂(A(L,lib,ident, inst )∪C )∗
+•xy∈P⇔xC∗y∈P
+•x∈P⇔C∗xC∗∈P,where the symbol∗denotes the Kleene star.
+Example 3.13. Now we give an example for a spanning alpha-
+bet. We take a pattern that describes how to generate a seed for a
+SecureRandom , as part of the encryption pattern. Let k∈N\{0}.
+Take the following identifiers:
+s r : j a v a . s e c u r i t y . SecureRandom
+k : i n t
+bseed : b y t e [ k ]
+numBytes : i n t
+Define the following statements:
+s r 0 : s r = new SecureRandom ( )
+s r 1 : s r = new SecureRandom ( bseed )
+s r 2 : bseed = s r . g e n e r a t e S e e d ( numBytes )
+s r 3 : bseed = SecureRandom . g e t S e e d ( numBytes )
+s r 4 : s r . s e t S e e d ( bseed )
+We defineCto be the complementary alphabet for sr0,...,sr4
+according to Definition 3.11. Fig. 3 shows an automaton for this
+pattern, where q0, . . . , q4represent the following states:
+q0: numBytes is set
+q1: sr is generated without bseed
+q2: sr is generated without bseed and bseed is defined by sr
+q3: sr is generated with parameter bseed
+q4: bseed is defined by SecureRandom
+Then sr0,. . . ,sr4 is a spanning alphabet for this pattern.
+q0 startq1 q2
+q3
+q4sr0sr2
+sr4
+sr3sr0
+sr1
+CCC
+C
+C
+Figure 3: Finite state machine for SecureRandom with span-
+ning alphabet
+We see that loops are labeled with Conly. Addressing research ques-
+tion“Which language properties do security patterns have?”
+again, this leads to the next Conjecture and Theorem:
+Conjecture 3.14. If a security pattern leads to a formal pattern of
+Chomsky type 3with a spanning alphabet Aand a complementary
+alphabetC, then loops in a corresponding FSM are labeled with C
+only.
+Any loop labeled with an executable instruction of the spanning
+alphabet at a certain state would define this instruction to be op-
+tional, because any path visiting this state can be reduced in lengthARES 2018, August 27–30, 2018, Hamburg, Germany A. Behrens
+by ignoring the loop. If Conjecture 3.14 did not hold, this would
+interfere with the idea of security patterns to be best practices.
+Theorem 3.15. LetPbe a formal security pattern of Chomsky
+type 3with a finite spanning alphabet A. If Conjecture 3.14 holds,
+thenPcan be identified with a finite set of sequences over the alphabet
+B:={C∗aC∗|a∈A} of particular regular expressions.
+Proof. Because Pis of Chomsky type 3, there exists a FSM repre-
+senting the pattern. According to Conjecture 3.14 loops are labeled
+withConly. BecauseAis a spanning alphabet, these loops for C
+are located at each state, hence P⊂B∗. For each a∈A the expres-
+sionC∗aC∗contains an infinite set of sequences. Nevertheless, B
+is a finite set of these expressions, because Ais finite and there
+exists a bijectionA→B . Because the FSM has a finite amount of
+states, this leads to a finite amount of sequences over B. □
+Finally, according to Conjecture 3.14 the formal structure and
+the language properties of security patterns are not equivalent to
+general properties of regular expressions.
+Theorem 3.15 assumes that the spanning alphabet is finite. Re-
+stricting the alphabet to be finite would force us to choose particular
+libraries and identifiers, but we like to have some structure that
+is independent of particular implementations, instead. Having de-
+fined the spanning alphabet, we are now able to give a definition
+of formal abstraction maps on formal patterns in the next section.
+3.8 Abstract Pattern
+Addressing the research question “How can we define trans-
+formations between different abstractions of security pat-
+terns?” we define a map µ:ident→IDENT enabling us to define
+patterns independently from particular names of variables. Analo-
+gously, we define λ:lib→LIBrepresenting an abstraction from
+concrete libraries.
+Definition 3.16. We define an abstract patternPto be a set of the
+form
+P=[
+φ∈Φφ(pL),where
+•ω∈φ(pL)⇔∃v∈pL:φ(v)=wfor allφ
+•pLis a formal pattern over A(L,LIB,IDENT, INST )
+•there exists a spanning alphabet A(L,lib,ident, inst )ofpL
+•Φ⊂Ωis a set of maps, where
+Ω:={φλ,µ:A(L,lib,ident, inst )→
+A(L,λ[lib],µ[ident],ν)|
+µ: ident→IDENT injective∧
+λ: type→LIB∪prim injective∧∀c∈lib :
+λinduces an injection meth (c)→meth (λ(c))∧
+ν:µ[ident]→λ[lib],ν=λ◦inst◦µ−1},
+whereλ[lib] andµ[ident] denote the images of λandµ.
+In other words, this defines equivalence classes on variable
+names and libraries, and the pattern is defined over representa-
+tives of these equivalence classes. This enables us to characterize
+security patterns with concrete abstractions, in particular with a
+concrete set Φof abstraction maps. This mathematical model can be
+used for a data structure of security patterns within model-drivensoftware tools supporting designers, developers, and auditors in
+future.
+4 CONCLUSIONS
+We define security patterns to be formal languages, rather than
+using textual or graphical description forms. There is a dependence
+on a concrete choice of security libraries, but we identified this
+to be an attribute of the alphabet, rather than the pattern, which
+enables us to identify formal abstraction maps on the alphabet and
+to formalize the abstraction of a pattern (Definition 3.16). Security
+patterns found in literature can lead to constraints on system states,
+such that formal security patterns range over all Chomsky types and
+can be classified by their language properties (Theorem 3.9). Under
+some assumptions, formal security patterns of Chomsky type 3 can
+be reduced to a particular form, such that it is not necessary to use
+general FSMs to define security pattern instances in these cases
+(Theorem 3.15).
+REFERENCES
+[1]C. Alexander, S. Ishikawa, and M. Silverstein. 1977. A Pattern Language: Towns,
+Buildings, Construction. OUP USA.
+[2]Aleem Alvi and Mohammad Zulkernine. 2017. In IEEE International Conference
+on Software Security and Assurance (ICSSA).
+[3]Wolfram Bartussek and David L. Parnas. 1978. Using assertions about traces
+to write abstract specifications for software modules. In Information Systems
+Methodology, Giampio Bracchi and Peter Christian Lockemann (Eds.). Springer
+Berlin Heidelberg, Berlin, Heidelberg, 211–236.
+[4]Craig Heath Bob Blakley and members of The Open Group Security Forum. [n.
+d.].Technical Guide, Security Design Patterns. Technical Report.
+[5]Michaela Bunke. 2014. On the Description of Software Security Patterns. In
+Proceedings of the 19th European Conference on Pattern Languages of Programs
+(EuroPLoP ’14). ACM, New York, NY, USA, Article 34, 10 pages. https://doi.org/
+10.1145/2721956.2721990
+[6]Michaela Bunke, Rainer Koschke, and Karsten Sohr. 2012. Organizing Security
+Patterns Related to Security and Pattern Recognition Requirements. International
+Journal On Advances in Security 5, 1&2 (July 2012), 46–67.
+[7]Michaela Bunke and Karsten Sohr. 2011. An architecture-centric approach to
+detecting security patterns in software. In International Symposium on Engineering
+Secure Software and Systems. Springer, 156–166.
+[8]Luis Sérgio da Silva Júnior, Yaan-Gael Guéhéneuc, and John Mullins. 2013. An
+approach to formalise security patterns. Technical Report. Citeseer.
+[9]Chad R Dougherty, Kirk Sayre, Robert Seacord, David Svoboda, and Kazuya
+Togashi. 2009. Secure design patterns. (2009).
+[10] Eduardo Fernandez-Buglioni. 2013. Security Patterns in Practice: Designing Secure
+Architectures Using Software Patterns (1st ed.). Wiley Publishing.
+[11] Erich Gamma, Richard Helm, Ralph Johnson, and John Vlissides. 1995. Design
+Patterns: Elements of Reusable Object-oriented Software. Addison-Wesley Longman
+Publishing Co., Inc., Boston, MA, USA.
+[12] Stefan Küger, Johannes Späth, Karim Ali, Eric Bodden, and Mira Mezini.
+2017. CrySL: Validating Correct Usage of Cryptographic APIs. arXiv preprint
+arXiv:1710.00564 (2017).
+[13] Takao Okubo and Hidehiko Tanaka. 2008. Web Security Patterns for Analysis and
+Design. In Proceedings of the 15th Conference on Pattern Languages of Programs
+(PLoP ’08). ACM, New York, NY, USA, Article 25, 13 pages. https://doi.org/10.
+1145/1753196.1753226
+[14] Markus Schumacher, Eduardo Fernandez, Duane Hybertson, and Frank
+Buschmann. 2005. Security Patterns: Integrating Security and Systems Engineering.
+John Wiley & Sons.
+[15] Johannes Späth, Karim Ali, and Eric Bodden. 2017. IDE al: efficient and precise
+alias-aware dataflow analysis. Proceedings of the ACM on Programming Languages
+1, OOPSLA (2017), 99.
+[16] Christopher Steel, Ramesh Nagappan, and Ray Lai. 2006. Core security patterns:
+Best practices and strategies for J2EE, Web services, and identity management.
+Prentice-Hall. http://www.coresecuritypatterns.com/
+[17] Joseph Yoder and Jeffrey Barcalow. 1998. Architectural patterns for enabling
+application security. Urbana 51 (1998), 61801.
+[18] Koen Yskout, Riccardo Scandariato, and Wouter Joosen. 2015. Do security patterns
+really help designers?. In Software Engineering (ICSE), 2015 IEEE/ACM 37th IEEE
+International Conference on, Vol. 1. IEEE, 292–302.

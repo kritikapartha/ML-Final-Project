@@ -1,0 +1,705 @@
+Accessible Image Search
+Meng Wang
+Microsoft Research Asia
+Beijing 100080, P . R. China
+mengwang@microsoft.comBo Liu∗
+University of Science and
+T echnology of China
+Hefei 230027, P . R. China
+kﬂiubo@mail.ustc.edu.cnXian-Sheng Hua
+Microsoft Research Asia
+Beijing 100080, P . R. China
+xshua@microsoft.com
+ABSTRACT
+There are about 8% of men and 0.8% of women suﬀer-
+ing from colorblindness. We show that the existing im-age search techniques cannot provide satisfactory results for
+these users, since many images will not be well perceived by
+them due to the loss of color information. In this paper, weintroduce a scheme named Accessible Image Search (AIS)to accommodate these users. Diﬀerent from the general im-age search scheme that aims at returning more relevant re-
+sults, AIS further takes into account the colorblind acces-sibilities of the returned results, i.e., the image qualities inthe eyes of colorblind users. The scheme includes two com-ponents: accessibility assessment and accessibility improve-ment. For accessibility assessment, we introduce an analysis-
+based method and a learning-based method. Based on the
+measured accessibility scores, diﬀerent reranking methods
+can be performed to prioritize the images with high acces-sibilities. In accessibility improvement component, we pro-pose an eﬃcient recoloring algorithm to modify the colors ofthe images such that they can be better perceived by color-blind users. We also propose the Accessibility Average Pre-cision (AAP) for AIS as a complementary performance eval-uation measure to the conventional relevance-based evalua-tion methods. Experimental results with more than 60,000images and 20 anonymous colorblind users demonstrate theeﬀectiveness and usefulness of the proposed scheme.
+Categories and Subject Descriptors
+H.3.3 [ Information Storage and Retrieval ]: Retrieval
+Models; K.4 [ Computers and Society ]: Social issues -
+Assistive technologies for persons with disabilities
+General Terms
+Algorithms, Experimentation
+∗This work is performed when the second author was visiting
+Microsoft Research Asia.
+Permission to make digital or hard copies of all or part of this work for
+personal or classroom use is granted without fee provided that copies are
+not made or distributed for proﬁt or commercial advantage and that copiesbear this notice and the full citation on the ﬁrst page. To copy otherwise, to
+republish, to post on servers or to redistribute to lists, requires prior speciﬁc
+permission and/or a fee.MM’09, October 19–24, 2009, Beijing, China.
+Copyright 2009 ACM 978-1-60558-608-3/09/10 ...$5.00.Keywords
+Image Search, Colorblindness
+1. INTRODUCTION
+The last decade has witnessed great advance of image
+search techniques [22]. However, the existing frequently-
+used image search engines, such as Google, Yahoo and Mi-
+crosoft image search, all aim to provide search service for
+normal viewers and focus on returning as many as rankedrelevant results with the users’ queries. Special human groups,such as colorblind users, have not been taken into consider-ation. In fact, worldwide around 8% of men and 0.8% of
+women have certain kinds of colorblindness, i.e., having dif-ﬁculties in discriminating certain color diﬀerences. Goodsearch results for a normal viewer may not be acceptable for
+colorblind users, since many images will not be readily per-
+ceived by them. As an example, Fig.1(a) illustrates the topresults of query “rose” returned by the Google image searchengine, and we can see that these results are all relevant and
+with high quality. Then, in Fig.1(b) we mimic the view of acolorblind user (i.e.,what the colorblind user will perceive)using the simulation algorithm proposed in [5], and we cansee that the qualities of many images have signiﬁcantly de-graded due to the loss of color information, i.e., they cannotbe well perceived by colorblind users.
+As noted by Berners-Lee (the inventor of World Wide
+Web), “ the power of the Web is in its universality, and ac-
+cess by everyone regardless of disability is an essential part ”
+[1]. However, up to now there is no service that accommo-dates colorblind users in image search, and an associatedfact is that many colorblind users cannot eﬃciently ﬁnd andenjoy images with these existing search engines. Therefore,
+an image search scheme that can serve the numerous color-blind users is highly desired. It is worth mentioning thatthere are already several techniques that can support spe-cial users in web search. For example, Google provides anaccessible search service, which aims at facilitating visuallyimpaired users (mainly blindness) [4]. It is developed basedon several heuristic criteria, such as the page’s simplicity,how much visual imagery it carries and whether it is imme-diately viable with keyboard navigation, and then analyze
+whether the page can be easily read by speech synthesis
+software accordingly. However, accommodating colorblindusers in image search will be much more challenging, sinceit will involve not only the psychological and cognitive studyof colorblind users but also image visual analysis technology.Via communicating with a lot of colorblind users, it is foundthat we can facilitate them in the following two aspects:
+291(a) (b)
+Figure 1: What is the diﬀerence between a normal viewer and a colorblind viewer in image search? (a)
+illustrates what a normal viewer observe and (b) illustrates what a protanopia (a type of colorblindness)observe. We have marked the images with red border of which the qualities degrade signiﬁcantly due to the
+loss of color information.
+(1) Identify and prioritize those images that can be better
+perceived by colorblind viewers.
+(2) Provide a method to modify the colors of the images
+such that they can be better perceived by colorblind viewers.
+In this work, we introduce an Accessible Image Search
+(AIS) that can meet the above two requirements. The scheme
+contains two components, i.e., image colorblind accessibilityassessment and accessibility improvement. The colorblindaccessibility of an image can now be understood as how well
+an image can be perceived by colorblind users, and in Sec-tion 3 we will further discuss this term in detail. Based onthese two components, we can facilitate colorblind users indiﬀerent ways, such as reranking search results according toaccessibility measurements or recoloring the images, as il-
+lustrated in Fig. 2. Comprehensive study with a batch of
+anonymous colorblind users has demonstrated the usefulnessof the proposed scheme. This is our primary step to help col-orblind users better enjoy the advances of multimedia searchtechnology.
+The main contribution of this paper can be summarized
+as follows:
+(1) Propose an accessible image search scheme. To the
+best of our knowledge, this is the ﬁrst integrated scheme to
+facilitate colorblind users in image search.
+(2) Propose an image colorblind accessibility assessment
+approach, based on which we can perform diﬀerent rerankingstrategies to prioritize highly accessible images.
+(3) Propose an eﬃcient image recoloring method which
+is able to improve the accessibilities of images. It is worthnoting that image recoloring is an important topic per se[7][12] and our algorithm can actually be applied in manyother applications.
+(4) Propose a performance evaluation measure for acces-
+sible image search that takes the accessibilities of search re-sults into account.
+The organization of the rest of this paper is as follows. In
+Section 2, we provide a short review on the related work.In Section 3, we introduce the AIS scheme, including acces-sibility assessment, accessibility improvement and the per-
+Colorblind SimulationAccessibility Assessment
+Image
+Corpus
+Query
+Rerank top 100 resultsUser 
+Customization
+Recolor top 50 results
+...
+...Output
+...... ...Original ranking list
+Accessibility Improvement
+Figure 2: The schematic illustration of AIS.
+formance evaluation measure. Experimental results are pre-
+sented in Section 4. Finally, we conclude the paper in Sec-tion 5.
+2. RELATED WORK
+2.1 Color and Colorblindness
+Colors are perceived by humans with their cones absorb-
+ing photons and sending electrical signal to the brains [17].
+According to their peak sensitivity, the cones can be cate-
+gorized into Long ( L), Middle ( M) and Short ( S), which
+absorb long wavelengths, medium wavelengths and shortwavelengths, respectively. Consequently, light is perceivedas three members: ( l,m,s ) where l,m,a n d srepresent the
+amount of photons absorbed by L-,M-a n d S−cones, re-
+spectively. More formally, color stimulus ( S
+i) for a light can
+292Original Images Protanopic View
+High Accessibility
+Middle Accessibility
+Low Accessibility
+Figure 3: Several typical examples with high, middle and low colorblind accessibilities for protanopic users.
+We see that the qualities of several images are well preserved while several others signiﬁcantly degrade dueto the loss of color information.
+be computed as the integration over the wavelengths λ:
+S
+i=/integraldisplay
+φ(λ)li(λ)dλ, i=L, M, S (1)
+where φstands for power spectral density of the light, lL,
+lM,a n d lSindicate L-,M-, and S- cones.
+Colorblindness, formally known as color vision deﬁciency,
+is caused by the deﬁciency or lack of certain type of cone.
+Dichromats are referred to as those who have only two types
+of cones, and they consist of protanopes, deuteranopes, andtritanopes which indicate the lack of L-cones, M-cones and
+S-cones, respectively. Protanopes and deuteranopes have
+diﬃculty in discriminating red from green, whereas tritanopes
+have diﬃculty in discriminating blue from yellow. In thiswork we focus on protanopia and deuteranopia as most dichro-mats belong to these two types, but our methods can also
+be easily extended to deal with tritanopia.
+Signiﬁcant research works have been put on simulating
+colorblindness [24]. Brettel ea al. [5] proposed a method
+that transforms colors from RGB space to LMS (long, medium,
+short) color space based on cone response and then modi-ﬁes the response of the deﬁcient cones. This algorithm iswidely adopted by colorblindness simulation systems suchas VisCheck [2] and IBM aDesigner’s low vision mode [3].Obviously, to facilitate colorblind users, we ﬁrst have to re-veal what they have seen. Thus, the colorblind simulatingalgorithms form the basis of our work.
+2.2 Efforts on Accommodating Colorblindness
+Several eﬀorts have been dedicated to helping colorblind
+users better perceive and enjoy visual documents, such as
+web pages and images. In 2005 and 2008, a workshop named
+Computer Vision Applications for the Visually Impaired(CVAVI)
+have been organized with two top conferences in computervision society [25][26]. However, most of the research fo-cuses on recoloring images or web pages such that they canbe better perceived by colorblind viewers [23], whereas how
+to help them ﬁnd more useful and accessible images or web
+pages, which is also critical and meaningful for these users,receives much less attention. Kovalev conducted a study onimage retrieval for colorblind users [11], but it only investi-gates several eﬀects of colorblindness in image retrieval anddo not provide any solution or service for colorblind users.
+About image/webpage recoloring, Dougherty et al. [2]proposed an image recoloring process named Daltonize, which
+ﬁrst increases the red/green contrast in the image and then
+use the red/green contrast information to adjust brightnessand blue/yellow contrast. Iaccarino et al. [10] have pro-posed a simple recoloring method to improve the accessi-bility of web pages. Yang et al. [15] proposed a methodwhich changes a monochromatic hue into another hue withless saturation for dichromats. Rasche et al. formulate the
+recoloring task as a dimensionality reduction problem, i.e.,
+how to map the colors in a 3-dimensional space into a 2-dimensional space that can be recognized by colorblind view-ers [12]. Huang et al. [7] proposed an image recoloring algo-rithm that keeps both the discriminative abilities of colorsand the naturalness of the image. In [9], Jeﬀerson proposeda document recoloring algorithm. It ﬁrst selects a repre-sentative set of colors from the source document, and then
+changes these colors while preserving their diﬀerences, andﬁnally it performs interpolation operation for other colors.In [8], Jeﬀerson et al. provided an interface to support theinteractive recoloring implementation for colorblind viewers.In [30], Huang et al. proposed a generalized histogram equal-
+ization method to re-map the hue components of images in
+HSV color space. Wakita et al. [14] proposed an optimiza-
+tion approach which simultaneously takes into account thecontrast, consistency, distinguish-ability and naturalness ofthe mapped colors.
+Several encouraging results have been reported in these
+works. However, most of them implement an optimiza-
+tion process to accomplish the color mapping and thus needlarge computational costs. So they can hardly be applied inpractical large-scale application. In our proposed recoloringmethod, we simply perform several color rotation operations
+and it is thus much eﬃcient. Empirical results will show thatit even outperforms the existing optimization-based meth-
+ods.
+It is worth noting that recoloring can only improve the
+colorblind accessibilities of images in a certain degree, i.e.,
+the images will not be as good as those that perceived bynormal viewers even after recoloring, as 1D color informa-tion has lost in the colorblind view [12]. Therefore, in AISwe simultaneously provide the accessibility-based rerankingand recoloring-based accessibility improvement techniques,and their combination can provide a series of services forcolorblind users.
+2933. ACCESSIBLE IMAGE SEARCH
+In this section, we introduce our AIS scheme. First, we
+provide a deﬁnition of the colorblind accessibility of an im-
+age, and then we propose an objective accessibility assess-
+ment approach. After that, we introduce the accessibility
+improvement method, i.e., the image recoloring algorithm.
+We will show what services we can provide based on thesetwo components. Finally, we introduce a performance eval-
+uation measure for AIS.
+It is worth mentioning that in fact AIS should simultane-
+ously take into account relevance and accessibility of searchresults. But there are already many research eﬀorts focus-ing on relevance [27] (as well as several other related criteria,such as diversity [28] and typicality [29]), and thus in this
+work we mainly focus on accessibility. Our scheme can also
+be easily integrated with the relevance improvement meth-ods [27][28][29] or extended to compromise relevance andaccessibility.
+3.1 What is Image Colorblind Accessibility
+In Merriam-Webster dictionary, Accessibility is explained
+as the capability of being used or seen. However, this term
+actually has more speciﬁc meaning: “Accessibility is a gen-
+eral term used to describe the degree to which a product is
+accessible by as many people as possible. It is often used to
+focus on people with disabilities and their right of access toentities, often through use of assistive technology” [18]. A
+typical example is“web accessibility”, about which W3C hasprovided a guideline in order to makes web pages accessibleto everyone [1].
+Analogous to the deﬁnition of web accessibility, we straight-
+forwardly deﬁne an image’s colorblind accessibility as thedegree of how well the image can be perceived by colorblindusers. Given the context of helping colorblind users in this
+work, in the rest of our paper we will replace colorblindaccessibility by accessibility for short. Typically, the acces-sibility of an image involves two factors: the quality of the
+original image and the information loss in colorblind percep-
+tion. In this work we focus on the investigation of the secondfactor considering two facts: (1) we ﬁnd that actually nowa-days most of the results returned by popular image searchwebsites are with high quality (such as the images used inour experiments); and (2) image quality assessment [20] [21]is a challenging issue per se and it is diﬃcult to ﬁnd an ac-curate and robust algorithm for real-world application. Weillustrate several web images with diﬀerent colorblind acces-sibilities and their deuteranopic views in Fig. 3. We can seethat several high-quality images will have low accessibilities
+due to the loss of color information. We have to emphasizethat accessibility is a very subjective measure. But common
+judgment still exists. For example, most users will agree
+that in Fig. 3 the colorblind views in the ﬁrst row havebetter accessibilities than those in the last row.
+3.2 Accessibility Assessment
+Obviously a crucial component in AIS is the automatic
+assessment of image accessibility. Based on the evaluated
+accessibilities, we can adopt diﬀerent reranking techniquesto prioritize the highly accessible images, as illustrated inFig. 2. The accessibility assessment task is diﬀerent fromgeneral image quality assessment [20], since in accessibil-ity assessment we can focus more on color information incomparison with edge and texture. Here we introduce two
+Training 
+DataSVR
+Model
+BlockǦWise Color Moment 
+ExtractionFeature Vector Accessibility Score
+Color Distinguish Ǧability
+Color Distinguish ǦabilityLoss Accessibility Score
+(a)
+(b)
+Figure 4: (a) In analysis-based accessibility assess-
+ment approach, the accessibility score of an imageis deﬁned based on the loss of color distinguish-
+abilities for a colorblind viewer; (b) In learning-
+based accessibility assessment, the accessibilityscore of an image is predicted by a model learnedfrom labeled training data.
+methods for accessibility assessment, as shown in Fig. 4,
+one is an analysis-based method and the other is a learning-based method. The analysis-based method takes advantageof the prior knowledge that the colorblind accessibility prob-lem is caused due to the loss of color information. Therefore,
+we estimate the accessibility of an image based on the lossof color distinguish-ability. The learning-based method be-
+longs to a diﬀerent approach. It learns the accessibility of
+images through a regression model with a labeled trainingset. In experiments we will compare these two methods interms of both performance and computational eﬃciency.
+3.2.1 Analysis-based Accessibility Assessment
+We assume that the accessibility is decreasing with the
+color information loss between the original image and its
+colorblind view, which is deﬁned as
+Loss(x, π(x)) =1
+n2n−1/summationdisplay
+i=1n/summationdisplay
+j=i+1/bardbl∆(ci,cj)−∆(π(ci),π(cj))/bardbl2
+(2)
+where ∆( ci,cj) indicates the diﬀerence between colors ciand
+cj,a n d π(ci) represents the colorblind view of ci. It mea-
+sures if the diﬀerence between color pairs has been preserved
+in the colorblind view. We adopt the CIE94 color diﬀerence
+for ∆( ., .) [16], which is a weighted Euclidean distance in
+LCH (luminance, chroma, hue) color space.
+For the sake of computational eﬃciency, we equally quan-
+tize the original RGB color space into Qbins, and denote by
+nithe number of samples that belong to the i-th bin. Thus
+Eq. (2) turns to
+294Loss(x, π(x)) =1
+n2Q−1/summationdisplay
+i=1Q/summationdisplay
+j=i+1ninj/bardbl∆(ci,cj)−∆(π(ci),π(cj))/bardbl2
+(3)
+Based on the information loss measurement, we deﬁne the
+colorblind accessibility of an image as
+Accessibility (x)=1 −Loss(x, π(x)) (4)
+3.2.2 Learning-based Accessibility Assessment
+In learning-based accessibility assessment, each image is
+represented by a d-dimensional feature vector, i.e., it is as-
+sumed that the accessibility score of an image can be pre-
+dicted with these features. Then we collect a set of training
+dataT={(x1,y1), (x2,y2) ..., ( xl,yl)}, where yiindicates
+the ground-truth accessibility score of xi. As shown in Fig.
+4 (b), a model is learned from these training samples, and
+the accessibility scores of the other images can be directly
+predicted by this model.
+Here we adopt Support Vector Regression (SVR) model
+[31][13]. It learns a non-linear ﬁtting function by a linear
+maximum-margin learning machine in a kernel-induced fea-
+ture space. The ﬁtting function takes the form
+Accessibility (x)=<w ,Φ(x)>+b (5)
+where Φ( .)is a mapping from Rdto a Hilbert Space H,a n d
+<. ,.> denotes the dot product in H. Then the soft-margin
+SVR is formulated as follows
+minimize1
+2/bardblw/bardbl2+Cl/summationdisplay
+i=1(ξi+ξ∗
+i)( 6 )
+subject to⎧
+⎨
+⎩yi−<w ,x i>−b≤ε+ξi
+<w ,x i>+b−yi≤ε+ξ∗
+i
+ξi,ξ∗
+i ≥0
+With the help of Lagrange multipliers, the dual of the above
+problem can be obtained
+maximize/braceleftbigg−1
+2/summationtextl
+i,j=1(αi−α∗
+i)(αj−α∗
+j)<Φ(xi),Φ(xj)>
+−ε/summationtextli=1(αi+α∗
+i)+/summationtextli=1yi(αiα∗
+i)
+(7)
+where αis a vector with components αithat are the La-
+grange multipliers. Since the mapping Φ( .) only appears
+in the dot product, we need not to know its explicit form.
+Instead, we can deﬁne a kernel K(., .)w i t h K(xi,xj)=<
+Φ(xi),Φ(xj)>to accomplish the mapping from the train-
+ing data space to the Hilbert Space H. More details about
+SVR can be found in [31][13].
+In this work, we adopt the block-wise color moment as the
+low-level features for its capability to simultaneously capture
+the statistical and spatial distribution of colors in images.
+For each image, we average split it into 25 blocks, as shown in
+Fig. 4 (b), and then extract 9D color moments in LAB colorspace from each block (the mean, variance and skewness ofl,aandbcomponents respectively). For the SVR model,
+we adopt RBF kernel. In experiments we will show that theaccessibility scores predicted in this way correlate well withsubjective perception.
+Figure 5: The re-coloring process is accomplished
+by two color rotation steps in CIELAB domain.
+3.3 Accessibility Improvement
+We propose an eﬃcient image recoloring algorithm to im-
+prove the accessibilities of images. Diﬀerent from the tra-ditional recoloring algorithms that optimize the color map-
+ping functions, the proposed method simply performs sev-
+eral color rotation operations in CIELAB domain to accom-plish the recoloring. The method consists of two steps, i.e.,local color rotation and global color rotation, as illustratedin Fig. 5.
+For local color rotation, we adopt a method similar to the
+one proposed by Huang et al. [7], of which the basic idea is
+to map the information of a
+∗into the b∗axis since the color
+information in a∗gets lost signiﬁcantly for protanopia and
+deuteranopia. We rotate the color which has the included
+angle θwith respect to the a∗axis by an angle φ(θ), i.e.,
+⎡
+⎣L/prime
+a/prime
+b/prime⎤⎦=⎡⎣10 0
+0 cos( φ(θ))−sin(φ(θ))
+0s i n ( φ(θ)) cos( φ(θ))⎤
+⎦⎡⎣L
+a
+b⎤⎦(8)
+Such a rotation has three advantages: (1) the image after
+color rotation has the same luminance as the original image;(2) colors with the same hue in the original image still main-
+tain the same hue after color rotation; (3) the saturation ofthe original colors is not altered after color rotation. Huanget al. [7] deﬁne φ(θ)a s
+φ(θ)=φ
+max/parenleftbigg
+1−/parenleftbigg|θ|
+π/2/parenrightbiggγ/parenrightbigg
+(9)
+They use diﬀerent parameters φmaxandθfor left and right
+planes and there are six parameters involved in all. They use
+Fletcher-Reeves conjugate-gradient method to ﬁnd the op-
+timal values of the parameters and the optimization process
+needs intensive computation. Here we scale up the methodby reducing the number of parameters and simplifying theparameter decision process. Intuitively, the parameter φ
+max
+should be more sensitive than the parameter γsince it con-
+trols the range scope of rotated colors, and in practical ex-
+periments we have also empirically validated this fact. Thus
+we only keep the parameter φmaxby simply setting the pa-
+rameter γto 1. We perform opposite operations in left and
+right planes, which can help balance the blue and yellowhues in the re-colored images. Therefore, there is only one
+295parameter φmaxnow in the function φ(θ)
+φ(θ)=⎧
+⎪⎪⎨
+⎪⎪⎩φ
+max/parenleftbigg
+1−|θ|
+π/2/parenrightbigg
+if−π
+2≤θ<π
+2
+−φmax/parenleftbigg
+1−|θ−π|
+π/2/parenrightbigg
+ifπ
+2≤θ<3π
+2(10)
+Then, we select the parameter φmaxby grid search from
+a predeﬁned candidate set, of which the criterion is to max-
+imize the diversity of the colors on b∗axis, i.e.,
+φmax=argmin φ∈S/summationdisplay
+i/summationdisplay
+j(b/prime
+i−b/prime
+j)2(11)
+It is equivalent to maximizing the variance of the bcom-
+ponents of the colors. After local color rotation, we then
+further adopt a global color rotation to reﬁne the result. Weregard each color in the image as a sample in a
+∗-b∗plane,
+and perform 2-dimensional Principle Component Analysis
+(PCA) to extract the major component. We then rotate
+the colors such that the major component is consistent with
+the discriminative orientation of colorblind users. The dis-
+criminative orientation stands for the orientation of the 1-
+dimensional surface on which the colors can be best dis-
+tinguished. It can be calculated that the normals of theapproximating orientation is (0 .99,0.14). Denote by θ
+dand
+θmthe included angle of the discriminative orientation and
+the major component with respect to the a∗axis. Then we
+can derive that the rotation angle θris
+θr=⎧
+⎨
+⎩θd−θm−π,ifθd−θm>π
+θd−θm+π,ifθd−θm<−π
+θd−θm else(12)
+The global rotation can be formulated as
+⎡
+⎣T(L)
+T(a)
+T(b)⎤
+⎦=⎡
+⎣10 0
+0cos(θ(r))−sin(θ(r))
+0sin(θ(r))cos(θ(r))⎤
+⎦⎡⎣L
+/prime
+a/prime
+b/prime⎤⎦+⎡⎣0
+a/prime
+b/prime⎤⎦
+(13)
+where
+a/primeandb/primeare the mean values of the a/primeandb/primecompo-
+nents respectively. In fact, if we suppose that the colorblind
+simulation πis equivalent to projecting colors into the dis-
+criminative orientation, we can prove that the above equa-
+tion is an optimal global rotation which maximizes/summationtext
+i,j(π(T(ai))−π(T(aj))2+π(T(bi))−π(T(bj))2), i.e., op-
+timizing the discriminative abilities of the colors perceived
+by colorblind users on a∗−b∗plane.
+Although the two steps both perform color rotation, they
+have diﬀerent impacts. In the local color rotation step, there
+is a stretch eﬀect on the color space such that the space near
+b* will be condensed, whereas the global color rotation justrolls the colors while keeping the relative position of each
+color.
+3.4 Services in Accessible Image Search
+The accessibility assessment and improvement are oﬀ-line
+processes and they are implemented in the back-end. With
+these two components, we can provide a series of services for
+colorblind users. We illustrate several typical applicationsas follows:
+(1) Rerank top Ksearch results based on accessibility
+scores;
+(2) Rerank top Ksearch results based on the combination
+of original ranking scores and accessibility scores;(3) Improve the accessibilities of the originally searched
+images (i.e., recoloring them) without changing order;
+(4) Rerank search results after improving images’ accessi-
+bilities;
+(5) Improve the accessibility of an individual image. Users
+can accomplish it with simple operation, such as moving the
+mouse on the image and then click “improve accessibility”.
+These choices can be customized and selected according
+to users’ preference
+1.
+3.5 Evaluation Measure for AIS
+Obviously the existing performance evaluation measures
+for information retrieval, such as Average Precision (AP)
+and NDCG [19], all focus only on relevance. So, we have to
+provide a complementary performance evaluation measure
+for AIS to estimate its eﬀectiveness in searching accessible
+images. Here we modify the existing AP evaluation to ob-tain a new measure named Accessibility Average Precision
+(AAP), but it is worth noting that we can also extend othermeasures to AIS, such as NDCG [19] which takes into ac-count the diﬀerent levels of relevance in comparison of AP.The AAP measurement at M(AAP@M, i.e., the AAP mea-
+sure of the top Mresults) is deﬁned as
+AAP@M=1
+MG maxM/summationdisplay
+i=1yi/summationtexti
+r=1gr
+i(14)
+where yiis the binary relevance label of i-th sample (i.e.,
+yi= 1 if the sample is relevant and otherwise yi=0 ) , gris
+the groundtruth of the r-th sample’s accessibility score, and
+Gmaxis the maximum value of the accessibility score which
+is used to normalize the AAP measurement into [0 ,1].
+Based on the AAP measure, we can easily obtain a Mean
+Accessibility Average Precision (MAAP) measurement by
+averaging the AAP measurements of multiple concepts as
+an overall evaluation. It is the coordinate of the existingMean Average Precision (MAP) measurement. Thereby, the
+performance of AIS can be evaluated with two measures,e.g., MAP and MAAP.
+4. EXPERIMENTS
+We conduct our experiments using 65,443 images collected
+from a popular commercial image search engine. We ﬁrst se-
+lect 68 queries and then collect the top images for each query.
+The queries are: Party, Cat, Panda, Earth, Dogs, Snakes,
+Cartoon, Backgrounds, Ronaldinho, Horses, Women, Drag-
+ons, Spider, Car, Fish, Boy, Ghosts, Live, Youtube, Birds,Animals, Flowers, Angel, Turtles, People, Heart, Frogs, Choco-lates, Cake, Starts, Baby, Beach, Wolves, Weather, Bat-
+man, Email, Hairstyles, Trees, Lion, Children, Hawaii, Food,Tiger, Waterparks, Indians, School, Sports, Military, Bees,Medical, Plants, Pigs, Cow, Disney, Flags, Rose, Baseball,F o o t b a l l ,G a m e s ,P o l i c e ,F r u i t ,,N o d i a ,W a r ,J e s u s ,G o l f ,
+Maps, Cowboys, and Hotels . It is worth noting that, instead
+of selecting the queries speciﬁcally to ﬁt our algorithms, we
+1Of course simply providing many customizable options may
+not be a good choice for users. The design of the options
+and a friendly user interface is crucial for real-world appli-
+cation. But in our current stage we will only focus on theperformance of reranking and recoloring, whereas more spe-
+ciﬁc studies on the customizations of these services are left
+for our future work.
+29600.10.20.30.40.50.60.70.8Correlation Coefficient
+QueryIDAnalysisͲBasedMethod Learning ͲBasedMethod
+Figure 6: Pearson correlation coeﬃcients between our accessibility measurements and the subjective scores.
+Images
+Accessibility Scores 0.990 0.974 0.957 0.92 0.732 0.694 0.661 0.554 0.399 0.282 0.282 0.250
+Figure 7: The evaluated accessibility scores of the images illustrated in Fig. 3. We can see that the scores
+are well consistent with subjective perception.
+have chosen a set of diverse and representative queries as a
+picture of real-world image search. For simplicity, we use 1∼68 to denote the IDs of these queries, respectively.
+There are 20 anonymous protanopic/deuteranopic users
+in total
+3(18 male and 2 female) participating in the la-
+beling and evaluation tasks. These participants come fromthe two largest cities of China, and they are from diﬀerentbackgrounds, including students, teachers, editors, etc.
+4.1 Evaluation of Accessibility Assessment
+First, we evaluate the consistency of our accessibility mea-
+surement with subjective test. Three colorblind viewers areinvolved in the subjective labeling. Every image is manu-ally given a subjective accessibility score among 0, 0.5 and 1by each volunteer. These three scores indicate low, mediumand high accessibility, respectively. Several typical exampleswith diﬀerent accessibility scores have been shown in Fig. 3.
+We compare the two diﬀerent accessibility assessment meth-
+ods proposed in Section 3.2. For analysis-based accessibility
+assessment, the parameter Qis empirically set to 4096. For
+learning-based accessibility assessment, we regard the im-ages collected from the queries 1 to 20 as training data. Theimages of the other 48 queries are used for testing. Sincethe training and testing images are collected from diﬀerent
+queries, the over-ﬁtting eﬀect can be avoided. The parame-
+terεin SVR model is empirically set to 0.01, and the trade-
+oﬀ parameter Cand the radius parameter σare tuned by
+5-fold cross-validation. We average the scores provided bythe three volunteers and then compute the Pearson correla-
+3Actually the perceptions of protanopic and deuternaopic
+viewers are very close [5][12]. They come from the two
+largest cities of China. Most of these viewers are not awareof which type they belong to, and they only know they are
+red-green colorblind. So we will not distinguish these two
+types of colorblindness in our study.tion of the averaged subjective accessibility scores and our
+accessibility measurements.
+Figure 6 illustrates the results. From the results we can
+clearly see that, although the analysis-based method is in-
+tuitive, the learning-based method performs much better.
+This can be attributed to the fact that the SVR model built
+on block-wise color moment features can implicitly capturethe high-order relationships between accessibility scores andthe statistical and spatial distribution of colors via kernelmapping. For example, it may be learned from trainingdata that the central blocks should be more important thanboundary blocks. The mean correlation coeﬃcients obtainedby the learning-based and analysis-based methods are 0.471and 0.169, respectively. Considering there are only threescales for the manually labeled scores, 0.471 is a good resultand we can conclude that the learning-based accessibility as-sessment method can achieve rather consistent results with
+the perception of colorblind viewers (Figure 7 illustrates the
+measured accessibility scores of the images in Fig. 3, andwe can see they are reasonable). For a typical image withsize 320 ×240, the learning-based and analysis-based ac-
+cessibility assessment methods cost about 1 and 2 second,respectively (Pentium4 3.0G CPU and 2G memory). There-fore, the learning-based method is superior in terms of both
+performance and computational eﬃciency.
+4.2 Evaluation of Reranking Strategy for Ac-
+cessible Search
+To evaluate the accessibility-based reranking approach, we
+adopt the AAP measure introduced in Section 2.2. In ad-
+dition, we also illustrate the AP measurements before and
+after reranking to investigate the impact of the reranking on
+search relevance. Based on our conclusion in the last sectionthat the learning-based accessibility assessment is superiorto analysis-based method, we adopt the accessibility scores
+2970.20.30.40.50.60.70.80.91
+QueryIDAAP@300 BeforeRerank AAP@300 AfterRerank AP@300BeforeRerank AP@300AfterRerank
+Figure 9: The comparison of AAP@300 and AP@300 before and after reranking.
+Tree
+Flowers
+Before reranking After reranking
+Figure 8: The top results for query Treeand Flowers
+before and after reranking perceived by protanopic
+viewers. We can see that the top images after
+reranking have better accessibilities.
+obtained by the ﬁrst approach. We rerank the top 300 im-
+ages for each query with the accessibility scores in descend-ing order, and then we compute the AAP measures beforeand after reranking. Figure 8 illustrates the top images forthe queries treeand ﬂowers before and after reranking. Here
+we have mimicked the perception of protanopic viewers us-ing the simulation algorithm in [5]. The detailed resultsfor diﬀerent queries are illustrated in Fig. 9, from which
+we can clearly see the improvement of AAP after rerank-ing. The MAAP increases from 0.59 to 0.65 after reranking.
+This indicates that the AIS scheme can successfully identify
+and prioritize the images with better accessibilities. The ﬁg-ure also illustrates the AP@300 measures before and afterreranking. We can see that the reranking has only slightlydegraded the search performance in terms of relevance. TheMAP measure degrades from 0.74 to 0.72 after reranking. Infact, as previously mentioned, we can also choose to combinethe original ranking scores and the accessibility scores tocompromise relevance and accessibility if the relevance afterreranking is a concern. The existing relevance improvementmethods can also be further integrated [27].
+4.3 Evaluation of Accessibility Improvement
+Algorithm
+We now evaluate the accessibility improvement approach
+introduced in Section 3.3. To reduce the workload of color-
+blind labelers, we only randomly select 90 images from each
+of the 68 queries, and obtain a set of 6120 images in thisway. We empirically set the parameter candidate set S(see
+Eq. (11)) to {−π/3,−π/6,0,π/6,π/3}to achieve a com-
+promise between recoloring performance and computationalcost. Figure 10 illustrates several examples, including origi-
+nal images, their protanopic views and the recolored results(to better demonstrate the eﬀectiveness of the recoloring ap-proach, we have further added two Isharaha plates that areout of the web image dataset).
+We compare our recoloring algorithm with two existing
+methods:
+(1) Optimization-Based Color Rotation (OBCR) [7];
+(2) Generalized Histogram Equalization (GHE) [30].
+We choose these two methods because the existing stud-
+ies have shown their superiority over many other re-coloringmethods. Each recolored result is given a subjective accessi-bility score using the method introduced in Section 4.1 withthree colorblind labelers. In the labeling process, the re-sults produced by all algorithms are shuﬄed and blended togenerate a fair comparison. Figure 11 illustrates the aver-age accessibility scores of the original images and the recol-ored results using the three algorithms. From the results wecan see that the three recoloring methods all achieve betteraccessibility scores than the original images. This demon-strates the eﬀectiveness of the recoloring approach. Among
+the three recoloring methods, the proposed algorithm per-
+forms the best. Our method also has advantage in computa-tional cost. In addition, our method only needs 1.5 secondsto process one image and this is faster than the other two al-gorithms. Therefore, the superiority of the proposed methodis evident considering both performance and computationaleﬃciency.
+298(a) (b) (c)
+Figure 10: (a) Original Images. (b) Perceived im-
+ages by protanopic viewers. (c) Perceived images byprotanopic viewers after accessibility improvement.
+We can see that the recoloring approach can increase
+the contrast of images and help colorblind viewersbetter distinguish several details in the images. Thetwo Isharaha plates, which originally cannot be readby the colorblind viewers, can also be recognized af-
+ter recoloring.
+4.4 User Study
+Finally, we conduct user study with all the 20 colorblind
+viewers to evaluate the usability of AIS.
+In the accessible search scheme, we recolor all the images
+and then rerank the top 300 images for each query based on
+the evaluated accessibility scores. First, we regard the orig-
+inal search and the accessible search as two schemes, and
+then ask the users to freely choose queries and observe the
+results. The users are asked to rank the two schemes us-ing “>”, “>>” and “=”, which mean “better”, “much better”
+and “comparable” respectively. To quantitate the results,we convert the ranking information into ratings. We assignscore 1 to the worse scheme. The other scheme is assignedscore 2, 3 and 1 if it is better, much better and comparablethan this one, respectively. The average rating scores and
+the variances are illustrated in Fig. 12. We can clearly seethe preference of users towards the accessible search scheme.We also perform an analysis of variance (ANOVA) test [6].The F-statistic of scheme factor is 64.08 and it can be de-
+rived that p <0.000001. This indicates that the diﬀerence of
+the two schemes is signiﬁcant. The F-statistic of user factor
+is 1.0 and it can be derived that p >0.5, and this indicates
+that the diﬀerence among users is statistically insigniﬁcant.
+Then we conduct a more detailed study. For each query,
+the users are provided with the original search results andthe accessible search results. The two ranking lists are shuf-
+00.10.20.30.40.50.60.70.8
+Baseline OBCR GHE Our method
+Figure 11: The average accessibility scores of the im-
+ages after implementing diﬀerent recoloring meth-ods.
+AIS ORI00.511.522.53
+Figure 12: The mean ratings of Accessible ImageSearch (AIS) and Original (ORI) schemes.
+ﬂed and blended, and each user then selects the preferred
+list from the pair. The percentages of diﬀerent preferencesare illustrated in Table 1. From the table we can see that
+most users prefer the accessible search results. A small partof users have also chosen the original results. This can beattributed to two facts: one is that for several queries thetop results in the original ranking list already have high ac-cessibilities (we can see in Fig. 9 that the AAP measures ofseveral queries can hardly be improved after reranking), andthe other is that the relevance of several queries slightly de-grade after reranking and some users feel uncomfortable for
+this. However, considering the diversity of the queries and
+the anonymous users, these results are already suﬃcient todemonstrate the usefulness of the AIS scheme. The resultswill also be better if we provide the reranking and recoloringas the additional options that can be chosen by the users.
+5. CONCLUSION
+This paper describes an AIS scheme that serves colorblind
+users. Diﬀerent from the traditional image search that aims
+to return more relevant images to users, the accessible im-
+ages search takes into account the accessibilities of images.
+The scheme includes an image accessibility assessment com-ponent and an accessibility improvement component. Basedon the two components, we can provide a series of services
+for colorblind users, such as prioritizing the images with high
+accessibilities in the search results and recoloring images toimprove their accessibilities. Experiments and user studyhave demonstrated the eﬀectiveness of the scheme.
+Relevance and accessibility are both important for color-
+blind users in image search. Since the relevance issue has al-ready been studied for decades, in this work we have focused
+299Table 1: User study of the preference of accessible
+image search
+Query Prefer accessible Neutral Prefer original
+search results results
+Animals 60% 25% 15%
+Flowers 85% 5% 10%
+Angel 65% 20% 15%
+Turtles 75% 15% 5%
+People 50% 25% 25%
+Heart 65% 10% 25%
+Frogs 65% 20% 25%
+Chocolates 65% 15% 20%
+Cake 70% 15% 15%
+Stars 70% 25% 5%
+Baby 50% 45% 5%
+Beach 40% 15% 45%
+Wolves 50% 45% 5%
+Weather 65% 15% 20%
+Batman 50% 35% 15%
+Email 65% 30% 15%
+Hairstyles 45% 30% 35%
+Trees 80% 15% 5%
+Lion 65% 25% 10%
+Children 60% 20% 20%
+Hawaii 65% 20% 15%
+Food 40% 20% 40%
+Tiger 55% 20% 25%
+Waterparks 70% 20% 10%
+Indians 55% 25% 20%
+School 60% 25% 15%
+Sports 75% 25% 0%
+Military 80% 10% 10%
+Bees 80% 20% 0%
+Medical 70% 30% 0%
+Plants 65% 20% 15%
+Pigs 55% 30% 15%
+Cow 55% 15% 30%
+Disney 35% 50% 15%
+Flags 80% 15% 5%
+Rose 55% 40% 5%
+Baseball 65% 25% 10%
+Football 85% 5% 10%
+Games 60% 25% 15%
+Police 50% 35% 10%
+Fruit 20% 45% 35%
+Nokia 45% 40% 15%
+War 70% 30% 20%
+Jesus 60% 20% 20%
+Golf 45% 45% 10%
+Maps 80% 15% 5%
+Cowboys 65% 25% 10%
+Hotels 80% 10% 0%
+Average 61.04% 24.27% 14.69%
+on accessibility. In fact, many existing techniques for im-proving search performance in relevance can be extended toaccessibility. For example, analogous to the relevance feed-
+back which is an intensively studied topic in image search,
+we can develop an accessibility feedback technique that canimprove the accessible search performance based on severalfeedback results from users. We will further study theseissues in our future work.
+6. ACKNOWLEDGMENTS
+We would like to thank Dr. Ke Colin Zheng for his in-
+structive suggestions.7. REFERENCES
+[1] Web Accessibility Initiative. http://www.w3.org/WAI/.
+[2] Vischeck. http://www.vischeck.com.
+[3] Accessibility research: aDesigner.
+http://www.research.ibm.com/trl/projects/acc tech/adesigner.htm
+[4] Google accessible search. http://labs.google.com/accessible/
+[5] H. Brettel, F. Vienot, and J. Mollon, “Computerized simulation
+of color appearance for dichromats”, Journal of the Optical
+Society of America, vol. 14, no. 10, 1997
+[6] R. A. Fisher, “Statistical methods for research workers”,
+Macmillan Pub Co, 1970
+[7] J. -B. Huang, Y. -C. Tseng, S. -I Wu, S. -J. Wang, “Information
+preserving color transformation for protanopia and
+deuteranopia”, IEEE signal processing letter, vol. 14, no. 10,2007
+[8] L. Jeﬀerson and R. Harvey, “An interface to support color blind
+computer users”, in Proceedings of ACM SIGCHI, 2007
+[9] L. Jeﬀerson and R. Harvey, “Accommodating color blind
+computer users”, in Proceedings of ACM Conference on
+Computers and Accessibility, 2006
+[10] G. Iaccarino, D. Malandrino, M. D. Percio, and V. Scarano,
+“Eﬃcient edge-services for colorblind users”, in Proceedings of
+International World Wide Web Conference, 2006
+[11] V. A. Kovalev, “Towards image retrieval for eight percent of
+color-blind men”, in Proceedings of International Conference onPattern Recognition, 2004
+[12] K. Rasche, R. Geist, and J. Westall, “Re-coloring images for
+gamuts of lower dimension”, in Proceedings of Eurographics,2005
+[13] A. J. Smola and Bernhard Scholkopf, “A tutorial on support
+vector machine”, Statistics and computing, vol. 14, no. 3, 2004
+[14] K. Wakita and K. Shimamura, “Smart color: disambiguation
+framework for the colorblind”, in Proceedings of ACMConference on Computers and Accessibility, 2005
+[15] S. Yang and Y. M. Ro, “Visual content adaptation for color
+vision deﬁciency”, in Proceedings of International Conferenceon Image Processing, 2003
+[16] CIE Technical Report, “Industrial colour-diﬀerence evaluation”,
+1995
+[17] Wandell, Foundations of Vision, Sunderland, MA:Sinauer, 1995
+[18] Wikipedia. www.wikipedia.org/wiki/Accessibility[19] K. J¨ arvelin and J. Kek¨ al¨ainen, “Cumulated gain-based
+evaluation of IR techniques”, ACM transactions on Information
+Systems, vol. 20, no. 4, 2002
+[20] Z. Wang and A. C. Bovik, “Modern image quality assessment”,
+Morgan & Claypool Publishers, 2006
+[21] Z. Lu, W. Lin, X. Yang, E. P. Ong, and S. Yao, ”Modeling
+visual attention’s modulatory aftereﬀects on visual sensitivityand quality evaluation”, IEEE transactions on ImageProcessing, vol. 14, no. 11, 2005
+[22] M. S. Lew, N. Sebe, C. Djeraba, and R. Jain, “Content-based
+multimedia information retrieval: state of the art andchallenges”, ACM transactions on Multimedia Computing,Communications and Applications, 2006
+[23] M. Song, D. Tao, C. Chen, X. Li, and C. -W. Chen, “Colour to
+Grey: Visual Cue Preservation”, IEEE Transactions on PatternAnalysis and Machine Intelligence, to appear
+[24] R. M. Evans, An introduction to color, Wiley, New York, 1948
+[25] IEEE CVPR 2005 Workshop on Computer Vision Applications
+for the Visually Impaired,
+http://www.soe.ucsc.edu/ manduchi/CVAVI/
+[26] ECCV 2008 Work-
+shop on Computer Vision Applications for the Visually Impaired,http://www.ski.org/Rehab/Coughlan
+lab/General/CVAVI08.html
+[27] Y. Jing and S. Baluja, “PageRank for product image search”, in
+Proceedings of International World Wide Web Conference, 2008
+[28] L. Kennedy and M. Naaman, “Generating diverse and
+representative image search results for landmarks”, in
+Proceedings of International World Wide Web Conference, 2008
+[29] M. Hua, J. Pei, A. Fu, X. Lin, H.-F. Leung, “Eﬃciently
+answering top-k typicality queries on large databases,” in
+Proceedings of VLDB, 2007
+[30] J. -B. Huang, S. -Y. Wu, and C. -S. Chen, ”Enhancing color
+representation for the color vision impaired”, in Proceedings ofECCV Workshop on Computer Vision Applications for theVisually Impaired, 2008
+[31] V. Vapnik. The nature of statistical learning theory, Springer,
+New York, 1995
+300

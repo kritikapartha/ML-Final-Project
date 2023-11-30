@@ -1,0 +1,908 @@
+Multimodal Analysis of Image Search Intent
+Intent Recognition in Image Search from User Behavior and Visual Content
+Mohammad Soleymani
+Swiss Center for Aﬀective Sciences
+University of Geneva
+Geneva, Switzerland
+mohammad.soleymani@unige.chMichael Riegler
+Simula Research Laboratory and
+University of Oslo
+Oslo, Norway
+michael@simula.noP˚al Halvorsen
+Simula Research Laboratory and
+University of Oslo
+Oslo, Norway
+paalh@simula.no
+ABSTRACT
+Users search for multimedia content with diﬀerent underlying moti-
+vations or intentions. Study of user search intentions is an emerging
+topic in information retrieval since understanding why a user is
+searching for a content is crucial for satisfying the user’s need. In
+this paper, we aimed at automatically recognizing a user’s intent
+for image search in the early stage of a search session. We designed
+seven diﬀerent search scenarios under the intent conditions of /f_ind-
+ingitems, re-/f_inding items and entertainment. We collected facial
+expressions, physiological responses, eye gaze and implicit user
+interactions from 51 participants who performed seven diﬀerent
+search tasks on a custom-built image retrieval platform. We ana-
+lyzed the users’ spontaneous and explicit reactions under diﬀerent
+intent conditions. Finally, we trained machine learning models
+to predict users’ search intentions from the visual content of the
+visited images, the user interactions and the spontaneous responses.
+A/f_ter fusing the visual and user interaction features, our system
+achieved the F-1 score of 0.722 for classifying three classes in a user-
+independent cross-validation. We found that eye gaze and implicit
+user interactions, including mouse movements and keystrokes are
+the most informative features. Given that the most promising re-
+sults are obtained by modalities that can be captured unobtrusively
+and online, the results demonstrate the feasibility of deploying such
+methods for improving multimedia retrieval platforms.
+CCS CONCEPTS
+•Information systems !Image search; Search interfaces; •Human-
+centered computing !Laboratory experiments;
+KEYWORDS
+Search, multimedia, user interaction, intent, emotion, experiment,
+eye gaze, facial expression, computer vision
+ACM Reference format:
+Mohammad Soleymani, Michael Riegler, and P ˚al Halvorsen. 2017. Multi-
+modal Analysis of Image Search Intent. In Proceedings of ICMR ’17, Bucharest,
+Romania, June 6–9, 2017, 9 pages.
+DOI: h/t_tp://dx.doi.org/10.1145/3078971.3078995
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for pro/f_it or commercial advantage and that copies bear this notice and the full citation
+on the /f_irst page. Copyrights for components of this work owned by others than the
+author(s) must be honored. Abstracting with credit is permi/t_ted. To copy otherwise, or
+republish, to post on servers or to redistribute to lists, requires prior speci/f_ic permission
+and/or a fee. Request permissions from permissions@acm.org.
+ICMR ’17, Bucharest, Romania
+©2017 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+978-1-4503-4701-3/17/06. . . $15.00.
+DOI: h/t_tp://dx.doi.org/10.1145/3078971.30789951 INTRODUCTION
+A multimedia retrieval system that takes users’ intent into account
+can optimize its ranking and visualization methods to be/t_ter satisfy
+its users. In this context, users’ search intention has a profound
+eﬀect on the way they interact with an information retrieval system.
+It has been shown that search tasks are not solely performed with
+the goal of information search, but also to re-/f_ind speci/f_ic content
+[36] and for entertainment [ 13]. /T_he success of multimedia retrieval
+does not only rely on the relevance of the content to the query and
+the way the content is framed and depicted is equally important
+to users, given their search intention. /T_his is more evident for the
+case of multimedia retrieval in which entertainment is a major
+motivator behind multimedia search [ 22]. Understanding why a
+user is embarking on a multimedia search process is not possible
+with information retrieval systems simply accepting query terms.
+/T_herefore, search motivation shall be determined from the implicit
+indicators and the context.
+Due to its nature, intent in multimedia search is diﬀerent from
+the classic web search intentions, i.e., informational, navigational
+and transactional intentions [ 7,22]. Moshfeghi et al. [30] used
+the categories of seeking information, re-/f_inding an item and two
+entertainment categories to adjust arousal and mood. /T_hey fur-
+ther a/t_tempted to automatically identify video search intentions
+from users implicit feedback, e.g., mouse movements. /T_hey could
+demonstrate the feasibility of intent recognition from users’ im-
+plicit feedback. Users implicit feedback and behavioral responses
+have been also used to automatically determine topical relevance
+in information retrieval [1].
+In this work, we aimed at automatically recognizing search intent
+early in an image search session. We targeted three scenarios, i.e.,
+/f_inding images, re-/f_inding images and entertainment. Our /f_inding
+category includes seeking information andtransactions since we
+asked the participants to identify images to be downloaded and used
+for a certain purpose. /T_he re-/f_ind category is similar to the category
+ofmental image proposed in [ 26] in which a user has a speci/f_ic
+image in mind that they want to /f_ind. Unlike the work in [ 30], we
+let the participants decide how they want to entertain themselves
+through image search, thus our mood and arousal adjustments are
+mixed. It is also worth noting that it is not as easy to adjust for
+arousal through images in contrast to videos that are used in [30].
+We recruited 51 healthy participants to participate in an experi-
+ment performing image search tasks under diﬀerent intent condi-
+tions. We built a custom image search interface using the Flickr1
+API. Given the role of emotions in the search intent process [ 30],
+1h/t_tp://www./f_lickr.com
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+251ICMR ’17, June 6–9, 2017, Bucharest, Romania A. Soleymani et al.
+we opted for recording and analyzing facial expressions and Gal-
+vanic Skin Response (GSR), in addition to the interactions analyzed
+in [30]. We also recorded eye gaze and pupil dilation which can
+capture interaction, a/t_tention and arousal [ 5,20]. Additionally, we
+recorded implicit user interactions with the search interface, includ-
+ing key strokes, search logs and mouse movements. We analyzed
+these modalities and how they vary under diﬀerent intent condi-
+tions. Moreover, we trained models to recognize intent early in
+the search session (/f_irst 30s) from the spontaneous reactions and
+implicit interactions. We also used the visual content from the
+visited images to recognize search intent sessions. In summary, our
+major contributions are as follows.
+We analyzed how facial expressions, eye gaze, queries and
+implicit user interaction vary by image search intent.
+We analyzed visual content features of the visited images
+and demonstrate how they can be utilized for search intent
+recognition.
+We built and evaluated a search intent recognition system
+through users spontaneous responses and interaction.
+/T_hus, in contrast to the work presented in [ 30], which reported a
+user-dependent intent recognition in video search, we performed a
+user-independent intent recognition for image search. We also ana-
+lyzed facial expressions, physiological responses, eye gaze, implicit
+user interactions and visual content of images and evaluated their
+eﬀectiveness for intent recognition.
+Using machine learning models to predict users’ intentions from
+the collected information, our system achieved the average F-1 score
+of 0.722 for three classes in a user-independent cross-validation.
+Furthermore, experiments revealed that eye gaze and implicit user
+interactions are the most informative features. /T_his is very promis-
+ing because these modalities can be captured online, which demon-
+strates the potential of using such methods for improving multime-
+dia retrieval platforms.
+/T_he remainder of this paper is organized as follows. /T_he previous
+work is presented in Section 2. /T_he experimental methodology and
+apparatus are explained in Section 3. Section 4 provides details
+about the image retrieval system in the experiments. Extracted
+features and statistical analysis on how they vary by intent condi-
+tions are reported in Section 5. Intent recognition and its results are
+given in Section 6, and the limitations of this work are discussed in
+Section 7. /T_he work is /f_inally concluded in Section 8.
+2 BACKGROUND
+/T_here is a general belief in the multimedia community that intent
+in text search is diﬀerent from the intent in multimedia search [ 22].
+In addition to relevance, in multimedia search, the content and the
+presentation of multimedia items are also important to the user, i.e.,
+why and for which purpose images and videos are taken, searched
+for and viewed. User intent in the area of multimedia can in general
+be divided in the domains of image and video search [22]. In each
+of the two domains, several models and categories of intent have
+been de/f_ined, which are conceptually similar, but named diﬀerently
+in diﬀerent publications [14, 17, 24, 26].
+In the image retrieval domain, the most important intent cate-
+gories are navigation (/f_ind a speci/f_ic image without knowing thecontent), transaction (/f_ind a speci/f_ic image for further use), knowl-
+edge orientation (learn something by looking at an image) and men-
+tal image (know the content of the image beforehand) [ 26]. /T_he
+following intent categories are identi/f_ied in video search: informa-
+tion(obtain knowledge and gather new information), experience
+learning (acquire new skills or learn something), experience exposure
+(undergo a speci/f_ic experience), aﬀect (change mood or aﬀective
+state) and object (the video itself as an object) [ 17]. Based on these
+intent categories, several researchers tried to perform intent clas-
+si/f_ication from multimedia content. Hanjalic et al. [17] classi/f_ied
+videos based on shot pa/t_terns, speech and metadata into three dif-
+ferent categories ( information, experience andaﬀect ) and reported a
+weighted F-1 score of 0.833 for the performance of the classi/f_ication.
+Lux et. al. [ 27] released and discussed an image dataset con-
+taining 1,309 images for /f_ive intent classes. /T_he dataset and intent
+annotations for each image were collected in a user study, and for
+the intent classes, the categories presented in [ 26] were used. /T_he
+intent dataset was used in [ 32] to explore if content-based visual
+features can be helpful to detect the photographers’ intent (why the
+picture has been taken). /T_his was done by performing unsupervised
+clustering of the images into /f_ive intent classes using global visual
+features. To evaluate the performance, the correlation between the
+human agreement with the clusters was compared, which revealed
+that content-based features can indeed be used to classify images
+based on the photographers’ intent.
+Moshfeghi et al. [30] studied the emotion and interaction in dif-
+ferent video search intent scenarios. /T_hey recorded users’ implicit
+feedback for four diﬀerent intention classes, namely, seeking infor-
+mation, re-/f_inding a particular information object, entertainment by
+adjusting arousal level, and entertainment by adjusting mood. /T_hey
+found signi/f_icant diﬀerences between the emotional experiences of
+tasks in diﬀerent intentions. /T_hey also found that the task diﬃculty
+and certainty perception varied by search intention. /T_hey could
+/f_inally train a model to predict search intent, in a user-dependent
+cross-validation, with the accuracy of up to 57.29%.
+Overall, the reviewed literature provides evidence for the use-
+fulness of multimedia content and users’ spontaneous reactions
+for recognizing intent in multimedia search. Nevertheless, pre-
+dicting and using a user’s intent during a multimedia search is
+still a rather unexplored /f_ield. Even though both content-based
+methods and user interactions features have been studied in such
+a context, to the best of our knowledge, this work is the /f_irst to
+combine both in a multimodal fusion and to explore the usefulness
+of additional modalities, i.e., eye gaze, physiological response and
+facial expression.
+3 DATA COLLECTION
+/T_he experiment has received ethical approval from the ethical re-
+view board of the faculty of psychology and educational sciences,
+University of Geneva. 51 healthy participants with normal or cor-
+rected to normal vision were recruited through campus wide posters
+and Facebook. From these 51 participants, 18 were male and 33
+were female, and the average age was 25.7 years ( σ=5:3). /T_he
+participants were informed about their rights and the nature of
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+252Multimodal Analysis of Image Search Intent ICMR ’17, June 6–9, 2017, Bucharest, Romania
+Figure 1: Our experimental setup including an eye gaze
+tracker, front-facing camera recording face videos and gal-
+vanic skin response.
+the experiment. /T_hey then signed an informed consent form be-
+fore the recordings. /T_hey received a monetary gratitude for their
+participation.
+Our experiments were conducted in an acoustically isolated ex-
+perimental booth with controlled lighting (shown in Figure 1). A
+video was recorded using an Allied Vision2Stingray camera at 60.03
+frames/second with a 780 580 resolution. Stimuli were presented
+on a 23 inches screen (1920 1080), and the participants were seated
+approximately 60cm from the screen. Two Litepanels3daylight spot
+LED projectors were used to light up the participants’ faces to re-
+duce possible shadows. An infrared block /f_ilter was mounted on the
+lens to remove the re/f_lection of the infrared light from the eye gaze
+tracker. Video was recorded using the Norpix Streampix so/f_tware4.
+Eye gaze, pupil diameter and head distance were recorded using a
+Tobii5TX300 eye gaze tracker at 300Hz. /T_he GSR was recorded us-
+ing a Biopac6MP-36 at 125Hz through electrodes a/t_tached on distal
+phalanges of index and middle /f_ingers. An experimental protocol
+was run by Tobii Studio, and the recordings were synchronized by
+a sound trigger that marked the frames before each stimulus for the
+camera. /T_he same trigger was converted to a transistor/f_i/question_exclamtransistor
+logic (TTL) trigger using a Brain Products StimTrak7and recorded
+alongside the GSR signals.
+Our participants were /f_irst familiarized with the protocol and
+ratings in a test run, and then they performed search tasks under
+three diﬀerent intent conditions. In this study, we were interested
+in assessing knowledge emotions in image search. Knowledge
+emotions are the emotions that arise as a result of the evaluation of
+one’s knowledge, e.g., interest, confusion and surprise. /T_herefore,
+we asked the participants to self-report these emotions on a seven-
+point scale at the end of each session. In addition, we also asked
+the participants to report the level of control and boredom they felt
+using a similar seven-point scale rating.
+/T_he recorded database, except face videos are available for aca-
+demic research8. For the face videos, we provide the landmarks,
+features and action units for the bene/f_it of the community.
+2h/t_tps://www.alliedvision.com/
+3h/t_tp://www.litepanels.com
+4h/t_tps://www.norpix.com
+5h/t_tp://www.tobii.com/
+6h/t_tps://www.biopac.com/
+7h/t_tp://www.brainproducts.com/
+8h/t_tp://cvml.unige.ch/resources
+Figure 2: An example of a search performed with our image
+retrieval system. With a double click on the enlarged image,
+the user chose the goal image.
+4 IMAGE RETRIEVAL SYSTEM
+To conduct the search experiments, we created our own custom
+image search tool. A snapshot of our image retrieval system is
+shown in Figure 2. /T_he design of the tool was made in a way that
+it could easily be customized to the diﬀerent search intents. /T_he
+images are retrieved using the Flickr API. When the user performs
+a search by submi/t_ting a query, the tool returns a ranked list of
+images. /T_he images are presented to the user in an image gallery
+depicting the /f_irst ten images as thumbnails with the /f_irst image
+enlarged at the bo/t_tom.
+/T_he experiments were conducted in seven sessions, under three
+intent conditions, namely, entertainment, /f_inding andre-/f_inding
+items. Each session lasted three minutes and sessions were pre-
+sented in random order. We had three sessions for /f_inding images
+for a speci/f_ic purpose; three sessions for re-/f_inding images that
+were displayed for 15 seconds before the search session and one
+free viewing entertainment session. For two search sessions, one in
+/f_inding and one in re-/f_inding, we slightly modi/f_ied the search terms
+on the /f_ly to observe the eﬀect of goal obstruction on users behavior.
+/T_he modi/f_ication was performed by adding and removing random
+query terms before they were sent to Flickr. /T_he search tasks were
+mostly about Geneva where the experiments were conducted. /T_he
+image search task instructions are given in Table 1.
+We discarded the data from the participants who misunderstood
+the instructions, and the sessions in which the majority of eye gaze
+samples were lost (due to extreme head pose and, in one case, device
+failure). /T_herefore, out of 357 possible search sessions, we could
+analyze 299 session that were consistently and correctly performed
+and recorded. In the analysis of behavioral responses, the data from
+the /f_irst seven participants were also discarded since we made a
+small change in the layout of the interface, a/f_ter recording them,
+which made the eye gaze responses inconsistent.
+5 EXTRACTED FEATURES AND
+MULTIMODAL ANALYSIS
+5.1 User interactions and responses
+/T_he following modalities were recorded from the participants in-
+teracting with the search interface: visual, physiological, eye gaze
+and implicit user interactions. In this section, we describe the pro-
+cessing and feature extraction performed on these modalities. For
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+253ICMR ’17, June 6–9, 2017, Bucharest, Romania A. Soleymani et al.
+Table 1: /T_he list of image search task instructions given to
+the users during the experiment.
+Task Instruction
+Condition 1
+(entertainment ):You can search/browse freely to look for your
+content of interest.
+Condition 2-1
+(/f_inding items):Please /f_ind 3 pictures to be used for advertising
+tourism in Geneva; they should all show jet d’eau.
+Condition 2-2
+(/f_inding items):Please /f_ind 3 pictures to be used for advertising
+tourism in Geneva; it should be from the city and
+with no picture from the lake.
+Condition 2-3
+(/f_inding items):Please /f_ind 3 pictures to be used for advertis-
+ing tourism in Geneva; it should show Nations
+square.
+Condition 3-1
+(re-/f_inding
+items):Please try to re-/f_ind the example image shown
+below. /T_he example image is a boy on a beach
+playing with a bucket.
+Condition 3-2
+(re-/f_inding
+items):Please try to re-/f_ind the example image shown
+below. /T_he example image is a Swiss /f_lag swung
+on the edge of a lake.
+Condition 3-3
+(re-/f_inding
+items):Please try to re-/f_ind the example image shown
+below. /T_he image shows passengers boarding a
+Vietnam airlines plane on a cloudy day.
+Table 2: /T_he list of 17 features extracted from the logged im-
+plicit user interaction with the search tool. Each feature is
+extracted per user and per session.
+Feature type Description #
+Mouse clicks Clicking rate per second (mean and standard
+deviation), type of clicked object (search but-
+ton, next image, etc.)8
+Mouse movement Distance moved in pixels per second, speed
+(pixels per second) of movement for each
+second (mean and standard deviation)4
+Key strokes Keystroke rate per second (mean and stan-
+dard deviation)2
+Search terms Number of diﬀerent query terms, complexity
+of query terms derived from the synsets tree
+length in the WordNet [2, 29]2
+Images Number of displayed images 1
+the analysis in this section, we analyzed user interactions features
+extracted from the full sessions. /T_he visual content features and
+the user interactions features from the /f_irst 30 seconds were used
+for the intent recognition in Section 6.
+5.1.1 Implicit user interaction. All implicit user interactions per-
+formed with the search tool were logged (see Table 2). /T_his includes
+the clicks, mouse movements, displayed images and thumbnails,
+selected images, search queries and keystrokes. Additionally, we
+implemented the possibility to manipulate search queries in the
+background. All the information was collected using Java scripts
+and stored in a MySQL server using PHP for later analysis. From the
+collected data, we extracted diﬀerent types of features for further
+analysis, including mouse movements, mouse clicks and keystrokes.
+5.1.2 Eye gaze. Optical eye gaze trackers track the direction of
+gaze and provide the projected gaze. /T_he eye gaze pa/t_tern and pupil
+diameter have been used for detecting boredom, mind-wanderingTable 3: /T_he list of 60 eye gaze features. /T_he functionals
+or statistical descriptives are mean, standard deviation, /f_irst
+and third quartiles, median, maximum and minimum.
+Feature type Description #
+AOI Number of /f_ixations in the AOI, the proportion
+of gaze duration in AOI2
+Fixation Number of /f_ixations, statistical descriptives on
+/f_ixation duration8
+Saccade Number of saccedes, statistical descriptives of
+saccade duration, absolute and relative saccadic
+directions22
+Scan path Statistical descriptives of scan path distances and
+their speed14
+and interest [ 3,11,20,25]. Eye gaze trackers o/f_ten record head
+distance and pupil diameter which are both shown to be useful
+for recognizing aﬀective and cognitive states [ 20]. Head distance
+is a measure of body posture. Pupillary re/f_lex is modulated by
+emotional arousal through increase in sympathetic activities [ 5].
+Eye gaze features such as /f_ixations and saccades were extracted
+by the eye gaze analysis so/f_tware (Tobii Studio). Fixations are the
+points where eye gaze is maintained in the same location for a min-
+imum amount of time (around 100ms). /T_he number of eye /f_ixations,
+the presence of eye gaze in the area of interest (AOI) and the sac-
+cadic movements vary in diﬀerent cognitive and emotional states.
+Saccades are the eye movements between /f_ixations. /T_he absolute
+direction of saccades (measured by their absolute angle) and the
+relative direction with regard to the last saccade were calculated
+by Tobii studio. With a simplifying assumption of straight saccadic
+movements, we de/f_ined the scan path as the direct path between
+the consecutive /f_ixations. In eye gaze analysis, an area of interest
+is o/f_ten de/f_ined to study the gaze pa/t_tern locally. We de/f_ined the
+area of the enlarged image as the AOI. Inspired by the relevant
+literature [ 3,11], 60 features were extracted from eye gaze, pupil
+diameter and head distance (see Table 3).
+5.1.3 Facial expressions. Facial expressions were analyzed using
+the Aﬀdex SDK [ 28]. /T_he Facial Action Coding System (FACS) [ 12]
+is a taxonomy of facial movements that can describe facial expres-
+sions, e.g., lip puller, brow raise and dimpler. /T_he intensity of 19
+facial action units were detected at frame level by Aﬀdex. Addition-
+ally, head pose direction was also extracted. /T_he following seven
+functionals were applied to the features in each session for pooling:
+mean, standard deviation, median, maximum, minimum, /f_irst and
+third quartiles. /T_his resulted in a feature vector with 154 elements
+for each session.
+5.1.4 Galvanic skin response (GSR). GSR is a measurement of
+electrical conductance on skin through a pair of electrodes. /T_he
+skin’s electrical resistance measured by GSR /f_luctuates with the
+activity of sweat glands which are driven by the sympathetic ner-
+vous system. GSR responses consists of tonic (slow) and phasic
+(fast and o/f_ten event-related) responses. GSR varies by emotional
+arousal and has been extensively used in emotion sensing [ 8,23].
+GSR provides a measure for detecting the presence and intensity of
+emotions. We used the open source TEAP toolbox9[34] to extract
+nine features from the GSR signals. In order to capture the phasic
+9h/t_tps://github.com/Gijom/TEAP
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+254Multimodal Analysis of Image Search Intent ICMR ’17, June 6–9, 2017, Bucharest, Romania
+Table 4: /T_he list of nine GSR features.
+Feature type Description
+Number of peaks Number of peaks in resistance exceeding 100 Ω
+Amplitude of peaks GSR peak amplitude from the saddle point pre-
+ceding the peak
+Rise time /T_he time it takes GSR to reach its peak from
+the saddle point in seconds
+Statistical moments Mean, /f_irst and third quartile & standard devi-
+ation (electrical resistance in Ω)
+Trend Intercept and slope for the linear trend
+responses, we extracted the peaks that appears in GSR signals and
+calculated their frequency of occurrence, amplitude and rise time.
+Statistical descriptives were also extracted that captures both tonic
+and phasic characteristics of electrodermal responses. /T_he list of
+features are given in Table 4.
+5.2 Visual content features
+To explore how the content of the visited images are related to the
+intent categories, we extracted three sets of visual content features
+from the images. We decided to use one feature-set that extracts the
+overall visual similarities based on colors and textures in images
+visited for the same intent and another set that is able to emulate
+the visual perception of a human to explore if the visited images in
+intent classes are of diﬀerentiable nature according to their visual
+perception. Additionally, sentiment expressed by images, i.e., visual
+sentiment [ 4], may carry information about the intent categories
+that can be useful. For each of these three feature-sets, we created
+one feature vector containing the visual features of all images visited
+in the /f_irst 10, 20 and 30 seconds of the search session for each
+search task. /T_he visual content features were only used for the
+intent recognition experiments in Section 6. We decided not to
+directly use features extracted from a deep convolutional neural
+network trained on Imagenet [ 10] since such features are related
+to the concepts present in images that can be associated with the
+speci/f_ic tasks rather than intentions.
+5.2.1 Joint composite descriptor (JCD). JCD is a set of global
+visual features that represent the texture and color of an image.
+/T_he JDC features are joint descriptors, which combine two compact
+composite descriptors (fuzzy color and texture histogram and the
+color and edge directivity) in one. /T_he combination of the two
+descriptors is possible because their color information originates
+from the same fuzzy color system. /T_he result of the combination
+is a descriptor, which contains fuzzy color information, texture
+information and edge information [ 9]. By extracting this feature,
+we wanted to study the visual similarities in images visited in the
+same intent condition.
+5.2.2 Tamura. /T_he Tamura features are de/f_ined based on the
+assumption that textural features correspond to the perception
+of the human eyes [ 35]. Tamura compared coarseness, contrast,
+directionality, line-likeness, regularity and roughness, which are
+six diﬀerent texture features, with psychological measures taken
+from experiment subjects. /T_he three features that achieved the best
+results in his evaluation are coarseness, contrast and orientation.
+Coarseness measures the size texture primitives (also called textureelements or texels) [ 18]. Larger textures have larger primitives
+and /f_ine textures have smaller ones. /T_he contrast measures how
+distinctive the diﬀerences between the textures in the images are.
+/T_he contrast can be considered as clear to identify if all areas can
+easily be distinguished from each other. /T_he orientation describes
+the dominant orientation of the textures in the image. A single
+image can have only one dominant orientation or several of them.
+Moreover, an image can also have no orientation at all, which then
+is called isotropic. For the Tamura global image feature, coarseness,
+contrast and orientation are extracted from an image and stored
+in a histogram representation [ 19]. Using this feature, we want to
+explore if the intent classes are related to the visual perception and
+if this can help to classify the intent class.
+5.2.3 Visual sentiment descriptors. A visual sentiment concept
+detector [ 21] was applied to the images that were visited during
+the search process. /T_his sentiment detector was trained to detect
+a re/f_ined set of a large-scale visual sentiment concept ontology
+(VSO) that detects the presence of adjective-noun pairs in images.
+/T_hese adjective-noun pairs (ANP) were selected from social media
+data based on their relevance in expressing sentiment. /T_he model
+that we used is an improved version of the original work [ 4] that
+uses a residual deep convolutional neural network (CNN) that is
+trained to detect adjectives, nouns and ANPs simultaneously [ 21].
+/T_his CNN generates probability estimates (so/f_tmax output) for 553
+adjective-noun pairs that are then combined for the visited images
+to form feature vectors.
+5.3 Statistical analysis
+In this Section, we analyze how the features extracted from behav-
+ior, reported emotions and interactions diﬀer under diﬀerent intent
+scenarios. Participants self-reported a set of emotions, e.g., interest,
+boredom and confusion, at the end of each short search session.
+We calculated the Spearman rank correlation between all the self-
+reported emotions (see Table 5). As expected, interest and boredom
+are inversely correlated. /T_he signi/f_icant correlation between sur-
+prise and confusion ratings demonstrate that these emotions were
+co-occurring in search scenarios. We further looked into whether
+Table 5: Spearman rank correlation coeﬃcient between the
+ratings.implies signi/f_icance ( p<0:01).
+Rating Interest Boredom Confusion Control Surprise
+Interest - -0.49-0.03 0.310.22
+Boredom - - -0.05 -0.29-0.19
+Confusion - - - -0.300.46
+Control - - - - -0.06
+the reported emotions varied in diﬀerent intent conditions. We per-
+formed a one-way ANOVA test on the ratings in three conditions
+and found signi/f_icant diﬀerences for interest ( p=0:00,F=12:10),
+boredom ( p=0:01,F=5:25) and control ( p=0:00,F=16:93).
+/T_he distribution of the reported emotions in three diﬀerent intent
+conditions are given in Figure 3. We performed a two-tailed t-test
+to check whether the perception of control was changed with ma-
+nipulating the query terms, i.e., adding and removing random terms
+before sending the query to Flickr in two out of seven sessions. We
+did not /f_ind any signi/f_icant diﬀerence between manipulated and
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+255ICMR ’17, June 6–9, 2017, Bucharest, Romania A. Soleymani et al.
+entertain. ﬁnd reﬁnd246interest
+entertain. ﬁnd reﬁnd246boredom
+entertain. ﬁnd reﬁnd246confusion
+entertain. ﬁnd reﬁnd246control
+entertain. ﬁnd reﬁnd246surprise
+entertain. ﬁnd reﬁnd02040
+arrowright
+entertain. ﬁnd reﬁnd020
+imagemarked
+entertain. ﬁnd reﬁnd050100
+pager
+entertain. ﬁnd reﬁnd050100
+search
+entertain. ﬁnd reﬁnd02040
+thumbgallery
+Figure 3: Self-reported emotions (top) and click frequency on diﬀerent items (bottom) under diﬀerent intent conditions.
+entertain. ﬁnd reﬁnd51015query terms
+entertain. ﬁnd reﬁnd02505007501000
+displayed images
+Figure 4: Box-plots showing the distributions of the number
+of images and the number query terms in each condition.
+non-manipulated situations which demonstrated that our query
+manipulation was too weak and not eﬀective in inducing the sense
+of goal obstruction.
+Semantic complexity of a term is associated with its ambiguity,
+i.e., the number of diﬀerent meanings that can be interpreted from
+the word. We calculated the query complexity using a synset tree;
+the deeper the vertex is in the tree the less ambiguous the term
+is [29]. /T_he total complexity is calculated as follows. First, we get
+the synset tree for a given search term. In the tree, we iterate over
+all branches leading to the term. For all branches, we calculate the
+depth and sum it. /T_he number and depth of branches is represen-
+tative of the number of the meaning that can be derived and is a
+measure of complexity. For example, “cage” has three branches in
+the sysnet tree and each of them has a depth of one which makes its
+complexity score three. A one-way ANOVA test on the query term
+complexity showed a signi/f_icant diﬀerence between diﬀerent intent
+conditions. /T_he entertainment condition queries had a much lower
+complexity compared to the /f_inding andre-/f_inding conditions. /T_he
+re-/f_inding condition had the highest complexity where the partici-
+pants were trying to use generic terms describing the content they
+had in mind. /T_hrough /f_i/t_ting a linear model, we checked whether
+the complexity of the query terms varied over time. We found that,
+only in the re-/f_inding condition, there was a signi/f_icant increase in
+the complexity of the query terms ( slope=0:05,p=0:00).We also looked at the number of search terms used in each
+condition. A one-way ANOVA test showed signi/f_icant diﬀerences
+between the number of query terms used in average ( p=0:00,F=
+17:75). Similarly, the entertainment condition had the lowest av-
+erage number of query terms followed by /f_inding andre-/f_inding
+conditions (see Figure 4).
+To study the browsing pa/t_tern, we counted the number of browsed
+images per session. A one-way ANOVA test found a signi/f_icant
+diﬀerence between the number of images displayed under three
+diﬀerent conditions ( p=0:00,F=5:68). Given the smaller number
+of query terms used in the entertainment condition, this demon-
+strates that the participants spent more time browsing rather than
+searching (see Figure 4).
+We looked into two features from mouse movements under dif-
+ferent intent conditions. /T_he speed and the distance of mouse
+movement trajectories. A one-way ANOVA test showed signif-
+icant diﬀerences for speech ( p=0:00,F=6:77) and distance
+(p=0:01,F=5:12) under diﬀerent intent conditions. Mouse move-
+ment was the fastest in the entertainment condition. However, the
+distance of the mouse trajectories was much shorter in average
+compared the /f_inding andre-/f_inding conditions. /T_herefore, partici-
+pants spent less time exploring the interface with their mouse in
+theentertainment condition.
+Mouse click features describe where on the interface the clicks
+occurred and at what time. We collected clicks based on the loca-
+tions of the clicks, which are arrowright andarrowle/f_t, imagemarked
+(enlarged image), pager (to change pages), search andthumbgallery
+(thumbnails). /T_he distribution of the click frequencies is shown in
+Figure 3. A one-way ANOVA test showed signi/f_icant diﬀerences
+between click frequencies for imagemarked (p=0:00,F=22:66),
+pager (p=0:00,F=6:63),search bu/t_ton ( p=0:00,F=7:00) and
+thumbgallery (p=0:00,F=43:78). We also calculated the key
+stroke rates and found that the rate of key strokes were not diﬀerent
+under the three intent conditions.
+/T_he aggregated heat maps of eye gaze on three diﬀerent condi-
+tions are given in Figure 5. We can observe that users spent more
+time looking at the enlarged image in the entertainment conditions
+whereas they spent much less time in the re-/f_inding condition. In
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+256Multimodal Analysis of Image Search Intent ICMR ’17, June 6–9, 2017, Bucharest, Romania
+Figure 5: Eye gaze heat maps in diﬀerent search intent conditions. From le/f_t to right: entertainment, /f_inding and re-/f_inding.
+the re-/f_ind condition, the goal was to spot the image so they spent
+more time on queries and exploring the thumbnails.
+Using the Aﬀdex SDK [ 28], we also calculated the intensity of
+the following expressed emotions: sadness, joy, disgust, anger,
+contempt , surprise and engagement. /T_he statistical analysis did
+not show any diﬀerence between the frequency of the expressed
+emotions under diﬀerent conditions.
+6 INTENT RECOGNITION
+Predicting the search intent early on in a search session can help
+a retrieval system to adapt its results according to the user’s need.
+/T_herefore, we a/t_tempted recognizing search intent from four diﬀer-
+ent modalities, namely, facial expressions, physiological responses,
+eye gaze and implicit interactions, e.g., mouse movement. Inspired
+by the previous work that related visual content to the possible
+search intent [ 17,26], we also extracted visual content features
+from the visited images and used them for intent recognition. We
+only extracted features from the /f_irst 10, 20 and 30 seconds of a
+search session to imitate a situation in which a retrieval system is
+predicting the search intent.
+Using the extracted features from the /f_irst 10, 20 and 30 seconds,
+we trained Random Forest classi/f_iers to tackle the classi/f_ication.
+We opted for using an ensemble method due to its ability to per-
+form well with lower number of samples and its robustness against
+over-/f_i/t_ting. /T_he utilized features are described in Section 5. /T_he
+performance of the classi/f_ication was evaluated through a user-
+independent cross-validation, in which the samples from the same
+participants were never present in both train and test sets.
+6.1 Experimental results and multimodal
+fusion
+For all our classi/f_ication experiments, we used the same Random
+Forest classi/f_ier with the respective features as input [ 6] with the
+following parameters: 300 trees, 100 iterations, unlimited maximal
+depth and a batch size of 100.
+For the evaluation, we used user-independent cross-validation.
+Table 6 gives an overview of the classi/f_ication results using the user
+interaction features, visual content features and fusions of them.
+We fused the modalities in two ways.
+/T_he /f_irst fusion method is early fusion which consists in concate-
+nating diﬀerent feature vectors into a single vector before being fed
+to a classi/f_ier. A problem with early fusion is that the combination
+of very diverse features, like user interaction features with visualfeatures, can pose problems. For example, combining interaction
+features with a small number of dimensions with a visual feature-
+set with many thousand dimensions in an early fusion does not
+result to improved performance [16, 33].
+/T_he second utilized fusion method is late fusion. In late fusion
+or decision-level fusion, each modality has its own classi/f_ier. A/f_ter
+these /f_irst classi/f_ication steps, the output of all classi/f_iers are com-
+bined to obtain a /f_inal result. /T_his combination can be performed
+for example by simple majority vote, using another classi/f_ier or
+weighted sum of the scores. Because each feature is processed in a
+separate classi/f_ier, late fusion is more costly in terms of computa-
+tional complexity. /T_he choice of late fusion method depends on the
+dataset, the features and the metrics that are used to calculate the
+distances between the diﬀerent features [15].
+As shown in Table 6, the visual content features alone outperform
+the baseline, which we calculated using the ZeroR classi/f_ier. ZeroR
+assigns the label from the majority class to all the instances and
+provides a baseline. /T_his is an indicator that the intent categories are
+somehow preserved in the visual features but single features are not
+very eﬃcient to detect this. /T_he same is true for all user interactions
+features. /T_he performance of Tamura is particularly interesting
+since it should be able to give a similar perception to humans and
+indicates that diﬀerent intent classes are perceived diﬀerently. /T_he
+VSO features performed the best among the visual features. VSO
+features also performed be/t_ter with more images, i.e., the longer
+the interaction window we analyzed. However, VSO features might
+have captured the concepts that are related to the tasks rather than
+intentions. Comparing visual content features and user interactions
+features, the user spontaneous and implicit interaction features
+perform be/t_ter. Implicit interaction outperforms the visual content
+features. All sets of visual content features perform be/t_ter than the
+face and GSR features.
+Looking at the window length, the shorter segments yield be/t_ter
+results for behavioral and interaction features whereas for content
+features longer segments mostly increased the performance. Over-
+all, 30 seconds segments gives the best performance with late fusion
+reaching average F-1 score of 0.722 for three classes.
+Early fusion does not lead to a large increase of the performance
+and for the user interactions features it even leads to a small de-
+crease. Feature vectors from diﬀerent modalities are of diﬀerent size
+and simply concatenating them does not yield superior results (for
+example face compared to GSR). For the visual content features, the
+early fusion lead to a small increase, which was expected based on
+previous /f_indings [ 16,33]. Late fusion for all diﬀerent combinations
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+257ICMR ’17, June 6–9, 2017, Bucharest, Romania A. Soleymani et al.
+Table 6: Classi/f_ication performance based on the user interactions and visual content features in terms of weighted average
+of precision, recall and F-1 score. /T_he results are reported for the /f_irst 10, 20 and 30 seconds. /T_he best results are in boldface.
+Features Precision Recall F-1 score
+User interactions features 10sec 20sec 30sec 10sec 20sec 30sec 10sec 20sec 30sec
+Face 0.449 0.444 0.392 0.524 0.520 0.458 0.483 0.479 0.421
+Eye Gaze 0.576 0.542 0.562 0.626 0.587 0.572 0.585 0.548 0.536
+GSR 0.430 0.363 0.421 0.488 0.413 0.438 0.455 0.386 0.422
+Implicit user interaction 0.693 0.650 0.619 0.724 0.681 0.682 0.698 0.651 0.637
+Visual content features 10sec 20sec 30sec 10sec 20sec 30sec 10sec 20sec 30sec
+Tamura 0.392 0.396 0.403 0.478 0.482 0.495 0.43 0.433 0.444
+JCD 0.561 0.532 0.46 0.512 0.538 0.468 0.475 0.493 0.463
+VSO 0.502 0.617 0.623 0.583 0.627 0.639 0.539 0.601 0.612
+Multimodal fusion 10sec 20sec 30sec 10sec 20sec 30sec 10sec 20sec 30sec
+Early fusion user interactions and visual content 0.581 0.54 0.521 0.677 0.630 0.610 0.625 0.581 0.562
+Late fusion user interactions and visual content 0.683 0.67 0.743 0.748 0.736 0.748 0.703 0.692 0.722
+Baseline (ZeroR) 0.353 0.353 0.189 0.421 0.421 0.435 0.346 0.346 0.264
+reaches the best results. In our experiments, we used the weighted
+sum of scores for late fusion. /T_he scores were derived from the
+classi/f_ier by averaging the predicted class probability of the trees
+in a Random Forest (con/f_idence score for each class). /T_he overall
+best result is achieved fusing the user interactions features with the
+visual content features. We found that multimodal fusion achieves
+the best results for intent classi/f_ication.
+7 DISCUSSIONS
+/T_he intention categories in this work do not cover all possible search
+intent scenarios and are only three typical cases. To fully cover
+the whole spectrum of search intent, we need a /f_iner granularity
+and additional intent categories speci/f_ic to the image content. We
+did not witness signi/f_icant emotional expressions, and this could
+be a result of the mental fatigue caused by the experiment or the
+arti/f_icial nature of the search tasks with less sense of ownership
+than genuine ones [31].
+Another limitation of this work is the potential bias of the tasks
+cognitive load and behavioral responses elicited by instructions
+rather than intention. /T_his might have resulted in diﬀerent inter-
+action and behavioral responses that are not necessarily related to
+intent. For example, the head pose or eye gaze position are more
+likely to be at the top to recall the task description in more diﬃcult
+tasks compared to the easy one, i.e., entertainment.
+/T_he visual features used in this work show promising results.
+Nevertheless, further analysis is needed on content-based features.
+We hypothesize that emotional content of the query and retrieved
+results are related with search intent, e.g., positive sentiment might
+be associated with entertainment intent. However, what has been
+detected by visual sentiment features might not necessarily be
+related the intention, and the diﬀerence in the visual sentiment
+might be the result of the task at hand.
+/T_he intent recognition performance is similar to the one reported
+in [30], i.e., 51.4% in the early stage for four classes. However,
+our results are obtained using a user-independent cross-validation
+which is more generalizable and shows robustness to between-user
+variations. Nevertheless the performance of such a system shall befurther evaluated in an operationalized system with a diverse set
+of scenarios in which intention can even change in the middle of a
+search session.
+To the best of our knowledge, the relevance of the content to
+search intent has not been analyzed in text-content. Utilizing the
+language processing models to understand queries and retrieved
+content can be also useful for determining users search intent.
+8 CONCLUSIONS
+In this paper, we analyzed the spontaneous responses of users un-
+der diﬀerent search intent conditions. We found that implicit user
+interaction including mouse movement to be the most informative
+channel of information for predicting the intent. Eye gaze behavior
+also showed promising power in diﬀerentiating between diﬀerent
+intent conditions. However, despite the importance of emotions
+in the search process [ 30], facial expression and physiological re-
+sponses underperformed in recognizing search intent compared
+to implicit user interactions. As we showed, the visual content
+of the browsed images can also provide hints on the underlying
+intention for image search. To summarize, we identi/f_ied the best
+modalities for recognizing search intent and showed the feasibility
+of automatically identifying search intent early in a search session.
+If such automatic intent recognition method is deployed, the re-
+sulting intent-aware multimedia retrieval system can optimize its
+results by switching its ranking methods according to the user’s
+underlying motivation.
+9 ACKNOWLEDGMENTS
+/T_he work of Soleymani was supported by his Swiss National Science
+Foundation Ambizione grant. /T_he work of Riegler and Halvorsen
+was supported by the Research Council of Norway as a part of
+the projects INTROMAT under grant agreement 259293 and EONS
+under grant agreement 231687. We thank David Sander for his
+kind assistance for the ethical review of the experiment. We also
+thank “Fondation Campus Biotech Gen `eve” for providing access
+and support at their experimental facilities.
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+258Multimodal Analysis of Image Search Intent ICMR ’17, June 6–9, 2017, Bucharest, Romania
+REFERENCES
+[1]I. Arapakis, I. Konstas, and J. M. Jose. 2009. Using Facial Expressions and Pe-
+ripheral Physiological Signals As Implicit Indicators of Topical Relevance. In
+Proceedings of the 17th ACM International Conference on Multimedia (MM ’09).
+ACM, New York, NY, USA, 461–470.
+[2]S. Bird. 2006. NLTK: the natural language toolkit. In Proceedings of the COL-
+ING/ACL on Interactive presentation sessions. 69–72.
+[3] N. Blanchard, R. Bixler, T. Joyce, and S. D’Mello. 2014. Automated Physiological-
+Based Detection of Mind Wandering during Learning. In Proceedings of ITS.
+Springer International Publishing, 55–60.
+[4] D. Borth, T. Chen, R. Ji, and S.-F. Chang. 2013. SentiBank: Large-scale Ontology
+and Classi/f_iers for Detecting Sentiment and Emotions in Visual Content. In
+Proceedings of the 21st ACM International Conference on Multimedia (MM ’13).
+ACM, New York, NY, USA, 459–460.
+[5]Bradley, M. Margaret, Miccoli, Laura, Escrig, A. Miguel, Lang, and J. Peter.
+2008. /T_he pupil as a measure of emotional arousal and autonomic activation.
+Psychophysiology 45, 4 (July 2008), 602–607.
+[6] L. Breiman. 2001. Random forests. Machine learning 45, 1 (2001), 5–32.
+[7]A. Broder. 2002. A Taxonomy of Web Search. SIGIR Forum 36, 2 (Sept. 2002),
+3–10.
+[8] R. A. Calvo and S. D’Mello. 2010. Aﬀect Detection: An Interdisciplinary Review
+of Models, Methods, and /T_heir Applications. IEEE Transactions on Aﬀective
+Computing 1, 1 (jan 2010), 18–37.
+[9] S. Chatzichristo/f_is, Y. Boutalis, and M. Lux. 2009. Selection of the proper compact
+composite descriptor for improving content based image retrieval. In Procideed-
+ing of IASTED Int’l Conference on Signal Processing, Pa/t_tern Recognition and
+Applications, Vol. 134643. 64.
+[10] J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei. 2009. Imagenet: A large-
+scale hierarchical image database. In Computer Vision and Pa/t_tern Recognition,
+2009. CVPR 2009. IEEE Conference on. IEEE, 248–255.
+[11] S. D’Mello, A. Olney, C. Williams, and P. Hays. 2012. Gaze tutor: A gaze-reactive
+intelligent tutoring system. International Journal of Human-Computer Studies 70,
+5 (2012), 377–398.
+[12] P. Ekman and W. Friesen. 1978. /T_he Facial Action Coding System (FACS). Con-
+sulting Psychologists Press, Stanford University, Palo Alto.
+[13] D. Elsweiler, S. Mandl, and B. Kirkegaard Lunn. 2010. Understanding Casual-
+leisure Information Needs: A Diary Study in the Context of Television Viewing.
+InSymposium on Information Interaction in Context (IIiX ’10). ACM, New York,
+NY, USA, 25–34.
+[14] R. Fidel. 1997. /T_he image retrieval task: implications for the design and evaluation
+of image databases. New Review of Hypermedia and Multimedia 3, 1 (1997), 181–
+199.
+[15] I. Gialampoukidis, A. Moumtzidou, D. Liparas, S. Vrochidis, and I. Kompatsiaris.
+2016. A hybrid graph-based and non-linear late fusion approach for multimedia
+retrieval. In Proceedings of the 14th International Workshop on Content-Based
+Multimedia Indexing (CBMI). 1–6.
+[16] A. H. Gunatilaka and B. A. Baertlein. 2001. Feature-level and decision-level fusion
+of noncoincidently sampled sensors for land mine detection. IEEE Transactions
+on Pa/t_tern Analysis and Machine Intelligence 23, 6 (2001), 577–589.
+[17] A. Hanjalic, C. Ko/f_ler, and M. Larson. 2012. Intent and Its Discontents: /T_he User
+at the Wheel of the Online Video Search Engine. In Proceedings of the 20th ACM
+International Conference on Multimedia (MM ’12). ACM, New York, NY, USA,
+1239–1248.
+[18] R. M. Haralick. 1979. Statistical and structural approaches to texture. Proc. IEEE
+67, 5 (May 1979), 786–804.[19] P. Howarth and S. R ¨uger. 2004. Evaluation of texture features for content-based
+image retrieval. In Image and Video Retrieval. Springer, 326–334.
+[20] N. Jaques, C. Conati, J. M. Harley, and R. Azevedo. 2014. Predicting aﬀect from
+gaze data during interaction with an intelligent tutoring system. In Proc. of ITS,
+Vol. 8474 LNCS. 29–38.
+[21] B. Jou and S.-F. Chang. 2016. Deep Cross Residual Learning for Multitask Visual
+Recognition. In Proceedings of the 2016 ACM on Multimedia Conference (MM ’16).
+ACM, New York, NY, USA, 998–1007.
+[22] C. Ko/f_ler, M. Larson, and A. Hanjalic. 2016. User Intent in Multimedia Search:
+A Survey of the State of the Art and Future Challenges. Comput. Surveys 49, 2,
+Article 36 (2016), 37 pages.
+[23] S. D. Kreibig. 2010. Autonomic nervous system activity in emotion: A review.
+Biological Psychology 84, 3 (jul 2010), 394–421.
+[24] C. Lagger, M. Lux, and O. Marques. 2012. What makes people watch online
+videos: An exploratory study. Computer Entertainment (2012).
+[25] S. Lall ´e, C. Conati, and G. Carenini. 2016. Predicting Confusion in Information
+Visualization from Eye Tracking and Interaction Data. In Proceedings of the
+Twenty-Fi/f_th International Joint Conference on Arti/f_icial Intelligence (IJCAI’16).
+AAAI Press, 2529–2535.
+[26] M. Lux, C. Ko/f_ler, and O. Marques. 2010. A classi/f_ication scheme for user in-
+tentions in image search. In CHI’10 Extended Abstracts on Human Factors in
+Computing Systems. 3913–3918.
+[27] M. Lux, M. Taschwer, and O. Marques. 2012. A Closer Look at Photographers’
+Intentions: A Test Dataset. In Proceedings of the ACM Multimedia 2012 Workshop
+on Crowdsourcing for Multimedia (CrowdMM ’12). ACM, New York, NY, USA,
+17–18.
+[28] D. McDuﬀ, A. Mahmoud, M. Mavadati, M. Amr, J. Turcot, and R. e. Kaliouby. 2016.
+AFFDEX SDK: A Cross-Platform Real-Time Multi-Face Expression Recognition
+Toolkit. In CHI Conference Extended Abstracts on Human Factors in Computing
+Systems. 3723–3726.
+[29] G. A. Miller. 1995. WordNet: a lexical database for English. Commun. ACM 38,
+11 (1995), 39–41.
+[30] Y. Moshfeghi and J. M. Jose. 2013. On cognition, emotion, and interaction aspects
+of search tasks with diﬀerent search intentions. In International conference on
+World Wide Web - WWW ’13. ACM Press, New York, New York, USA, 931–942.
+[31] A. Poddar and I. Ruthven. 2010. /T_he Emotional Impact of Search Tasks. In Proc.
+of the 3rd Symposium on Information Interaction in Context (IIiX ’10). 35–44.
+[32] M. Riegler, M. Larson, M. Lux, and C. Ko/f_ler. 2014. How ’How’ Re/f_lects What’s
+What: Content-based Exploitation of How Users Frame Social Images. In Pro-
+ceedings of the 22Nd ACM International Conference on Multimedia (MM ’14). ACM,
+New York, NY, USA, 397–406.
+[33] C. G. M. Snoek, M. Worring, and A. W. M. Smeulders. 2005. Early Versus Late
+Fusion in Semantic Video Analysis. In Proceedings of the 13th Annual ACM
+International Conference on Multimedia (MULTIMEDIA ’05). ACM, New York, NY,
+USA, 399–402.
+[34] M. Soleymani, F. Villaro-Dixon, T. Pun, and G. Chanel. 2017. Toolbox for Emo-
+tional fEAture extraction from Physiological signals (TEAP). Frontiers in ICT 4
+(2017), 1.
+[35] H. Tamura, S. Mori, and T. Yamawaki. 1978. Textural features corresponding to
+visual perception. IEEE Transactions on Systems, Man and Cybernetics 8, 6 (1978),
+460–473.
+[36] J. Teevan, E. Adar, R. Jones, and M. A. S. Po/t_ts. 2007. Information Re-retrieval:
+Repeat /Q_ueries in Yahoo’s Logs. In Proc. of ACM SIGIR Conference on Research
+and Development in Information Retrieval (SIGIR ’07). 151–158.
+Oral Session 5: Best Paper Candidate
+ICMR’17, June 6–9, 2017, Bucharest, Romania
+259

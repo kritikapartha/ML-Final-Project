@@ -1,0 +1,386 @@
+Query Expansion in Enterprise Search
+Eric M. Domke, Jonathan P. Leidig, Gregory Schymik, and Greg Wolffe
+Grand Valley State University
+Allendale, Michigan
+domkeer@mail .gvsu .edu
+ABSTRACT
+Although web search remains an active research area, interest in
+enterprise search has not kept up with the information require-
+ments of the contemporary workforce. To address these issues, this
+research aims to develop, implement, and study the query expan-
+sion techniques most effective at improving relevancy in enterprise
+search. The case-study instrument was a custom Apache Solr-based
+search application deployed at a medium-sized manufacturing com-
+pany. It was hypothesized that a composition of techniques tailored
+to enterprise content and information needs would prove effec-
+tive in increasing relevancy evaluation scores. Query expansion
+techniques leveraging entity recognition, alphanumeric term iden-
+tification, and intent classification were implemented and studied
+using real enterprise content and query logs. They were evaluated
+against a set of test queries derived from relevance survey results
+using standard relevancy metrics such as normalized discounted cu-
+mulative gain (nDCG). Each of these modules produced meaningful
+and statistically significant improvements in relevancy.
+CCS CONCEPTS
+•Information systems →Query intent ;Query reformula-
+tion;Enterprise search ;•Applied computing →Enterprise
+ontologies, taxonomies and vocabularies;
+KEYWORDS
+Query Expansion, Enterprise Search
+ACM Reference Format:
+Eric M. Domke, Jonathan P. Leidig, Gregory Schymik, and Greg Wolffe. 2018.
+Query Expansion in Enterprise Search. In DocEng ’18: ACM Symposium on
+Document Engineering 2018, August 28–31, 2018, Halifax, NS, Canada. ACM,
+New York, NY, USA, 4 pages. https://doi .org/10 .1145/3209280 .3229111
+1 INTRODUCTION
+As enterprises generate more data, employees must spend more
+time finding information. Some sources estimate that workers spend
+1.6 to 2.5 hours each day searching for relevant data [ 6]. Companies
+that make pertinent information readily available can react to busi-
+ness opportunities, on-board staff, and acquire other companies
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for components of this work owned by others than the
+author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or
+republish, to post on servers or to redistribute to lists, requires prior specific permission
+and/or a fee. Request permissions from permissions@acm.org.
+DocEng ’18, August 28–31, 2018, Halifax, NS, Canada
+©2018 Copyright held by the owner/author(s). Publication rights licensed to the
+Association for Computing Machinery.
+ACM ISBN 978-1-4503-5769-2/18/08. . . $15.00
+https://doi .org/10 .1145/3209280 .3229111more quickly than their competitors. Because of this, Frost & Sulli-
+van project that the enterprise search market will grow from $1.5 to
+$4.7 billion dollars between 2012 and 2019 [ 4]. Despite this, research
+interest in enterprise search is waning, likely stemming from per-
+sistent challenges involving managing document-level permissions,
+poor-quality data, and unlinked documents. Even in the face of
+these challenges, search improvements are vital for productivity
+and call for further enterprise-specific research.
+While business systems often contain search components, this
+research focused on enterprise-wide search applications that index
+content from multiple databases and document repositories. The
+goal was to develop, implement, and study query expansion meth-
+ods, determining which are most effective at improving relevancy
+in enterprise search. For this study, query expansion is interpreted
+broadly as adding any words, conditions, or operators to the query
+with the goal of improving relevancy. These additions might ex-
+pand, restrict, or merely reorder the result set. It was hypothesized
+that because enterprise search queries are fundamentally different
+than queries submitted to other search applications, query expan-
+sion techniques tailored for the enterprise would be most effective
+at improving relevancy over traditional baseline methods. In order
+to study this hypothesis, a custom enterprise search application1
+deployed at a medium-sized manufacturing company was studied.
+1.1 Characterizing Enterprise Search
+To better characterize enterprise search, query logs were obtained
+via a content management system and custom enterprise search
+solution at the manufacturing company. This data (i.e., Internal L
+and T) is compared against query logs from other public search
+applications in Table 1. This analysis shows that different types of
+queries are more prominent in some search applications than others.
+URL searches are more common on web search applications. The
+medical search engine PubMed has a higher percentage of advanced
+searches2. Alphanumeric searches (e.g. employee IDs, part numbers,
+telephone numbers, etc.) were seen most frequently in enterprise
+search logs. Internal L is also predominantly used for person search
+with 73% of the distinct searches being for personnel data (e.g.
+by full name or last name). Each search application consistently
+receives very short queries–around 1 to 3 terms.
+2 BACKGROUND
+2.1 Entity Recognition in Queries
+Query expansion aims to supplement the query with additional
+terms which increase recall. Most query expansion techniques ei-
+ther leverage relevance feedback or knowledge structures (e.g., the-
+sauri and ontologies). Relevance feedback uses information from
+1Built using Apache Solr (http://lucene .apache .org/solr/) version 6.5.0
+2Queries containing field constraints – e.g. pub_date must be after 2005/09/07DocEng ’18, August 28–31, 2018, Halifax, NS, Canada E. Domke et al.
+Table 1: Query log statistics. Percentages represent distinct queries per category.
+Data Set Year Distinct Queries Avg. Word Count Alphanumeric URL Advanced
+Internal La2017 61,882 1.5 26% 0% 0%
+Internal Ta2016 1,117 1.8 31% 0% 0%
+AOLb2006 373,903 2.9 17%
+PubMedb2005 724,578 3.5 17% 0.03% 11%
+aProprietary data sets from the manufacturer
+bAOL from http://octopus .inf .utfsm .cl/~juan/datasets/, PubMed from ftp://ftp .ncbi .nlm .nih .gov/pub/wilbur/DAYSLOG
+the top krelevant documents to improve recall while knowledge
+structures use term association rules to expand queries prior to
+query execution. Neither approach directly helps queries contain-
+ing entities. For example, knowing that james street in the query
+mike james street represents a named location can generate better
+expansion suggestions. Multiple complimentary approaches can
+be used to identity these entities. Kim et al. approached this as a
+field mapping problem using a Naïve Bayes classifier to identify
+the likely fields for movie search terms across the IMDB database
+[7]. Another approach is the named-entity recognition task where
+search results ranked by standard relevancy metrics have proven
+useful. In a later study, Kim and Croft identified relevant fields by
+obtaining the kmost relevant documents with standard relevancy
+models and then matching search terms with document field values
+[8]. Similarly, both Laclavík et al. [ 9] and Cornolti et al. [ 3] lever-
+aged search indices in the named-entity recognizers they submitted
+for the 2014 ERD challenge. Rennie et al. validated the similarity of
+these approaches finding that borrowing length normalization and
+inverse document frequency from standard relevancy models (e.g.,
+BM25) can improve the performance of Naïve Bayes classifiers [ 10].
+These techniques rely on the limited vocabulary of the English
+language. For alphanumeric searches (part numbers, employee IDs,
+telephone numbers, etc.), probabilistic models are less effective as
+many search terms have not been seen before. Thus, enterprise and
+domain-specific pattern matching is required. Expedia uses regular
+expressions and heuristic rules for identifying dates, times, and
+travel-related concepts [ 5]. Regular expressions (along with trigger
+words) are used by Duck Duck Go to trigger instant answers3.
+2.2 Query Classification
+Prior work has shown that search relevancy can also be improved
+by classifying a query’s topic or intent. Wan at Target noticed that
+the query 7 ring check binder was returning jewelry instead of just
+binders [ 11]. Target addressed this by using a Naïve Bayes classifier
+trained on query log data to return the most probable product
+classification for a given query. Similarly, Wayfair also improved
+relevancy using a Naïve Bayes classifier [ 2]. Alternatively, Beitzel
+et al. achieved success with a neural network [1].
+3 METHODOLOGY AND IMPLEMENTATION
+3.1 Motivating Examples
+Several problematic queries recurred frequently in the enterprise
+setting and served to motivate this research:
+3https://docs.duckduckhack.com/backend-reference/triggers.html
+BASELINESpell-Checking 
+& Thesaurus
+Alphanumeric
+Iden caon
+Enty 
+Recogni on
+Intent
+Classi ca-
+on
+Collec on
+Enrich-
+ment
+Word
+Vectors
+QueryFigure 1: Pipeline of query expansion modules as described
+in Section 3 and evaluated in Section 4.
+•151-99 should be recognized as a part number and alternative
+forms should be included in the suggestions. (Section 3.2)
+•mike james street should be parsed as the metadata queries
+first_name = mike andlocation =james street. (Section 3.3)
+•vacation request should return documents from Human Re-
+sources. (Section 3.4)
+These queries influenced the development of query expansion mod-
+ules which transform incoming queries via the pipeline shown in
+Figure 1. The ideal composition of potential expansion modules was
+evaluated to determine the set with significant impact on improving
+relevancy. The resulting transformed query was submitted to the
+Solr REST API.
+3.2 Alphanumeric Identification Module
+Regular expressions could be used to identify queries (e.g., 151-99 )
+as part numbers. However, regular expressions would be difficult
+to maintain and might not sufficiently discriminate between the 60
+different alphanumeric codes present at the manufacturing com-
+pany. Because of this, a shallow neural network was constructed
+with one hidden layer. The inputs represented both the leftmost
+and the rightmost 19 characters of the alphanumeric code with
+each character represented by three neurons each. These neurons
+coded the letter, digit, or symbol represented by each character re-
+spectively. Finally, the last two neurons represented the total length
+of the string and the number of alphanumeric characters in the
+string respectively. Over 19,000 examples were used for training
+and another 17,000 examples were used for cross validation. The
+most accurate network to-date exhibited an accuracy of just over
+85% on the validation set.
+Once classified, hand-coded rules directed the query expansion.
+For example, if the code was identified as a part number, docu-
+ments of type Part were given a boost. Alternatively, a search for
++16105551234 identified as a phone number was converted to a
+search for cell:610-555-1234.Query Expansion in Enterprise Search DocEng ’18, August 28–31, 2018, Halifax, NS, Canada
+3.3 Entity Recognition Module
+To match query terms with metadata field values, a separate Solr
+index was created. Each “document” represented a metadata field-
+value pair from the main index and included the frequency of the
+pair overall and for each document cluster (see Section 3.4). While
+other authors (Kim et al. [ 7]) have used Naïve Bayes classifiers
+for this, Solr’s BM25 ranking algorithm has proven both similar
+to Naïve Bayes and successful at named-entity recognition. Solr’s
+Porter stemming, stop-word filtering, and match highlighting capa-
+bilities were also useful. For query expansion, field-value pairs in
+the metadata index were matched to the query and ranked using
+BM25 and the pair frequency. In addition to expanding the query,
+these suggestions drove hand-coded rules (similar to the alphanu-
+meric identification module). For example, if a one or two letter
+term followed a word from the first_name field, a prefix search
+suggestion on the last_name field was added.
+3.4 Intent Classification Module
+The entity recognition module expands some queries with mislead-
+ing suggestions, like suggesting type:Supplier Request for the query
+vacation request. To help with this, each document was assigned a
+cluster (i.e. category) during indexing based on the document type
+and authoring department. A BM25 score was calculated at query
+time for each document cluster to determine the five most probable
+clusters for the query. This cluster list was compared to the cluster
+statistics stored in the entity recognition index (see Section 3.3)
+for each metadata suggestion. If there were significant differences,
+the probability of that suggestion was significantly discounted,
+effectively removing the unrelated suggestion from consideration.
+3.5 Collection Enrichment and Word Vector
+Modules
+Figure 1 includes two additional modules which were briefly con-
+sidered during testing. The collection enrichment module focused
+on refining the classification of ambiguous queries using external
+collections. The word vector module attempted to automatically
+learn useful word associations by using a neural network to learn
+word vectors for each word in the index. Unfortunately, neither
+module had a discernible positive impact on relevancy as discussed
+in Section 4.4.
+3.6 Experimental Design
+To assess the impact of these modules on search relevancy, a test
+set was developed consisting of sample queries and a correspond-
+ing list of relevant documents. Relevant documents were selected
+by the researcher using feedback collected from actual users via
+a relevancy survey presented in-line with the search results (Fig-
+ure 2). Using this data, a test was performed for each module where
+only that module and its dependent modules (including the spell-
+checking/thesaurus module) were enabled. The resulting relevance
+scores across the 182 test queries were compared to the scores
+obtained when only the dependent modules were enabled.
+Figure 2: Screenshot of relevance survey.
+Al
+En
+Pa
+PeBeer
+RelevanceWorse
+RelevanceSpelling
+Figure 3: nDCG 10difference between using the alphanumeric
+identification module and only using spell checking. Non-
+alphanumeric searches are categorized as “alphabetic”.
+4 RESULTS
+4.1 Alphanumeric Identification
+The alphanumeric identification module showed an improvement
+in its nDCG 10relevance over the spell-checking baseline of 0.046
+(significant at over 95% confidence). Figure 3 shows a box plot of
+thenDCG 10scores relative to the spelling module for each query
+category. The data shows that this module helped with both person
+searches and part number searches, but hurt relevancy for many
+entity searches. For example, the neural network mistakenly classi-
+fied12345 from the query issue 12345 as an employee ID since it
+does not consider the context of the word issue . Subsequently, the
+entity recognition module compensates for this error by identifying
+the word issue as a type of document.
+4.2 Entity Recognition
+The entity recognition module improved the nDCG 10relevance
+scores over the spell-checking baseline by 0.051 (significant at 95%
+confidence). The box plots of performance per query category in
+Figure 4 show that the module performed well with both person
+and entity searches. However, many searches for general corpo-
+rate content performed worse when irrelevant query expansion
+suggestions were added.
+4.3 Intent Classification
+The impact of the intent classification module was measured rel-
+ative to the entity recognition module since its purpose was to
+modify output to suppress irrelevant suggestions. The module
+improved search relevancy with a 0.020 increase in the average
+nDCG 10. While this is a noticeable improvement, the module onlyDocEng ’18, August 28–31, 2018, Halifax, NS, Canada E. Domke et al.
+EnPersPartDepCorpBeer
+RelevanceWorse
+RelevanceSpelling
+Figure 4: nDCG 10difference between using the entity recog-
+nition module and only using spell checking.
+Person Corporate
+Spelling Entity
+RecognitionIntent
+ClassificationCollection
+EnrichmentAlphanumeric
+IdentificationWord
+Vector01
+Addition of Expansion Modules
+Figure 5: Impact of adding successive modules on nDCG 10
+scores for queries targeted by intent classification.
+impacted 5 queries (found in evaluation and actual query logs) re-
+sulting in just 90% confidence of significance. Figure 5 shows the
+nDCG 10of individual queries targeted by intent classification after
+adding successive modules to the processing pipeline. It shows that
+the module mostly impacted queries for corporate content and only
+improved the relevancy of these types of queries.
+4.4 Overall Assessment
+As shown in Figure 6, the overall impact of all five modules was
+positive with the average nDCG 10score increasing from 0.65 to
+0.77, which is statistically significant at 95% confidence. However,
+the figure also shows that the collection enrichment module im-
+pacted so few queries (in practice) that it did not improve relevance
+scores. Furthermore, the word vector module negatively impacted
+relevance scores as the related terms it suggested were often not
+actually present in the relevant documents. Overall, the full set of
+modules increased the number of queries with perfect relevance
+and decreased the number of queries which did not return any rel-
+evant documents. Projecting the evaluation results of the modules
+(given the distribution of query types currently received by the
+case study’s search engine) indicates a predicted improvement in
+nDCG 10scores from 0.83 to 0.89.
+5 CONCLUSION
+From the results, it can be seen that specialized query expansion
+modules improve relevancy in enterprise search. In particular, the
+alphanumeric identification, entity recognition, and intent classifi-
+cation modules all resulted in significant improvements across the
+Spelling
+Intent
+Classification
+Collection
+EnrichmentAlphanumeric
+Identification
+Entity
+Recognition
+Word
+Vectors
+nDCG@10=0.65Cumulative
+ImpactnDCG@10=0.79Figure 6: nDCG 10impact of each expansion module.
+test set of queries which will result in modest relevancy improve-
+ments experienced by actual users. Even modest improvements
+will be useful for the studied search engine as it responds to over
+2500 queries from over 120 users every day. These successes verify
+that query expansion techniques targeted at enterprise queries are
+effective in improving relevancy. Future work will focus on the col-
+lection enrichment and word vector modules to identify how these
+techniques (proven successful with other collections and contexts)
+can be better adapted to improving relevancy in enterprise search.
+REFERENCES
+[1]Steven M. Beitzel, Eric C. Jensen, Ophir Frieder, David Grossman, David D.
+Lewis, Abdur Chowdhury, and Aleksandr Kolcz. 2005. Automatic web query
+classification using labeled and unlabeled training data. In Proceedings of the
+28th annual international ACM SIGIR conference on Research and development in
+information retrieval. ACM, 581–582. http://dl .acm .org/citation .cfm?id =1076138
+[2]Ben Clark. 2012. Better Lucene/Solr searches with a boost from an
+external naive Bayes classifier | Wayfair Engineering. (Oct. 2012).
+http://engineering .wayfair .com/2012/10/better-lucenesolr-searches-with-a-
+boost-from-an-external-naive-bayes-classifier/
+[3]Marco Cornolti, Paolo Ferragina, Massimiliano Ciaramita, Hinrich Schütze, and
+Stefan Rüd. 2014. The SMAPH system for query entity recognition and dis-
+ambiguation. In ERD ’14: Proceedings of the first international workshop on En-
+tity recognition & disambiguation. ACM Press, 25–30. https://doi .org/10 .1145/
+2633211 .2634348
+[4]Tina Costanza. 2013. Global enterprise search market to reach US$4.68bn by 2019
+- Frost & Sullivan. (Jan. 2013). https://www .siliconrepublic .com/enterprise/
+global-enterprise-search-market-to-reach-us4-68bn-by-2019-frost-sullivan
+[5]Brooke Cowan, Sven Zethelius, Brittany Luk, Teodora Baras, Prachi Ukarde,
+and Daodao Zhang. 2015. Named Entity Recognition in Travel-Related
+Search Queries.. In AAAI. 3935–3941. https://pdfs .semanticscholar .org/2da4/
+0f5dda818aea7cca17affa976735c0452cb6 .pdf
+[6]Jeanette Jones. 2013. Various Survey Statistics: Workers Spend
+Too Much Time Searching for Information. (Nov. 2013). http:
+//www .cottrillresearch .com/various-survey-statistics-workers-spend-
+too-much-time-searching-for-information/
+[7]Jinyoung Kim, Xiaobing Xue, and W. Bruce Croft. 2009. A probabilistic retrieval
+model for semistructured data. In Advances in Information Retrieval. Springer,
+228–239. http://link .springer .com/chapter/10 .1007/978-3-642-00958-7 22
+[8]Jin Young Kim and W. Bruce Croft. 2012. A field relevance model for structured
+document retrieval. In European Conference on Information Retrieval. Springer,
+97–108. http://link .springer .com/chapter/10 .1007/978-3-642-28997-2 9
+[9]Michal Laclavik, Marek Ciglan, Alex Dorman, Stefan Dlugolinsky, Sam Steingold,
+and Martin Šeleng. 2014. A search based approach to entity recognition: magnetic
+and IISAS team at ERD challenge. In ERD ’14: Proceedings of the first international
+workshop on Entity recognition & disambiguation. ACM Press, 63–68. https:
+//doi .org/10 .1145/2633211 .2634352
+[10] Jason D. Rennie, Lawrence Shih, Jaime Teevan, and David R. Karger. 2003. Tack-
+ling the poor assumptions of naive bayes text classifiers. In ICML, Vol. 3. Wash-
+ington DC, 616–623. http://www .aaai .org/Papers/ICML/2003/ICML03-081 .pdf
+[11] Howard Wan. 2016. Query Classification for Solr. (Oct. 2016). https:
+//www .youtube .com/watch?v=ek3ftFfhnWE

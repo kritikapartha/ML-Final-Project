@@ -1,0 +1,1645 @@
+125Techniques for Inverted Index Compression
+GIULIO ERMANNOPIBIRI, ISTI-CNR
+ROSSANO VENTURINI, Universityof Pisa
+Thedatastructureatthecoreoflarge-scalesearchenginesisthe invertedindex ,whichisessentiallyacollec-
+tionofsortedintegersequencescalled invertedlists .Becauseofthemanydocumentsindexedbysuchengines
+andstringentperformancerequirementsimposedbytheheavyloadofqueries,theinvertedindexstoresbil-
+lions of integers that must be searched efficiently. In this scenario, index compression is essential because it
+leadstoabetterexploitationofthecomputermemoryhierarchyforfasterqueryprocessingand,atthesame
+time,allows reducingthe number of storagemachines.
+The aim of this article is twofold: first, surveying the encoding algorithms suitable for inverted index
+compression and,second, characterizing the performanceof theinverted indexthroughexperimentation.
+CCSConcepts:• Information systems →Search index compression ;Search engine indexing ;
+Additional KeyWords and Phrases:Invertedindexes, data compression,efficiency
+ACM Reference format:
+GiulioErmannoPibiriandRossanoVenturini.2020.TechniquesforInvertedIndexCompression. ACM Com-
+put.Surv. 53, 6, Article 125 (December 2020), 36 pages.
+https://doi.org/10.1145/3415148
+1 INTRODUCTION
+Consider a collection of textual documents each described, for this purpose, as a set of terms. For
+eachdistinctterm tappearinginthecollection,anintegersequence Stisbuiltandlists,insorted
+order,allidentifiersofthedocuments(henceforth,docIDs)wherethetermappears.Thesequence
+Stis called the inverted list ,o rposting list , of the term tand the set of inverted lists for all of the
+distincttermsisthesubjectofthisarticle—thedatastructureknownasthe invertedindex .Inverted
+indexes can store additional information about each term, such as the set of positions where the
+termsappearinthedocuments(in positional indexes)andthenumberofoccurrencesoftheterms
+in the documents (i.e., their frequencies )[14,56,113]. In this article, we consider the docID- sorted
+version of the inverted index and ignore additional information about each term. The inverted
+index is the data structure at the core of large-scale search engines, social networks, and storage
+This work was partially supported by the BIGDATAGRAPES (EU H2020 RIA, grant agreement 780751), the “Algorithms,
+DataStructuresandCombinatoricsforMachineLearning”(MIUR-PRIN2017),andtheOK-INSAID(MIUR-PON2018,grant
+agreementARS01_00917)projects.
+Authors’ addresses: G. E. Pibiri, ISTI-CNR, Via Giuseppe Moruzzi 1, 56124, Pisa, Italy; email: giulio.ermanno.pibiri@
+isti.cnr.it; R. Venturini, University of Pisa, Largo Bruno Pontecorvo 3, 56127, Pisa, Italy; email: rossano.venturini@
+unipi.it.
+Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee
+provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and
+the full citation on the first page. Copyrights for components of this work owned by others than the author(s) must be
+honored.Abstractingwithcreditispermitted.Tocopyotherwise,orrepublish,topostonserversortoredistributetolists,
+requires prior specific permission and/or a fee.Request permissions from permissions@acm.org .
+© 2020Copyright held bytheowner/author(s). Publicationrights licensed toACM.
+0360-0300/2020/12-ART125$15.00
+https://doi.org/10.1145/3415148
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:2 G.E.PibiriandR. Venturini
+Table 1. Timelineof Techniques
+1949 Shannon-Fano[ 32,93]
+1952 Huffman [ 43]
+1963 Arithmetic[ 1]1
+1966 Golomb [ 40]
+1971 Elias-Fano[ 30,33];Rice [87]
+1972 Variable-Byteand Nibble
+[101]
+1975 Gamma and Delta[ 31]
+1978 ExponentialGolomb [ 99]
+1985 Fibonacci-based[ 6,37]
+1986 Hierarchicalbit-vectors[ 35]
+1988 Basedon FrontCoding[ 16]
+1996 Interpolative[ 65,66]
+1998 Frame-of-Reference(For)[ 39];
+modified Rice[ 2]
+2003 SC-dense[ 11]
+2004 Zeta[ 8,9]2005 Simple-9,Relative-10,and Carryover-12[ 3];
+RBUC[60]
+2006 PForDelta[ 114]; BASC [ 61]
+2008 Simple-16[ 112];Tournament[ 100]
+2009 ANS[ 27]; Varint-GB[ 23];Opt-PFor[ 111]
+2010 Simple8b[ 4]; VSE[96]; SIMD-Gamma [ 91]
+2011 Varint-G8IU[ 97]; Parallel-PFor[ 5]
+2013 DAC [ 12];Quasi-Succinct[ 107]
+2014 PartitionedElias-Fano[ 73];QMX [103];
+Roaring[ 15,51,53]
+2015 BP32,SIMD-BP128,and SIMD-FastPFor[ 50];
+Masked-VByte[ 84]
+2017 ClusteredElias-Fano[ 80]
+2018 Stream-VByte[ 52];ANS-based[ 63,64];
+Opt-VByte[ 83];SIMD-Delta[ 104];
+general-purposecompressionlibraries[ 77]
+2019 DINT[ 79];Slicing[ 78]
+architectures[ 14,56,113].Inatypicalusecase,itisusedtoindexmillionsofdocuments,resulting
+in severalbillionintegers.We mentionsome noticeableexamples.
+Classically,invertedindexesareusedtosupportfull-textsearchindatabases[ 56].Identifyinga
+setofdocumentscontainingallofthetermsinauserqueryreducestotheproblemof intersecting
+theinvertedlistsassociatedtothetermsinthequery.Likewise,aninvertedlistcanbeassociated
+toauserinasocialnetwork(e.g.,Facebook)andstoresthesequenceofallfriendidentifiersofthe
+user[22].DatabasesystemsbasedonSQLoftenprecomputethelistofrowidentifiersmatchinga
+specific frequent predicate over a large table, to speed up the execution of a query involving the
+conjunctionofmanypredicates[ 42,85].Key-valuestorageisapopulardatabasedesignprinciple,
+adoptedbyarchitecturessuchasApacheIgnite,Redis,InfinityDB,BerkeleyDB,andmanyothers.
+Commontoallsucharchitecturesistheorganizationofdataelementsfallingintothesamebucket
+duetoanhashcollision:thelistofallsuchelementsismaterialized,whichisessentiallyaninverted
+list [24].
+Becauseofthehugequantityofindexeddocumentsandheavyqueryloads, compressing thein-
+vertedindexisindispensablebecauseitcanintroduceatwofoldadvantageoveranon-compressed
+representation:feedfastermemorylevelswithmoredataand, hence,speedupthequeryprocess-
+ing algorithms. As a result, the design of techniques that compress the index effectively while
+maintaining a noticeable decoding speed is a well-studied problem that dates back to more than
+50yearsagoandremainsaveryactivefieldofresearch.Infact,manyrepresentationforinverted
+lists are known, each exposing a different space/time trade-off: refer to the timeline shown in
+Table1and referencestherein.
+Organization . We classify the techniques in a hierarchical manner by identifying threemain
+classes.Thefirstclassconsistsofalgorithmsthatcompressasingleinteger(Section 2).Thesecond
+classcoversalgorithmsthatcompressmanyintegerstogether,namelyaninvertedlist(Section 3).
+1Actuallysomewhatbefore1963.See Note 1onpage61inthe book byAbramson [ 1].
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:3
+Thethird classdescribesa family of algorithms thatrepresentmany lists together(i.e.,thewhole
+invertedindex)(Section 4).Inourintention,thisfirstpartofthesurveyisdevotedtoreaderswho
+arenew tothefield of integercompression.
+This hierarchical division is natural and intuitive. First, it reflects the flexibility of the algo-
+rithms,giventhatalgorithmsinahigherclasscanbeusedtorepresenttheunitofcompressionof
+thealgorithmsinalowerclass,butnottheotherwayround.Forexample,analgorithmthatcom-
+presses a single integer at a time (first class) can obviously be used to represent a list of integers
+(unitofcompressionofthesecondclass)byjustconcatenatingtheencodingofeachsingleinteger
+in the list. Second, it shows that less flexibility can be exploited to enlarge the “visibility” of the
+algorithms.Forexample,algorithmsinthesecondclassseekopportunitiesforbettercompression
+bylookingforregionsofsimilarintegersinthelist.Instead,algorithmsinthethirdclassseekfor
+suchregularitiesacrossmany lists (oreven acrossthewhole index).
+Afterthedescriptionofthetechniques,weprovidepointerstofurtherreadings(Section 5).The
+last part of the article is dedicated to the experimental comparison of the paradigms used to rep-
+resent the inverted lists (Section 6). In our intention, this part is targeted to more experienced
+readers who are already familiar with the research field and the practical implementation of the
+techniques. We release the full experimental suite at https://github.com/jermp/2i_bench ,i nt h e
+hope of spurring further research in the field. We conclude the survey by summarizing experi-
+mentallessonsanddiscussingsome futureresearchdirections(Section 7).
+2 INTEGERCODES
+The algorithms we consider in this section compress a single integer. We first introduce some
+preliminarynotionsthathelptobetterillustratesuchalgorithms.Let x>0indicatetheintegerto
+berepresented.2Sometimesweassumethatanupperboundonthelargestvaluethat xcantakeis
+known,theso-called“universe”ofrepresentation,andweindicatethatwith U.Therefore,itholds
+x≤U,∀x.LetC(x)bethebitstringencoding x—thecodeword ofxaccordingtothecode C—and
+|C(x)|itslengthin bits.
+Themostclassicalsolutiontotheproblemofintegercodingistoassign xauniquely-decodable
+variable-length code, to decode without ambiguity (thus, correctly) from left to right. The aim
+of the algorithms we present in the following is to assign the smallest codeword as possible. In
+this regard, a distinction is made between the identification of a set of codeword lengths and the
+subsequent codeword assignment phase—that is, is the mapping from integer identifiers to binary
+strings. Once the codeword lengths have been computed, the specific codewords are actually ir-
+relevantprovidedthatnocodewordisaprefixofanotherone(prefix-freecondition)toguarantee
+unique decodability—a key observation widely documented in the literature [ 49,59,67,68,109].
+Therefore,wecanthinkofacodeasbeinga(multi-)setofcodewordlengths.Thisinterpretationhas
+the advantage of being independent from the specific codewords and makes it possible to choose
+the assignment that is best suited for fast decoding—an important property as far as practicality
+is concerned for inverted index compression. Throughout this section, we opt for a lexicographic
+assignment of the codewords—that is, the codewords are in the same lexicographic order as the
+integers they represent. This property will be exploited for fast decodability in Section 2.1.T h e
+crucial fact about these initial remarks is that all prefix-free codes can be arranged in this way,
+henceprovidinga“canonical” interfacefortheirtreatment.
+2Throughoutthesection,wepresentthecodesforpositiveintegers.Inaddition,weuse1-basedindexesforarrays.Thisis
+adeliberatechoiceforillustrativepurposes.Thereadershouldbeawarethatsomeimplementationsat https://github.com/
+jermp/2i_bench maydiffer from thecontentof thearticleandshould becarefulincomparingthem.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:4 G.E.PibiriandR. Venturini
+Another key notion is represented by the Kraft-McMillan inequality [47,57] that gives a nec-
+essary and sufficient condition for the existence of a uniquely-decodable code for a given set of
+codeword lengths, where no codeword is a prefix of another one. More formally, it must hold/summationtextu
+x=12−|C(x)|≤1 forthecodeto beuniquely-decodable.
+It should be intuitive that no code is optimal for all possible integer distributions. According
+to Shannon [ 93], the ideal codeword length of the integer xshould be log2(1/P(x))bits long,
+where P(x)is the probability of occurrence of xin the input. Therefore, by solving the equation
+|C(x)|=log2(1/P(x))withrespectto P(x),thedistributionforwhichtheconsideredintegercode
+is optimalcan bederived.
+Last, we also remark that sometimes it could be useful to implement a suboptimal code if it
+allows faster decoding for a given application, and/or to organize the output bit stream in a way
+that is more suitable for special hardware instructions such as Single-Instruction-Multiple-Data
+(SIMD) [20]. SIMD is a computer organization that exploits the independence of multiple data
+objects to execute a single instruction on these objects simultaneously. Specifically, a single in-
+structionisexecutedforeveryelementofa vector—alarge(r)machineregisterthatpacksmultiple
+elementstogether,foratotalof128,256,oreven512bitsofdata.SIMDiswidelyusedtoaccelerate
+the execution of many data-intensive tasks, and (usually) an optimizing compiler is able to auto-
+matically“vectorize”codesnippetstomakethemrunfaster.Manyalgorithmsthatwedescribein
+thisarticleexploit SIMDinstructions.
+2.1 Encoding and Decoding Prefix-Free Codes
+We now illustrate how the lexicographic ordering of the codewords can be exploited to achieve
+efficientencodinganddecodingofprefix-freecodes.By“efficiency,”wemeanthatasmallandfixed
+numberofinstructionsisexecutedforeachencoded/decodedinteger,thusavoidingthepotentially
+expensive bit-by-bit processing. The content of this section is based on the work by Moffat and
+Turpin [67] that also laid the foundations for (part of) Chapter 4 of their own book [ 68] and the
+descriptionsin Section 3.1and3.2ofthesurveyby Moffat[ 59].
+WearegoingtorefertoTable 2(a)asanexamplecode.Thetableshowsthecodewordsassigned
+to the integers 1..8 by the gammacode, the first non-trivial code we will describe later in Sec-
+tion2.3.LetMbethelengthofthelongestcodeword—thatis, M=maxx{|C(x)|}.Inourexample,
+M=7. The column headed lengthsreports the lengths (in bits) of the codewords, whereas val-
+uesare the decimal representation of the codewords seen as left-justified M-bit integers. If such
+columns arerepresentedwithtwoparallelarraysindexedby the xvalue,thentheproceduresfor
+encoding/decoding are easily derived as follows. To encode x, just write to the output stream the
+most significant (from the left) lengths[x] bits ofvalues[x]. To decode x, we use a variable buffer
+always holding Mbits from the input stream. The value assumed by bufferis, therefore, an M-bit
+integer that we search in the array valuesdetermining the codeword length /lscript=length[x] such
+thatvalues[x]≤buffer<values[x+1].Nowthat/lscriptbitsareconsumedfrom buffer,other/lscriptbitsare
+fetchedfromtheinputstreamvia afew maskingand shiftingoperations.
+For example, to encode the integer 4, we omit the lengths[4]=5 most significant bits from the
+binaryrepresentationof values[4]=96asa7-bitinteger—thatis, 1100000.Theobtainedcodeword
+for 4 is, therefore, 11000. Instead, assume we want to decode the next integer from a buffercon-
+figuration of 1010100. This 7-bit integer is 84. By searching 84 in the valuesarray, we determine
+the index x=3a s8 0=values[3]<84<values[4]=96. Therefore, the decoded integer is 3, and
+we can fetch the next lengths[3]=3 bits from the input stream. (It is easy to see that the buffer
+configuration 1010100 holds theencodedvalues 3,0,and2.)
+However,thecostofstoringthe lengthsandvaluesarrayscanbelargebecausetheycanholdas
+manyvaluesas U.Theuniverse Uistypicallyintherangeoftensofmillionsforatypicalinverted
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:5
+Table 2. Example Prefix-FreeCode for theIntegers1..8, Alongwith
+AssociatedCodewords, Codeword Lengths,andCorresponding
+Left-Justified,7-Bit Integers
+(a) (b)
+xCodewords Lengths Values
+10 10
+2100 36 4
+3101 38 0
+411000 59 6
+511001 5 100
+611010 5 104
+711011 5 108
+81110000 7 112
+– – – 127Lengths First Values
+11 0
+22 6 4
+32 6 4
+44 9 6
+54 9 6
+6 8 112
+7 8 112
+– 9 127
+The codewords areleft-justifiedto betterhighlighttheir lexicographicorder. In (b),the
+compactversion of thetablein(a),used bythe encoding/decoding procedures coded
+inFigure 1.The “values”and“first” columnsare paddedwithasentinelvalue(ingray)
+toletthe search bewelldefined.
+index benchmark (see also Table 10for a concrete example), thus resulting in large lookup tables
+that do not fit well in the computer cache hierarchy. Fortunately enough, it is possible to replace
+sucharrayswithtwocompactarraysofjust M+1integerseachwhenthecodewordsareassigned
+i nl e x i c o g r a p h i co r d e r .R e c a l lt h a tw eh a v ed e fi n e d Mto be the longest codeword length. (In our
+example from Table 2,Mi s7 . )W ee x p e c tt oh a v e M≤Uand, in particular, M/lessmuchU,w h i c hi s
+alwaysvalid inpracticeunless Uisverysmall.
+Table2(b)showsthe“compact”versionofTable 2(a),wheretheothertwoarrays, firstandvalues,
+ofM+1integerseachareused.Botharraysarenowindexedbycodewordlength /lscript.Inparticular,
+first[/lscript]isthefirstintegerthatisassignedacodewordoflengthequalto /lscript,withvalues[/lscript]beingthe
+corresponding M-bitintegerrepresentation.Forexample, first[3]=2because2isthefirstinteger
+represented with a codeword of length 3. Note that not every possible codeword length could be
+used. In our example, we are not using codewords of length 2, 4, and 6. These unused lengths
+generate some “holes” in the firstandvaluesarrays. A hole at position /lscriptis then filled with the
+valuecorrespondingtothesmallestcodewordlength /lscript/prime>/lscriptthatisusedbythecode.Forexample,
+wehaveaholeatposition /lscript=2becausewehavenocodewordoflength2.Therefore, first[2]and
+values[2] are filled with 2 and 64, respectively, because these are the values corresponding to the
+codeword length/lscript/prime=3. With these two arrays, it is possible to derive the compact pseudo code
+illustrated in Figure 1, whose correctness is left to the reader. The function Write(val,len)writes
+thelenlow bits of the value valto the output stream; conversely, the function Take(len)fetches
+the nextlenbits from the input stream and interprets them as an integer value. We now discuss
+somesalientaspectsofthepseudocodealongwithexamples,highlightingthebenefitofworking
+withlexicographicallysortedcodewords.
+Assigninglexicographiccodewordsmakespossibletousetheoffsetscomputedinline3ofboth
+listings in Figure 1to perform encoding/decoding,essentially allowing a sparse representationof
+the mapping from integers to codewords and vice versa. As an example, consider the encoding
+of the integer 6. By searching the firstarray, we determine /lscript=5. Now, the difference offset=
+6−first[5]=6−4=2 indicates that 6 is the (offset+1)-th integer, the third in this case, that is
+assignedacodewordoflength5.Therefore,startingfrom values[5]=96,wecanderivethe M-bit
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:6 G.E.PibiriandR. Venturini
+Fig. 1. Encodingand decoding procedures usingtwoparallelarrays firstand valuesofM+1values each.
+integer corresponding to the encoding of 6 using such offset, via 96 +2×4=104. It is easy to
+see that this computation is correct only when the codewords are assigned lexicographically, as
+otherwise it would not be possible to derive the M-bit integer holding the codeword. The same
+reasoningapplieswhenconsideringthedecodingalgorithm.
+Another advantage of working with ordered codewords is that both firstandvaluesarrays are
+sorted, and thus binary search can be employed to implement the identification of /lscriptat line 2 of
+bothencodinganddecodingalgorithms.Thisstepisindeedthemostexpensiveone.Linearsearch
+could result faster than binary search for its cache-friendly nature, especially when Mis small. If
+weareespeciallyconcernedwithdecodingefficiencyandcantradeabitmoreworkingspace,itis
+possible to identify /lscriptvia direct addressing (i.e., in O(1)per decoded symbol) using a 2M-element
+table indexed by buffer. Other options are possible, including hybrid strategies using a blend of
+search and direct addressing: for a discussion of these options, again refer to the work by Moffat
+and Turpin[ 67,68],Moffat[ 59,Sections3.1and 3.2],and referencestherein.
+2.2 Unaryand Binary
+Perhaps the most primitive form of integer representation is unarycoding—that is, the integer x
+isrepresentedbyarunof x−1onesplusafinalzero: 1x−10.Thepresenceofthefinal 0bitimplies
+thattheencodingisuniquely-decodable:decodingbitbybitwillkeepreadingonesuntilwehita 0
+andthenreportthenumberofreadonesbysummingonetothisquantity.Becauseweneed xbitsto
+representtheinteger x(i.e.,|U(x)|=x),thisencodingstronglyfavorssmallintegers.Forexample,
+we can represent 2 with just 2 bits ( 10), but we would need 503 bits to represent the integer 503.
+Solving⌈log2(1/P(x))⌉=xyields thattheunarycodeis optimalwhenever P(x)=1/2x.
+Weindicatewith bin(x,k)thebinaryrepresentation ofaninteger0≤x<2kusingkbits.When
+we just write bin(x), it is assumed that k=⌈log2(x+1)⌉, which is the minimum number of bits
+necessarytorepresent x.Wealsodistinguishbetween bin(x,k)andthebinarycodeword B(x)as-
+signed to an integer x>0. Given that we consider positive integers only, we use the convention
+thatB(x)isbin(x−1)throughoutthissection.Forexample, B(6)=bin(5)=101.Seethesecond
+column of Table 3for more examples. This means that, for example, |B(4)|is 2 and not 3; B(503)
+just needs⌈log2503⌉=9 bits instead of 503 as needed by its unary representation. The problem
+of binary coding is that it is not uniquely-decodable unless we know the number of bits that we
+dedicate to the representation of eachinteger in the coded stream. For example, if the integers
+in the stream are drawn from a universe Ubounded by 2kfor some k>0, then each integer can
+be represented with ⌈log2U⌉≤kbits, with an implied distribution of P(x)=1/2k. (Many com-
+pressorsthatwepresentinSection 3exploitthissimplestrategy.)If U=2k,thenthedistribution
+simplifiesto P(x)=1/U(i.e.,uniform).
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:7
+Table 3. Integers1..8 as Represented with Several Codes
+xU(x)B(x)γ(x) δ(x)G2(x)ExpG2(x)Z2(x)
+10 0 0. 0. 0.0 0.00 0.0
+210 1 10.0 100.0 0.1 0.01 0.10
+3110 10 10.1 100.1 10.0 0.10 0.11
+41110 11 110.00 101.00 10.1 0.11 10.000
+511110 100 110.01 101.01 110.0 10.000 10.001
+6111110 101 110.10 101.10 110.1 10.001 10.010
+71111110 110 110.11 101.11 1110.0 10.010 10.011
+811111110 111 1110.000 11000.000 1110.1 10.011 10.1000
+The“.”symbolhighlightsthedistinctionbetweendifferentpartsofthecodesandhasapurelyillustrative
+purpose: itis notincluded inthe finalcoded representation.
+The following definition will be useful. Consider x∈[0,b−1] for some b>0,and letc=
+⌈log2b⌉. We define the minimal binary codeword assigned to xin the interval [0,b−1] as
+bin(x,c−1)ifx<2c−b,bin(x+2c−b,c)otherwise. Note that if bis a power of 2, the min-
+imal binarycodewordfor xisbin(x,c).
+2.3 Gamma and Delta
+The two codes we now describe were introduced by Elias [ 31] and are called universal because
+the length of these codes is O(logx)bits for every integer x, thus a constant factor away from
+the optimal binary representation of length |bin(x)|=⌈log2(x+1)⌉bits. Additionally, they are
+uniquely-decodable.
+Thegammacodeforxismadebytheunaryrepresentationof |bin(x)|followedbythe|bin(x)|−
+1leastsignificantbitsof bin(x).Therefore,|γ(x)|=2|bin(x)|−1bitsand P(x)≈1/(2x2).Bit-by-
+bit decoding of γ(x)is simple as well. First read the unary code, say /lscript. Then sum to 2/lscript−1the
+integerrepresentedbythenext /lscript−1bits.Forexample,theinteger113isrepresentedas γ(113)=
+1111110.110001 ,because bin(113)=1110001 is7 bitslong.
+The key inefficiency of the gamma code lies in the use of the unary code for the represen-
+tation of|bin(x)|, which may become very large for big integers. To overcome this limitation,
+thedeltacode replaces U(|bin(x)|)withγ(|bin(x)|)in theδrepresentation of x.T h en u m b e ro f
+bits required by δ(x)is, therefore,|γ(|bin(x)|)|+|bin(x)|−1. The corresponding distribution is
+P(x)≈1/(2x(log2x)2).Bit-by-bitdecodingof δcodesfollowsautomaticallyfromthatof γcodes.
+Again, the integer 113 is represented as δ(113)=11011.110001 . The first part of the encoding,
+11011,istheγrepresentationof7,whichisthelengthof bin(113).T able3showstheintegers1..8
+asencodedwith γandδcodes.
+To decode gamma codes faster on modern processors, a simple variant of gamma is proposed
+bySchlegeletal.[ 91]andcalled k-gamma.Groupsof kintegersareencodedtogether,with k=2,3
+or 4, using the same number of bits. Thus, instead of recording the unary length for each integer,
+only the length of the largest integer in the group is written. This leads to a higher compression
+ratio if the kintegers are close to each other, namely they require the same codeword length.
+However,ifthelargestintegersinthegrouprequiremorebitsthantheotherintegers,thisencoding
+iswastefulcomparedtothetraditionalgamma.However,decodingisfaster:oncethebinarylength
+has been read, a group of kintegers is decoded in parallel using SIMD instructions. Similarly,
+Trotman and Lilly [ 104] introduced a SIMD version of delta codes. A 512-bit payload is broken
+downintoits16×32-bitintegersandthebase-2magnitudeofthelargestintegeriswrittenusing
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:8 G.E.PibiriandR. Venturini
+gammacodingasaselector(writingtheselectorinunarycodegives16-gamma).Althoughnotas
+fast ask-gamma, therepresentationisfasterto decodecomparedto decodingbitby bit.
+2.4 Golomb
+In 1966, Golomb [ 40] introduced a parametric code that is a hybrid between unary and binary.
+The Golomb code of xwith parameter b>1,Gb(x), consists in the representation of two pieces:
+thequotientq=⌊(x−1)/b⌋and theremainder r=x−q×b−1. The quantity q+1 is written in
+unary,followedbyaminimalbinarycodewordassignedto r∈[0,b−1].Clearly,thecloser bisto
+thevalueof x,thesmallerthevalueof q,withconsequentbettercompressionandfasterdecoding
+speed.Table 3showsanexamplecodewith b=2.Letusconsiderthecodewith b=5instead.From
+thedefinitionofminimalbinarycodeword,wehavethat c=⌈log25⌉=3and2c−b=3.Thus,the
+firstthreereminders,0..2,arealwaysassignedthefirst2-bitcodewords 00,01,and 10,respectively.
+The reminders 3 and 4 are instead assigned codewords 110and111as given by bin(3+3,3)and
+bin(4+3,3), respectively. Decoding just reverts the encoding procedure. After the unary prefix,
+alwaysread c−1bits,with c=⌈log2b⌉.Ifthesec−1bitsgiveaquantity rthatislessthan2c−b,
+thenstopandworkwiththereminder r.Instead,if r≥2c−b,thenfetchanotherbitandcompute
+rasthedifferencebetweenthis c-bitnumber andthequantity2c−b.
+Golomb was the first to observe that if nintegers are drawn at random from a universe of
+sizeU, then the gaps between the integers follow a geometric distribution P(x)=p(1−p)x−1
+with parameter p=n/Ubeing the probability to find an integer xamong the ones selected. It is
+now clear that the optimal value for bdepends on p,and it can be shown that this value is the
+integer closest to−1/log2(1−p)(i.e., the value that satisfies (1−p)b≈1/2). Doing the math, we
+haveb≈0.69/p, which is a good approximation of the optimal value and can be used to define a
+Golomb code with parameter b. This code is optimal for the geometric distribution P(x)=p(1−
+p)x−1. Gallager and Van Voorhis [ 38] showed that the optimal value for bcan be computed as
+b=−⌈log2(2−p)/log2(1−p)⌉.
+2.5 Rice
+T h eR i c ec o d e[ 86,87] is actually a special case of the Golomb code for which bis set to 2k,f o r
+somek>0 (sometimes also referred to as the Golomb-Rice code). Let Ricek(x)be the Rice code
+ofxwithparameter k>0.Inthiscase,theremainder risalwayswrittenin kbits. Therefore, the
+lengthoftheRicecodeis |Ricek(x)|=⌊(x−1)/2k⌋+k+1bits.Tocomputetheoptimalparameter
+for the Rice code, we just pretend to be constructing an optimal Golomb code with parameter b
+and then find two integers, landr, such that 2l≤b≤2r. One of these two integers will be the
+optimal value of kfor the Rice code. (We also point the interested reader to the technical report
+by Kiely [ 46]for adeepanalysisabouttheoptimalvaluesof theRiceparameter.)
+2.6 ExponentialGolomb
+Theexponential Golomb codeproposedby Teuhola[ 99]logically definesa vectorof “buckets”
+B=⎡⎢⎢⎢⎢⎣0,2k,1/summationdisplay
+i=02k+i,2/summationdisplay
+i=02k+i,3/summationdisplay
+i=02k+i,...⎤⎥⎥⎥⎥⎦,forsome k≥0
+and encodes an integer xas a bucket identifier plus an offset relative to the bucket. More specifi-
+cally,thecode ExpGk(x)isobtainedasfollows.Wefirstdeterminethebucketwhere xbelongsto,
+forinstance,theindex h≥1suchthat B[h]<x≤B[h+1].Thenhiscodedinunary,followedbya
+minimalbinarycodewordassignedto x−B[h]−1intheshrunkinterval[0 ,B[h+1]−B[h]−1].
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:9
+Table 4. Integers 1..8 as Represented with Fibonacci-Based Codes
+(a) “Original” Codewords (b) Lexicographic Codewords
+xF(x)
+1 11
+2 01 1
+3 001 1
+4 101 1
+5 0001 1
+6 1001 1
+7 0101 1
+8 00001 1
+Fi123581 3xF(x)
+100
+2010
+30110
+40111
+510000
+610001
+710010
+8100110
+In (a), the final control bit is highlighted in bold font and the relevant Fi-
+bonacci numbers Fiinvolved in the representation are also shown at the
+bottom of the table. In (b), the “canonical” lexicographic codewords are
+presented.
+(Sincelog2(B[h+1]−B[h])isalwaysapowerof2fortheprecedingchoiceof B,thebinarycode-
+word ofxisbin(x−B[h]−1,log2(B[h+1]−B[h])).)
+Table3showsan example for k=2.Notethat ExpG0coincideswithElias’ γ.
+2.7 Zeta
+Boldi and Vigna [ 8,9] introduced the family of zetacodes that is optimal for integers distributed
+according to a power law with small exponent α(e.g., less than 1.6)—that is, P(x)=1/(ζ(α)xα),
+whereζ(·)denotes the Riemann zeta function. The zeta code Zkis an exponential Golomb code
+relative to a vector of “buckets” [0 ,2k−1,22k−1,23k−1,...]. Again, Table 3shows an example
+fork=2.Notethat Z1coincideswith ExpG0,and thereforealso Z1is identicalto Elias’ γ.
+For example, let us consider Z2(5).T h ev a l u eo f his 2 because 22−1<5<24−1. Therefore,
+thefirstpartofthecodeistheunaryrepresentationof2.Nowwehavetoassignaminimalbinary
+codeword to 5−(22−1)−1=1 using 3 bits—that is, bin(1,3)=001. A more involved example
+is the one for, say, Z3(147). In this case, we have h=3, and thus the interval of interest is [26−
+1,29−1].Nowwehavetoassign147 −(26−1)−1=83aminimalbinarycodewordintheinterval
+[0,448]. Since 83 is more than the left extreme 26−1, we have to write bin(147,9)for a final
+codewordof 110.010010011 .
+2.8 Fibonacci
+Fraenkel and Klein [ 37] introduced in 1985 a class of codes based on Fibonacci numbers [ 71]a n d
+later generalized by Apostolico and Fraenkel [ 6]. The encoding is a direct consequence of Zeck-
+endorf’s theorem : every positive integer can be uniquely represented as the sum of some, non-
+adjacent,Fibonaccinumbers.Let Fi=Fi−1+Fi−2definethe i-thFibonaccinumberfor i>2,with
+F1=1andF2=2.Thenwehave F3=3,F4=5,F5=8,F6=13,andsoon.TheFibonacciencoding
+F(x)of an integer xis obtained by (1) emitting a 1bit if thei-th Fibonacci number is used in the
+sum giving x, or emitting a 0bit otherwise; (2) appending a final control 1bit to ensure unique
+decodability. Table 4(a) shows the first eight integers as encoded with this procedure, where we
+highlightedinboldfontthefinalcontrolbit.Forexample,7 =F2+F4,andthus F(7)willbegiven
+by4bitswherethesecondandthefourthare 1(i.e.,0101)plusthecontrol 1botforafinalcodeword
+of01011.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:10 G.E.PibiriandR. Venturini
+Note that the codewords assigned by the procedure described previously are not lexicographi-
+callysortedintheintegerstheyrepresent.However,ifwefirstcomputethecodewordlengths,we
+can then generate a set of lexicographically sorted codewords in a rather simple way, therefore
+obtainingaFibonacci-basedcodethatcanbeencoded/decodedwiththeproceduresweillustrated
+in Section 2.1. Given a non-decreasing sequence of codeword lengths [ /lscript1,...,/lscriptn] satisfying the
+Kraft-McMillaninequality(seethebeginningofSection 2),thecorrespondingcodewordsaregen-
+eratedasfollows.Thefirstcodewordisalwaysthebitstringoflength /lscript1thatis 0/lscript1.Now ,let/lscript=/lscript1.
+For alli=2,...,n,we repeatthefollowing twosteps:
+(1) Letcbethenextlexicographiccodewordof /lscriptbits.If/lscripti=/lscript,thenwejustemit c.Otherwise,
+cis paddedwithpossible 0bitstotheright untilwe havea /lscripti-bit codeword.
+(2) We set/lscript=/lscripti.
+Notethattheway wedefine cinstep(1)guaranteesthatthegeneratedcodeis prefixfree.
+For our example in Table 4(b), the sequence of codeword lengths is [2 ,3,4,4,5,5,5,6]. Let us
+generate the first four codewords. The first codeword is therefore 00, with/lscript1=2. The next code-
+word length/lscript2is 3, and thus we pad the next 2-bit codeword following 00(i.e., 01)w i t ha 0and
+obtain the 3-bit codeword 010. The next codeword length is 4, and thus we obtain the codeword
+0110. The next codeword length is 4 again, and the codeword is just obtained by assigning the
+codeword following 0110in lexicographicorder,whichis 0111.
+There is a closed-form formula for computing the i-th Fibonacci number, i≥1, calledBinet’s
+formula:
+Fi=1√
+5/bracketleftbigg/parenleftbigg1+√
+5
+2/parenrightbiggi+1
+−/parenleftbigg1−√
+5
+2/parenrightbiggi+1/bracketrightbigg
+≈/parenleftbigg1+√
+5
+2/parenrightbiggi+1
+=ϕi+1,
+whereϕ=1+√
+5
+2istheso-called goldenratio .Usingthisformula,itcanbeshownthatthecodeword
+lengthof F(x)isapproximatelyequalto1 +logϕxbits.Therefore,thecorrespondingdistribution
+isP(x)=1/(2x1/log2ϕ)≈1/(2x1.44). This implies that Fibonacci-based codes are shorter than γ
+forx>3, and as good as or even better than δfor a wide range of practical values ranging from
+F2=2t oF19=6765.
+2.9 Variable-Byte
+The codes described in the previous sections are bit-aligned , as they do not represent an integer
+using a multiple of a fixed number of bits (e.g., a byte). But reading a stream of bits in chunks
+whereeachchunkisabyteofmemory(oramultipleofabyte,e.g.,amemoryword—4or8bytes)
+is simpler and faster because the data itself is written in memory in this way. Therefore, it could
+bepreferabletouse byte-aligned orword-aligned codeswhendecodingspeedisthemainconcern
+ratherthancompressioneffectiveness.
+Variable-Byte , first described by Thiel and Heaps [ 101], is the most popular and simplest byte-
+alignedcode:thebinaryrepresentationofanon-negativeintegerissplitintogroupsof7bitsthat
+are represented as a sequence of bytes. In particular, the 7 least significant bits of each byte are
+reserved for the data, whereas the most significant, called the continuation bit , is equal to 1 to
+signal continuation of the byte sequence. The last byte of the sequence has its eighth bit set to
+0 to signal, instead, the termination of the byte sequence. The main advantage of Variable-Byte
+codesisdecodingspeed:wejustneedtoread1byteatatimeuntilwefindavaluesmallerthan27.
+Conversely,thenumberofbitstoencodeanintegercannotbelessthan8,andthusVariable-Byte
+is only suitable for large numbers and its compression ratio may not be competitive with the one
+of bit-aligned codes for small integers. Variable-Byte uses ⌈⌈log2(x+1)⌉/7⌉×8b i t st or e p r e s e n t
+the integer x, and thus it is optimal for the distribution P(x)≈7/radicalbig
+1/x8. For example, the integer
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:11
+65,790 is represented as 00000100. 10000001. 11111110, where we mark the control bits in bold
+font.Alsonotethepaddingbitsinthefirstbytestartingfromtheleft,insertedtoalignthebinary
+representationofthenumber toa multipleof 8 bits.
+Nibblecoding is a simple variation of this strategy where 3 bits are used for data instead of 7,
+whichis optimalfor thedistribution P(x)≈3/radicalbig
+1/x4.
+Culpepperand Moffat [ 21] describe a byte-aligned code with the property that the first byte of
+eachcodeworddefinesthelength ofthecodeword,whichmakesdecodingsimpler andfaster.
+Various enhancements were proposed to accelerate the sequential decoding speed of Variable-
+Byte.Forexample,toreducetheprobabilityofabranchmispredictionthatleadstohigherthrough-
+putandhelpskeeptheCPUpipelinefedwithusefulinstructions,thecontrolbitscanbegrouped
+together.Ifweassumethatthelargestrepresentedintegerfitsinto4bytes,wehavetodistinguish
+betweenonlyfourdifferentbyte-lengths,andthus2bitsaresufficient.Inthisway,groupsoffour
+integers require one control byte only. This optimization was introduced in Google’s Varint-GB
+format [23],whichis fasterto decodethantheoriginalVariable-Bytecode.
+Workingwithbyte-alignedcodesalsoopensthepossibilityofexploitingtheparallelismofSIMD
+instructions to further enhance the sequential decoding speed. This is the approach taken by the
+proposals Varint-G8IU [97],Masked-VByte [84], andStream-VByte [52]t h a tw eo v e rv i e wi nt h e
+following.
+Varint-G8IU [97]usesaformatsimilartotheoneof Varint-GB :onecontrolbytedescribesavari-
+ablenumberofintegersinadatasegmentofexactly8bytes,andthereforeeachgroupcancontain
+between two and eight compressed integers. Masked-VByte [84] works, instead, directly on the
+original Variable-Byte format. The decoder first gathers the most significant bits of consecutive
+bytesusingadedicatedSIMDinstruction.Thenusingpreviouslybuiltlook-uptablesandashuffle
+instruction, the data bytes are permuted to obtain the decoded integers. Stream-VByte [52]s e p a -
+ratestheencodingofthecontrolbitsfromthedatabitsbywritingthemintoseparatestreams.This
+organization permits to decode multiple control bits simultaneously and, consequently,to reduce
+datadependenciesthatcanstoptheCPU pipelineexecutionwhendecodingthedata stream.
+2.10 SC-Dense
+In Variable-Byte encoding, the value 27acts as a separator between stoppers(i.e., all values in
+[0,27−1]) andcontinuers (i.e., all values in [27,28−1]). A generalization of the encoding can be
+obtained by changing the separator value, thus enlarging or restricting the cardinalities of the
+set of continuers and stoppers. In general, the values from 0 to c−1 are reserved to stoppers
+andthevaluesfrom ctoc+s−1tocontinuers,providedthat c+s=28.Intuitively,changingthe
+separatingvaluecanbetteradapttothedistributionoftheintegerstobeencoded.Forexample,if
+most integers are larger than (say) 127, then it is convenient to have more continuers. This is the
+main idea behindthe SC-dense codeintroducedbyBrisaboaetal. [ 11].
+Given the integer x,i t sSC(s,c,x)representation is obtained as follows. Let k(x)≥1b et h e
+numberof⌈log2(s+c)⌉-bitwordsneededbytherepresentationof x.Thisvalue k(x)willbesuch
+that
+sck(x)−1−1
+c−1≤x<sck(x)−1
+c−1.
+Ifk(x)=1, the representation is just the stopper x−1. Otherwise, let y=⌊(x−1)/s⌋andx/prime=
+x−(sck(x)−1−s)/(c−1).I nt h i sc a s e , x>sandk(x)is given by⌊(y−1)/c⌋+2. The represen-
+tation is given by a sequence of k(x)−1 continuers, made by repeating the continuer s+c−1
+fork(x)−2 times followed by the continuer s+((y−1)modc), plus the final stopper (x/prime−1)
+mods. The number of bits required by encoding of xisk(x)⌈log2(s+c)⌉, and thus it follows that
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:12 G.E.PibiriandR. Venturini
+Table 5. Integers 1..20 as Represented by SC (4,4)-a n d
+SC(5,3)-DenseCodes, Respectively
+xSC(4,4,x)SC(5,3,x)
+1 000 000
+2 001 001
+3 010 010
+4 011 011
+5 100.000 100
+6 100.001 101.000
+7 100.010 101.001
+8 100.011 101.010
+9 101.000 101.011
+10 101.001 101.100xSC(4,4,x)SC(5,3,x)
+11 101.010 110.000
+12 101.011 110.001
+13 110.000 110.010
+14 110.001 110.011
+15 110.010 110.100
+16 110.011 111.000
+17 111.000 111.001
+18 111.001 111.010
+19 111.010 111.011
+20 111.011 111.100
+Fig. 2. Distributionof thegaps in thereal-world datasetsGov2, ClueWeb09, and CCNews.
+P(x)≈(s+c)−k(x). It is also possible to compute via dynamic programming the optimal values
+forsandcgiven theprobabilitydistributionof theintegers[ 11].
+Table5shows the codewords assigned to the integers 1..20 by the dense codes SC(4,4)and
+SC(5,3),respectively. Let us consider the encoding of x=13 under the code SC(5,3).I nt h i s
+example, we have y=⌊(13−1)/5⌋=2a n dk(13)=⌊(2−1)/3⌋+2=2. The only continuer is
+thereforegivenby5 +((2−1)mod3)=6(i.e., 110).Sincex/prime=3,thestopperis (3−1)mod3=2,
+i.e.,010, for afinalrepresentationof 110.010.
+2.11 ConcludingRemarks
+In the context of inverted indexes, we can exploit the fact that inverted lists are sorted—and typ-
+ically, strictly increasing—to achieve better compression. In particular, given a sequence S[1..n]
+of this form, we can transform the sequence into S/prime,w h e r eS/prime[i]=S[i]−S[i−1] fori>1a n d
+S/prime[1]=S[1].Intheliterature, S/primeissaidtobeformedbytheso-called gapsofS(ordelta-gaps ).Us-
+ingthecodesdescribedinthissectiononthegapsof Sisaverypopularstrategyforcompressing
+inverted indexes, with the key requirement of performing a prefix-sum during decoding. Clearly,
+compressing these gaps is far more convenient than compressing the integers of Sbecause the
+gaps are smaller, and thus fewer bits are required for their codes. In this case, the compressibility
+of the inverted index critically depends on the distribution of the gaps, but, fortunately, most of
+them are small. Figure 2shows the distribution of the gaps for three large text collection that we
+willintroduceinSection 6(seeTable 10fortheirbasicstatistics).Theplothighlightsthe skeweddis-
+tributionofthegaps:themostfrequentintegerisagapof1sothat,forbettervisualization,wecut
+thepercentageto16%butreporttheactualvalueinbold.Forexample,onthe ClueWeb09 dataset,
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:13
+Fig.3. Comparison between several codes described in Section 2for theintegers1..64.
+50%ofthegapsarejust1.Theothervalueshavedecreasingfrequencies.Wedividethedistribution
+intobucketsofexponentialsize,namelythebuckets B=[1,2,4,8,...,8192].Inparticular,bucket
+B[i] comprises all gaps дsuch that B[i−1]<д≤B[i]. (The last bucket also comprises all other
+gapslarger than8,192—the“tail” ofthedistribution.)
+Asanillustrativecomparisonbetweenseveralofthecodesdescribedinthissection,wereportin
+Figure3thenumberofbitstakenbytheircodewordswhenrepresentingtheintegers1..64,know-
+ingthatsuchvaluescovermostofthegapswehaveininvertedindexdata(e.g.,approximately86%
+to 95% of the gaps shown in Figure 2). In particular, we show the comparison between the codes:
+binary (B) as an illustrative “single-value” lower bound, γ,δ,R i c e(R), Zeta (Z), Fibonacci ( F), and
+Variable-Byte( V).Intheplots,datapointscorrespondingtodifferentmethodsthathavethesame
+coordinates have been stacked vertically for better visualization, as otherwise these would have
+been indistinguishable.For example, γ,δ, Zeta,and Fibonacci all take 5 bits to representthe inte-
+gers5and6.Notsurprisingly,atunedparametriccodesuchasRiceorZetamaybethebestchoice.
+However,tuningisnotalwayspossible,andasingleparameterhastobespecifiedfortheencoding
+ofallintegersinthelist(or,say,inasufficientlylargeblock).Forthesmallestintegers,theuniver-
+sal codes γandδare very good but not competitive immediately for slightly larger integers (e.g.,
+larger than 16). On such values and larger, a simple byte-aligned strategy such as Variable-Byte
+performswell.
+3 LIST COMPRESSORS
+In this section, we describe algorithms that encode an integer list instead of representing each
+single integer separately. A useful tool to analyze the space effectiveness of these compressors is
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:14 G.E.PibiriandR. Venturini
+the combinatorial information-theoretic lower bound, giving the minimum number of bits needed
+torepresentalistof nstrictlyincreasing integersdrawn atrandom fromauniverseofsize U≥n—
+thatis [74](e=2.718is thebaseofthenaturallogarithm),
+/ceilingleftbigg
+log2/parenleftbiggU
+n/parenrightbigg/ceilingrightbigg
+=nlog2(eU/n)−Θ(n2/U)−O(logn),
+whichisapproximately
+n(log2(U/n)+log2e)=nlog2(U/n)+1.443nbits,forn=o(√
+U).
+However,itisimportanttokeepinmindthatthecompressorswedescribeinthissectionoften
+takelessspacethanthatcomputedusingtheinformation-theoreticlowerbound.Infact,whilethe
+lowerboundassumesthattheintegersaredistributedatrandom,thecompressorstakeadvantage
+of the fact that inverted lists feature clustersof close integers (e.g., runs of consecutive integers)
+that are far more compressible than highly scattered regions. This is also the reason these com-
+pressors usually outperform the ones presented in Section 2, at least for sufficiently long lists. As
+a preliminary example of exploitation of such local clusters, we mention the Binary Adaptive Se-
+quentialCoding( BASC) byMoffatand Anh [ 61].Given asequenceof integers S[1..n],insteadof
+codingthebinarymagnitude bi=⌈log2(S[i]+1)⌉ofeverysingleinteger S[i]—asithappens,for
+example, in the Elias’ and related codes—we can assume bi+1to be similar to bi(if not the same).
+Thisallows tocode bi+1relatively tobi, henceamortizing itscost.
+Such natural clusters of integers are present because the indexed documents themselves tend
+to be clustered—for instance, there are subsets of documents sharing the very same set of terms.
+Consider all of the Web pages belonging to a certain domain: since their topic is likely to be the
+same, they are also likely to share a lot of terms. Therefore, not surprisingly, list compressors
+greatly benefit from docID-reordering strategies that focus on reassigning the docIDs to form
+larger clusters. When the indexed documents are Web pages, a simple and effective strategy is to
+assignidentifierstodocumentsaccordingtothelexicographicorderoftheirURLs[ 95].Thisisthe
+strategyweuseintheexperimentalanalysisinSection 6,anditsbenefitishighlightedbyFigure 2:
+themostfrequentgapsizeisjust1.Anotherapproachusesarecursivegraphbisectionalgorithm
+to find a suitable reordering of docIDs [ 26]. In this model, the input graph is a bipartite graph in
+whichonesetofverticesrepresentsthetermsoftheindexandtheothersetrepresentsthedocIDs.
+A graph bisection identifies a permutation of the docIDs, and thus the goal is that of finding, at
+eachstepofrecursion,thebisectionofthegraphthatminimizesthesizeofthegraphcompressed
+using delta encoding. (There are also other reordering strategies that may be relevant [ 7,94]: the
+workscitedherearenot meant tobepartofanexhaustivelist.)
+3.1 Binary Packing
+Asimplewaytoimprovebothcompressionratioanddecodingspeedistoencodea blockofintegers
+insteadofthewholesequence.Thislineofworkfindsitsoriginintheso-calledframe-of-reference
+(FOR)[39]. Once the sequence has been partitioned into blocks (of fixed or variable length), then
+eachblockisencodedseparately.Thekeyinsightbehindthissimpleideaisthatifthesequenceis
+locally homogeneous (i.e., it features clusters of close integers), the values in a block are likely to
+be of similar magnitude. Vice versa, it is generally hard to expect a long sequence to be globally
+homogeneous,andthisis whycompressionon a per-blockbasisgives usually betterresults.
+Anexampleofthisapproachis binarypacking .Givenablock,wecancomputethebitwidth b=
+⌈log2(max+1)⌉ofthemaxelementintheblockandthenrepresentallintegersintheblockusing
+b-bit codewords. Clearly, the bit width bmust be stored prior to the representation of the block.
+Moreover, the gaps between the integers can be computed to lower the value of b. Many variants
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:15
+Table 6. Nine Different Ways of Packing Integers
+in a28-Bit Segment asUsed bySimple9
+4-BitSelector Integers BitsperInteger WastedBits
+0000 28 1 0
+0001 14 2 0
+0010 93 1
+0011 74 0
+0100 55 3
+0101 47 0
+0110 39 1
+0111 21 4 0
+1000 12 8 0
+ofthissimpleapproachhavebeenproposed[ 25,50,96].Forexample,intheRecursiveBottom-Up
+Coding (RBUC) code proposed by Moffat and Anh [ 60], blocks of fixed size are considered, the
+bit width biof each block determined, and the i-th block represented via bi-bit codewords. The
+sequenceofbitwidths {bi}ineedstoberepresentedaswell,andtheproceduresketchedpreviously
+isappliedrecursivelytoit.
+Dividingalistintofixed-sizeblocksmaybesuboptimalbecauseregionsofcloseidentifiersmay
+be contained in a block containing a much larger value. Thus, it would be preferable to split the
+list intovariable-size blocks to better adapt to the distribution of the integers in the list. Silvestri
+and Venturini [ 96] present an algorithm that finds the optimal splitting of a list of size nin time
+O(kn),wherekisthemaximumblocksizeallowed,tominimizetheoverallencodingcost. Lemire
+and Boytsov [ 50]reportthatthefastestimplementationofthis—namedVectorofSplitsEncoding
+(VSE)—is thatusingsplitsof size1..14,16and 32integers.
+LemireandBoytsov[ 50]proposeword-alignedversionsofbinarypackingforfastdecoding.In
+the scheme called BP32, four groups of 32 bit-packed integers each are stored together in a meta
+block. Each meta block is aligned to 32-bit boundaries, and a 32-bit word is used as descriptor of
+themetablock.Thedescriptorstoresthe4bitwidthsofthe4blocksinthemetablock(8-bitwidth
+for each block). The variant called SIMD-BP128 combines 16 blocks of 128 integers each that are
+aligned to128-bitboundaries.Theuseof SIMDinstructionsprovidesfastdecodingspeed.
+3.2 Simple
+Rather than splitting the sequence into blocks of integers as in binary packing, we can split the
+sequence into fixed-memory units and ask how many integers can be packed in a unit. This is
+the key idea of the Simplefamily of encoders introduced by Anh and Moffat [ 3]: pack as many
+integers as possible in a memory word (i.e., 32 or 64 bits). This approach typically provides good
+compressionand highdecompressionspeed.
+For example, Simple9[3] (sometimes also referred to as Simple4b [4]) adopts 32-bit memory
+words. It dedicates 4 bits to the selectorcode and 28 bits for data. The selector provides informa-
+tion about how many elements are packed in the data segment using equally sized codewords.
+A selector 0000may correspond to 28 1-bit integers; 0001to 14 2-bit integers; 0010to 9 3-bit
+integers (1 bit unused), and so on, as we can see in Table 6. The four bits distinguish between
+9 possible configurations. Similarly, Simple16 [112] has 16 possible configurations using 32-bit
+words.Simple8b [4], instead, uses 64-bit words with 4-bit selectors. Dedicating 60 bits for data
+offers 14 different combinations rather than just 9, with only 2 configurations having wasted bits
+ratherthan3.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:16 G.E.PibiriandR. Venturini
+Anh and Moffat [ 3] also describe two variations of the Simple9mechanism, named Relative10
+andCarryover12 .Theideabehind Relative10 istojustuse2bitsfortheselector,thusallowing10
+packing configurations with 30 bits. To make use of more than four options, the selector code is
+combined with the one of the previous word, hence enabling the whole range of 10 possibilities.
+However, when packing 7 ×4-bit integers or 4 ×7-bit integers, 2 bits per word are wasted (only
+28outofthe30availablebitsareused).Therefore,inthe Carryover12 approach,thesetwobitsare
+used to define the selector code of the following word configuration that makes use of the full 32
+bitsfor packingtheintegers.
+A similar approach to that of the Simple family is used in the QMXmechanism, introduced
+by Trotman [ 103]. Considering memory words larger than 64 bits is a popular strategy for ex-
+ploiting the parallelism of SIMD instructions. QMXpacks as many integers as possible into 128-
+or256-bitwords(Quantities)andstorestheselectors(eXtractors)separatelyinadifferentstream.
+Theselectorsarecompressed(Multipliers)with run-lengthencoding —thatis,withastreamofpairs
+(value,length).Forexample,given thesequence[12 ,12,12,5,7,7,7,7,9,9],itscorresponding RLE
+representationis[ (12,3),(5,1),(7,4),(9,2)].
+3.3 PForDelta
+The biggest limitation of block-based strategies is their space inefficiency whenever a block con-
+tains just one large value, because this forces the compressor to use a universe of representation
+as large as that value. This is the main motivation for the introduction of a “patched” frame-of-
+referenceor PForDelta (PFor),proposedbyZukowskietal.[ 114].Theideaistochooseavalue kfor
+the universe of representation of the block such that a large fraction (e.g., 90%) of its integers can
+berepresentedusing kbitsperinteger.Allintegersthatdonotfitin kbitsaretreatedas exceptions
+and encoded in a separate array using another compressor (e.g., Variable-Byte or Simple). This
+strategy is called patching. More precisely, two configurable parameters are chosen—a base value
+bandauniverseofrepresentation k—sothatmostofthevaluesfallintherange[ b,b+2k−1]and
+canbeencodedwith kbitseachbyshiftingthem(delta-encoding)intherange[0 ,2k−1].Tomark
+the presence of an exception, we also need a special escapesymbol, and thus we have [0 ,2k−2]
+available configurations.
+For example, the sequence [3, 4, 7, 21, 9, 12, 5, 16, 6, 2, 34] is represented using PForDelta with
+parameters b=2andk=4as[1,2,5,∗,7,10,3,∗,4,0,∗]−[21,16,34].Thespecialsymbol ∗marks
+thepresenceofan exceptionthatis writtenina separatesequence,herereportedafterthedash.
+Theoptimized variantOpt-PFor devised by Yan et al. [111], which selects for each block the
+values of bandkthat minimize its space occupancy, is more space efficient and only slightly
+slowerthantheoriginal PFor. LemireandBoytsov[ 50]proposedanothervariantcalled Fast-PFor
+where exceptions are compressedin pages(i.e.,groups of blocks of integers). For example, a page
+may be32consecutiveblocksof128integerseach,foratotalof4,096integers.Inthisscheme,all
+b-bit exceptions from all blocks in a page are stored contiguously, for b=1..32. What makes this
+organizationfastertodecodeisthefactthatexceptionsaredecodedinbulkatapagelevelrather
+thanat a(smaller) blocklevelasin Opt-PFor .
+IntheparallelPFormethod,proposedbyAoetal.[ 5],exceptionsarerepresentedinadifferent
+waytoallowtheirdecompressioninparallelwiththatofthe“regular”values.Insteadofusingthe
+escape symbol, each time an exception xis encountered, only the least kbits ofx−bare written
+and the overflow bits accumulated in a separate array. The positions of the exceptions are stored
+in another array and compressed using a suitable mechanism. The same sequence used in the
+precedingexample,for b=2andk=4,becomes[1,2,5,3,7,10,3,14,4,0,0]−[1,0,2]−[4,8,11],
+because: the least 4 bits of the exceptions 21 −2=19, 16−2=14, and 34−2=32 are 3, 14, and
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:17
+Table 7. Exampleof Elias-FanoEncodingAppliedtotheSequence
+S=[3,4,7,13,14,15,21,25,36,38,54,62]
+S34 7 13 14 15 212536 38 5462
+00 0 00 0 0 0 11 1 1 1
+high 00 0 00 0 1 1 00 0 1 1
+00 0 11 1 0 1 00 1 0 1
+01 1 11 1 1 0 11 1 1
+low 10 1 01 1 0 0 01 1 1
+10 1 10 1 1 1 00 0 0
+H 1110 1110 10 10 110 0 10 10
+L 011.100.111 101.110.111 101 001 100.110 110 110
+0, respectively (in bold font); the corresponding overflow bits are 1, 0, and 2; the three exceptions
+appearatpositions4,8,and 11.
+3.4 Elias-Fano
+TheencoderwenowdescribewasindependentlyproposedbyElias[ 30]andFano[ 33].LetS(n,U)
+indicate a sorted sequence S[1..n] whose integers are drawn from a universe of size U>S[n].
+The binary representation of each integer S[i]a s bin(S[i],⌈log2U⌉)is split into two parts: a
+lowpart consisting in the right-most /lscript=⌈log2(U/n)⌉bits that we call low bitsand ahighpart
+consisting in the remaining ⌈log2U⌉−/lscriptbits that we similarly call high bits. Let us call/lscriptiandhi
+the values of low and high bits of S[i],respectively. The Elias-Fano encoding of S(n,U)is given
+bytheencodingofthehighandlowparts.Theintegers[ /lscript1,...,/lscriptn]arewrittenverbatiminabit-
+vectorLofn⌈log2(U/n)⌉bits, which represents the encoding of the low parts. The high parts are
+represented with another bit-vector of n+2⌊log2n⌋≤2nbits as follows. We start from a 0-valued
+bit-vector Handsetthebitinposition hi+i,foralli=1,...,n.Itiseasytoseethatthe k-thunary
+valuemofHindicatesthat m−1integersofShavehighbitsequalto k,0≤k≤⌊log2n⌋.Finally,
+theElias-Fanorepresentationof Sis given by theconcatenationof HandLand overalltakes
+EF(S(n,U))≤n⌈log2(U/n)⌉+2nbits. (1)
+Althoughwecanoptforanarbitrarysplitintohighandlowparts,rangingfrom0to ⌈log2U⌉,itcan
+beshownthat/lscript=⌈log2(U/n)⌉minimizestheoverallspaceoccupancyoftheencoding[ 30].More-
+over,giventhattheinformation-theoreticlowerboundisapproximately nlog2(U/n)+nlog2ebits,
+itcanbeshown[ 30]thatlessthanhalfabitiswastedperelementbyFormula 1.T able7showsan
+exampleofencodingforthesequence[3,4,7,13,14,15,21,25,36,38,54,62].Notethatnointeger
+hashighpartequalto 101.
+ThesamecodearrangementwaslaterdescribedbyAnhandMoffat[ 2]asa“modified”version
+of the Rice code (Section 2.5). In fact, they partition Uinto buckets of 2kintegers each for some
+k>0, code in unary how many integers fall in each bucket, and represent each integer using k
+bits as an offset to its bucket. The connection with Rice is established by writing the number of
+integerssharingthesamequotientratherthanencodingthisquantityforeveryinteger.Theyalso
+indicatedthattheoptimalparameter kshouldbechosentobe ⌈log2(U/n)⌉.
+Supporting random access . Despite the elegance of the encoding, it is possible to support ran-
+dom access to individual integers without decompressing the whole sequence. Formally, we are
+interestedinimplementingtheoperation Access(i)thatreturnsS[i].Theoperationcanbeimple-
+mentedbyusinganauxiliarydatastructurethatisbuiltonthebit-vector Handefficientlyanswers
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:18 G.E.PibiriandR. Venturini
+Select1queries. The answer to a Selectb(i)query over a bit-vector is the position of the i-th bit
+set tob. For example, Select 0(3)=10 on the bit-vector Hof Table7. This auxiliary data structure
+issuccinctin the sense that it is negligibly small in asymptotic terms, compared to EF(S(n,U)),
+requiringonly o(n)additionalbits[ 54,107].Usingthe Select 1primitive,itispossibletoimplement
+AccessinO(1). (A prior method than that using Selectis described by Anh and Moffat [ 2], who
+adopteda byte-wiseprocessingalgorithmto accelerateskippingthoroughthe Hbit-vector.)
+We basically have to “relink” together the high and low bits of an integer, previously split up
+during the encoding phase. The low bits /lscriptiare trivial to retrieve, as we need to read the range of
+bits/lscripti=L[(i−1)/lscript+1,i/lscript]. The retrieval of the high bits is, instead, more complicated. Since we
+write in unary how many integers share the same high part, we have a bit set for every integer
+inSandazeroforeverydistincthighpart.Therefore,toretrievethehighbitsofthe i-thinteger,
+we need to know how many zeros are present in the first Select 1(i)bits ofH. This quantity is
+evaluated on HinO(1)asSelect 1(i)−i. Linking the high and low bits is as simple as Access(i)=
+((Select 1(i)−i)/lessmuch/lscript)|/lscripti,wher e/lessmuchindicatestheleft shiftoperatorand |isthebitwiseOR.
+Forexample,torecover S[4]=13,wefirstevaluate Select 1(4)−4=5−4=1andconcludethat
+thehighpartofS[4]isthebinaryrepresentationof1—thatis, 001.Finally,weaccessthelowbits
+L[10..12]=101andrelink thetwoparts,henceobtaining 001.101.
+SupportingSuccessorqueries .Thequery Successor (x),returningthesmallestinteger yofSsuch
+thaty≥x, is supported in O(1+log(U/n))time as follows. Let hxbe the high bits of x.T h e nf o r
+hx>0,i=Select 0(hx)−hx+1 indicates that there are iintegers inSwhose high bits are less
+thanhx. However, j=Select 0(hx+1)−hxgives us the position at which the elements having
+high bits greater than hxstart. The corner case hx=0 is handled by setting i=0. These two
+preliminary operations take O(1). Now we can conclude the search in the range S[i,j], having
+skippeda potentially large range of elements that otherwisewould have required to be compared
+withx.Wethereforedeterminethesuccessorof xbybinarysearchinginthisrangethatcontains
+uptoU/nintegers.Thetime boundfollows.
+Asanexample,considerthequery Successor (30)overtheexamplesequencefromTable 7.Since
+h30=3,wehave i=Select 0(3)−3+1=8andj=Select 0(4)−3=9.Therefore,weconcludeour
+searchintherange S[8,9]by returning Successor (30)=S[9]=36.
+Inthespecificcontextofinvertedindexes,thequery Successor iscalledNextGEQ (NextGreater-
+than or Equal-to), and we are going to adopt this terminology in Section 6.I ts h o u l da l s ob eo b -
+servedthatMoffatandZobel[ 70]werethefirsttoexploretheuseof skippointers —metadataaimed
+at acceleratingtheskippingthroughblocksofcompressedintegers—forfasterqueryevaluation.
+Partitioning the integers by cardinality . One of the most pertinent characteristics of the Elias-
+FanospaceboundinFormula 1isthatitonlydependsontwoparameters—thatis,thesize nofthe
+sequenceSandtheuniverse U>S[n].Asalreadyexplained,invertedlistsoftenpresentclusters
+of very similar integers, and Elias-Fano fails to exploit them for better compression because it
+always uses a number of bits per integer at most equal to ⌈log2(U/n)⌉+2, thus proportional to
+thelogarithmofthe averagegap U/nbetweentheintegersand regardless anyskeweddistribution.
+(NotethatalsoGolombandRiceareinsensitivetoanydeviationawayfromarandomselectionof
+theintegers.)Tobetteradapttothedistributionofthegapsbetweentheintegers,wecanpartition
+thesequence,obtainingtheso-calledpartitionedElias-Fano( PEF)representation[ 73].
+The sequence is split into kblocks of variable length. The first level of representation stores
+two sequences compressed with plain Elias-Fano: (1) the sequence made up of the last elements
+{U1,...,Uk}of the blocks, the so-called upper-bounds , and (2) the prefix-summed sequence of
+the sizes of the blocks. The second level is formed instead by the representation of the blocks
+themselves, which can be again encoded with Elias-Fano. The main advantage of this two-level
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:19
+representation is that now the integers in the i-th block are encoded with a smaller universe (i.e.,
+Ui−Ui−1,i>0), thus improving the space with respect to the original Elias-Fano representation.
+Moreprecisely,eachblockinthesecondlevelisencodedwithoneamong threedifferentstrategies.
+Asalreadystated,oneofthemisElias-Fano.Theothertwoadditionalstrategiescomeintoplayto
+overcome thespaceinefficienciesof Elias-Fanowhenrepresenting denseblocks.
+Letusconsiderablockandcall bitssize,M,itsuniverserespectively.Vigna[ 107]observedthat
+asbapproaches M,the space bound b⌈log2(M/b)⌉+2bbits becomes close to 2 Mbits. In other
+words,thecloser bistoM,thedensertheblock.However,wecanalwaysrepresenttheblockwith
+Mbitsbywritingthe characteristicvector oftheblock,whichisabit-vectorwherethe i-thbitisset
+if the integer ibelongs to the block. Therefore, besides Elias-Fano, two additional encodings can
+bechosentoencodetheblock,accordingtotherelationbetween mandb.Thefirstoneaddresses
+the extreme case in which the block covers the whole universe (i.e., when b=M): in such a case,
+thefirstleveloftherepresentation(upperboundandsizeoftheblock)triviallysufficestorecover
+each element of the block that therefore does not need to be represented at all. The second case
+is used whenever the number of bits used by the Elias-Fano representation of the block is larger
+thanMbits: by doing the math, it is not difficult to see that this happens whenever b>M/4.
+In this case, we can encode the block with its characteristic bit-vector using Mbits. The choice
+of the proper encoding for a block is rather fundamental for the practical space effectiveness of
+PEF.
+Letusconsiderasimpleexamplewith M=40bits.Supposethattheblockissparse(e.g.,with b=
+5). Then, Elias-Fano takes ⌈log2(40/5)⌉+2=5 bits per element, whereas a characteristic vector
+representation would take 40 /5=8 bits per element. In a dense case with, say, b=30, a bitmap
+justtakes40/30=1.33bitsperelement, whereasElias-Fanowould take3bitsperelement.
+Splitting the sequence into equally sized blocks is clearly suboptimal, since we cannot expect
+clusters of similar integers to be aligned with uniform partitions. For such reason, an algorithm
+basedondynamicprogrammingispresentedbyOttavianoandVenturini[ 73]thatyieldsapartition
+whose cost in bits is at most (1+ϵ)times away from the optimal one taking O(nlog1
+ϵ)time and
+O(n)space for any 0<ϵ<1. Notice that the time complexity becomes Θ(n)whenϵis constant.
+In fact, the problem of determining the partition of minimum encoding cost can be seen as the
+problem of finding the path of minimum cost (shortest) in a complete, weighted, and directed
+acyclic graph (DAG). This DAG has nvertices, one for each integer of S,a n dΘ(n2)edges where
+thecostw(i,j)ofedge(i,j)representsthenumberofbitsneededtorepresent S[i,j].Eachedgecost
+w(i,j)iscomputedin O(1)byjustknowingtheuniverseandsizeofthechunk S[i,j].Bypruning
+the DAG, it is possible to attain to the mentioned complexity by preserving the approximation
+guarantees[ 73].
+Partitioning the integers by universe . As already mentioned, we can opt for an arbitrary split
+between the high and the low part of the Elias-Fano representation. Partitioning the universe U
+into chunks containing at most 2/lscriptintegers each, with /lscript=⌈log2(U/n)⌉, minimizes the space of
+the encoding [ 30], but anon-parametric split—independent from the values of Uandn—is also
+possible.Letus assumethat U≤232inthefollowing.
+For example, Roaring[15,51,53] partitions Uinto chunks spanning 216values each and repre-
+sentsalloftheintegersofthesequencefallingintoachunkintwodifferentwaysaccordingtothe
+cardinalityof thechunk:if thechunkcontainsfewer than4,096elements,thenitisconsideredto
+besparseandrepresentedasasortedarrayof16-bitintegers;otherwise,itisconsidered denseand
+encodedasabitmapof216bits.Last,verydensechunkscanalsobeencodedwith runsifadvanta-
+geous. A run is represented as a pair (v,/lscript),meaning that all of the integers v≤x≤v+/lscriptbelong
+tothechunk.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:20 G.E.PibiriandR. Venturini
+Inspired by the van Emde Boas tree [ 105,106], theSlicing[78] data structure recursively slices
+theuniverseofrepresentationtobetteradapttothedistributionoftheintegersbeingcompressed.
+DifferentlyfromRoaring,a sparsesparsechunkisfurtherpartitionedintoatmost28blocksof28el-
+ementseach.Therefore,anon-emptyuniversesliceof216elementscanbeeitherrepresentedwith
+ab i t m a po f216bits (dense case); represented implicitly if the slice contains all of the possible 216
+elements(fullcase);oritisrecursivelypartitionedintosmallerslicesof28elementseach.Finally,
+eachnon-emptysliceof28elementsisencodedwithasortedarrayof8-bitintegers(sparsecase);
+orwithabitmapof28bits(densecase).Theideaofahybridcompressionschemewithhierarchical
+bit-vectorsandsortedarrays(thatcanbefurthercompressed)wasfirstproposedbyFraenkeletal.
+[35].
+Itshouldbenotedthatallofthepartitioningstrategieswehavedescribedinthissection,namely
+PEF,Roaring,andSlicing,exploitthesameideatoattaintogoodspaceeffectiveness:lookfordense
+regions to be encoded with bitmaps and use a different mechanism for sparse regions. Although
+PEFachievesthisgoalbysplittingthesequence optimally bycardinality,RoaringandSlicingparti-
+tiontheuniverseofrepresentation greedily,hencemaintainingthepropertythatallpartitionsare
+representedusingthe sameuniverse.AswewillbetterseeinSection 6,thesedifferentpartitioning
+paradigms achievedifferentspace/timetrade-offs.
+3.5 Interpolative
+The Binary Interpolative Code ( BIC) invented by Moffat and Stuiver [ 65,66] represents a sorted
+integer sequence without requiring the computation of its gaps. The key idea of the algorithm
+is to exploit the order of the already-encoded elements to compute the number of bits needed to
+representtheelements thatwillbe encodednext.
+At the beginning of the encoding phase, suppose we are specified two quantities l≤S[1] and
+h≥S[n].Givensuchquantities,wecanencodetheelementinthemiddleofthesequence—thatis,
+S[m]withm=⌈n/2⌉,insomeappropriatemanner,knowingthat l≤S[m]≤h.Forexample,we
+canwriteS[m]−l−m+1usingjust⌈log2(h−l−n+1)⌉bits.Afterthat,wecanapplythesame
+steptobothhalves S[1,m−1]andS[m+1,n]withupdatedknowledge ofloweranduppervalues
+(l,h)that are set to (l,S[m]−1)and(S[m]+1,h)for the left and right half, respectively. Note
+that whenever the condition l+n−1=his satisfied, a “run” of consecutive integers is detected:
+therefore, we can stop recursion and emit no bits at all during the encoding phase. When the
+conditionismetagainduringthedecodingphase,wesimplyoutputthevalues l,l+1,l+2,...,h.
+Thismeansthat BICcanactuallyusecodewordsof0bitstorepresentmorethanoneinteger,hence
+attaining to a rate of less than 1 bit per integer—a remarkable property that makes the code very
+succinctforhighly clusteredinvertedlists.
+Wenowconsideranencodingexampleappliedtothesequence[3,4,7,13,14,15,21,25,36,38,
+54, 62]. As it is always safe to choose l=0a n dh=S[n], we do so, and thus at the beginning of
+theencodingphasewehave l=0andh=62.Sinceweset h=S[n],thelastvalueofthesequence
+is first encoded and we process S[1..n−1] only. Figure 4shows the sequence of recursive calls
+performedbytheencodingalgorithmorientedasabinarytree.Ateachnodeofthetree,wereport
+thevaluesassumedbythequantities m,n,l,andh,plustheprocessedsubsequenceandthenumber
+ofbitsneededtoencodethemiddleelement.By pre-order visitingthetree,weobtainthesequence
+of written values, which is [10, 5, 3, 0, 5, 18, 5, 3, 1, 15] with associated codeword lengths [6, 4, 3,
+2,3,6,5,4,5,5].Notethatthevalueinthesecondleafofthetree(i.e., S[5]=14)isencodedwith
+0 bitsgiven thatboth landhare equalto14.
+However, the encoding process obtained by the use of simple binary codes as illustrated in
+Figure4is wasteful. In fact, as discussed in the original work [ 65,66], more succinct encodings
+can be achieved with a minimal binary encoding (recall the definition at the end of Section 2.2).
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:21
+Fig. 4. The recursive calls performed by the Binary Interpolative Coding algorithm when applied to the
+sequence [3, 4, 7, 13, 14, 15, 21, 25, 36, 38, 54 ]with initial knowledge of lower and upper bound values l=0
+andh=62. Inbold font,we highlight themiddle element being encoded.
+More precisely, when the range r>0 is specified, all values 0 ≤x≤rare assigned fixed-length
+codewords of size ⌈log2(r+1)⌉bits. But the more ris distant from 2⌈log2(r+1)⌉, the more this al-
+location of codewords is wasteful because c=2⌈log2(r+1)⌉−r−1 codewords can be made 1 bit
+shorter without loss of unique decodability. Therefore, we proceed as follows. We identify the
+range of smaller codewords, delimited by the values rlandrh, such that every value x≤rsuch
+thatrl<x<rhis assigned a shorter (⌈log2(r+1)⌉−1)-bit codeword and every value outside
+t h i sr a n g ei sa s s i g n edal o n g e ro n eo f ⌈log2(r+1)⌉bits. To maintain unique decodability, we first
+always read⌈log2(r+1)⌉−1 bits and interpret these as the value x. Then we check if condi-
+tionrl<x<rhis satisfied: if so, we are done; otherwise, the codeword must be extended by
+1 bit. In fact, in a left-most minimal binary code assignment, the first cvalues are assigned the
+shorter codewords, and thus rh=2⌈log2(r+1)⌉−r−1 (and we only check whether x<rh). In a
+centeredminimal binary code assignment, the values in the center of the range are assigned
+the shorter codewords, and thus (rl,rh)=(⌊r/2⌋−⌊c/2⌋−1,⌊r/2⌋+⌊c/2⌋+1)ifris even, or
+(rl,rh)=(⌊r/2⌋−⌊c/2⌋,⌊r/2⌋+⌊c/2⌋+1)ifris odd. The rationale behind using centered mini-
+malcodesisthatareasonableguessistoassumethemiddleelementtobeabouthalfoftheupper
+bound. As already noted, we remark that the specific assignment of codewords is irrelevant and
+many assignments are possible: what matters is to assign correct lengths and maintain the prop-
+ertyof uniquedecodability.
+Itisalsoworthmentioningthatthe Tournamentcode developedbyTeuhola[ 100]isveryrelated
+toBIC.
+3.6 Directly-AddressableCodes
+Brisaboa et al. [ 12] introduced a representation for a list of integers that supports random access
+to individual integers—called directly addressable code ( DAC)—noting that this is not generally
+possibleformanyoftherepresentationsdescribedinSections 2and3.Theyreducedtheproblem
+of random access to the one of rankingover a bitmap. Given a bitmap B[1..n]o fnbits, the query
+Rankb(B,i)returns the number of bbits inB[1,i], fori≤n. For example, if B=010001101110,
+thenRank 1(6)=2a n dRank 0(8)=5. Rank queries can be supported in O(1)by requiring only
+o(n)additionalbits[ 17,41,44].
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:22 G.E.PibiriandR. Venturini
+Each integer in the list is partitioned into (b+1)-bit chunks. Similarly to Variable-Byte, bbits
+are dedicated to the representation of the integer, and the control bit indicates whether another
+chunk follows or not. All of the first nb-bit chunks of every integer are grouped together in a
+codewordstream C1,andthecontrolbitsformabitmap B1[1..n]ofnbits.Ifthe i-thbitissetinsuch
+bitmap,thenthe i-thintegerinthesequenceneedsasecondchunk,andotherwiseasinglechunk
+is sufficient. Proceeding recursively, all of the second m≤nchunks are concatenated together in
+C2and the control bits in a bitmap B2[1..m]o fmbits. Again, the i-th bit of such bitmap is set if
+thei-th integer with at least two chunks needsa third chunk of representation.In general, if Uis
+themaximumintegerinthelist,thereareatmost ⌈log2(U+1)/b⌉levels(i.e.,streamsofchunks).
+As an example, the sequence [2, 7, 12, 5, 13, 142, 61, 129] is encoded with b=3a sf o l l o w s :
+B1=0.0.1.0.1.1.1.1 ,B2=0.0.1.0.1 ,B3=0.0,C1=010.111.100.101.101.110.011.001 ,
+C2=001.001.001.110.000 ,C3=010.010.
+Accessing the integer xin position ireduces to a sequence of c−1Rank1operations over the
+levels’bitmaps,where c≥1isthenumberof (b+1)-bitchunksof x—thatis,⌈log2(x+1)/b⌉.Now,
+fork=1..c,werepeatthefollowingstep:(1)retrievethe i-thchunkfromthe Ckinconstanttime
+giventhatallchunksare bbitslong;(2)if Bk[i]=0,wearedone;otherwise j=Rank1(Bk,i)gives
+us the number of integers (in the level k+1) that have more than kchunks, so we set i=jand
+repeat.Forexample, Access(5)isresolvedasfollowsonourexamplesequence.Weretrieve C1[5]=
+101;sinceB1[5]=1,wecompute Rank1(B1,5)=2.Nowweretrieve C2[2]=001andgiven B2[2]=
+0,and westopby returningtheinteger C2[2].C1[5]=001.101—thatis,13.
+Last,nothingpreventsfromchangingthevalue of bateachlevelof thedata structure.Forthis
+purpose, the authors of DAC present an algorithm, based on dynamic programming, that finds
+suchoptimalvalues fora given list.
+3.7 HybridApproaches
+Hybrid approaches are possible by using different compressors to represent the blocks of a list.
+Forexample,givenaquerylog,wecancollectaccessstatisticsatablock-levelgranularity,namely
+howmanytimesablockisaccessedduringqueryprocessing,andrepresentrarelyaccessedblocks
+withamorespace-efficientcompressor;viceversa,frequentlyaccessedblocksareencodedwitha
+more time-efficientcompressor[ 72].Thishybridstrategyproducesgood space/timetrade-offs.
+Pibiri and Venturini [ 83] show that a list of nsorted integers can be optimally partitioned into
+variable-lengthblockswheneverthechosenrepresentationforeachblockisgivenbyeither(1)any
+compressordescribedinSection 2,namelya point-wise encoder,or(2)thecharacteristicvectorof
+the block. From Section 3.4, we recall that given a block of universe m, the characteristic vector
+representation of the block is given by a bitmap of mbits where the i-th bit is set if the integer i
+belongstotheblock.Byexploitingthefactthatthechosenencoderispoint-wise(i.e.,thenumber
+of bits needed to represent an integer solely depends on the integer itself rather than the block
+whereitbelongsto),itispossibletodeviseanalgorithmthatfindsan optimalpartitioningin Θ(n)
+timeandO(1)space.Theconstantfactorhiddenbytheasymptoticnotationisverysmall,making
+thealgorithmveryfast inpractice.
+3.8 EntropyCoding:Huffman, Arithmetic, and AsymmetricNumeral Systems
+In this section, we quickly survey the most famous entropy coding techniques—Huffman [ 43],
+Arithmetic coding [ 62,76,88,89], and Asymmetric Numeral Systems ( ANS)[27–29]. Although
+someauthorsexploredtheuseofthesetechniquesforindexcompression,especiallyHuffman[ 10,
+36,45,69]a n dANS[63,64] (see Section 4.2), they are usually not competitive in terms of effi-
+ciencyandimplementationsimplicityagainstthecompressorswehaveillustratedintheprevious
+sections,makingthemahardchoiceforpractitioners.Anin-depthtreatmentofsuchtechniquesis
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:23
+Fig. 5. An example of Huffman coding applied to a sequence of size 25 with symbols 1..8 and associated
+weights[2,8,2,1,7,2,2,1].
+thereforeoutsidethescopeofthisarticle,andtheinterestedreadercanfollowthereferencestothe
+individualpapersweincludehere.ThesurveybyMoffat[ 59]aboutHuffmancodingalsocontains
+descriptionsof Arithmeticcodingand ANS(Section5.1and 5.2of thatarticle,respectively).
+We first recall the definition of entropy, a tool introduced by Shannon [ 93]. He was concerned
+withtheproblemofdefiningthe informationcontent ofadiscreterandomvariable X:Σ→R,with
+distribution P(s)=P{X=s},s∈Σ.Hedefinedtheentropyof XasH=/summationtext
+s∈Σ[P(s)log2(1/P(s))]
+bits. The quantity log2(1/P(s))bits is also called the self-information of the symbol s,andHrep-
+resents the average number of bits we need to encode each value of Σ.N o wl e tSbe a sequence
+ofnsymbolsdrawnfromanalphabet Σ.(Inthecontextofthisarticle,thesymbolswillbeinteger
+numbers.)Inaddition,let nsdenotethenumberoftimesthesymbol soccursinS.Assumingem-
+piricalfrequenciesasprobabilities[ 75](thelargeris n,thebettertheapproximation)—forinstance,
+P(s)≈ns/n—we can consider Sas a random variable assuming value swith probability P(s).I n
+this setting, the entropy of the sequence SisH0=1/n/summationtext
+s∈Σ[nslog2(n/ns)] bits, also known as
+the 0-th order (or empirical)e n t r o p yo fS. In particular, the quantity nH0gives a theoretic lower
+boundontheaveragenumberofbitsweneedtorepresent Sand,hence,totheoutputsizeof any
+compressorthatencodeseachsymbolof Switha fixed-length codeword.
+Huffman.ItisstandardtodescribeHuffman’salgorithmintermsofabinarytree.Inthislogical
+binary tree, a leaf corresponds to a symbol to be encoded with associated symbol occurrence—its
+weight—andaninternalnodestoresthesumoftheweightsofitschildren.Thealgorithmmaintains
+acandidate set of tree nodes from which, at each step, (1) the two nodes with smallest weight are
+selected, (2) they are merged together into a new parent node whose weight is the sum of the
+weights of the two children, and (3) the parent node is added to the candidate set. The algorithm
+repeatsthismergingstepuntilonlytherootofthetree(whoseweightisthelengthofthesequence
+S) is left in the candidate set. Figure 5shows an example of Huffman coding. It is important to
+mentionthat,inpractice,thedecodingprocessdoes nottraverseanytree.Anelegantvariationof
+the algorithm—known as canonical Huffman —allows fast decoding by using lookup tables as we
+similarly illustratedinSection 2.1.Again, Moffat[ 59] providesallof thedetails.
+Now, letLbe theaverageHuffman codeword length. Two of the most important properties of
+Huffman coding are as follows: (1) Lisminimum among all possible prefix-free codes, and (2) L
+satisfiesH0≤L<H0+1.ThefirstpropertymeansthatHuffmancodingproducesan optimalcode
+for a given distribution of the integers. (The precursor of Huffman’s algorithm is the less-known
+Shannon-Fano algorithmthatwasindependentlyproposedbyShannon[ 93]andFano[ 32],which,
+however,doesnotalwaysproduceanoptimalcode.)ThesecondpropertysuggeststhataHuffman
+code can lose up to 1 bit compared to the entropy H0because it requires at least1 bit to encode
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:24 G.E.PibiriandR. Venturini
+a symbol (as any other prefix-free code), and thus if H0is large, the extra bit lost is negligible
+in practice; otherwise, the distribution of probabilities is skewed and Huffman loses a significant
+spacecomparedtotheentropyofthesource.
+Now, it should be clear why Huffman may not be an appropriate choice for inverted index
+compression.ApplyingHuffmantothecompressionoftheintegersininvertedlistsmeansthatits
+alphabetofrepresentationistoolarge,thusmakingthemeredescriptionofthecodeoutweighthe
+cost of representing very sparse inverted lists. The same reason applies if we try to use the code
+to compress the gaps between successive integers: the largest gap could be as large as the largest
+integer inthesequence.
+Arithmetic .ThefirstconceptofArithmeticcodingwasintroducedbyEliasbefore1963according
+to Note 1 on page 61 in the book by Abramson [ 1]. However, the method requires infinite preci-
+sionarithmetic,andbecauseofthis,itremainedunpublished.Thefirstpracticalimplementations
+were designed during 1976by Rissanen [ 89] and Pasco [ 76], and later refined by Rissanen [ 88]. A
+more recent efficient implementation is described by Moffat et al. [ 62]. The method offers higher
+compression ratios than those of Huffman, especially on highly skewed distributions, because it
+is not a prefix-free code, so it does not require at least 1 bit to encode a symbol. Indeed, a single
+bitmaycorrespondtomorethanoneinputsymbol.However,Huffmancodesarefastertodecode;
+Arithmetic does not permit to decode an output stream starting from an arbitrary position, but
+only sequentialdecodingispossible.
+Given a sequence of symbols S=[s1..sn], the main idea behind the method works as follows.
+Theinterval[0,1)ispartitionedinto|Σ|segmentsoflengthproportionaltotheprobabilitiesofthe
+symbols.Thenthesubintervalcorrespondingto s1,say[/lscript1,r1),ischosenandthesamepartitioning
+stepisappliedtoit.Theprocessstopswhenallinputsymbolshavebeenprocessedandoutputsa
+single real number xin [/lscriptn,rn), whichis the intervalassociated to the last input symbol sn.T h e n
+thepair(x,n)sufficestodecodetheoriginalinputsequence S.
+It can be shown that Arithmetic coding takes at most nH0+2 bits to encode a sequence Sof
+lengthn.Thismeansthattheoverheadwithrespecttotheempiricalentropy H0isonlyof2/nbits
+persymbol,thusnegligibleforbasicallyallpracticalvaluesof n.Asalreadypointedout,Arithmetic
+coding requires infinite precision that can be very costly to be approximated. In fact, a practical
+implementation [ 110] using approximated arithmetic can take up to nH0+2
+100nbits, thus having
+0.02bitsoflosspersymbolratherthan2 /n.
+Asymmetric Numeral Systems .ANSis a family of entropy coding algorithms, originally devel-
+oped by Duda [ 27,28], which approaches the compression ratio of Arithmetic coding with a de-
+compressionspeedcomparablewiththeoneofHuffman[ 29].Thebasicideaof ANSistorepresent
+a sequenceof symbolswitha naturalnumber x.
+Letusconsideraconcreteexample[ 64]withanalphabetofthreesymbolsonly,namely {a,b,c}
+andassumingthat P(a)=1/2,P(b)=1/3,andP(c)=1/6.Toderivetheencodingofasequenceof
+symbols,a framef[1..m]ofsymbolsisconstructed,having1 /2oftheentriesequalto a,1/3equal
+tob,and1/6equalto c.Forexample,onesuchframecouldbe f[1..6]=[aaabbc],butothersymbol
+permutationswithpossiblylarger marepossibleaswell.Theframedeterminesatablethatisused
+tomapasequenceofsymbolstoanentryinthetable.RefertoTable 8(a)foranexamplewiththe
+framef[1..6]=[aaabbc].Theentriesinthetablearethenaturalnumbersassignedincrementally
+in the order determined by the frame. For example, since the first three symbols in the frame are
+aaa,thefirstnumbersassignedto a’sroware1,2,and3.Thenexttwosymbolsare bb,sob’srow
+gets 4 and 5. The last symbol in the frame is c, so the first entry in c’s row is 6. The process now
+proceed in cycles, thus placing 7, 8, and 9 in a’s row, 10 and 11 in b’s row, a final 12 in c’s row,
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:25
+Table 8. Two Examples of theANSEncoding Table with Frame
+f[1..6]=[aaabbc]andf[1..4]=[caba],Respectively
+(a) (b)
+ΣP Codes
+a1/212 3 7 8 91 31 41 51 9
+b1/3451 01 11 61 72 22 32 82 9
+c1/661 21 82 43 03 64 24 85 46 0
+0123456789ΣP Codes
+a1/2246 81 01 21 41 61 82 0
+b1/4371 11 51 92 32 73 13 53 9
+c1/41591 31 72 12 52 93 33 7
+0 123456789
+and so on (the first 10 columns are shown in the table). Table 8(b) shows an example for another
+distributionof thesymbols,constructedusingaframe f[1..4]=[caba].
+Now,considerthesequence caaandletusdetermineits ANScodewithTable 8(a).Wemakeuse
+of thetransition function defined by the table Titself asstate/prime=T[s,state],which given a symbol
+sandastatevalue,producesthenext state/primeoftheencoder.Atthebeginning,weset state=0,and
+thusforthegivensequence caathestatevariableassumesvalues0 →6→13→26(lastvaluenot
+showninthetable).Thecodeassignedtothesequenceisthereforetheinteger26.Forthesequence
+acbunder the encoding table in Table 8(b), we generate instead the transitions 0 →2→9→39,
+and thus the assigned code is 39. Decoding reverts this process. For example, given 39, we know
+thatthelastsymboloftheencodedsequencemusthavebeen bbecause39isfoundonthesecond
+row of the table. The value is in column 9, which is found in column 2 in the third row that
+corresponds to the csymbol. Finally, the column number 2 is found in a’s row, and thus we emit
+themessage acb.
+4 INDEX COMPRESSORS
+Thissectionisdevotedtoapproachesthatlookforregularitiesamongallofthelistsintheinverted
+index. In fact, as already motivated at the beginning of Section 3, the inverted index naturally
+presents some amount of redundancy in that many subsequences of integers are shared between
+thelists.Goodcompressioncanbeachievedbyexploitingthiscorrelation,usuallyattheexpense
+ofareducedprocessingefficiency.
+4.1 Clustered
+Pibiri and Venturini [ 80] propose a clustered index representation. The inverted lists are grouped
+intoclustersof“similar”lists—thatis,theonessharingasmanyintegersaspossible.Thenforeach
+cluster,a referencelist issynthesizedwithrespecttowhichalllistsintheclusterareencoded.More
+specifically,the integers belonging to the intersectionbetweenthe clusterreference list and a list
+intheclusterarerepresentedasthepositionstheyoccupywithinthereferencelist.Thismakesa
+bigimprovementfortheclusterspace,sinceeachintersectioncanberewritteninamuchsmaller
+universe. Although any compressor can be used to represent the intersection and the residual
+segment of each list, the authors adopt PEF; by varying the size of the reference lists, different
+time/spacetrade-offscan beobtained.
+4.2 ANS Based
+In Section 3.8, we saw an example of the ANSmethod developed by Duda [ 27,28]. As we al-
+ready observed in that section, the alphabet size may be too large for representing the integers
+ininvertedindexes.Eventhelargestgapmaybeequaltothenumberofdocumentsinthecollec-
+tion, which is usually several orders of magnitude larger than, for example, the (extended) ASCII
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:26 G.E.PibiriandR. Venturini
+Fig.6. Adictionary-basedencodedstreamexample,wheredictionaryentriescorrespondingto {1,2,4,8,16}-
+longintegerpatterns,runs,andexceptionsarelabeledwithdifferentshades.Onceprovisionhasbeenmade
+for such a dictionary structure, a sequence of gaps can be modeled as a sequence of codewords {ck},e a c h
+being a reference to a dictionary entry, as represented with the encoded stream in the picture. Note that,
+for example, codeword c9signals an exception, and therefore the next symbol eis decoded using an escape
+mechanism.
+alphabet.Forthisreason,MoffatandPetri[ 63]describeseveraladaptationsofthebase ANSmech-
+anismtailoredforeffectiveindexcompression.Toreducethealphabetsize,theyperformaprepro-
+cessingstepwithVariable-Bytetoreducetheinputlisttoasequenceofbytesandthenapply ANS
+(VByte+ANS ). Local variability can be instead captured by using 16 different ANSmodels, each
+selected using a 4-bit selector in the spirit of the Simple approach described in Section 3.2(Sim-
+ple+ANS).Anothervariantisobtainedbydividingalistintoblocksandencodingeachblockwith
+themostsuitablemodel,chosenamong16possibilitiesaccordingtoaselectedblockstatistic—for
+example, itsmaximum value ( Packed+ANS ).
+4.3 Dictionary Based
+Pibiri et al. [ 79] show that inverted indexes can be effectively compressed using a dictionary-
+basedapproach.Theirtechnique—namedDictionaryofINTegersequences( DINT)—buildsonthe
+observationthatpatternsofgapsarehighlyrepetitiveacrossthewholeinvertedindex.Forexam-
+ple, the pattern [1,1,2,1] of four gaps can be very repetitive. Therefore, a dictionary storing the
+most frequent 2bpatterns, for some b>0, can be constructed. Note that, in general, the problem
+of building a dictionary that minimizes the number of output bits when sequences symbols are
+codedasreferencestoitsentriesisNP-hard[ 98].Morespecifically,anintegerlistcanbemodeled
+as a sequence of b-bit codewords, each codeword corresponding to a dictionary pattern. Figure 6
+illustrates the approach. This representation has the twofold advantage of (1) requiring bbits to
+represent a pattern (thus, potentially, several integers) and (2) decoding of a pattern requires just
+a lookup in the dictionary. In their investigation, patterns of size 1, 2, 4, 8, and 16 are considered,
+withb=16to avoid bit-level manipulationsandallow veryfastdecoding.
+A detail of crucial importance is to take advantage of the presence of runsof 1 second, hence
+reserving some special entries in the dictionary to encode runs of different sizes, such as 32, 64,
+128, and 256. A dictionary entry must also be reserved to signal the presence of an exception—an
+integer not sufficiently frequent to be included in the dictionary and represented via an escape
+mechanism(e.g.,Variable-Byteoraplain32-bitinteger).Moreover,compactingthedictionaryhas
+the potential of letting the dictionary fit in the processor cache, hence speeding up the decoding
+processthankstoareducednumberofcachemisses.Last,oncethedictionaryisbuilt,ashortest-
+pathcomputationsufficestofindthe optimalencoding of a listfor thatspecificdictionary.
+Otherauthorshaveinsteadadvocatedtheuseof Re-Pair[48]tocompressthegapsbetweenthe
+integersofinvertedlists[ 18,19].Re-Pairusesagrammar-basedapproachtogenerateadictionary
+of sequencesof symbols.Descriptionof thisalgorithmis outsidethescopeofthisarticle.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:27
+Table 9. Different TestedIndex Representations
+Method Partitionedby SIMD Alignment Description
+VByte Cardinality Yes Byte Fixed-size partitionsof 128
+Opt-VByte Cardinality Yes Bit Variable-sizepartitions
+BIC Cardinality No Bit Fixed-size partitionsof 128
+δ Cardinality No Bit Fixed-size partitionsof 128
+Rice Cardinality No Bit Fixed-size partitionsof 128
+PEF Cardinality No Bit Variable-sizepartitions
+DINT Cardinality No 16-bitword Fixed-size partitionsof 128
+Opt-PFor Cardinality No 32-bitword Fixed-size partitionsof 128
+Simple16 Cardinality No 64-bitword Ffixed-size partitionsof 128
+QMX Cardinality Yes 128-bitword Fixed-size partitionsof 128
+Roaring Universe Yes byte Single span
+Slicing Universe Yes byte Multi-span
+5 FURTHER READING
+Besidestheindividualpaperslistedinthebibliography,wementionherepreviouseffortsinsum-
+marizingencodingtechniquesforintegers/integersequences.ThebookbyWittenetal.[ 109]isthe
+first,tothebestofourknowledge,thattreatscompressionandindexingdataasaunifiedproblem,
+bypresentingtechniquestosolveitefficiently.Fenwick[ 34]andSalomon[ 90]provideavastand
+deep coverage of variable-length codes. The survey by Zobel and Moffat [ 113] covers more than
+40yearsofacademicresearchininformationretrievalandgivesanintroductiontothefield,with
+Section 8 dealing with efficient index representations. Moffat and Turpin [ 68], Moffat [ 58], and
+PibiriandVenturini[ 82]describeseveralofthetechniquesillustratedinthisarticle;Williamsand
+Zobel[108],Scholeret al.[ 92],and Trotman[ 102]experimentally evaluatemany of them.
+Other approaches not described in this article include an adaptation of Front Coding [109]f o r
+compressingtext,seenasformedbyquadruplesholdingdocument,paragraph,sentence,andword
+number [ 16], and the use of general-purpose compression libraries, such as ZStd3andXZ,4for
+encoding/decodingofinverted lists[ 77].
+6 EXPERIMENTS
+In this section of the article, we report on the space effectiveness and time efficiency of different
+invertedindexrepresentations.Specifically,spaceeffectivenessismeasuredastheaveragenumber
+ofbitsdedicatedtotherepresentationofadocumentidentifier;timeefficiencyisassessedinterms
+of the time needed to perform sequential decoding, intersection, and union of inverted lists. For
+the latter two operations, we focus on materializing the fullresults set, without any ranking or
+dynamic pruningmechanism[ 13,55] beingapplied.
+We do not aim at being exhaustive here but rather compare some selected representations and
+pointtheinterestedreadertothecoderepositoryat https://github.com/jermp/2i_bench forfurther
+comparisons.
+Testedindexrepresentations .Wecomparethe12differentconfigurations,summarizedinTable 9.
+Wereportsometestingdetailsofsuchconfigurations.ThetestedRiceimplementation(Section 2.5)
+specifiestheRiceparameter kforeachblockofintegers,choosingthevalueof k∈[1,4]givingthe
+3http://www.zstd.net .
+4http://tukaani.org/xz .
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:28 G.E.PibiriandR. Venturini
+Table 10. DatasetsUsed intheExperiments
+(a) BasicStatistics (b) TREC2005/06 Queries
+Gov2 ClueWeb09 CCNews
+Lists 39,177 96,722 76,474
+Universe 24,622,347 50,131,015 43,530,315
+Integers 5,322,883,266 14,858,833,259 19,691,599,096
+Entropy of the gaps 3.02 4.46 5.44
+⌈log2⌉of the gaps 1.35 2.28 2.99Gov2 ClueWeb09 CCNews
+Queries 34,327 42,613 22,769
+2 terms 32.2% 33.6% 37.5%
+3 terms 26.8% 26.5% 27.3%
+4 terms 18.2% 17.7% 16.8%
+5+terms 22.8% 22.2% 18.4%
+bestspaceeffectiveness.Twobitsperblocksufficestoencodethevalueof k.Inaddition,wewrite
+the quotient of the Rice representation of an integer in γrather than in unary, as we found this
+togiveabetterspace/timetrade-offthanregularRice.Variable-ByteusestheSIMD-izeddecoding
+algorithm devised by Plaisance et al. [ 84] and called Masked-VByte . Interpolative ( BIC)u s e sleft-
+mostminimal binarycodes.Thetestedversionof DINTusesasinglepackeddictionaryandoptimal
+blockparsing.InRoaring,extremely densechunksare representedwithruns.
+Datasets. We perform the experiments on the following standard test collections. Gov2is the
+TREC 2004 Terabyte Track test collection, consisting of roughly 25 million .govsites crawled in
+early 2004. The documents are truncated to 256 KB. ClueWeb09 is the ClueWeb 2009 TREC Cate-
+goryBtestcollection,consistingofroughly50millionEnglishWebpagescrawledbetweenJanuary
+and February 2009. CCNews is a dataset of news freely available from CommonCrawl .P r e c i s e l y ,
+thedatasetconsistsofthenewsappearingfromJanuary9,2016,to March30,2018.
+Identifiers were assigned to documents according to the lexicographic order of their URLs [ 95]
+(also see the discussion at the beginning of Section 3). From the original collections, we retain all
+listswhosesizeislargerthan4,096.Thepostingsbelongingtotheselistscover93%,94%,and98%
+of the total postings of Gov2,ClueWeb09 ,a n dCCNews, respectively. From the TREC 2005 and
+TREC 2006 Efficiency Track topics, we selected all queries whose terms are in the lexicons of the
+testedcollection.Table 10reportsthestatisticsfor thecollections.
+Experimentalsettingandmethodology .Experimentsareperformedonaservermachineequipped
+withInteli9-9900Kcores(@3.6GHz),64GBofRAMDDR3(@2.66GHz),andrunningLinux5(64
+bits).Eachcorehastwoprivatelevelsofcachememory:32KiBL1cache(oneforinstructionsand
+one fordata) and256KiB for L2 cache.AsharedL3 cachespans16,384KiB.
+The whole code is written in C++ and compiled with gcc9.2.1 using the highest optimization
+setting(i.e.,withcompilationflags -O3and-march=native).
+Webuildtheindexesininternalmemoryandwritethecorrespondingdatastructurestoafileon
+disk.Toperformthequeries,thedatastructureismemorymappedfromthefileandawarming-up
+runisexecutedtofetchthenecessarypagesfromdisk.Totestthespeedofintersectionandunion,
+weusearandomsamplingof1,000queriesforeachnumberofquerytermsfrom2to5+(with5+
+meaning queries with at leastfive terms). Each experiment was repeated three times to smooth
+fluctuationsduringmeasurements.Thetimereportedis theaverageamong theseruns.
+Compression effectiveness .I nT a b l e 11, we report the compression effectiveness of each method
+expressedastotalgibibytes(GiB)andbit-per-integerrate.Thefollowingconsiderationsholdpretty
+much consistently across the three tested datasets. The most effective method is BICwithPEF
+beingaclosesecond.Observethatbothmethodscomeveryclosetotheentropyofgaps(with BIC
+being even better), as reported if Table 10(a). The least effective methods are VByteandRoaring
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:29
+Table 11. Space Effectiveness in Total GiB and Bitsper Integer,and
+Nanoseconds per Decoded Integer
+MethodGov2 ClueWeb09 CCNews
+GiBBits/intns/int GiB Bits/intns/int GiB bits/int ns/int
+VByte 5.46 8.81 0.96 15.92 9.20 1.09 21.29 9.29 1.03
+Opt-VByte 2.41 3.89 0.73 9.89 5.72 0.92 14.73 6.42 0.72
+BIC 1.82 2.94 5.06 7.66 4.43 6.31 12.02 5.24 6.97
+δ 2.32 3.74 3.56 8.95 5.17 3.72 14.58 6.36 3.85
+Rice 2.53 4.08 2.92 9.18 5.31 3.25 13.34 5.82 3.32
+PEF 1.93 3.12 0.76 8.63 4.99 1.10 12.50 5.45 1.31
+DINT 2.19 3.53 1.13 9.26 5.35 1.56 14.76 6.44 1.65
+Opt-PFor 2.25 3.63 1.38 9.45 5.46 1.79 13.92 6.07 1.53
+Simple16 2.59 4.19 1.53 10.13 5.85 1.87 14.68 6.41 1.89
+QMX 3.17 5.12 0.80 12.60 7.29 0.87 16.96 7.40 0.84
+Roaring 4.11 6.63 0.50 16.92 9.78 0.71 21.75 9.49 0.61
+Slicing 2.67 4.31 0.53 12.21 7.06 0.68 17.83 7.78 0.69
+(inparticular, Roaringissensiblybetterthan VByteonGov2butperformsworseontheothertwo
+datasets). The representations Opt-VByte ,δ,Rice,DINT,Opt-PFor ,a n dSimple16 are all similar
+in space, taking roughly 3 to 4, 5 to 6, and 6 to 6.5 bits/intforGov2,ClueWeb09 ,a n dCCNews,
+respectively.The QMXandSlicingapproachesstandinamiddlepositionbetweentheformertwo
+classesofmethods.
+Sequential decoding .T a b l e11also reports the average nanoseconds spent per decoded integer,
+measuredafterdecodingalllistsintheindex.Forallofthedifferentmethods,theresultofdecoding
+a list is materialized into an output buffer of 32-bit integers. Again, results are consistent across
+thedifferentdatasets.
+The fastest methods are RoaringandSlicingthanks to their “simpler” design involving byte-
+alignedcodes,bitmaps,andtheuseofSIMDinstructions,allowingavaluetobedecodedin0.5to
+0.7 ns. The methods Opt-VByte ,QMX,a n dPEFare the second fastest, requiring 0.7 to 1.3 ns on
+average.Inparticular, Opt-VByte andPEFgainmostoftheirspeedthankstotheefficientdecoding
+of dense bitmaps. The methods BIC,δ,a n dRiceare the slowest, as they only decode one symbol
+atatime(observethat BICisalmosttwotimesslowerthantheothertwobecauseofitsrecursive
+implementation). The other mechanisms VByte,DINT,Opt-PFor ,a n dSimple16 provide similar
+efficiency,onaverage decodinganintegerin 1 to1.9ns.
+Last, recall that all methods—except BIC,PEF,Roaring,a n dSlicing—require a prefix-sumcom-
+putation because they encode the gaps between the integers. In our experiments, we determined
+that the cost of computing the prefix-sum of the gaps is 0.5 ns per integer. This cost sometimes
+dominatesthatof decodingthegaps.
+Boolean AND/OR queries . We now consider the operations of list intersection and union.
+Tables12and13report the timings by varying the number of query terms. Figure 7displays the
+data in the tables for the ClueWeb09 dataset along space/time trade-off curves, (thus also incor-
+porating the space information brought by Table 11) and with the time being the “avg.” column.
+Almostidenticalshapeswereobtainedfortheotherdatasets.Whenconsideringthegeneraltrade-
+off, especially highlighted by the plots, we see that the trend of the trade-off is the same for both
+intersections and unions, even across three different datasets. Therefore, we can make some gen-
+eralpoints.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:30 G.E.PibiriandR. Venturini
+Table 12. Milliseconds Spent per AND QuerybyVaryingtheNumber of QueryTerms
+MethodGov2 ClueWeb09 CCNews
+2345 + a v g . 2 3 45 + a v g . 2 3 45 + a v g .
+VByte 2.2 2.8 2.7 3.3 2.8 10.2 12.1 13.7 13.9 12.5 14.0 22.4 19.7 21.9 19.5
+Opt-VByte 2.8 3.1 2.8 3.2 3.0 12.2 13.3 14.0 13.6 13.3 16.0 23.2 19.6 20.3 19.8
+BIC 6.8 9.7 10.4 13.2 10.0 31.7 44.2 51.5 53.8 45.3 45.6 79.7 76.9 88.8 72.8
+δ 4.6 6.3 6.5 8.2 6.4 20.9 28.3 33.5 34.5 29.3 28.6 50.9 48.0 55.6 45.8
+Rice 4.1 5.6 5.8 7.3 5.7 19.2 25.7 30.2 31.1 26.6 26.5 46.5 43.5 50.1 41.6
+PEF 2.5 3.1 2.8 3.2 2.9 12.3 13.5 14.4 13.8 13.5 17.2 24.6 21.0 21.9 21.2
+DINT 2.5 3.3 3.3 4.1 3.3 11.9 14.6 16.5 17.1 15.0 16.9 27.3 24.6 28.1 24.2
+Opt-PFor 2.6 3.5 3.5 4.3 3.5 12.8 15.9 18.0 18.3 16.3 16.6 27.2 24.3 27.1 23.8
+Simple16 2.8 3.7 3.7 4.6 3.7 12.8 16.3 18.4 18.9 16.6 17.6 28.8 26.3 29.5 25.5
+QMX 2.0 2.6 2.5 3.0 2.5 9.6 11.5 13.0 13.1 11.8 13.3 21.5 18.8 20.8 18.6
+Roaring 0.3 0.5 0.7 0.8 0.6 1.5 2.5 3.1 4.3 2.9 1.1 2.0 2.6 4.1 2.5
+Slicing 0.3 1.0 1.2 1.6 1.0 1.5 4.5 5.4 6.7 4.5 1.8 4.3 5.1 6.0 4.3
+Table 13. Milliseconds Spent per OR Queryby VaryingtheNumber of Query Terms
+MethodGov2 ClueWeb09 CCNews
+2345 + a v g . 23 45 + a v g . 23 45 + a v g .
+VByte 6.8 24.4 54.7 131.7 54.4 20.1 71.3 156.0 379.5 156.7 24.4 94.5 178.8 391.4 172.3
+Opt-VByte 11.0 35.7 77.4 176.0 75.0 31.3 101.4 213.4 500.1 211.6 36.4 128.0 232.0 510.4 226.7
+BIC 16.7 50.3 105.0 238.8 102.7 49.9 145.3 290.4 668.2 288.4 64.4 193.8 332.6 692.5 320.8
+δ 12.6 40.8 87.9 202.5 85.9 34.9 112.9 236.7 557.7 235.6 42.2 144.9 263.8 571.3 255.5
+Rice 13.4 43.1 93.3 211.3 90.3 36.8 118.2 248.5 576.6 245.0 43.6 149.3 270.5 585.6 262.2
+PEF 10.2 33.0 71.7 164.2 69.8 31.1 99.7 208.5 492.3 207.9 37.6 127.5 232.6 507.1 226.2
+DINT 8.5 28.5 63.7 147.6 62.1 24.9 84.1 178.8 424.3 178.0 30.6 109.2 200.4 432.7 193.2
+Opt-PFor 8.9 31.1 69.4 161.4 67.7 27.0 90.8 194.0 453.5 191.3 31.3 113.2 209.0 447.2 200.2
+Simple16 7.8 26.2 58.3 138.2 57.6 23.7 78.0 165.5 394.7 165.5 28.7 101.5 185.3 397.8 178.4
+QMX 6.6 23.8 53.4 128.1 53.0 19.7 70.0 153.2 377.9 155.2 24.0 92.6 175.2 382.4 168.6
+Roaring 1.2 2.8 4.3 6.4 3.7 4.7 9.0 12.0 15.7 10.3 3.8 7.6 10.5 15.1 9.2
+Slicing 1.3 4.0 6.3 9.2 5.2 5.0 12.8 18.1 25.3 15.3 5.8 12.9 17.3 23.0 14.8
+Fig.7. Space/time trade-off curves for theClueWeb09 dataset.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:31
+For methods partitioned by cardinality, the efficiency of intersection is strictly correlated to
+that ofNextGEQ (x), an operation returning the smallest integer z≥x; the efficiency of union is
+correlatedtothatofsequentialdecoding.Thisisnotnecessarilytruefor RoaringandSlicingthat,
+being partitioned by universe rather than cardinality, employ an intersection algorithm that does
+notuseNextGEQ ,noramergingalgorithmthatloopsthrougheverysingleintegerinasequence.
+There is a cluster of techniques providing similar efficiency/effectiveness trade-offs, including
+PEF,DINT,Opt-VByte ,Simple16,Opt-PFor ,a n dQMX,w h e r e a s BIC,δ,a n dRiceare always the
+slowestand dominatedby theaforementionedtechniques.
+The procedures employed by RoaringandSlicingoutperform in efficiency all techniques by a
+widemargin.Again,thisispossiblebecausetheydonotconsiderone-symbol-at-a-timeoperations,
+but rather they rely on the intrinsic parallelism of inexpensive bitwise instructions over 64-bit
+words. The difference in query time between RoaringandSlicinghas to be mostly attributed to
+theSIMDinstructionsthatarebetterexploitedby Roaringthankstoitssimplerdesign.Toconfirm
+this, we performed an experiment with SIMD disabled and obtained almost identical timings to
+thoseofSlicing.However,theserepresentationstakemorespacethantheaforementionedcluster
+oftechniques: Slicingstandsina middle positionbetweensucha clusterand Roaring.
+Alsoobservethatfor ANDqueries,theefficiencygapbetweenthemethodspartitionedbyuni-
+verse and the ones partitioned by cardinality reduces when more query terms are considered.
+This is because the queries becomes progressively more selective (on average), hence allowing
+large skips to be performed by NextGEQ . On the contrary, methods partitioned by universe only
+skip at a coarser level (e.g., chunks containing at most 216integers), and therefore the cost for
+in-chunk calculations is always paid, even when only few integers belong to the result set. Note
+thatthisisnottruefor ORqueries:thegapbecomesprogressivelymoreevidentwithmorequery
+terms.
+7 CONCLUSION ANDFUTURE RESEARCHDIRECTIONS
+Theproblemofintroducingacompressionformatforsortedintegersequences,withgoodpractical
+intersection/union performance, is well studied and important, given its fundamental application
+to large-scale retrieval systems such as Web search engines. For that reason, inverted index com-
+pression is still a very active field of research that began several decades ago. With this article,
+we aimed at surveying the encoding algorithms suitable to solve the problem. However, electing
+asolutionasthe“best”oneisnotgenerallyeasy—rather,themanyspace/timetrade-offsavailable
+can satisfy different application requirements and the solution should always be determined by
+consideringtheactualdatadistribution.Tothisend,wealsoofferanexperimentalcomparisonbe-
+tweenmanyofthetechniquesdescribedinthisarticle.Thedifferentspace/timetrade-offsassessed
+by thisanalysis aresummarized inFigure 7,for theClueWebdataset.
+Becauseofthematurityreachedbythestateoftheartandthespecificityoftheproblem,iden-
+tifyingfutureresearchdirectionsisnotimmediate.Wementionsomepromisingones.Ingeneral,
+devising “simpler” compression formats that can be decoded with algorithms using low-latency
+instructions(e.g.,bitwise),andwithasfewbranchesaspossible,isaprofitablelineofresearch,as
+demonstrated by the experimentation in this article. Such algorithms favor the super-scalar exe-
+cutionofmodernCPUsandarealsosuitableforSIMDinstructions.Anotherdirectioncouldlook
+atdevising dynamicandcompressed representationsforintegersequences,ableofalsosupporting
+additions and deletions. This problem is actually a specific case of the more general dictionary
+problem,whichisafundamentaltextbookproblem.Althoughatheoreticalsolutionalreadyexists
+withalloperationssupportedinoptimaltimeandcompressedspace[ 81],animplementationwith
+good practicalperformancecould beof great interestfor dynamic invertedindexes.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:32 G.E.PibiriandR. Venturini
+ACKNOWLEDGMENTS
+The authors are grateful to Daniel Lemire, Alistair Moffat, Giuseppe Ottaviano, Matthias Petri,
+Sebastiano Vigna, and the anonymous referees for having carefully read earlier versions of the
+manuscript. Their valuable suggestions substantially improved the quality of exposition, shape,
+and contentof thearticle.
+REFERENCES
+[1] NormanAbramson. 1963. Information Theory andCoding . McGraw-Hill.
+[2] VoNgocAnhandAlistairMoffat.1998.Compressedinvertedfileswithreduceddecodingoverheads.In Proceedingsof
+the21stAnnualInternationalACMSIGIRConferenceonResearchandDevelopmentinInformationRetrieval(SIGIR’98) .
+ACM,New York, NY,290–297.
+[3] Vo Ngoc Anh and Alistair Moffat. 2005. Inverted index compression using word-aligned binary codes. Information
+Retrieval Journal 8,1(2005),151–166.
+[4] VoNgocAnhandAlistairMoffat.2010.Indexcompressionusing64-bitwords. Software:PracticeandExperience 40,
+2(2010),131–147.
+[5] Naiyong Ao, Fan Zhang, Di Wu, Douglas S. Stones, Gang Wang, Xiaoguang Liu, Jing Liu, and Sheng Lin. 2011.
+Efficient parallel lists intersection and index compression algorithms using graphics processing units. Proceedings
+oftheVLDBEndowment 4,8(2011),470–481.
+[6] Alberto Apostolico and A. Fraenkel. 1987. Robust transmission of unbounded strings using Fibonacci representa-
+tions.IEEETransactions onInformation Theory 33,2(1987),238–245.
+[7] DanBlandfordandGuyBlelloch.2002.Indexcompressionthroughdocumentreordering.In ProceedingsoftheData
+CompressionConference(DCC’02) .IEEE, Los Alamitos,CA, 342–351.
+[8] PaoloBoldiandSebastianoVigna.2004.TheWebGraphframeworkII:CodesfortheWorld-WideWeb.In Proceedings
+oftheData CompressionConference(DCC’04) .1.
+[9] PaoloBoldi andSebastianoVigna.2005.Codes forthe World Wide Web. InternetMathematics 2,4(2005),407–429.
+[10] Abraham Bookstein and Shmuel T. Klein. 1989. Construction of optimal graphs for bit-vector compression. In Pro-
+ceedingsofthe13thAnnualInternationalACMSIGIRConferenceonResearchandDevelopmentinInformationRetrieval .
+ACM,New York, NY,327–342.
+[11] NievesR.Brisaboa,AntonioFarina,GonzaloNavarro,andMariaF.Esteller.2003.(S,C)-densecoding:Anoptimized
+compression code for natural language text databases. In Proceedings of the International Symposium on String Pro-
+cessingand Information Retrieval . 122–136.
+[12] NievesR.Brisaboa,SusanaLadra,andGonzaloNavarro.2013.DACs:Bringingdirectaccesstovariable-lengthcodes.
+Information Processing& Management 49,1(2013),392–404.
+[13] AndreiZ.Broder,DavidCarmel,MichaelHerscovici,AyaSoffer,andJasonY.Zien.2003.Efficientqueryevaluation
+using a two-level retrieval process. In Proceedings of the 12th ACM International Conference on Information and
+KnowledgeManagement . 426–434.
+[14] Stefan Büttcher, Charles Clarke, and Gordon Cormack. 2010. Information Retrieval: Implementing and Evaluating
+Search Engines .MIT Press, Cambridge,MA.
+[15] Samy Chambi, Daniel Lemire, Owen Kaser, and Robert Godin. 2016. Better bitmap performance with Roaring
+bitmaps.Software: Practice andExperience 46,5 (2016),709–719.
+[16] Y.Choueka,A.S.Fraenkel,andS.T.Klein.1988.Compressionofconcordancesinfull-textretrievalsystems.In Pro-
+ceedingsofthe9thAnnualInternationalACMSIGIRConferenceonResearchandDevelopmentinInformationRetrieval .
+597–612.
+[17] DavidClark.1996. Compact PatTrees . Ph.D.Dissertation. University of Waterloo.
+[18] Francisco Claude, Antonio Fariña, Miguel A. Martínez-Prieto, and Gonzalo Navarro. 2016. Universal indexes for
+highly repetitivedocument collections. Information Systems 61(2016),1–23.
+[19] F.Claude,A. Fariña,and G.Navarro. 2009.Re-Paircompression of invertedlists. arXIv:0911.3318
+[20] Intel Corporation. 2019. The Intel Intrinsics Guide. Retrieved September 16, 2020 from https://software.intel.com/
+sites/landingpage/IntrinsicsGuide/ .
+[21] J. Shane Culpepper and Alistair Moffat. 2005. Enhanced byte codes with restricted prefix properties. In Proceedings
+oftheInternational Symposium on String Processing and Information Retrieval . 1–12.
+[22] MichaelCurtiss,IainBecker,TudorBosman,SergeyDoroshenko,LucianGrijincu,TomJackson,SandhyaKunnatur,
+etal.2013.Unicorn:Asystemforsearchingthesocialgraph. ProceedingsoftheVLDBEndowment 6(2013),1150–1161.
+[23] Jeffrey Dean. 2009. Challenges in building large-scale information retrieval systems: Invited talk. In Proceedings of
+the2ndInternational ConferenceonWeb Search and DataMining .
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:33
+[24] BiplobDebnath,SudiptaSengupta,andJinLi.2011.SkimpyStash:RAMspaceskimpykey-valuestoreonflash-based
+storage.In Proceedingsofthe2011ACMSIGMODInternationalConferenceonManagementofData .A CM,NewY ork,
+NY, 25–36.
+[25] Renaud Delbru, Stéphane Campinas, and Giovanni Tummarello. 2012. Searching web data: An entity retrieval and
+high-performance indexingmodel. Journal ofWeb Semantics 10(2012),33–58.
+[26] Laxman Dhulipala, Igor Kabiljo, Brian Karrer, Giuseppe Ottaviano, Sergey Pupyrev, and Alon Shalita. 2016. Com-
+pressing graphs and indexes with recursive graph bisection. In Proceedings of the 22nd International Conference on
+Knowledge Discovery and DataMining . 1535–1544.
+[27] Jarek Duda.2009.Asymmetric numeralsystems.arXiv:0902.0271
+[28] Jarek Duda. 2013. Asymmetric numeral systems: Entropy coding combining speed of Huffman coding with com-
+pression rateof arithmeticcoding. arXiv:1311.2650
+[29] JarekDuda,KhalidTahboub,NeerajJ.Gadgil,andEdwardJ.Delp.2015.Theuseofasymmetricnumeralsystemsas
+an accurate replacement for Huffman coding. In Proceedings of the 2015 Picture Coding Symposium (PCS’15) . IEEE,
+Los Alamitos,CA, 65–69.
+[30] PeterElias.1974.Efficientstorageandretrievalbycontentandaddressofstaticfiles. JournaloftheACM 21,2(1974),
+246–260.
+[31] Peter Elias. 1975. Universal codeword sets and representations of the integers. IEEE Transactions on Information
+Theory21,2(1975),194–203.
+[32] RobertMarioFano.1949. TheTransmissionofInformation .ResearchLaboratoryofElectronics,MIT,Cambridge,MA.
+[33] Robert Mario Fano. 1971. On the number of bits required to implement an associative memory. Memorandum 61.
+Computer Structures Group, MIT,Cambridge, MA.
+[34] Peter Fenwick.2003.Universal codes. In LosslessCompressionHandbook, K. Sayood (Ed.).AcademicPress, 55–78.
+[35] A.S.Fraenkel,S.T.Klein,Y.Choueka,andE.Segal.1986.Improvedhierarchicalbit-vectorcompressionindocument
+retrievalsystems.In Proceedingsofthe9thAnnualInternationalACMSIGIRConferenceonResearchandDevelopment
+in Information Retrieval . 88–96.
+[36] AviezriS.FraenkelandShmuelT.Klein.1985.Novelcompressionofsparsebit-strings–preliminaryreport.In Com-
+binatorial Algorithms on Words .Springer, 169–183.
+[37] Aviezri S. Fraenkel and Shmuel T. Klein. 1985. Robust Universal Complete Codes as Alternatives to Huffman Codes .
+Departmentof AppliedMathematics,WeizmannInstitute of Science.
+[38] RobertGallagerandDavidVanVoorhis.1975.Optimalsourcecodesforgeometricallydistributedintegeralphabets
+(corresp.). IEEETransactions onInformationTheory 21,2(1975),228–230.
+[39] Jonathan Goldstein, Raghu Ramakrishnan, and Uri Shaft. 1998. Compressing relations and indexes. In Proceedings
+of the14th International ConferenceonData Engineering . 370–379.
+[40] Solomon Golomb.1966.Run-length encodings. IEEETransactions onInformation Theory 12,3 (1966),399–401.
+[41] RodrigoGonzález,SzymonGrabowski,VeliMäkinen,andGonzaloNavarro.2005.Practicalimplementationofrank
+and selectqueries. In Proceedings of theWorkshoponEfficient andExperimental Algorithms .27–38.
+[42] VagelisHristidis,YannisPapakonstantinou,andLuisGravano.2003.EfficientIR-stylekeywordsearchoverrelational
+databases.In Proceedings ofthe2003 VLDBConference .850–861.
+[43] DavidA.Huffman.1952.Amethodfortheconstructionofminimum-redundancycodes. ProceedingsoftheIRE 40,9
+(1952),1098–1101.
+[44] Guy Jacobson.1989. Succinct Static Data Structures . Ph.D. Dissertation.CarnegieMellon University.
+[45] MattiJakobsson. 1978.Huffman coding inbit-vector compression. Inf.Process.Lett. 7,6(1978),304–307.
+[46] Aaron Kiely.2004.Selecting theGolombparameterinRice coding. IPNProgress Report 42(2004),159.
+[47] LeonGordonKraft.1949. ADeviceforQuantizing,Grouping,andCodingAmplitude-modulatedPulses .Ph.D.Disser-
+tation.Massachusetts Instituteof Technology, Pittsburgh, PA.
+[48] N. Jesper Larsson and Alistair Moffat. 1999. Offline dictionary-based compression. In Proceedings of the Data Com-
+pressionConference(DCC’99) .296–305.
+[49] Debra A. Lelewer and Daniel S. Hirschberg. 1987. Data compression. ACM Computing Surveys 19, 3 (Sept. 1987),
+261–296.
+[50] Daniel Lemire and Leonid Boytsov. 2015. Decoding billions of integers per second through vectorization. Software:
+Practice andExperience 45,1(2015),1–29.
+[51] Daniel Lemire, Owen Kaser, Nathan Kurz, Luca Deri, Chris O’Hara, François Saint-Jacques, and Gregory Ssi-Yan-
+Kai. 2018. Roaring bitmaps: Implementation of an optimized software library. Software: Practice and Experience 48,
+4 (2018),867–895.
+[52] Daniel Lemire, Nathan Kurz, and Christoph Rupp. 2018. Stream-VByte: Faster byte-oriented integer compression.
+Information Processing Letters 130(2018),1–6.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:34 G.E.PibiriandR. Venturini
+[53] Daniel Lemire, Gregory Ssi-Yan-Kai, and Owen Kaser. 2016. Consistently faster and smaller compressed bitmaps
+withRoaring. Software: Practice and Experience 46,11(2016),1547–1569.
+[54] VeliMäkinenandGonzaloNavarro.2007.Rankandselectrevisitedandextended. TheoreticalComputerScience 387,
+3(2007),332–347.
+[55] AntonioMallia,GiuseppeOttaviano,EliaPorciani,NicolaTonellotto,andRossanoVenturini.2017.FasterBlockMax
+WANDwithvariable-sizedblocks.In ProceedingsoftheInternationalACMConferenceonResearchandDevelopment
+in Information Retrieval . 625–634.
+[56] ChristopherManning,PrabhakarRaghavan,andHinrichSchütze.2008. IntroductiontoInformationRetrieval .Cam-
+bridgeUniversity Press.
+[57] BrockwayMcMillan.1956.Twoinequalitiesimpliedbyuniquedecipherability. IRETransactionsonInformationThe-
+ory2,4(1956),115–116.
+[58] Alistair Moffat. 2016. Compressing integer sequences. In Encyclopedia of Algorithms (2nd ed.), M.-Y. Kao (Ed.).
+Springer,407–412.
+[59] Alistair Moffat.2019.Huffmancoding. ACMComputing Surveys 52,4(2019),Article85,35pages.
+[60] AlistairMoffatandVoNgocAnh.2005.Binarycodesfornon-uniformsources.In ProceedingsoftheDataCompression
+Conference(DCC’05) .IEEE, Los Alamitos,CA, 133–142.
+[61] Alistair Moffat and Vo Ngoc Anh. 2006. Binary codes for locally homogeneous sequences. Information Processing
+Letters99,5(2006),175–180.
+[62] Alistair Moffat, Radford M. Neal, and Ian H. Witten. 1998. Arithmetic coding revisited. ACM Transactions on Infor-
+mation Systems 16,3(July 1998),256–294.
+[63] Alistair Moffat and Matthias Petri. 2017. ANS-based index compression. In Proceedings of the ACM Conference on
+Information andKnowledge Management . 677–686.
+[64] Alistair Moffat and Matthias Petri. 2018. Index compression using byte-aligned ANS coding and two-dimensional
+contexts.In Proceedings ofthe11th ACMInternational ConferenceonWeb Search and DataMining . 405–413.
+[65] AlistairMoffatandLangStuiver.1996.Exploitingclusteringininvertedfilecompression.In ProceedingsoftheData
+CompressionConference(DCC’96) .82–91.
+[66] Alistair Moffat and Lang Stuiver. 2000. Binary interpolative coding for effective index compression. Information
+Retrieval Journal 3,1(2000),25–47.
+[67] AlistairMoffatandAndrewTurpin.1997.Ontheimplementationofminimumredundancyprefixcodes. IEEETrans-
+actions on Communications 45,10(1997),1200–1207.
+[68] AlistairMoffatandAndrewTurpin.2002. CompressionandCodingAlgorithms .SpringerScience&BusinessMedia.
+[69] Alistair Moffat and Justin Zobel. 1992. Parameterised compression for sparse bitmaps. In Proceedings of the 15th
+AnnualInternationalACMSIGIRConferenceonResearchandDevelopmentinInformationRetrieval .ACM,NewYork,
+NY,274–285.
+[70] AlistairMoffatandJustinZobel.1996.Self-indexinginvertedfilesforfasttextretrieval. ACMTransactionsonInfor-
+mation Systems 14,4(1996),349–379.
+[71] Leonardo of Pisa(knownas Fibonacci). 1202.Liber Abaci .
+[72] Giuseppe Ottaviano, Nicola Tonellotto, and Rossano Venturini. 2015. Optimal space-time tradeoffs for inverted in-
+dexes.In Proceedings oftheInternational ACMConferenceonWeb Search andData Mining . 47–56.
+[73] GiuseppeOttavianoandRossanoVenturini.2014.PartitionedElias-Fanoindexes.In Proceedingsofthe37thInterna-
+tional Conferenceon Research and Developmentin Information Retrieval . 273–282.
+[74] Rasmus Pagh. 2001. Low redundancy in static dictionaries with constant query time. SIAM Journal on Computing
+31,2(2001),353–363.
+[75] Athanasios Papoulis. 1991. Probability, Random Variables, andStochastic Processes (3rded.).McGraw-Hill.
+[76] Richard Clark Pasco. 1976. Source Coding Algorithms for Fast Data Compression . Ph.D. Dissertation. Stanford Uni-
+versity,Palo Alto,CA.
+[77] Matthias Petri and Alistair Moffat. 2018. Compact inverted index storage using general-purpose compression li-
+braries.Software: Practice and Experience 48,4(2018),974–982.
+[78] GiulioErmanno Pibiri.2019.Onslicing sorted integersequences. arXiv:1907.01032
+[79] Giulio Ermanno Pibiri, Matthias Petri, and Alistair Moffat. 2019. Fast dictionary-based compression for inverted
+indexes.In Proceedings oftheInternational ACMConferenceonWeb Search andData Mining .9 .
+[80] GiulioErmannoPibiriandRossanoVenturini.2017.ClusteredElias-Fanoindexes. ACMTransactionsonInformation
+Systems36,1(2017),Article 2,33pages.
+[81] Giulio Ermanno Pibiri and Rossano Venturini. 2017. Dynamic Elias-Fano representation. In Proceedings of the 28th
+AnnualSymposium on Combinatorial Pattern Matching . Article 30,14pages.
+[82] GiulioErmannoPibiriandRossanoVenturini.2019.Invertedindexcompression. EncyclopediaofBigDataTechnolo-
+gies,S.Sakr andA. Zomaya(Eds.). Springer,1–8.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.Techniquesfor Inverted Index Compression 125:35
+[83] GiulioErmannoPibiriandRossanoVenturini.2019.Onoptimallypartitioningvariable-bytecodes. IEEETransactions
+onKnowledge andData Engineering 32,9(2019),1–12.
+[84] JeffPlaisance,NathanKurz,andDanielLemire.2015.VectorizedVBytedecoding.In ProceedingsoftheInternational
+Symposium on WebAlgorithms .
+[85] Vijayshankar Raman, Lin Qiao, Wei Han, Inderpal Narang, Ying-Lin Chen, Kou-Horng Yang, and Fen-Ling Ling.
+2007.Lazy,adaptiverid-listintersection,anditsapplicationtoindexanding.In Proceedingsofthe2007ACMSIGMOD
+International Conference onManagement ofData . ACM, NewYork, NY, 773–784.
+[86] Robert Rice. 1991. Some practical universal noiseless coding techniques, part 3, module PSl14, K+. Jet Propulsion
+Laboratory, JPLPublication 91,3(1991),132.
+[87] Robert Rice and J. Plaunt. 1971. Adaptive variable-length coding for efficient compression of spacecraft television
+data.IEEETransactions onCommunications 16,9 (1971),889–897.
+[88] J.J.Rissanen.1979.Arithmetic codingsasnumberrepresentations. Acta PolytechnicaScandinavica, Math 31(1979),
+44–51.
+[89] Jorma J. Rissanen. 1976. Generalized Kraft inequality and arithmetic coding. IBM Journal of Research and Develop-
+ment20,3(1976),198–203.
+[90] DavidSalomon. 2007. Variable-Length Codesfor Data Compression .Springer.
+[91] BenjaminSchlegel,RainerGemulla,andWolfgangLehner.2010.FastintegercompressionusingSIMDinstructions.
+InProceedingsofthe6thInternationalWorkshoponDataManagementonNewHardware .ACM,NewYork,NY,34–40.
+[92] FalkScholer,HughE.Williams,JohnYiannis,andJustinZobel.2002.Compressionofinvertedindexesforfastquery
+evaluation. In Proceedings of the 25th Annual International ACM SIGIR Conference on Research and Development in
+Information Retrieval . ACM, NewYork, NY, 222–229.
+[93] ClaudeElwoodShannon.1948.Amathematicaltheoryofcommunication. BellSystemTechnicalJournal 27,3(1948),
+379–423.
+[94] Wann-Yun Shieh, Tien-Fu Chen, Jean Jyh-Jiun Shann, and Chung-Ping Chung. 2003. Inverted file compression
+through document identifierreassignment. Information Processing& Management 39,1 (2003),117–131.
+[95] FabrizioSilvestri.2007.Sortingoutthedocumentidentifierassignmentproblem.In Proceedingsofthe29thEuropean
+Conference onIR Research . 101–112.
+[96] FabrizioSilvestriandRossanoVenturini.2010.VSEncoding:Efficientcodingandfastdecodingofintegerlistsviady-
+namicprogramming.In Proceedingsofthe19thInternationalConferenceonInformationandKnowledgeManagement .
+1219–1228.
+[97] Alexander Stepanov, Anil Gangolli, Daniel Rose, Ryan Ernst, and Paramjit Oberoi. 2011. SIMD-based decoding of
+postinglists.In Proceedingsofthe20thInternationalConferenceonInformationandKnowledgeManagement .317–326.
+[98] J. A. Storer and T. G. Szymanski. 1982. Data compression via textual substitution. Journal of the ACM 29, 4 (1982),
+928–951.
+[99] Jukka Teuhola. 1978. A compression method for clustered bit-vectors. Information Processing Letters 7, 6 (1978),
+308–311.
+[100] Jukka Teuhola.2008.Tournamentcoding of integersequences. Computer Journal 52,3(2008),368–377.
+[101] Larry H. Thiel and H. S. Heaps. 1972. Program design for retrospective searches on large data bases. Information
+Storage andRetrieval 8,1 (1972),1–20.
+[102] Andrew Trotman.2003.Compressing inverted files. Information Retrieval 6,1(2003),5–19.
+[103] Andrew Trotman. 2014. Compression, SIMD, and postings lists. In Proceedings of the 2014 Australasian Document
+Computing Symposium . ACM, New York, NY, 50.
+[104] AndrewTrotmanandKatLilly.2018.Eliasrevisited:GroupEliasSIMDcoding.In Proceedingsofthe23rdAustralasian
+Document Computing Symposium .A C M ,N e wY o r k ,NY ,4 .
+[105] Peter van Emde Boas. 1975. Preserving order in a forest in less than logarithmic time. In Proceedings of the 16th
+Annual Symposium on Foundations ofComputer Science . 75–84.
+[106] Peter van Emde Boas. 1977. Preserving order in a forest in less than logarithmic time and linear space. Information
+Processing Letters 6,3(1977),80–82.
+[107] SebastianoVigna.2013.Quasi-succinctindices.In Proceedingsofthe6thACMInternationalConferenceonWebSearch
+and Data Mining . 83–92.
+[108] Hugh E. Williams and Justin Zobel. 1999. Compressing integers for fast file access. Computer Journal 42, 3 (1999),
+193–201.
+[109] IanWitten,AlistairMoffat,andTimothyBell.1999. ManagingGigabytes:CompressingandIndexingDocumentsand
+Images(2nded.).MorganKaufmann.
+[110] IanH.Witten,RadfordM.Neal,andJohnG.Cleary.1987.Arithmeticcodingfordatacompression. Communications
+of theACM 30,6(1987),520–540.
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.125:36 G.E.PibiriandR. Venturini
+[111] Hao Yan, Shuai Ding, and Torsten Suel. 2009. Inverted index compression and query processing with optimized
+documentordering. In Proceedings of the18th International ConferenceonWorldWide Web . 401–410.
+[112] J.Zhang,X.Long,andT.Suel.2008.Performanceofcompressedinvertedlistcachinginsearchengines.In Proceed-
+ings of theInternational WorldWide WebConference (WWW’08) . 387–396.
+[113] Justin Zobel and Alistair Moffat. 2006. Inverted files for text search engines. ACM Computing Surveys 38, 2 (2006),
+1–56.
+[114] MarcinZukowski,SándorHéman,NielsNes,andPeterBoncz.2006.Super-scalarRAM-CPUcachecompression.In
+Proceedings of the22ndInternational Conference onData Engineering . 59–70.
+Received September 2019; revisedJuly2020; accepted July 2020
+ACM ComputingSurveys, Vol. 53,No. 6,Article 125.Publicationdate:December2020.

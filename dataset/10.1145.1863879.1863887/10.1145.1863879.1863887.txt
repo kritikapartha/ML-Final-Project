@@ -1,0 +1,753 @@
+Semantically Enabled Exploratory Video Search
+Jörg Waitelonis
+joerg.waitelonis@hpi.uni-potsdam.deHarald Sack
+harald.sack@hpi.uni-potsdam.de
+Johannes Hercher
+johannes.hercher@hpi.uni-potsdam.deZalan Kramer
+zalan.kramer@hpi.uni-potsdam.de
+Hasso-Plattner-Institut f ¨ur Softwaresystemtechnik GmbH
+Prof.-Dr.-Helmert-Str. 2-3
+14482 Potsdam, Germany
+ABSTRACT
+With the exponential growth of video data on the World
+Wide Web comes the challenge of ecient methods in video
+content management, content-based video search, ltering
+and browsing. But, video data often lacks sucient meta-
+data to open up the video content and to enable pinpoint
+content-based search. With the advent of the 'web of data'
+as an extension of the current WWW new data sources can
+be exploited by semantically interconnecting video meta-
+data with the web of data. Thus, enabling better access to
+video repositories by deploying semantic search technologies
+and improving the user's search experience by supporting
+exploratory search strategies. We have developed the pro-
+totype semantic video search engine 'yovisto' that demon-
+strates the advantages of semantically enhanced exploratory
+video search and enables investigative navigation and brows-
+ing in large video repositories.
+Categories and Subject Descriptors
+H.3.3 [ Information Search and Retrieval]: Search pro-
+cess, Information ltering, Query formulation; H.5.1 [Multi-
+media Information Systems]: Video
+General Terms
+Semantic video search
+Keywords
+linked data, semantic search, video search, exploratory search
+1. INTRODUCTION
+The popularity of video and multimedia data has become
+a driving force for growth in the World Wide Web (WWW).
+Portal sites such as, e. g., YouTube1and other content ag-
+gregators provide billions of video resources. While con-
+tent management systems already are able to maintain large
+video repositories, search and pinpoint access of video con-
+tent is left over to the user. Textual metadata enable content-
+based retrieval of video resources. But, for the most part,
+1http://www.youtube.com/
+Copyright is held by the author/owner(s).
+WWW2010, April 26-30, 2010, Raleigh, North Carolina.
+.textual metadata originate from manual annotation carried
+out by authors or expert users. Automated video analysis
+techniques mostly provide low-level descriptions with su-
+cient accuracy, but the subsequent aggregation of dierent
+low-level features to derive high-level features concerning the
+contents is error-prone and algorithmic expensive. With the
+advent of Web 2.0 also user generated textual metadata such
+as, e. g., user tags or comments complement the authorita-
+tive manual annotation. Nevertheless, insucient textual
+metadata is responsible for poor search performance.
+Today, Google2has become synonymous for web search.
+The user enters a query string that might consist out of one
+or several keywords and Google's web search engine delivers
+(text) documents containing these keywords or multimedia
+documents annotated with metadata containing these key-
+words. In the majority of cases this approach is absolutely
+sucient. But, users might have dierent information needs
+and dierent ways to search for information. If the search
+task is getting more complex, i. e. if a single document is
+not the answer to the user's search problem, dierent search
+strategies have to be applied. Moreover, if the user tries
+to get an overview of available information about a certain
+topic, today's web search engines often are ooding search
+results by millions. Thus, giving the user no chance to re-
+view but the rst few resulting pages.
+Sometimes, users are looking for a specic set of docu-
+ments that do contain almost all the keywords of the query
+string (navigational searches), while in many other cases the
+user tries to gather information about a specic subject with
+no particular document in mind (research searches) [12]. In
+complex search tasks, the user rst has to retrieve some facts
+(i. e. documents containing those facts), which are required
+to enable further search queries to solve the overall search
+problem. Often, the user is not familiar with the topic she is
+searching for, and sometimes, the user isn't sure about her
+search goal in the rst place. This kind of search is known
+as 'exploratory search' [17]. In this paper, we address the
+problem of how to deploy exploratory search for video data
+by using semantic search technology.
+In the Semantic Web as being an evolving extension of the
+WWW the meaning of information and services is well de-
+ned. Linked Data has become one of the most popular top-
+ics among the emerging Semantic Web [2]. By Linked Data
+we refer to a method of exposing, sharing, and connecting
+data via dereferenceable URI on the WWW. The Linking
+2http://www.google.com/Open Data (LOD) project aims at making semantic data
+freely available to everyone and provides starting points to
+extract relationships among information resources.
+By mapping available video metadata to Linked Data, we
+show how to utilize cross-connections and data interdepen-
+dencies to enable new ways of search space visualization and
+navigation. One of the key interlinking hubs of the LOD
+cloud is DBpedia3, the semantic counterpart of the online
+encyclopedia Wikipedia [1]. But, DBpedia often provides
+too many facts and details about entities. Thus, sophisti-
+cated heuristics have to be applied to achieve a ranking to
+identify the most important, i. e. interesting facts for a given
+entity [28].
+Contrariwise to facetted search approaches, which aim
+to further rene an original search query by clustering the
+search results according to common properties, exploratory
+search broadens the scope of the search query by suggest-
+ing associated terms, concepts, and resources. These ex-
+ploratory search suggestions can be used to navigate among
+the entire search space and to explore the repository content
+by user guided browsing [27]. Thus, enabling the possibility
+to achieve search results that the user wasn't looking for in
+the rst place by serendipity.
+The major contributions of this paper are the following:
+We have developed a frequency-based heuristics for ranking
+entity properties and relationships of LOD resources includ-
+ing ecient oine indexing for semantic video search. The
+most relevant properties are applied for the generation of
+contentually related search suggestions, and the quality of
+the overall exploratory search approach is shown with ap-
+propriate evaluation methods.
+The paper is organized as follows. Section 2 presents re-
+lated work and introduces to exploratory search, the yovisto
+semantic video search, and the general problem of evaluating
+exploratory search systems. Section 3 details, how Linked
+Data facilitates exploratory semantic search. In Section 4,
+our evaluation method for exploratory video search is pre-
+sented together with rst qualitative evaluation results. The
+last section concludes the paper with a brief outlook on fu-
+ture work.
+2. RELATED WORK
+This section covers research related to the work presented
+in this paper. This includes various approaches of seman-
+tic and exploratory search emphasizing the focus on video
+search in general and the yovisto academic video search plat-
+form in particular, including evaluation.
+According to Guha et al. 'Semantic Search is the appli-
+cation of the Semantic Web to search' [12]. Correspond-
+ingly, Semantic Web resources and technologies are applied
+to augment the traditional search scenario. In the Semantic
+Web as being an extension of the current WWW informa-
+tion is complemented by formal knowledge representations
+with well dened meaning [3]. Linked Open Data has be-
+come one of the most popular topics among the emerging
+Semantic Web [4]. It supports the Semantic Web vision by
+leveraging free access to interconnected semantic data. In
+this paper we present a semantically enhanced exploratory
+search based on LOD resources, in particular on DBpedia,
+which contains structured information from the popular on-
+line encyclopedia Wikipedia [1]. A comprehensive survey
+3http://www.dbpedia.org/on dierent approaches to Semantic Search is given in [16],
+while in [26] a formal model of ontology-based Information
+Retrieval in general is presented.
+There are two main challenges for Semantic Search [12]:
+(1) the query input has to be mapped to concepts and enti-
+ties [14, 18] and (2) the search domain has to be augmented
+with semantic content [9]. We address both challenges in
+this paper.
+Alternatively, Semantic Search is often referred to as re-
+trieval of data from the Semantic Web, as being represented
+by semantic search engines such as Sindice [20]. The work in
+this paper does not relate to this interpretation of Semantic
+Search.
+Exploratory search assists in exploring the data space by
+providing data visualization, related content, a wide range of
+sophisticated selection options, and various possibilities for
+analysis. In order to allow a multi-facetted, multi-tactical,
+opportunistic, and open ended search, exploratory search is
+targeting learning and investigation tasks [17, 29]. To enable
+this complex and investigative retrieval option, underlying
+metadata including implicit and formerly unknown relation-
+ships among resources need to be fully made accessible. We
+extend and complement previous work on this topic by ap-
+plying improved exploratory search to video data on the
+WWW and by framing suitable evaluation procedures for
+exploratory search [27, 28]. A motivation to use exploratory
+search over traditional search methods is given in [17].
+State of the art video retrieval systems use a combina-
+tion of visual and textual feature extraction for search in-
+dex generation and combine these techniques with machine
+learning procedures [25, 11, 8]. However, the chosen feature
+extraction depends on domain and task characteristics and
+determines the quality of the retrieval system.
+Yovisto is a video search engine specialized on video record-
+ings of academic lectures and conference talks [22, 13, 27].
+To enable pinpoint search access within the video recordings
+a combination of automated video analysis and user gen-
+erated collaborative annotation is deployed in connection
+with ne granular, time-dependent metadata. We extend
+the search capabilities of yovisto by adding an exploratory
+search feature that enables the user to browse the content of
+the underlying video repository in a multi-facetted way. In
+dierence to popular recommender systems, our approach is
+neither based on logle analysis and statistical usage anal-
+ysis of content popularity, nor on similarity-based methods
+such as query by example [15, 10, 5].
+Evaluation of traditional information retrieval systems is
+based on rather quantitative than qualitative measurements
+of the achieved retrieval results. The retrieval results are
+compared to a ground truth resulting in an objective as-
+sessment of the achieved quality, i. e. by statistical classi-
+cations such as recall and precision. Evaluation strategies
+from the well known TrecVid benchmarks fall into this cat-
+egory. Their focus lies on pure system evaluation. Evalua-
+tion based on direct user involvement, referred to as 'User
+evaluation' is explicitly mentioned as out of scope for these
+benchmarks [24].
+To demonstrate the added value of newly implemented
+retrieval features it is suitable to execute the same evalu-
+ation task with and without application of the specic re-
+trieval feature. The dierences between the resulting mea-
+surements mark the eect of the new retrieval feature. Singh
+et al. apply this evaluation strategy in [23]. We adopt thisapproach for our evaluation to demonstrate the usefulness
+of exploratory search in yovisto. The motivation to use this
+strategy lies in the subjective and investigative nature of ex-
+ploratory search [17], which makes it dicult to determine
+an objective ground truth for reference. Therefore, we ap-
+ply additional qualitative evaluation measures by monitor-
+ing user satisfaction throughout the work task, as proposed
+in [21].
+In [7] a framework for evaluation of interactive informa-
+tion retrieval systems is presented where the user task is
+formulated in a cover story leading to the work task and
+nally to the actual search task. Two evaluation strategies
+are compared, which distinguish multiple types of relevance,
+inter alia, so-called 'Situational Relevance', which reects
+the dynamic nature of relevance [6]. Situational relevance
+also applies to exploratory search scenarios, where the user's
+relevance scale may be inuenced by the receipt of new in-
+formation.
+3. IMPLEMENTING SEMANTIC EXPLO-
+RATORY SEARCH
+This section presents the process of the exploratory se-
+mantic search and its implementation in the video search
+engine yovisto. In addition, a novel frequency-based heuris-
+tic for ranking entity properties and relationships of LOD
+is described complementing previous work [28]. In addi-
+tion, a prototype graphical user interface (GUI) to deploy
+exploratory search is presented.
+3.1 Exploratory Search Workﬂow
+Exploratory search aims to broaden the scope of search
+by suggesting related terms, concepts and resources. Our
+approach uses LOD resources to support the search process
+by exposing additional information about indexed resources
+in yovisto, which are semantically interrelated to the users
+search query. For example, if someone is looking for video
+information about 'barack obama' an additional navigation
+component shows supplementary and associated informa-
+tion resources about president Barack Obama also being
+available in the repository in addition to the direct search
+results (cf. sect. 3.5). This supplementary information in-
+cludes, as e. g., related places (birth place, work place, etc),
+predecessor and successor in the presidential oce, or his
+alma mater. Almost any DBpedia information can be made
+available as supplementary information to propose ancillary
+search possibilities to the user. But, there is too much infor-
+mation available in DBpedia to be displayed to the user in
+total. Therefore, the most important of all related resources
+have to be determined.
+To enable this functionality a three-part approach is ap-
+plied: (1) the user query is mapped to one or more DBpedia
+entities, (2) for each entity the best matching associated en-
+tities are determined, and (3) it is checked, which of the
+associated concepts are even available in the yovisto reposi-
+tory.
+The best matching associated entities are determined based
+on predened heuristics as described in [28]. Statistical mea-
+surements like property frequency or vice-versa property re-
+latedness are taken into account to rank the associated enti-
+ties. Fig. 1 depicts the overall workow of exploratory search
+in yovisto including its particular components. The pro-
+cess is based on two main information sources, the yovistoSynonym Type
+John F. Kennedy URI-sux
+John F. Kennedy label
+John Fitzgerald Kennedy label
+John Kennedy redirect
+J. F. K. redirect
+JFK redirect
+35th President of the United States redirect
+John f kenedy redirect
+Table 1: Synonyms generated for the concept:
+http://dbpedia.org/resource/John F.Kennedy
+search index andDBpedia . The yovisto search index is gener-
+ated from automated, manual and collaboratively generated
+metadata for more than 8.000 videos [13, 22] and it contains
+more than 2 million terms. DBpedia provides interopera-
+ble RDF structured data about 2.9 million 'things' with 479
+million 'facts'4for dierent domains.
+Within the workow a gazetteer dictionary and a related
+entities list are generated form the original data sources and
+stored in a database. The processing of this intermediate
+data is very computing-intensive. Therefore, computation
+is performed oine to maintain fast query responses. The
+online search process comprises entity mapping of the query
+string and exploratory search suggestions . While entity map-
+ping connects the query string to DBpedia entities, the ex-
+ploratory search suggestion proposes the most relevant as-
+sociated resources available in the yovisto index to the user.
+The following sections encompass the workow stages in de-
+tail.
+3.2 Mapping Queries to Entities
+The user query component propagates the query string
+qto the yovisto search index to compute the direct search
+results and to a gazetteer lookup component, which maps
+the query string qto a list of DBpedia entities furi ig. The
+gazetteer is a named-entity list created by synset genera-
+tion. The gazetteer comprises a list of synonyms (synset)
+fsigfor every entity in DBpedia represented by its URI.
+Hence, the gazetteer is dened as set of (synset, URI)-tuples:
+f(fs ig; uri j)g.
+To create the synset for an entity, dierent sources in
+DBpedia have to be utilized. The most reliable DBpedia
+source for entity mapping is the DBpedia URI-sux. The
+URI-sux denotes the string, which remains after remov-
+ing the prex ' http://dbpedia.org/resource/' from the
+URI and replacing underscores ' ' by single whitespaces.
+In the majority of cases, the URI-sux denotes the en-
+tity most suitably. Additionally, literals of the DBpedia
+property rdf:label are eligible, if they dier from the URI-
+sux. Table 1 shows synonyms determined for a given en-
+tity. In many cases rdf:label also provides labels in dierent
+languages, but in some cases, there is no rdf:label provided
+at all. Furthermore, so-called 'DBpedia redirects' are an ad-
+ditional source for synonyms. A redirect occurs, if a widely
+accepted dierent spelling or a common misspelling for the
+resource does exist. Redirects are identied by the DB-
+pedia property 'http://dbpedia.org/property/redirect'.
+Finally, the URI-sux or labels of a redirect object are taken
+into account for synonyms.
+We have applied the DBpedia dump les to generate syn-
+4as of November 2009, http://wiki.dbpedia.org/DatasetsRelated Entities { urii:{r1, ..., rm}}User QueryGazetteer Lookupautomated/manual/collaborative  Metadata Generation
+Entities: {urii}onlineofﬂine generatedRequest
+Related Entity SelectionGazetteer{({si}, urij, freq(urij)}Synset Generation  
+Related Entities{ urii:{r1, ..., rm}}ri ={ urij, {si}, label, prop. uri, prop. label, rank, freq}Related EntitiesGenerationfreq(urij) > 0uri← {si}freq  →freq(urij)qq
+             
+{({si}, urij}
+{si}
+Entity Mapping
+Exploratory Search SuggestionIndexFigure 1: The process of exploratory search.
+sets for more than 3.1 million dierent URIs. The gazetteer
+lookup maps the query string within the synsets and returns
+the matching entities furi ig. For every entity in this list,
+therelated entity selection determines associated entities,
+which are nally suggested to the user, to carry on with the
+exploratory search. The structure of the related entities list
+and its generation is discussed in the following section.
+3.3 Find Associated Entities
+Related entities are determined by the application of a
+heuristic based ranking for the associated entities of a given
+entity. The component related entities generation is respon-
+sible for applying various heuristics to all 3.1 million entities
+in DBpedia and to lter out low ranked, i. e. not important
+associated entities. For a given entity a related resource is
+initially dened as:
+r= (uri;fsig; l; p; pl; rank )
+with urithe URI of the related entity, fsigthe synset for
+the URI, la label to display to the user, pthe property
+the entity is connected with the related entity, pla property
+label for display, and rank the ranking within all related
+resources of the entity.
+In addition to the basic ltering heuristics already pre-
+sented in [28] we have developed an improved frequency-
+based heuristic. This heuristic is based on the assumption
+that the more often a property occurs on instances of a spe-
+cic category or type, the more relevant is it. As input for
+this heuristic the frequency of RDF properties used in con-
+junction with concepts of a specic RDF type (rdf:type) or
+SKOS5category (skos:subject) in DBpedia are taken into
+account. Table 2 shows the frequencies of various properties
+for all entities with skos:subject Category:Presidents ofthe-
+United States. For exploratory search we suggest only re-
+lated entities connected to the high frequent, i. e. most im-
+portant properties. If a resource belongs to more than one
+5Simple Knowledge Organization Systems, a family of for-
+mal languages designed for representation of structured con-
+trolled vocabulary [19]No. Property Frequency
+1 battles 29
+2 predecessor 10
+3 successor 10
+4 navy 10
+5 order 10
+6 alongside 9
+7 state 9
+...
+22 list 6
+23 name 6
+24 oce 6
+25 oldstyledatedyProperty 6
+26 years 6
+Table 2: Properties and occurrence frequen-
+cies on DBpedia entities with skos:subject Cate-
+gory:Presidents oftheUnited States.
+skos:subjects, the frequencies of each property are added up.
+Furthermore, we have to ensure that only resources are
+suggested to the user that are also available in the yovisto
+index.
+3.4 Mapping Index Data to Entities
+To determine if resources for particular DBpedia entities
+are also available in the yovisto search index, an index re-
+quest consisting of the related entity synset is generated.
+For this query all synonyms are interlinked with boolean
+OR. This ensures the completeness of the result list, conse-
+quentially increasing recall, but in some cases at the expense
+of precision. This index request returns the number of re-
+sults for a direct search based on the entity synset, which is
+additionally stored in the gazetteer list and subsequently in
+the related resources. Finally, the related entities list con-
+tains only entities that are also present in the yovisto search
+index. Hence, the related entity list is dened as: f(uri i:
+fr1; :::; r mg)gwith rj= (uri j;fsig; l; p; pl; rank; freq ) with
+freq > 0.
+Related entities to the original user query are displayedFigure 2: The exploratory search GUI showing related entities for 'american president'.
+within a navigation window and the user is free to choose
+one of the recommended search suggestions. By clicking
+on one of the related resources a new user query is issued.
+At this stage the entity mapping can be omitted, because
+the URI for the query is already known. The synset of the
+selected suggestion is used to retrieve the new search results
+from the yovisto index.
+3.5 The User Interface for Exploratory Search
+We have designed the user interface for exploratory search
+to consist out of three main areas: the direct search results
+in the center including geographical information displayed
+in a map on top of the search results, the facet lter on
+the right, and the exploratory search navigation on the left
+(cf. Fig. 2). In the direct search results a timeline exposes
+the automatically generated temporal segmentation of the
+videos with highlighted segments that are relevant according
+to the current query string. The facet lter allows to nar-
+row the search results according to the type of resource, the
+scientic category, the issuing organization of the video, the
+language of the video, as well as popular user tags attached
+to the video segments.
+The exploratory search navigation is designed with a sim-
+ple vertical layout to be displayed on the left to the direct
+search results. The exploratory navigation reects the ex-
+ploratory search workow. When the user enters a query
+string, the labels of the mapped entities (1) are shown dis-
+tinctly below the search input eld followed by all related
+entities (2) grouped by their connecting properties (3). Nextto the related entity labels a number in brackets denotes how
+many video resources for this particular entity exist in the
+yovisto video repository.
+Fig. 2 depicts the result of a query for 'american presi-
+dent' that is mapped to the DBpedia entity 'President of the
+United States'. The exploratory search GUI suggests a list of
+related entities. By clicking on, e. g. ' Barack Obama ', a new
+search is issued and the exploratory search GUI switches to
+the newly selected entity with its related entities and prop-
+erties (cf. Fig. 3). To retain previous actions, a list (4)
+provides links, which allow to jump back in search history.
+Optionally, the user may activate a preview of the search
+results being evoked by a related entity, when clicking on it
+(5). Moving the mouse pointer over these previews causes
+a popup to show brief information about the video resource
+(6).
+Some DBpedia properties such as 'predecessor' (7, 8) have
+the characteristic trait to connect entities of the same type.
+They allow to move 'hand over hand' from one entity of
+a distinct category to the next. This enables the user to
+quickly exploit the information of individual entities.
+A prototype implementation of the GUI is available at:
+http://testing.yovisto.com/.
+4. EV ALUATION
+In this section an evaluation method for exploratory search
+scenarios is presented including the discussion of rst results.
+While evaluation of traditional information retrieval systemsFigure 3: The exploratory search GUI showing re-
+lated entities for 'Barack Obama' and 'George W.
+Bush'.
+focus on quantitative measures for the quality of retrieval re-
+sults, the evaluation of exploratory search strongly depends
+on qualitative measurements. Concerning the denition of
+exploratory search, the user does not always exactly know
+what documents she is looking for. This stems because the
+user may be not familiar with the search topic, maybe she
+does not know where to begin and where to end the search,
+as well as she might not be sure about the search goal in the
+rst place. Thus, it is rather dicult to dene an objective
+ground truth for given exploratory search tasks, because in-
+dividual search strategies, motivations, and interests cause
+ground truth also to depend on the eye of the beholder.
+Therefore, quantitative evaluation measures such as pre-
+cision and recall are less signicant for exploratory search
+tasks than qualitative measurements, such as e. g., user sat-
+isfaction with the achieved search results and user experi-
+ence during the search process.
+We have made up 9 dierent search scenario tasks to be
+solved by test users. For exploratory search, the tasks have
+to be formulated in a way that there is most likely no di-
+rect answer possible. Moreover, the tasks must involve an
+iterative search strategy, where the answers being achieved
+in the rst step are applied as input to the second search
+step, etc. E. g., instead of asking 'nd videos about Barack
+Obama' we asked the user to retrieve videos about all US
+presidents. Thereby, in the rst place, the user has to nd1. Which other scientists did Albert Einstein know per-
+sonally in the 1920s and on which event he might got
+to know them?
+2. Which philosophers build on the theories of the greek
+philosopher Plato?
+3. Find videos with information about the German chan-
+cellors from 1949 until today.
+4. Find videos about celestial bodies of the solar system.
+5. Find videos about lm directors.
+6. Which videos contain information about US federal
+states?
+7. Find videos about the founders and main promotors
+of the Enlightenment movement.
+8. Find videos about cities of the Hanseatic League.
+Table 3: Search tasks for evaluation.
+out the names of the former US presidents before retrieving
+videos about them. To compare exploratory video search
+with traditional video search, we presented the same search
+tasks to users and asked one subset of users to solve the
+tasks with the exploratory search feature, while the rest had
+to solve the task without the exploratory search feature, i. e.
+without the exploratory search sidebar activated in the GUI.
+Of course we rst had to gure out which task topics were
+really suited for the yovisto video repository. The resulting
+evaluation tasks are listed in table 3. For the evaluation we
+did not limit the time required for each single task, but left it
+to the user to decide when to nish. Not all tasks were pro-
+cessed by every test person. While working on the retrieval
+tasks the test persons were asked after every partial search
+step, if it is still be possible to achieve the search objective
+in this search session, to gather information about the mo-
+tivation of the test person. The evaluation interface also
+provides the possibility to select and mark relevant videos
+among the retrieval results according to the test person's
+opinion. The decision, if a video in the retrieval result is rel-
+evant or not can be made based on investigating the search
+results, which comprises surrogates of the videos such as im-
+age previews, preview text, user tags, comments, the video
+timeline, as well as reviewing the video itself. After nish-
+ing the search task, the user was instructed to review the
+selected videos again and to decide of the selection was ap-
+propriate. Finally, after nishing each task the user was
+asked, if she had achieved the search goal, how satised she
+felt with the achieved result, how helpful the search func-
+tionality was in general, and how familiar she is with the
+domain of the search task. Satisfaction, helpfulness, and
+familiarity were measured on scale from 0 (not at all) to 4
+(very much).
+Table 4 shows the results of the evaluation with respect to
+the tests with exploratory search (2nd column) and the con-
+trol group tests without exploratory search (3rd column). A
+total number of 19 persons were participating the tests, 13
+of them where using the exploratory search feature, 10 were
+involved in a control group. 70 tasks were processed with
+utilization of the exploratory navigation and 54 without ex-with exploratory search without exploratory search
+# persons 13 of 19 10 of 19
+# of tasks 70 54
+# of queries 790 699
+task accompl. 38 (54.3 %) 15 (27.7 %)
+task not accompl. 32 (45.7 %) 39 (72.3 %)
+motivating queries 773 (97.8 %) 579 (82.2 %)
+satisfaction (0{4) 1.99 (d: 1.37) 1.01 (d: 1.14)
+helpfulness (0{4) 2.37 (d: 1.43) 1.60 (d: 0.83)
+familiarity (0{4) 1.10 (d: 0.98) 0.89 (d: 0.98)
+processing time 6.2 min/task (d: 3.7 min) 6.8 min/task (d: 4.1 min)
+selected videos 183 (2.61 video/task) 111 (2.06 video/task)
+Table 4: Results of evaluation. (d - standard deviation)
+ploratory navigation. For all 70 tasks a total number of 790
+queries where issued. The control group needed 699 queries
+for 54 tasks. 54.3 % of the exploratory search tasks were
+accomplished successfully by the participants. The control
+group accomplishes only 27.7 % of tasks successfully. While
+processing the queries, in 97.8 % of queries the participants
+felt, that it is possible to achieve the search objective. The
+control group was just with 82.2 % of the queries motivated.
+On scale from 0 to 4, with exploratory search the satis-
+faction was evaluated to 1.99 in average. The control group
+was only satised with 1.01 in average. The helpfulness
+was assessed with 2.37 with exploratory search, whereas the
+control group has only assessed 1.60. The familiarity was
+measured to 1.10 with exploratory search and 0.89 with-
+out. The average task processing time is observed with 6.2
+minutes using exploratory search and 6.8 minutes without
+exploratory search. Finally, 2.61 videos per task were con-
+sidered to be relevant with exploratory search, whereas 2.06
+videos per task were selected without exploratory search.
+Table 4 shows also the standard deviations for the particu-
+lar results.
+Summarizing the results, the number of tasks accomplished
+successfully was doubled up to 54.3 % by use of the ex-
+ploratory search. The motivation of participants was sig-
+nicantly higher with the exploratory search feature. Sat-
+isfaction was increased by 20 %, helpfulness was increased
+by 15 %. Familiarity and processing time were improved by
+use with exploratory search, but not very much. In general,
+exploratory search leads to more selected videos. A detailed
+overview on the presented and further evaluation results can
+be found at: http://www.yovisto.com/evaluation/.
+Our results reect the usability of the GUI and the user's
+satisfaction with the quality of the achieved results. A re-
+nement of the evaluation could be achieved by focusing on
+these two aspects separately. Furthermore, the heuristics-
+based recommendation of related entities to a given user
+query is an integral part of the exploratory search. These
+heuristics are depending on local repository data and on
+LOD resources from DBpedia. Thus, an evaluation of these
+heuristics independently of the achieved results could be
+conducted to measure the impact of recommendations in-
+dependently form the usability of the GUI.
+5. CONCLUSION
+In this paper, we addressed the problem of how to deploy
+exploratory search for video data by using semantic searchtechnology and demonstrated an improved exploratory search
+for the yovisto video search engine along with an evaluation
+of the exploratory search process. Exploratory search is sup-
+ported by heuristics based on semantic data from the LOD
+resources, which are used to augment direct search result
+with navigational information that might be also relevant
+for the user. We presented a new frequency-based heuristic
+for determining related information resources and evaluated
+the exploratory search feature by using a comparative eval-
+uation technique. Thus, we were able to objectively point
+out the positive aspects of the exploratory search approach
+such as a higher task accomplishment, higher motivation
+and satisfaction rates.
+Exploratory search is at it's early stages as a research area.
+Currently, there does not exist an overall accepted best-
+practice neither on how to realize nor on how to evaluate
+exploratory search. We aimed to overcome this shortcom-
+ing by strongly relating our accomplishments and methods
+to existing research in this area.
+Since the heuristics for the determination of 'interesting'
+relationships among data entities play a major role in the
+exploratory search approach, we are developing objective
+evaluation procedures for the optimization of these heuris-
+tics. In addition, improvements of the graphical user inter-
+face explicitly supporting the investigative and navigational
+aspect of our approach will be considered in future work.
+For better support in data space navigation, future work
+is focussed on the combination of facetted and explorative
+search features to satisfy the searchers curiosity and to foster
+serendipitous discovery.
+6. REFERENCES
+[1] S. Auer, C. Bizer, G. Kobilarov, J. Lehmann,
+R. Cyganiak, and Z. Ives. DBpedia: A Nucleus for a
+Web of Open Data. In Proc. of 6th Int. Semantic Web
+Conf., 2nd Asian Semantic Web Conf. , pages
+722{735, November 2008.
+[2] T. Berners-Lee. Linked Data. World wide web design
+issues, July 2006.
+[3] T. Berners-Lee, J. Hendler, and O. Lassila. The
+Semantic Web. Scientic American , 284(5):34{43,
+2001.
+[4] C. Bizer, T. Heath, K. Idehen, and T. Berners-Lee.
+Linked data on the web. In Proc. of the 17th Int. Conf.
+on World Wide Web, pages 1265{1266. ACM, 2008.
+[5] J. Bollen, M. L. Nelson, G. Geisler, and R. Araujo.Usage derived recommendations for a video digital
+library. J. Netw. Comput. Appl., 30(3):1059{1083,
+2007.
+[6] P. Borlund. The concept of relevance in IR. J. Am.
+Soc. Inf. Sci. Technol. , 54(10):913{925, 2003.
+[7] P. Borlund. The IIR evaluation model: a framework
+for evaluation of interactive information retrieval
+systems. Information Research, 8(3), 2003.
+[8] X. Chen and C. Zhang. An interactive semantic video
+mining and retrieval platform - Application in
+transportation surveillance video for incident
+detection. In ICDM 2006: Proc. of 6th IEEE Int.
+Conf. on Data Mining, Hong Kong , pages 129{138.
+IEEE Computer Soc., 2006.
+[9] A. Duke and J. Heizmann. Semantically Enhanced
+Search and Browse. Semantic Knowledge
+Management, pages 85{102, 2009.
+[10] F. Fouss and M. Saerens. Evaluating performance of
+recommender systems: An experimental comparison.
+Web Intelligence and Intelligent Agent Technology ,
+1:735{738, 2008.
+[11] G. Friedland, L. Gottlieb, and A. Janin. Joke-o-mat:
+browsing sitcoms punchline by punchline. In Proc. of
+the 17th ACM Int. Conf. on Multimedia, page
+11151116, Beijing, China, 2009. ACM.
+[12] R. Guha, R. McCool, and E. Miller. Semantic search.
+InWWW '03: Proc. of the 12th Int. Conf. on World
+Wide Web, pages 700{709, New York, NY, USA, 2003.
+ACM Press.
+[13] H. Sack and J. Waitelonis. Integrating Social Tagging
+and Document Annotation for Content-Based Search
+in Multimedia Data. In Proc. of the 1st Semantic
+Authoring and Annotation Workshop, Athens (GA),
+USA, 2006.
+[14] J. Hu, G. Wang, F. Lochovsky, J. T. Sun, and
+Z. Chen. Understanding user's query intent with
+wikipedia. In WWW '09: Proc. of the 18th
+international conference on World wide web , pages
+471{480, New York, NY, USA, 2009. ACM.
+[15] E. H. S. Lo, M. R. Pickering, M. R. Frater, and J. F.
+Arnold. Query by example using invariant features
+from the double dyadic dual-tree complex wavelet
+transform. In Proc. of the ACM Int. Conf. on Image
+and Video Retrieval (CIVR '09) , pages 1{8, New
+York, NY, USA, 2009. ACM.
+[16] C. Mangold. A survey and classication of semantic
+search approaches. In Int. J. Metadata, Semantics and
+Ontology , volume 2, pages 23{34, 2007.
+[17] G. Marchionini. Exploratory search: from nding to
+understanding. Commun. ACM, 49(4):41{46, 2006.
+[18] E. J. Meij, M. Bron, B. Huurnink, L. Hollink, and
+M. de Rijke. Learning semantic query suggestions. In
+8th Int. Semantic Web Conf. (ISWC 2009) . Springer,
+October 2009.
+[19] A. Miles and S. Bechhofer. Skos simple knowledge
+organization system reference. World Wide Web
+Consortium, Working Draft, August 2008.
+[20] E. Oren, R. Delbru, M. Catasta, R. Cyganiak,
+H. Stenzhorn, and G. Tummarello. Sindice.com: a
+document-oriented lookup index for open linked data.
+IJMSO, 3(1):37{52, 2008.[21] Y. Qu and G. W. Furnas. Model-driven formative
+evaluation of exploratory search: A study under a
+sensemaking framework. Inf. Process. Manage.,
+44(2):534{555, 2008.
+[22] H. Sack and J. Waitelonis. Automated annotations of
+synchronized multimedia presentations. In In Proc. of
+the ESWC 2006 Workshop on Mastering the Gap:
+From Information Extraction to Semantic
+Representation, CEUR Workshop Proc. , june 2006.
+[23] H. Singh, A. Cheung, S. Guadarrama, C. Loer, and
+M. Nikravesh. Evaluating Ontology Based Search
+Strategies. In Soft Computing for Information
+Processing and Analysis , volume 164, pages 189{202,
+2006.
+[24] A. F. Smeaton, P. Over, and W. Kraaij. Evaluation
+campaigns and TRECVid. In MIR '06: Proceedings of
+the 8th ACM international workshop on Multimedia
+information retrieval, pages 321{330, New York, NY,
+USA, 2006. ACM.
+[25] A. W. M. Smeulders, J. C. van Gemert, B. Huurnink,
+D. C. Koelma, O. de Rooij, K. E. A. van De Sande,
+C. G. M. Snoek, C. J. Veenman, and M. Worring.
+Semantic video search. In Proc. of 14th Int. Conf. on
+Image Analysis and Processing, pages 51{58. IEEE
+Computer Soc., 2007.
+[26] D. T. Tran, S. Bloehdorn, P. Cimiano, and P. Haase.
+Expressive resource descriptions for ontology-based
+information retrieval. Proc. of the 1st Int. Conf. on
+the Theory of Information Retrieval (ICTIR'07),
+October 2007.
+[27] J. Waitelonis and H. Sack. Augmenting video search
+with linked open data. In Proc. of Int. Conf. on
+Semantic Systems 2009 (i-Semantics 2009) , 2009.
+[28] J. Waitelonis and H. Sack. Towards Exploratory Video
+Search Using Linked Data. In ISM '09: Proc. of the
+2009 11th IEEE Int. Symp. on Multimedia, pages
+540{545, Washington, DC, USA, 2009. IEEE
+Computer Society.
+[29] R. W. White, G. Marchionini, and G. Muresan.
+Evaluating exploratory search systems: Introduction
+to special topic issue of information processing and
+management. Information Processing & Management ,
+44(2):433 { 436, 2008.

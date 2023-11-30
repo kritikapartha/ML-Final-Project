@@ -1,0 +1,1850 @@
+5A Survey of Practical Formal Methods for Security
+TOMAS KULIK ,Aarhus University,Denmark
+BRIJESH DONGOL ,Universityof Surrey, UnitedKingdom
+PETERGORM LARSEN and HUGODANIEL MACEDO, AarhusUniversity,Denmark
+STEVESCHNEIDER, Universityof Surrey,Denmark
+PETERW. V. TRAN-JØRGENSEN, BankData, Denmark
+JAMES WOODCOCK, Universityof York,Aarhus University,UnitedKingdom,Denmark
+In today’s world, critical infrastructure is often controlled by computing systems. This introduces new risks
+for cyber attacks, which can compromise the security and disrupt the functionality of these systems. It is
+therefore necessary to build such systems with strong guarantees of resiliency against cyber attacks. One
+way to achieve this level of assurance is using formal verification, which provides proofs of system compli-
+ancewithdesiredcybersecurityproperties.TheuseofFormalMethods(FM)inaspectsofcybersecurityand
+safety-criticalsystemsarereviewedinthisarticle.WesplitFMintothethreemainclasses:theoremproving,
+modelchecking,andlightweightFM.ToallowthedifferentusesofFMtobecompared,wedefineacommon
+set of terms. We further develop categories based on the type of computing system FM are applied in. Solu-
+tionsineachclassandcategoryarepresented,discussed,compared,andsummarised.Wedescribehistorical
+highlights and developments and present a state-of-the-art review in the area of FM in cyber security. This
+review is presented from the point of view of FM practitioners and researchers, commenting on the trends
+in each of the classes and categories. This is achieved by considering all types of FM, several types of se-
+curity and safety-critical systems, and by structuring the taxonomy accordingly. The article hence provides
+a comprehensive overview of FM and techniques available to system designers of security-critical systems,
+simplifyingtheprocessofchoosingtherighttoolforthetask.Thearticleconcludesbysummarisingthedis-
+cussionofthereview,focusingonbestpractices,challenges,generalfuturetrends,anddirectionsofresearch
+withinthis field.
+CCSConcepts:• Securityandprivacy →Logicandverification ;Trustframeworks ;•Generalandrefer-
+ence→Surveys and overviews;
+Additional Key Words andPhrases:FormalMethods,model checking, theoremproving, cyber security
+This work is supported by the Manufacturing Academy of Denmark; for more information, see www.made.dk .B r i j e s h
+Dongolissupportedbygrants“FaCT:FaithfulCompositionofTrust,”EPSRCgrantsEP/R032556/1andEP/V038915/1,and
+ARC Discovery Grant DP190102142. Steve Schneider is supported by EPSRC grants EP/P031811/1 and EP/R006938/1. Jim
+WoodcockissupportedbythePoulDueJensenFoundationandgrantsEP/M025756/1,EP/R025479/1,andIEC/NSFC/170319.
+Authors’ addresses: T. Kulik, P. G. Larsen, and H. D. Macedo, Aarhus University, Finlandsgade 22, Aarhus, Den-
+mark, 8200; emails: {tomaskulik, pgl, hdm}@ece.au.dk; B. Dongol, University of Surrey, Surrey, United Kingdom; email:
+b.dongol@surrey.ac.uk;S.Schneider,UniversityofSurrey,Surrey,UnitedKingdom;email:s.schneider@surrey.ac.uk;P.W.
+V.Tran-Jørgensen,BankData,Aarhus,Denmark;email:peter.w.v.jorgensen@gmail.com;J.Woodcock,UniversityofYork,
+Aarhus University, York, Aarhus, UnitedKingdom,Denmark;email:jim.woodcock@york.ac.uk.
+Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee
+provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and
+the full citation on the first page. Copyrights for components of this work owned by others than ACM must be honored.
+Abstractingwithcreditispermitted.Tocopyotherwise,orrepublish,topostonserversortoredistributetolists,requires
+prior specific permission and/or a fee.Request permissions from permissions@acm.org .
+© 2022Association for ComputingMachinery.
+0934-5043/2022/07-ART5$15.00
+https://doi.org/10.1145/3522582
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:2 T. Kulik et al.
+ACM Reference format:
+Tomas Kulik, Brijesh Dongol, Peter Gorm Larsen, Hugo Daniel Macedo, Steve Schneider, Peter W. V. Tran-
+Jørgensen,andJamesWoodcock.2022.ASurveyofPracticalFormalMethodsforSecurity. Form.Asp.Comput.
+34,1, Article 5(July2022), 39pages.
+https://doi.org/10.1145/3522582
+1 INTRODUCTION
+Digital services are currently spreading to all aspects of society [ 207]. This in turn causes depen-
+denceofsocietyon thecyberinfrastructureneededtosupporttheseservices.Theheavyreliance
+oncyberinfrastructureposesnewchallengesintheformofcyberattacksandpotentiallycyberter-
+rorism [142], with threat actors encompassing the full range from interpersonal offenders, cyber
+criminals, and “hacktivists” through to well-resourced state actors [ 208]. Disturbances in finan-
+cial, industrial, or day-to-day consumer services could lead to significant financial and societal
+costs. As digitisation spreads further, the potential attack surfaces only grow larger, increasing
+the challenge of protecting digital services [ 250,260]. As systems grow larger and more complex,
+significant resources have to be spent to secure these system against known cyber attacks. Often
+the protection mechanisms are incorporated to close vulnerabilities uncovered after a successful
+cyber attack, and hence are of a reactive nature. This approach relegates cyber security from a
+primarychallengetobe solvedwithinthesystemtoan afterthought[ 236].
+Due to the wide spectrum of cyber attacks, it is difficult to directly quantify their impact on
+society [101], however, very often they involve significant financial costs as well as potential dis-
+ruptionsinqualityoflife.Oneexampleisapotentialcyberattackagainstelectricityinfrastructure,
+includingelectricitymarketplace,whichcould leadtodestructionof generatorsand disclosureof
+confidential data [ 191]. Another example is attacks against manufacturing facilities causing de-
+laysordecreaseinqualityofproduction[ 47,204].Theseexamplesdemonstratethatcyberthreats
+shouldbeconsideredassignificantas physicalthreatsagainst societalinfrastructure.
+Theearlierthepotentialcybersecuritythreatsarediscoveredwithinnewsystems,thecheaper
+the mitigation for these threats will be [ 257].Formal Methods (FM) provide an opportunity
+for discovery and mitigation of cyber threats at all stages of the lifecycle of a system. Using FM
+brings mathematical rigour to the field of cyber security assurance. This is possible, since FM are
+techniquesthatusemodel-basedapproaches,wherethemodelsarerigorouslyspecified[ 261]that
+allow for development of precise statements about what systems under investigation should do
+withoutputtingconstraintsonhowtodoit[ 264].Thesemodelsrepresentthesoftware,hardware,
+or a combination of the two for the system in question. The primary benefit of using FM stems
+from the mathematical proof of the internal consistency of the system design [ 115]. This proof
+providesstrongassurances,sinceitconsiderstheentiresystembehaviour,andonceproventrueit
+remains true, whereas in traditional testing it is only possible to cover specific scenarios. FM can
+be seen as a tool well suited for providing assurances of cyber security for digital society [ 262].
+Beyondtheassuranceofbehaviouralcorrectnessofasystem,theadoptionofafullyfledgedformal
+approachisknowntoreducethenumberofimplementationerrors,whicharethebuildingblocks
+ofexploits.
+Itisimportanttonote thatthereexistsa varietyof FM.Themain categoriesweconsiderare:
+•TheoremProving ,analysingaformaldescriptionforimportantpropertiesbasedoncomputer-
+basedproofs.
+•Model Checking , checking whether a finite-state model of a system meets a given specifica-
+tionin anexhaustivemanner.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:3
+•LightweightFM ,usingformaltechniquestoanalyseasystemeitherstaticallyordynamically
+(thisconceptwascoinedinReference[ 132],butwehaveextractedthemodelcheckingfrom
+theircharacterisationintoa categoryof itsown).
+Foradetailedcoverageofthetechnicalfoundationsofformalapproachestosecurity,wereferthe
+reader to Reference [ 32]. That chapter focuses on the technical foundations of the area, whereas
+our surveyconcentrateson specificapplicationareas.
+Inallcases,themethodsareappliedtodetermineifasystembehavesinacorrectway,andmany
+approacheshavereceivedsignificanttoolsupportforautomationoftheverificationandvalidation
+process[10].Inthissurvey,weconsideralloftheapproachesandtheirapplicationtospecificareas
+of digital society. We further consider FM as applied to the specific level of abstraction of system
+behaviourrangingfromtheapplicationleveltothehardwarelevel.Byconsideringthestate-of-the-
+artresearchinformalverificationacrossthesedimensions,weprovideanon-exhaustiveoverview
+of application of FM in specific disciplines. The aim of this survey is to allow practitioners to
+identify a proven method applicable to a system in their domain, hence hopefully increasing the
+adoption of FM in the field of cyber security. We believe that similar surveys in different areas of
+useofFMcouldbeacatalysttoincreasedadoption,asithasbeendeterminedthateducationand
+experience as well as finding positive examples of use of FM could lead to professionals adopting
+FM towardstheirareaof expertise[ 104].
+1.1 Methodology
+The amount of research publications within the area of applying FM towards cyber security chal-
+lengesissignificant.Therefore,severalconstraintshavebeenplacedonthechoiceofresearchpub-
+lications to be considered within this survey. The first important constraint is the recency of the
+researchreported,consideringthelandscapeof thepastdecade ,limitingthepublicationdatetobe
+noearlierthan2012.Furthermore,alloftheresearchworkneedstobe publishedinscientificvenues
+suchasjournals,conferences,orworkshops.Thenextconstraintisfocusoncomputer-basedtool
+supported FM, i.e., only FM with tools that can provide computer-based analysis and often guide
+users on performing this analysis are considered. This consideration is to focus more on the FM
+that could be potentially applied outside of academia, bringing the benefits of the formal security
+analysis to industry . This goes hand-in-hand with our focus on the applied FM, searching for re-
+search publications, where a tool-supported FM is utilised to deal with a concrete cyber security
+problem.Hence,thissurveydoesnotfocusontheoreticaladvancesofFMinsecurityorproposed
+processes that briefly mention use of FM, such as theoretical approaches to model checking al-
+gorithms, specification of hyperproperties, and similar. Furthermore, our survey does not cover
+the approach to security commonly referred to as provable security . This refers to a mathemati-
+cal approach to analysing the security of cryptographic mechanisms or systems. The approach
+considersthesysteminthecontextofanattackermodelandexpressesthesecurityrequirements
+withinthatmodelasalimitationonwhattheattackershouldbeabletoachieve.Aproofconsists
+ofestablishingthattheattackerwouldneedtobreakaknownhardproblem(suchastheQuadratic
+ResiduosityProblem[ 105])tobreakthesecurityofthesystem.Thus,thesecurityofthesystemis
+reducedtothedifficultyoftheunderpinninghardproblem.Thisapproachistypicallyusedwithin
+the field of cryptography rather than secure systems, and so falls outside the scope of our survey.
+WepointthereadertoReference[ 28]providingthereportwithintheareaofFMincryptography.
+Finally,weconstrainoursearchtoresearchthatconsidersaspectsofsecurityexplicitly,andnotas
+aby-productofsafetyorcorrectness.Thesearchfortheresearchpublicationswascarriedoutasa
+crossdatabasesearchusingGoogleScholar,whilefocusingonresearchpapers,excludingresearch
+abstractsor extendedabstracts.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:4 T. Kulik et al.
+Fig.1. (a) Needham-Schroeder authentication protocol and (b) attack.
+As this survey provides readers with a quick overview of the research conducted, we have fur-
+therdecidedtocategorisedifferentresearchpublicationsbytheindustry(domain)onwhichthey
+focus as well as the level of abstraction on which FM is utilised. In this way, researchers and also
+potentially industrial users can quickly find the area of their interest within this survey. Further-
+more, we classify the research based on the cyber security problem classification as elicited from
+thediscoveredresearchpapersandinspiredbyexisting literature[ 208].
+1.2 History
+This section presents a history of impactful research works within FM in security over the past
+40years.Wechoosefourcasestudieswhereformalmethodshavebeenappliedtosecuresystems:
+(1) TheNeedham-SchroederPublic-KeyProtocol.Loweusedarefinementmodelcheckertofind
+atriangularattackontheprotocol.Thiswasanewattackonaprotocolthathadpreviously
+beenprovencorrectby Burrowsetal.[ 52].
+(2) TheMondexsmartcard.ThiswasthefirstcommercialproducttobecertifiedtoITSECLevel
+E6.Therewasconsiderablediscussionat thetime as towhetherthiswaseven possible.
+(3) The Tokeneer ID Station. There were similar questions about the feasibility of using FM to
+achieve the level of rigour required by the higher assurance levels of the Common Criteria.
+Tokeneersettledthismatter.
+(4) The seL4 Microkernel. This system has the reputation of being the world’s most assured
+microkernel. Significantly, it demonstrates that security and the use of formal methods do
+notlead topoorperformance.
+The Needham-Schroeder Public-key Protocol. The Needham-Schroeder Public-Key Protocol is a
+transport-levelprotocolforcommunicationbetweennetworkdevices[ 190],providingmutualau-
+thentication between two parties in a network. The protocol is visualised in Figure 1(a). Simple
+andwellknown,ithasbecomeapopularbenchmarkfortestingsecurityprotocolverificationtech-
+nology.Wediscussitherebecauseitisanimportantsecurityprotocolthatneverthelesscontained
+asignificanterror.Thiserrorwas foundthroughformal modelling and analysis.
+Lowe [165] showed that, contrary to its intention, the protocol fails to ensure authentication.
+In particular, he demonstrated that an intruder can impersonate an agent Aduring a run of the
+protocol.Theimpersonatortricksanotheragent Binto thinkingthattheyaretalkingto A.
+The protocol uses public key cryptography. Each agent Apossesses a public key, which any
+otheragentcangetfromaserver. Aalsopossessesasecretkeythatistheinverseofitspublickey.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:5
+Anyagentcanencryptamessageusing A’spublickey,butonly Acandecryptit,ensuringsecrecy.
+Theprotocolalsouses nonces:randomnumberscoinedforsingle runsof theprotocol.
+Lowe encoded the protocol in CSP [ 123] and analysed it by use of CSP’s model checker,
+FDR [103]. Lowe did not direct FDR where to look in the protocol for a vulnerability—he sim-
+plymodelledtheintrudercapabilities,buttheexhaustivesearchcarriedoutbythemodelchecker
+foundan attackin spiteofthis.
+Supposethat I(anintruder)isanetworkuserwhocantakepartinnetworksessions. Icanalso
+interceptmessagesandinjectnewones,butisnotabletodecryptmessageswithoutthekey. Ican
+produce a new message in two circumstances: if Iinvents the nonce or if Ialready understands
+themessage’scontents.Thisintrudercanalsoreplaycompleteencryptedmessages,evenwithout
+understandingthecontents[ 213].ThisapproachiscommonlyknownastheDolev-Yaomodel[ 85].
+Theattackinvolvestwosimultaneousrunsoftheprotocol,asshowninFigure 1(b).Aestablishes
+a valid session with I. At the same time, Iimpersonates Ato establish a fake session with B.T h e
+flawed run of the protocol could be explained as follows: Asends a message with nonce NAtoI,
+whodecryptsthemessagewith I’ssecretkey. Irelaysthemessageto B,pretendingto BthatAis
+communicating. BsendsNBinresponse,encryptedfor A,andsoIrelaysthisencryptednonceto
+A.Adecrypts NBand confirms it to I, who learns it. Ire-encrypts NBand returns it to B,w h i c h
+convinces BthatAis the other party. At the end of the attack, Bfalsely believes that Ais the
+communication partner and that only AandBknowNAandNB. This shows that the protocol
+is insecure. Protocol analysts call this a man-in-the-middle attack . Here, it has been discovered
+automatically.
+Mondex.The Mondex application consists of smart cards with electronic purses (wallets) for
+useintheelectroniccommerce[ 235].CustomersuseMondexsmartcardsforlow-value,cash-like
+transactionsthatneednothird-partyinvolvement.TheBankofEngland(thefinancialregulatorin
+this instance) considered the requirements for Mondex to be security-critical: Mondex must have
+no implementation or design bugs that could allow electronic counterfeiting. So the developers
+certified Mondex to the highest standard available at the time. This was ITSEC Level E6 [ 129],
+equal to Common Criteria Evaluation Assurance Level 7 [ 57].1Mondex was the first commercial
+producttoachieveITSECLevel E6(EAL7).
+Reference[ 235]furtherdescribesthedevelopmentoftheMondexapplication,withitsabstract
+and concrete models. The abstract model describes the world of electronic purses: Atomic trans-
+actions exchange value and the abstract model expresses their required security properties. The
+concretemodelisthepursedesignand themessage protocolfor valueexchange.
+The design team used the Z notation [ 233,263] to specify both models. They proved that the
+concrete model is formally a refinement of the abstract one. This means that the concrete model
+respectsalltheabstractsecurityrequirements.Theabstractmodelanditssecuritypropertiesisof-
+teneasiertounderstandthantheconcretemodel.Developerswrotemanualproofs,believingthat
+no efficient automated tools existed for such a large task. Instead, proof steps were type-checked
+using the fuzz2and Formaliser tools [ 97]. Proofs were also checked by independent external
+evaluators.
+1Thelevelsof the CommonCriteria are:
+EAL1: Functional testing. EAL5: Semi-formaldesign andtesting.
+EAL2: Structural testing. EAL6: Semi-formallyverified designand testing.
+EAL3: Methodicaltesting andchecking. EAL7: Formally verified designandtesting.
+EAL4: Methodicaldesign, testing,andreviewing.
+2Seespivey.oriel.ox.ac.uk/corner/Fuzz_typechecker_for_Z .
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:6 T. Kulik et al.
+Therewere fourprincipalsecurityproperties:
+•Thesystemand itsusersmay notcreatevalue.
+•Thesystemmust accountfor allvalue.
+•Pursesmust haveenoughvalue fortheirintendedtransaction.
+•Alltransfersmustbe betweenauthenticpurses.
+Thedesign teamchanged asecondaryprotocolafter theproofrevealed abug. Adetailedaccount
+of the project is given in Reference [ 265]. Mondex has proved to be a dependably secure system,
+guaranteedby itsformaldevelopment.
+Tokeneer. The Tokeneer system was designed and developed by the US National Security
+Agency(NSA) [30].3Itprovidessecureaccesstoanenclaveofworkstationswithcontrolledphys-
+ical entry. Access control requires biometric checks and security tokens. These tokens describe a
+user’spermittedactionswithina particularvisitto theenclave.
+Developers needed to assure the security properties. They did this by conformance with the
+Common Criteria Evaluation Assurance Level 5 [ 57]. They also needed to show they could do
+this in a cost-effective way. NSA invited bids to use FM to develop a component of the Tokeneer
+systemandthenmonitoredthisexperimenttomeasuretheeffortandskillsneededtoperformthe
+development.
+Praxis (a UK company) won the contract and wrote a formal specification in Z [ 233,263], for-
+mally refining the specification to a SPARK program. SPARK is a subset of Ada with an accompa-
+nying tool-set [ 29]. They proved key system properties and the absence of runtime errors, using
+traditionalmethodstodevelopextrasoftware.TheseextraAdaprogramsprovidedinterfaceswith
+peripherals.
+Theprojectrequired260person-days,threepeoplepart-time,andninemonths’elapsedtime.It
+produced about 10K lines of SPARK code with about 16.5K contracts. About 200 loc were written
+onaverageperdayduringtheimplementationphase,withabout40locthroughtheentireproject.
+A further 3.5K lines of standard Ada code were produced, with about 200 loc per day in the im-
+plementation phase or 90 loc throughout the project. System testing took about 4% of the project
+effort,much smaller thanusual.
+Twodefectswere found in Tokeneer.One wasfound usingformal analysis,anotherwasfound
+by code inspection.4The testing team discovered two in-scope failures: missing items in the user
+manual.
+ThetasksetbyNSAwastoconformtoCommonCriteriaEAL5.TheTokeneerdevelopmentac-
+tuallyexceededEAL5requirementsinseveralareas:configurationcontrol,faultmanagement,and
+testing.AlthoughthemainbodyofthecoredevelopmentworkwascarriedouttoEAL5,thedevel-
+opmentareascoveringspecification,design,implementation,correspondencewereaccomplished
+toEAL6 and EAL7.Why?Becauseitwas cheaper!
+The seL4 Microkernel. The third-generation microkernel seL4 provides abstractions for virtual
+address spaces, threads, and inter-process communication. It provides an explicit memory man-
+agement model and capabilities for authorisation. There is a guarantee that the binary code of
+3For comprehensive information on Tokeneer, see the AdaCore webpages www.adacore.com/tokeneer , where the entire
+projectarchivecanbedownloaded.AdaCoredistributesthematerialgeneratedbyAltranundercontracttotheNSAunder
+thetermsoftheTechnologyTransferAgreementagreedbetweenPraxisandtheNSA.Thismaterialconsistsofallthecore
+andsupportsoftwarefortheTokeneerIDStation,projectdocuments,testcasesderivedfromthesystemtestspecification,
+testtokens, andbiometricdata.
+4Diomidis Spinelli: www.spinellis.gr/blog/20081018/ .
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:7
+the ARM version of the seL4 microkernel is a correct implementation.5seL4 meets its abstract
+specification and does nothing else . In particular, the seL4 ARM binary meets the classic security
+propertiesofintegrity and confidentiality.
+The seL4 micro-kernel has a formal proof of its C code against its abstract specification [ 144].
+Thisproofismachine-checkedinIsabelle/HOL[ 194].Thisassumescorrectnessofbootcode,cache
+management, hardware,and hand-writtenassemblycode.
+ThedevelopersclaimseL4tobetheonlyverifiedgeneral-purpose operatingsystem(OS) ker-
+nel. An operational model of the system forms as an abstract specification. A Haskell program
+prototypes the kernel. This prototype provides an automatic translation into Isabelle/HOL. The
+Isabelle code is then an executable, design-level specification of the kernel. This is hand-coded in
+Ctoformahigh-performanceCimplementationofseL4.Refinementproofslinkthespecifications
+and the C code. Developers proved that attackers cannot subvert the kernel, not even if they use
+buggy encodings,spuriouscalls,or bufferoverflow attacks.
+1.3 Definitions/background
+Here,weprovideasetofcommontermsanddefinitionsusedthroughoutthisarticle.Thisispartic-
+ularly important, since the fields of formal verification and security developed independently for
+many years, and hence, some terms are overloaded and have slightly different meanings, depend-
+ingonthecontextinwhichtheyareused.Forexample,insecurity(particularlycryptography),a
+certificate refers to a document that is used to bind an entity to a cryptographic key. However,
+withinFM, certificate isusedas aproofofcorrectnessofa systemor protocol.
+Throughout this survey, on the security side, we use terms such as authentication to refer
+to the process of identifying andvalidating whether a user (an entity or individual) accessing a
+systemis whotheuserclaimstobe.Thisisincontrastwith authorisation ,whichistheprocess
+ofallowinga user access to a system based on their identity. We furthermore often find security
+protocolsdesignedtoprovidespecificpropertiessuchas isolation ,whichisadesignprinciplein
+whichprocessesareseparatedandgivenprivilegedaccesstosharedresources,e.g.,sharedmemory
+(typicallyusingtechniquessuchascontainerisationorvirtualisation)or non-repudiation ,ensur-
+ing that it is not possible to deny a validity of a statement or a message, especially in terms of its
+authorship.Wewouldalsoliketopointoutthedifferencebetween anonymity whereanidentity
+o fau s e ro rap r o c e s ss h a l ln o tb ed i s c l o s e da n d confidentiality where the content encoded as a
+blockof datashallnotbe disclosed.
+On theformal methods side it could be said that systems under consideration typically com-
+priseasetofcoordinated processes ,whichareprograminstancesdefiningasetofinstructionsthat
+areexecutedbyoneormorethreads.Wethinkofprocessesasbeingactiveentitiesinasystem,as
+opposedtoprogramsthatarepassiveentities.Formalframeworkstodescribethebehaviourofpro-
+cessesincludeCSP,CCS,ACP, π-calculus,andsoon.Processestypicallyimplement protocols ,i.e.,
+asetofrulesfortransmissionofdata,andmaysynchroniseover sharedmemory orcommunicate
+over achannel, which is an abstraction of a physical communication network. Shared memory
+implementations are increasingly complex due to the use of intermediate processor caches and
+may implement many different consistency models [ 6]. Similarly, one may place many different
+assumptions on a channel, e.g., FIFO ordering of messages; whether the channel guarantees in-
+tegrity,availability,andconfidentiality;whetherthechanneliserror-free;whethermessagetypes
+can bedistinguished,and soon.
+5OntheARMplatform,thereisafurtherproofthatthebinarycodethatexecutesonthehardwareisacorrecttranslation
+of the C code for sel4. This means that the compiler does not have to be trusted, and extends the functional correctness
+property to thebinary.See docs.sel4.systems/FrequentlyAskedQuestions.html .
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:8 T. Kulik et al.
+In general, verification is with respect to a specification , which is an abstract (formal or in-
+formal) description of the allowable behaviours of an entity, e.g., hardware, a system, computer
+program,datastructure,andsoon.Formalverificationoftenproceedswithrespecttoa modelof
+a system, which provides a precise formal description of an entity, capturing the key characteris-
+tics of the entity being modelled. One must ensure that every feature described by a model is an
+actual feature of the entity. Different models of the same entity may be developed, depending on
+thepropertiesthatareofinterest;acomputerprogramforexamplemaybemodelledbyrelations
+betweenpre/poststate;tracesofstates;functionsbetweeninputsandoutputs,andsoon.Amodel
+maydescribebehaviouralfunctionality,protocols,andsoon.InFM,onetypicallydevelopsmodels
+at several levels of abstraction, with precise descriptions of the relationship between these levels.
+FM for security also requires a model of an attacker, e.g., the Dolev-Yao model, which is used in
+thecontextof communicatingsystems.
+Within hardware verification, the term co-verification is used to prove that system software
+executescorrectlyona representation oftheunderlyinghardwaredesign.Itenablesintegrationof
+software with hardware, before any physical devices (e.g., chips or boards) are available. The aim
+of verification is to ensure that it meets its implementation (of a specification), i.e., the physical
+manifestationofanentity.Insomeinstances,onemayrefertoanimplementationasamodelthat
+providesenoughdetailaboutanentityforthecorrespondingphysicalentitytobereadilyobtained.
+To finalise the definitions it is important to revisit our classifications of FM. The first category
+we classify is theorem proving , where a proof of correctnessof a system is provided in symbolic
+logic. This survey focuses on automated theorem proving, where proof assistants are utilised to
+generate the proofs. This method utilises a system of logic trying to determine if a statement ϕ
+followsfromasetofstatements Γ={ψ1,...,ψn}.Thesecondclassweconsideris modelchecking
+where a finite state model of a system is utilised to systematically search the entire state space
+of this model (i.e., all possible system states contained in the model) for detection of counter-
+examples to statements about the system expressed as properties, for example in linear temporal
+logicas /square/diamondmathpstatingthataproperty pholdsininfinitelymanystates.Aswiththeoremproving,we
+focus on automated model checking. Finally, we define a class of lightweight formal methods
+whereweplacemethodsthatdonotprovideexhaustiveanalysis.Asimpleexamplecouldbestatic
+code analysis, where the code is analysed while not running to determine if it breaks predefined
+rules. Another example could be VDM [ 38], where the system is modelled in a formal modelling
+languageandpropertiesareexpressedascontracts,i.e.,pre,postconditionsandsysteminvariants,
+forexample invt==t.issueTime <t.expirationTime statingthatuniversally tmustbeissuedbefore
+itcanexpire.Toperformthecheck,themodelisanimatedandonlyspecificscenariosareset(often
+those considered critical), however, VDM can also utilise combinatorial testing combining input
+pathstogeneratelarge amount of tests,hencesignificantly increasingthetestcoverage.
+2 SURVEY
+2.1 Categorisation and Overview
+Since FM in security are applied across many domains, we structure the scope of the survey by
+presentingacategorisationbasedonadomainandalevelofabstraction.Thisisdonetoprovidea
+systematic overview of the wide field of FM in security. The labels for the four domains we have
+selectedare:
+Financial (Section 2.2):Aggregates the works applying FM in the area of finance/money as
+paymentsystems,homebanking,financialmarkets,crypto-currencies.Examplesaremobile
+bankingapps,ATMinfrastructures,theFIXstockexchangeprotocol,smart-cards/hardware
+wallets.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:9
+Industrial (Section 2.3):Thislabelagglomeratesworksdealingwithcomputingsystemsap-
+plied in the production of goods or services, manufacturing, and industrial control. Exam-
+plesareaWaterTreatmentManagementPanels,PLCcontrolnetworks,Modbus/TCP,motor
+controllers.
+Consumer(Section 2.4):It categorises works focusing on the security of end-users’/
+individuals’ personal computation devices and applications such as a command-line shell,
+a homeoperatingsystem,a Voiceover IPprotocol,and anexercise smartappliance.
+Enterprise (Section 2.5):ThisisthedualoftheConsumercategory,asitisusedtogroupthe
+worksfocusingonthesecurityofcorporatesystemsprovidingcomputingservicessatisfying
+theneedsoforganisationsinsteadofindividuals.Examplesareemailservices,e-government
+systems,thesn2protocol,dataserverwarehouses.
+AspresentingthefourdomainswouldonlyseparatetheFMinsecurityresearchbythefieldof
+application,wefurtherpresentfivelevelsofabstractionatwhichtheformalverificationiscarried
+out.Theselevels ofabstractionare:
+Application: UsedforworksthatapplyFMforsecurityattheapplicationorpurposeofcom-
+putationlevel.
+System: UsedforworksthatapplyFMforsecuritywithinthearchitecturallevel,oftenencom-
+passingmultiple subsystems.
+Protocols: It is used to apply FM to assert properties or analyse communication protocols
+betweensystemcomponentslevel.
+Implementation: This is a cross-cutting category encompassing all the works that focus on
+application/usage of FM directly on the resulting system (e.g., runtime monitoring) instead
+of emphasisondesigns andspecifications.
+Hardware: Usedtoclassify worksapplyingFMin theprocessof hardwaredevelopment.
+This categorisation allows us to systematically review the state-of-the-art-research and provide
+an overview based on this. To provide a clear overview of FM in security, we further apply
+a third dimension, defining the type of the FM used, i.e., model checking, theorem proving,
+and lightweight FM. This provides a quantitative overview of different research works within
+Figure2.
+The sections within this survey follow a logical organisation, where the research works are
+grouped together by the type of the application, system, protocol, implementation, or hardware
+thattheyareappliedto.Withinthisgrouping,theresearchworksarefurtherorganisedintopara-
+graphs following logical categorisation. As an example, the first paragraph could consider works
+relatedtomanufacturing,whilethenextparagraphconsidersworksrelatedtoindustrialcontrol.In
+bothcasestheresearchisaimedatindustrialdomainbutwithadifferentscope.Eachsectionwithin
+thesurveyrepresentsasingledomain,wherewepresentasystematicsummaryofresearchworks
+belonging to different levels of abstraction. As this survey attempts to categorise large amount
+of research works, each of them is only presented briefly focusing on the analysed problem and
+utilised FM technology. For more details on individual research works, we point the reader to a
+technicalreportthatthissurveyis basedon[ 149].
+2.2 Financial
+Financialcomputing,includingbankingsystems,independentbudgetingapplications,andmobile
+payment applications, is a rapidly developing field. This section provides an overview of how
+FM have been used to analyse the security of banking mobile applications, alternative currencies,
+such as cryptocurrencies, smart contracts, banking backend systems, electronic trading systems,
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:10 T. Kulik et al.
+Fig. 2. Classification of formalmethodsinsecurity.
+payment protocols, cryptocurrency hardware, and wallets. On a different level of abstraction, it
+couldbeseenwithinthissectionthatthe systemlevelconsistsofmostresearchworks.Thissection
+alsomentionsthelegalchallengeswhenapplyingFMtofinancialsystems.Theselegalchallenges
+arisefromlimitedaccesstothesesystemsandacertainlevelofavoidanceofpublicationofpoten-
+tialvulnerabilitiesbyvendorsofthesesystems,i.e.,oftenmakingitdifficultforresearcherstoget
+deepinsight intothesesystems.
+The method most used to analyse security within the financial domain is model checking, and
+authors apply different model checkers to specific problems. This could be attributed to the fact
+thatthedifferententitieswhosesecurityisbeinganalysedlendthemselveswelltobemodelledina
+statetransitionrepresentationandalsothattheirstatespaceissufficientlylimitedtobeanalysed
+without issues such as the state space explosion. The cyber security topics present within the
+financialsectionare shownin Figure 3.
+Application. Nowadays, banks not only provide mobile applications, but whole alternative cur-
+rencies are being developed. This rapid growth provides many opportunities for use of FM on an
+applicationlevel.
+An application of FM to banking apps could be found in Reference [ 63], where the authors
+analyzesecurityofappsfrom15leadingUKbanksdiscoveringseveralvulnerabilities.Theauthors
+proposeda correctionto oneof theflaws,whichwasformally verified usingProVerif.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:11
+Fig. 3. Cyber securitytopics in thefinancial section.
+Another widespread security threat in banking is malware. In this area, the authors of Refer-
+ence[152]analysedAndroidbankingapplicationsusingKrakataubyte-codetool6togeneratethe
+Javabyte-codeoftheapplication,furthertranslatingitto CalculusofCommunicatingSystems
+(CCS)[181]. The authors then dispatched the CCS model to the Concurrency Workbench of
+NewCentury(CWB-NC) modelchecker[ 69]searchingformalwareproperties.Theauthorshave
+accomplished 98% malware detection rate. Similar approach was utilised by the authors of Refer-
+ence[126] focusingonthebankingSMSmessages.
+In the alternative currency area, the authors of Reference [ 249] analyse the Electrum Bitcoin
+walletbycreatingamodelinASLan++[ 253]ofthetwo-factorauthenticationutilisedbythewallet.
+Theauthorshaveuncovered potentialvulnerabilitiesusingtheCl-Atse protocolanalyser[ 248].
+Smart or programmatic contracts are also an important aspect of modern financial landscape.
+The automated contract enforcement requires an implementation that shall be free of vulnerabil-
+ities. This led to use of FM for creation of certified contract languages [ 17] and certified virtual
+machine byte-code[ 199].
+A specific survey has been carried out in this area, providing more detail on utilisation of
+FM [180].
+System.The financial systems of today could be categorised as classic systems such as SWIFT
+inter-banknetworksystemandnewsystemsoftenintroducedbysmallerplayersorbyregulatory
+pressures[ 259] thattendto pushthesectorto move faster.
+Most of the FM works related to classic systems are decades old with few works such as use of
+BAN logicforanalysisofmobile paymentsystem[ 7] oruseofSPINtoolforanalysisofATMsys-
+tems [197] or internet payment systems [ 272]. In Reference [ 216] the authors show legal barriers
+faced byproponentsofFM inthedomain.
+Within the area of Electronic Trading Systems (ETSs) there is a trend of application of FM
+todecentralisedsystemssuchasblockchain-basedcryptocurrencies.Theseworksrangefromver-
+ifyingalgorithmsinacryptocurrencyplatform[ 268],analysisofEthereumsmartcontracts[ 121],
+to verification of the blockchain system as a whole [ 87]. Other works have considered building
+6github.com/Storyyeller/Krakatau .
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:12 T. Kulik et al.
+models of Europay Master Visa standard by use of automata learning techniques [ 2]o ru s eo f
+lightweightformalspecificationinfraud detection[ 209].
+Protocols. ProtectingfinancialtransactionsisaworkwellsuitedforFM.Specificallyinthecase
+ofNear Field Communication (NFC) , a short-range radio communication technology, utilised
+in contactless payments. This method has several vulnerabilities [ 175], where the authors of Ref-
+erence [168] propose and verify an NFC protocol suing the Scyther tool [ 73] addressing several
+vulnerabilities. In similar fashion, in Reference [ 5] the authors propose a protocol for securing
+of NFC payments and analyse it using the FDR model checker. Authors of Reference [ 11]h a v e
+focused on analysis of security of NFC enabled forgery protection also utilising the FDR model
+checker, discovering several potential attacks and providing mitigating measures. In the field of
+authentication protocols the authors of Reference [ 266] verified the mutual authentication prop-
+ertiesofasecureelectronicprotocolusingSPINtool,discoveringseveralvulnerabilities.Similarly
+inReference[ 118]theauthorshaveanalysedabiometrictransactionauthenticationprotocolusing
+ProVerif[ 41] andproposedfixes todiscoveredvulnerabilities.
+Finally, the authors of Reference [ 44] have proposed a secure SMS based protocol for mobile
+paymentsandanalysed itagainst severalsecuritypropertiesusingAVISPA[ 21].
+Implementation. Since vulnerabilities in financial software could lead to financial losses, use of
+FMcanprovideasubstantialbenefitinthisarea.Smartphoneapplicationsareoftenusedasagate-
+waytofinancialservices.TheauthorsofReference[ 127]utilisedstaticanalysistools,discovering
+that financial applications from developed countries contain less vulnerabilities than those from
+developingcountries.Similarly,theauthorsofReference[ 241]havestaticallyanalysedover10,000
+Androidapplicationstocomparethesecurityoffinancialapplicationswiththerest,whichledtoa
+discoveryofaworrisometrendwheretheanalysedapplicationshavegainedmorevulnerabilities
+withinaspanoftw oy ears.
+TheauthorsofReference[ 98]havemodelled80%ofEMV2,asuccessortoEMV,inVDMtopro-
+videaformalmodelfortheimplementationandanalysesecurityattributesofEMV2.Theauthors
+havefurtherattemptedtocodegeneratepartsof EMV2to Java directlyfromtheVDMmodel.
+Another aspect of financial software is use of open APIs. The authors of Reference [ 94]h a v e
+modelled a financial grade OpenID API as a set of theorems, discovering several vulnerabilities
+and proposing fixes to these. Finally, the authors of Reference [ 16] have analysed bitcoin con-
+tracts using UPPAAL, determining the secure time to live within the contract protocol. Similarly,
+othertypesofsmartcontractsarebeingutilised[ 35].TheauthorsofReference[ 199]haveverified
+Ethereum smart contracts such as the ERC20 token contract [ 90] using K-framework’s reachabil-
+ity logic theorem prover [ 234], discovering that the token implementation that diverges form the
+ERC20specificationcontainsvulnerabilities.
+Hardware. Intheareaofcontactlesspayments,theNFChardwarecanposesecuritychallenges.
+To address one of these challenges, the authors of Reference [ 62] have introduced a scheme to
+prevent relay attacks based on a distance bounding protocol [ 46] and verify this scheme using
+ProVerif.
+Cryptocurrency is often associated with a specific hardware, where in several cases FM were
+usedforsecurityimprovement.Tothisend,theauthorsofReference[ 22]haveproposedadevice
+for approval of security critical operations. The authors have verified a property of deterministic
+start of the device using an SMT solver. Similarly, the authors of Reference [ 171] have utilised
+theorem proving to check an unforgeability property of a hardware wallet to answer a question:
+whatifthemanufacturerofthewalletcannotbetrusted? Finally,theauthorsofReference[ 19]have
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:13
+Fig.4. Cyber securitytopics intheindustrialsection.
+also attempted to prove security properties of several hardware wallets using theorem proving,
+showingthatthewallets weresecureonly under specificassumptions.
+2.3 Industrial
+Industrial processes are a backbone of a modern society, as they provide control not only for pro-
+ductionofnecessarygoods,butalsoutilitiessuchaselectricityandwatertreatment.Thissection
+providesanoverviewofhowFMhavebeenutilisedinsecurityanalysisofautomotivecontrolap-
+plications, robotic applications, PLC software, industrial communication protocols such as Mod-
+busandOPCUA,SCADAsystems,andhardwaredevicesunderpinningindustrialcomputing.An
+interesting note is that the research works are distributed uniformly across the different levels of
+abstraction,demonstratingthatallaspectsofindustrialcomputinghavebeenscrutinisedusingFM
+to provide either security analysis or security assurances. In the industrial application of FM the
+problem is often considered domain-specific, i.e., cyber security properties are based on whether
+the considered industrial system is, for example, an automotive controller or a water treatment
+plant.
+As within the financial section, the most-used FM to analyse the security properties is model
+checking. This could once again be attributed to the nature of the problem where, for example,
+PLC programs and industrial processes lend themselves to be easily modelled using state transi-
+tion systems. As some of the industrial computing is complex, the problems are often modelled
+more abstractly to avoid the state space explosion problem. Within the hardware level of abstrac-
+tion, however, in industrial computing, theorem proving is often the FM of choice, as it allows
+descriptionofthehardwareinmoredetail.Thecybersecuritytopicswithintheindustrialsection
+are showninFigure 4.
+Application. Industrialapplicationsareoftenusedtocontrolcriticalprocesses,henceFMcould
+providestrongassuranceofsecurity.TheauthorsofReference[ 120]utilisedmodelcheckingbased
+onautomatedtranslationofautomotiveECUapplicationstoCSP[ 122]andsubsequentlydispatch-
+ingthemodeltotheFDRmodelchecker.Discoveredcounterexampleswerethenprovidedtothe
+implementation team.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:14 T. Kulik et al.
+Industryofthefutureutilisesinterconnectivityandrobotics.InReference[ 193]theauthorshave
+analysedasecurityofanapplicationcontrollingacapattachingrobotbycreationofamodelusing
+Maude [179] and two attacker models, discovering possible attack vectors. Similarly, the authors
+ofReference[ 254]analysedsecurityofapplicationsbasedontheRoboticOperatingSystem[ 205],
+expressing the security properties in CTL and utilising the UPPAAL model checker [ 159]. The
+authorsthenautomaticallygeneratetheimplementation C++code.
+The authors of Reference [ 177] have focused on security analysis of a water treatment SCADA
+system by use of the system logs. The application behaviour was modelled as timed automata,
+while the security properties have been expressed in timed temporal logic [ 12], providing 100%
+attack detection rate based on log data. The authors of Reference [ 273] have successfully utilised
+the Z3SMT solver [ 80] for PLC malware detection, while the authors of Reference [ 146]u s e dt h e
+NuSMV model checker [ 65] for automated detection of intrusion code, demonstrating the useful-
+nessofFM inthisarea.
+System.Cyberattacksagainstindustrialsystemscouldhavesevereconsequences[ 258].Tomiti-
+gatethis,theauthorsofReference[ 211]havecreatedaformalmodelinASLan++ofareal-worldin-
+dustrialcontrolsystemandcarriedoutattacksutilisingaCyberPhysicalDolev-Yaoattacker[ 210].
+TheanalysiswithhelpofCL-Atseanalyserhasdiscoveredsevenoutofeightpossibleattacks.Sim-
+ilarly, the authors of Reference [ 82] mitigate the cyber attacks by proposing a formally verified
+securityframeworkforindustrialcontrolsystems.TheverificationwascarriedoutusingProVerif
+and proved the security aspects of the system utilising the framework. Furthermore, the authors
+of Reference [ 114] verified a PLC program using timed automata and UPPAAL ensuring that the
+programwasnotcompromised.InasimilarfashiontheauthorsofReference[ 255]havemodelleda
+water-levelcontrolsystemintimedautomatautilisingthePATmodelchecker[ 237]tosuccessfully
+verify securityrecoverymechanismsof thesystem.
+WithintheareaofconnectivitytheauthorsofReference[ 214]havedemonstratedformalisation
+and analysis of firewall rules using the Z3 SMT solver, lowering the errors in firewall configura-
+tions.InReference[ 150]theauthorshaveutilisedTLA+[ 158]toensureeffectivenessofmitigations
+strategies against several cyber attacks, while the authors of Reference [ 246] have used combina-
+torial testing within VDMJ [ 161] to generate 145 million tests for a formal model expressed in
+VDM-SL[ 160]ofanindustrialcontrolsystem,providingassuranceforseveralsecurityproperties.
+Protocols. Industrial communication protocols carry critical data, requiring a high level of se-
+curity. The authors of Reference [ 224] have formally analysed security of the Modbus/TCP using
+Coloured Petri Nets [ 138] combined with Formal Component Analysis [ 201] discovering a possi-
+ble attack. Similarly, the authors of Reference [ 187] modelled the Modbus protocol as a Dynamic
+StateMachine[ 186],automaticallytranslatingittoPromelaforverificationusingtheSPINmodel
+checker.Theauthorshaveuncoveredapossibleman-in-the-middleattack.Anotherprotocol,OPC
+UA, has been analysed by the authors of Reference [ 203] using ProVerif finding vulnerabilities in
+theauthenticationsub-protocol.Insimilarfashion,theauthorsofReference[ 86]analysedseveral
+ModbusandOPCUAauthenticityandintegritypropertiesusingTAMARINtheoremprover[ 176],
+discoveringthenecessityforsecurechannels.InReference[ 15]theauthorshaveformallyanalysed
+the authentication properties of DNP3 protocol utilising the CPN state space analysis tool [ 137],
+discovering a potential for replay attack. Finally, the authors of Reference [ 49] have analysed an
+authenticated CAN protocol using ProVerif, discovering that limited use of cryptography allows
+fora replayattackwithpartiallymodifieddata.
+Implementation. Sinceindustrialsoftwareoftenconsistsofalargecodebaseitcouldbedifficult
+to be formally analysed in its entirety. Over the years, several approaches to code analysis have
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:15
+been presented; for example, the authors of Reference [ 18] use a dialect of UML, SysML-Sec to
+model of a large industrial codebase, iteratively refining the model and automatically translating
+ittoπ-calculususingtheTTool[ 88]andanalysingitusingProVerif.Theauthorsproposeforthis
+approachtobe integratedtothesoftwaredevelopment process.
+In the aeronautics industry the authors of Reference [ 70] have created a formally verified
+implementation of unmanned aerial vehicle using several tools; for example, the jKind model
+checker [ 99], satisfying correctness of components and Isabelle/HOL theorem prover [ 194]t oa s -
+surethatsystemexecutionsemanticsmatchesthemodel.Thisapproachhassuccessfullyprevented
+cyberattacksagainstthevehicle.
+As PLCs are the backbone of industrial automation, a lot of focus have been put into ensuring
+thatthePLCprogramssatisfysecurityproperties.Forexample,inReference[ 223]theauthorsuse
+statetransitiondiagramsofPLCprogramsasabasisforformalmodeldispatchedtoNuSMVmodel
+checker,whileexpressingthesecuritypropertiesinLTL.Similarly,theauthorsofReference[ 247]
+utilised Petri Nets to develop software falsification detection by translating Petri Nets to Promela
+and dispatchingittotheSPINmodelchecker,while modellingthefalsificationpropertiesin LTL.
+Hardware. FM for hardware verification is a well established field with specification languages
+such as Verilog [ 243] and VHDL [ 188]. The authors of Reference [ 124] focus on co-verification of
+IntellectualPropertyBlocks(IPs) forusewithin SystemonaChip(SoC) architectures,consid-
+eringtechnologiessuchassecurebootandconcurrencyinatime-of-check-to-time-of-useconsid-
+erations [ 48]. The authors utilised semi-automatic co-verification methodology using a toolchain
+comprised of Boogie [ 31] as intermediate verification language, through Corral software veri-
+fier [157]a n dS M A C K[ 206] for bit-precise checking with an ultimate goal of producing secure
+SoCs.TheauthorsofReference[ 162]considerthatallsoftwarelayerscouldbecompromisedand
+havedevelopedanapplication-specifichardwaremonitorbasedonaformallyanalysedCcodeand
+a junctionboxvalidated in ahardwaredescriptionlanguage withagoal tomonitor thehardware
+controllerformaliciousactivity.TheauthorsmodeltheirhardwaremonitorinFrama-C[ 74]with
+Jessie plugin,allowing forautomaticdeductiveverificationusingWhy[ 95].
+Within the area of integrated circuits, the authors of Reference [ 164] consider the trustworthi-
+ness of hardware using Proof Carrying Code (PCC)[189], utilising Coq to derive theorems for
+the hardware descriptions annotated with PCC. This has been later extended in Reference [ 110]
+t oan o t i o no fa Proof Carrying Hardware (PCH), utilised to verify security of IPs supplied by
+untrusted vendors by extending the VHDL and utilising Coq to carry out the verification of se-
+curity theorems.Finally, theauthorsof Reference[ 3] considerthe possibilityof hardware trojans
+beinginjectedduringmanufacturingandutilisethenuXmvmodelchecker[ 56],whilespecifying
+thehardwarepropertiesin LTLto detectthesetrojans.
+2.4 Consumer
+Consumer computing such as use of personal computer, smartphones, and underlying connected
+servicesisanintegralpartofmodernlife.Consumercomputinghasoftenbeencharacterisedasof
+less critical nature than for example industrial systems, however, this view is changing as society
+introducesmoredigitaltechnologiestoeverydaylife.Thissectionprovidesanoverviewofuseof
+FM in analysis of cyber security of consumer computing, ranging from consumer electronics for
+fitnessequipment,mobileoperatingsystems,webbrowsers,consumer InternetofThings(IoT)
+devicestocommodityhardwarefordevicessuchaspersonalelectricitymeters.Aninterestingfact
+withintheconsumerdomainissignificantuseofsocalledlightweightFM,utilisedoftennotonly
+on the application level of abstraction, but also considering implementation and hardware. One
+challenge in formal analysis of consumer systems is a rapid nature of evolution of these systems,
+wherethecompetitionin consumermarketsoftenforces fastadoptionofnew technologies.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:16 T. Kulik et al.
+Fig. 5. Cyber securitytopicsin theconsumer section.
+OnceagainthemostutilisedFMismodelchecking.Itcouldbearguedthatthisisduetothesig-
+nificantmodelcheckingexperiencegainedinotherdomains.Manyconsumercomputingentities
+are, however, complex, interconnected chains of services, which could explain wider utilisation
+of lightweight FM, especially as some of these are used directly to build chains used to construct
+theconsumercomputingentities.Itshouldalso,however,bestatedthattheoremprovinghasalso
+beenutilisedonallthedifferentlevelsofabstractionwithintheconsumercomputingdomain.The
+cybersecuritytopicspresentwithintheconsumersectionareshownin Figure 5.
+Application. FM thrive in checking consumer applications for malware. A practical definition
+of malware (one that can be used to classify executable files) intersects the perspective shift FM
+advocate:focuson“what”iscomputedinsteadofthe“how.”QuotingReference[ 147]:“any(formal)
+definition of the concept of malware depends on the definition of the concept of software system
+correctness.” Also, a majority of malware is the product of tools generating variants of known
+vulnerabilities/attacks or known malware. The authors of Reference [ 66] show variants are easy
+tohidesyntactically,but notsemantically.
+Model checking-based approaches provide malicious behaviour semantic signatures by provid-
+ingcounterexamples.RecentapproachesasinReferences[ 229,231]extractpush-downautomata
+as models. A promising area is the application of the techniques to the realm of the Android op-
+erating system [ 230]. Although successful, the FM techniques provide no panacea to consumer
+malware protection. The malware game advances with discovery of zero-day (latent) vulnerabil-
+ities. FM have been argued to avoid these vulnerabilities in the first place [ 174], but practically,
+new malicious behaviours are expected to appear, thus the problem becomes to learn malicious
+behaviours. There are several proofs of concept where FM leverage the signature learning either
+intermsoforusingpush-downautomatareachabilityintheprocess[ 75,76,167].Thereareafew
+workswheretheoremprovingisappliedinmalware[ 227],butthenumberofpublicationsissmall,
+and it is difficult to ascertain if there is an effective gain from it. Perhaps model checking is more
+appropriate to the domain due to its non-interactive nature, since malware is inherently a game
+betweenattackersand analgorithm.
+System.Recently, we have seen the adoption of the software marketplace paradigm to prevent
+attacksandmalwaretoreachconsumersystems.Forinstance,Androidenforcespermissionsatthe
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:17
+applicationlevel,whichcould,however,leadtoprivilegeescalation[ 78].TheauthorsofReference
+[26] propose a tool-based approach, called COVERT, for compositional analysis of Android inter-
+apppermissionleakage.COVERTassessesthesecurityofasystemasawholebygeneratingAlloy
+specifications [ 131] and analysed more than 500 real-world applications, confirming the findings
+previously found within References [ 23,91], showing that many Android applications are over-
+privileged. The authors of Reference [ 25] have moved towards analysing the permission protocol
+itself, identifying design flaws where two applications can apply the same custom permission,
+resultinginfirstinstalled applicationbeingabletoaccesstheresourcesof thesecond.
+Operating systems usually contain an underlying security model amenable to FM checking.
+In Reference [ 83] the authors have verified a proposed access and integrity control for a Linux-
+like OS, using Alloy and Event-B [ 4]. While the authors have experienced scalability issues with
+Alloy,theanalysishasuncoveredbugsthatcouldbecomemoreseriousifdiscoveredintheimple-
+mentation phase. Another example is Reference [ 170], where the authors verify security policies
+in the form of invariants annotating the code of ExpressOS, a secure OS alternative to Android.
+Theauthorsutiliseautomatedtheoremproversandreporttheverificationoverhead(addedanno-
+tations)wasroughly 2.8%sourcecode.
+ConsumerIoTsystemssuchassmarthomedevicesposesecurityvulnerabilitiesandhavebeen
+widelyverifiedusingFM.TheauthorsofReference[ 153]usemodelcheckingtoolswithinAVISPA
+and by BAN logic to verify a framework ensuring anonymity, authentication, and integrity in
+smart home environments. In Reference [ 182] the authors have developed the IoTRiskAnalyzer
+toolusedtohelpengineersapplythemostfittingsecuritypolicies.Thishasbeenachievedusinga
+MarkovDecisionProcess[ 202],formalisationofriskpropertiesasprobabilisticCTLformulas,and
+verification using the PRISM model checker [ 156]. Car manufacturers are also taking advantage
+of connected devices, especially smartphones. For instance, the authors of Reference [ 53]h a v e
+developedasmartphone-basedimmobiliserwithformallyverifiedprotocolusingProVerifagainst
+a Dolev-Yaoattackermodelto ensurestrongguaranteesof securityrequirements.
+Protocols. The area of consumer communication protocols covers text and multimedia commu-
+nicationlending itselfto formalverificationofsecurity.
+In Reference [ 71] the authors have created a formal model of the Signal protocol in terms of
+predicatesandtheoremsandhaveappliedtheoremproving,resultinginimprovementsintheuse
+of theprotocol’srandomgenerator.
+Securityoftheconsumercommunicationsystemsoftendependsonthemechanismsintroduced
+in the Needham-Schroeder [ 190] authentication protocol and the Denning Sacco protocol [ 81]
+for secret key distribution. The authors of Reference [ 60] have created a simplified model of the
+Needham-SchroederNPSKprotocolandtheDenningSaccoprotocolandexpressedsecurityprop-
+ertiesusingLTL.Theauthorshaveprovidedanefficientmodelformodelcheckingofthesecurity
+propertiesusingtheSpinmodelchecker.
+Implementation. The recent adoption of FM tools by large technology companies has shaken
+up the field. If in the past FM were tied to niche safety critical domains (e.g., aerospace, railway,
+medical) and fields with significant governmental regulation, the current panorama shows that
+the future brings the usage of FM tools in the daily practice of software engineering. No matter
+the intention behind the usage of FM tools, the outcome has demonstrated a contribution to in-
+creasinglysecureimplementations.Accordingtorecentreports,whenadevelopercommitsacode
+modificationtooneofthelargetechnologycompanies’codebases,astaticanalysistoolisinvoked
+and a code review is provided. The author of Reference [ 196] describes the process as continu-
+ous reasoning, and any change to a Facebookproduct is analysed by the Infer static analysis tool,
+whichchecks“smalltheorems”onlargecodebases.Thisapproachhasbeenshowntoimprovethe
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:18 T. Kulik et al.
+security of the company’s own codebase and library implementations (e.g., OpenSSL). The same
+is reported about the software engineering practice inside Google [ 215], although it is not clear
+whetherFMisusedbyProjectZero,itselitesecurityteam.However,theauthorsofReference[ 24]
+reportonhownumeroussecurityvulnerabilitieswerefixedbyapplyingFUDGE,astaticanalysis
+toolbasedonfuzzing developedin house.
+Particularlytargetedtothesecuritydomain,theauthorsofReference[ 84]reportastaticanalysis
+tool, Zoncolan, in collaboration with the Facebook App Security team. Zoncolan uses abstract
+interpretation to analyse and issue security alerts for the implementations of the applications in
+thecompany’scodebase:Messenger,WhatsApp,Instagram,orFacebook.Thislevelofapplication
+ofFMshowstheimplementationsofsoftwareusedbymillionsofconsumershasbeensweptbya
+FMtool.
+FM is also being applied to secure implementations of web browsers, which are designed with
+security in mind because they mediate a vast amount of personal information (e.g., credentials,
+bankingdetails).Nevertheless,duetoalargeattacksurfaceofawebbrowser,attacksarepossible,
+and implementation flaws are not uncommon. In a bolder move, the authors of Reference [ 133]
+propose a new browser, QUARK, that follows the “kernel architecture”7of modern browsers, but
+QUARK’s kernel is formally verified. The formal verification yields to the Coq theorems to as-
+sertpropertiesastabnon-interference,orcookieconfidentialityandintegrity.Accordingtowork
+in Reference [ 96], the price to pay for such a prime example of functional correctness verifica-
+tion (above airline runtime error-free level) is 25% increase in overhead, affecting performance.
+Increasingbrowsers’securityrisks,browserextensionscanspyandexploitusersasdemonstrated
+in Reference [ 109]. In Reference [ 218] the authors report on a verified design of an experimental
+browser using the Maude tool and rewriting logic, and the authors of Reference [ 184] show that
+x86 native code executed by arbitrary clients conforms with a predefined sandbox policy when
+usingGoogle Chrome’s NativeClient service.
+Hardware. Incontrasttocritical-systemhardware(e.g.,fly-by-wirehardware)attackerscannot
+bepreventedfromphysicalaccesstotheconsumerhardware,whichprovidesalargeattacksurface.
+Modernconsumerhardwareprovideshardware-levelprotectionsforcriticalsoftwarecomponents.
+An example of this is ARM TrustZone [ 192], providing separation between trusted and rich soft-
+wareprovidingpotentiallyuntrustedinterfaces.TheauthorsofReference[ 93]proposeverification
+of hardware security properties by use of information flow control at the level of the Hardware
+DescriptionLanguage(HDL) suchasSecVeriLog[ 271].Theauthorscreate SecVeriLogBL ,anex-
+tensiontoSecVeriLog,byaddingnewtypesforsecuritylabelsdefinedinSecVeriLog.Thisallows
+forstaticanalysisatthedesigntime,providingalightweightverificationwithsmalleffectsonthe
+hardwareperformance.Todemonstratethisapproach,theauthorshavedesignedanimplementa-
+tionofTrustZone,including10+securitybugs.SimilarlytheauthorsofReference[ 163]presenta
+formallydefinedhardwaresecurityenforcementforx86architecture.Inthissetting,thesoftware
+relies on underlying hardware for security enforcement; for example, memory paging features of
+an x86 CPU. The authors note that incorrect implementations of hardware enforcement policies
+often lead to vulnerabilities [ 140]. The authors use Coq to model the architecture and the Coq
+theoremprover toprove thesoundnessofthesecuritypolicy.
+In the area of commodity hardware, the authors of Reference [ 239] have used model checking
+to determine possible attacks on smart meters, which are considered critical devices [ 143]. The
+authors have created a model of the smart meter using rewriting logic, formal definition of the
+7Termed multi-process architecture in Google Chrome with sandboxing of untrusted code, which accesses resources
+through a trusted broker.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:19
+attacker’s actions, and used the Maude tool to check that the attacker’s actions are not able to
+breakthesecurityinvariants.Thediscoveredattackswerethenmappedtoanimplementationofa
+smartmeter,theSEGMeter,toinvestigatethepracticalityoftheseattacks.Theauthorsdetermined
+that many attacks discovered by the model checker are indeed practical, despite the model being
+abstractand not specificallyrefinedtowardstheSEGMeterimplementation.
+Today, hardware is often packaged as an SoC, which security may be verified using the com-
+bination of integrated theorem proving and model checking proposed in Reference [ 111]. Due to
+the hierarchical nature of SoCs, the authors propose that the design expressed in HDL is decom-
+posedintosub-modulesandsecurityspecificationsintosub-specifications.Thesub-specifications
+are then verified using the Cadence IFV model checker [ 1]. These verified sub-specifications are
+then used as proven lemmas in the Coq theorem prover [ 242], removing the need to prove these
+lemmas by hand. This simplifies the model checking as well by providing only a small specifica-
+tiontothemodelchecker,avoidingthestatespaceexplosion.Theauthorsextendtheirmethodby
+automated code conversion from HDL to verifiable specification [ 112]. SoC complexity increases
+inMulti Processor SoCs (MPSoC) , where multiple processors exchange data via Network on
+aC h i p( N o C ) routers. The authors of Reference [ 220] have used unbounded model checking to
+verify security properties of an NoC, which was practical due to the highly sequential behaviour
+of NoCs. The authors formalise the security and functionality correctness properties using LTL
+andusetheCIPunboundedmodelchecker[ 155]toverifythem.Asaproofofconcept,theauthors
+have analysed six different router implementations, determining the feasibility of their approach
+for NoCsecurityanalysisin earlydesign stages.
+2.5 Enterprise
+Enterpriseandlargecorporatecomputingisthebackboneoflargeinternationalbusiness.Inrecent
+years,thereisatrendinenterprisecomputingtoutilisecloudsolutions,whilestilloftenoperating
+on-premises (local) data centers. These data centers and cloud clusters are utilised for a plethora
+of enterprise tasks such as virtualisation of collaboration platforms, company management, and
+hostingofcorporatewebportals.ThissectionprovidesanoverviewofutilisationofFMtoaddress
+securitychallengesofenterprisecomputing,rangingfromsecuredatastoragethroughvirtualisa-
+tionandsoftware-definednetworkingsecuritytostrongauthenticationusinghardwaretokens.As
+enterprisesarelargerentities,changesareoftenslowerandneedtobewellmanaged.Tothisend,
+theFMhavebeenutilisedasaboosterincloudadoptionbyenterprises,asseveralFM-basedsolu-
+tionshavebeenproposedtoenableenterprises’secureswitchfromlocaldatacenterstofederated
+cloud solutions.
+Similarlytoprevioussections,modelcheckingisthemostusedtoolinformalanalysisofsecurity
+in enterprise computing. Theorem proving is, however, not far behind, especially within analysis
+of hardware such as Trusted Platform Module chips within enterprise servers. Lightweight FM
+have also been significantly utilised at the implementation level of abstraction, since they are
+often provided as plugins to software development environments, making them easily accessible.
+Thecybersecuritytopicspresentwithintheenterprisesectionareshownin Figure 6.
+Application. Enterprise applications often process and store data critical for an organisation.
+Nowadays,suchdata iscarriedby Software-DefinedNetworking (SDN) .TheauthorsofRefer-
+ence[226]havecreatedaverificationplatformforapplicationsutilisingSDN,consistingofamod-
+elling language that could be automatically translated and dispatched to PRISM, SPIN, and Alloy
+model checkers. Any counterexamples are then displayed in the tool. Similarly to SDN, Service-
+OrientedArchitectures(SOAs) areoftenusedwithinenterpriseapplications,increasingthein-
+terconnectivityoftheseapplications.InReference[ 20]theauthorspresentaplatformforsecurity
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:20 T. Kulik et al.
+Fig.6. Cyber securitytopics intheenterprisesection.
+assessmentofSOAsutilisingaformalspecificationlanguageandseveralmodelcheckers,namely,
+CL-AtseandOFMC.TheauthorsuncoveredanissuewithSAML-SSOintegrationinGoogleApps.
+Enterprise data are often stored within large relational databases. In this context, the authors
+ofReference[ 61]haveproposedamethodforsecureoutsourcingofdatabasestountrustedservers,
+buildinguponthenotionofVerifiableDatabases[ 36],andutilisedtheoremprovingtodemonstrate
+their method as secure.Another often used technology in the cloud is virtualisation. The authors
+of Reference [ 222] introduce a formal analysis scheme for security of Xen hypervisor, consisting
+of model checking and static analysis, successfully rediscovering a known vulnerability. Finally,
+wewouldliketopointtotheworkwithinReference[ 72]describinghowaleadingcloudprovider
+utilises FM for security of their services, noting that the benefits of FM are important to their
+customers.
+System.Nowadays, large enterprises can either host their own infrastructure, fully utilise the
+cloud, or partially combine their infrastructure with the cloud, leading to federated cloud sys-
+tems [183]. The authors of Reference [ 270] have proposed a method for analysis of federated
+cloud behaviour utilising CPN and CPN tools [ 137], creating several models for security analy-
+sis.Similarly,theauthorsofReference[ 256]haveusedZwithZ/EVEStheoremprovertoformally
+analyse a data exchange system against confidentiality and integrity properties, while also gen-
+erating tests utilising the domain theory [ 39]. In Reference [ 135], the authors present a formal
+approach to analysis of firewall rules and cloud topology based on Mobile Ambients [ 55] and the
+non-interfering Boxed Ambients calculus [ 51]. As cloud computing is often built utilising shared
+resources, the authors of Reference [ 169] have built an offline framework for formal analysis of
+network isolation properties, ensuring isolation among shared resources. This has been carried
+out by use of first order logic and the constraint satisfaction solver Sugar [ 240]. Similarly, the au-
+thors of Reference [ 173] have proposed a security framework for cloud complexity management
+(agent) system [ 113], utilising the Z/EVES theorem prover to analyse several cloud security prop-
+erties within a NIST [ 43] cloud reference architecture. Also, in Reference [ 232], the authors have
+proposedabrokersolutionforautomaticallypairingcloudserviceswithcustomerswhilemanag-
+ingthecloudcomplexity.Animportantpartofthebrokerisfindingaservicesatisfyingcustomers
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:21
+security requirements, defined in first-order relational logic [ 130] using KODKOD finite model
+finder [244].
+Several works also consider virtualisation within the cloud system. For example, the authors
+of Reference [ 117] have proposed a formal framework for analysis of security and trust in virtu-
+alised system, combining hardware and software models expressed in CSP# [ 238] dispatched to
+the PAT model checker discovering a subtle bug in a real-world cloud system. Similarly, the au-
+thorsofReference[ 42]haveproposedasecuritysubsystemforchangeanalysiswithinvirtualised
+infrastructures in relation to security policies by utilisation of graphs and graph transformations
+dispatchedtoGROOVE modelchecker[ 102].
+Protocols. Enterprise computing is moving towards the cloud, creating need for secure commu-
+nicationprotocols,benefitingfrom FManalysis.
+Amazoncloudservices[ 13]usethes2n[ 14],theopensourceimplementationoftheTLSproto-
+col, utilising FM to prove its correctness. For example, in Reference [ 64] the authors demonstrate
+that theHashed based Message Authentication Code (HMAC) utilised by the protocol is in-
+distinguishablefromarandomgeneratorusingCryptolspecificationlanguage[ 89]describingthe
+HMAC,whichwasthendispatchedtoCoqtheoremproverandtheresultsareconnectedwiththe
+implementationbyuseofSoftwareAnalysisWorkbench[ 100].IntheMicrosoftcloud,theauthors
+of Reference [ 136] have developed a tool for analysis of network protocols to assist with the task
+of network policy maintenance within data centers by use of the Z3 SMT solver, providing an
+important security tooling for Azure cloud services. Since the cloud services are often accessed
+remotely,theauthorsofReference[ 151]haveutilisedAlloyanalysertofindvulnerabilitiesinthe
+SAMLprotocol[ 125].
+Nowadays, clouds collect data from small-footprint IoT devices [ 185], which prompted the au-
+thors of Reference [ 141] to propose a lightweight mutual authentication protocol and verify it
+against several attacks using OFMC and CL-AtSe. Similarly, the authors of Reference [ 212]h a v e
+proposed a mobile authentication scheme verified using ProVerif. The IoT devices could take ad-
+vantage of the 5G networks, where in Reference [ 33] the authors use Tamarin, finding an issue
+with the authentication sub-protocol, while the authors of Reference [ 8] have analysed the au-
+thenticationframeworkprotocol[ 269]andthemobileethernetprotocol[ 128]byexpressingthem
+in the CSP, which was subsequently dispatched to the FDR model checker for analysis against
+mutualauthenticationproperties.
+Implementation. Enterprise computing is often composed of many applications implemented
+usingdifferenttechnologies.Forexample,theauthorsofReference[ 195]havecreatedastaticcode
+analysistoolforPHPplugins, phpSafe,thatwasthenutilisedtodiscoverover580vulnerabilitiesin
+severalPHPplugins.Insimilarfashion,theauthorsofReference[ 267]havecreatedatoolutilising
+invariant analysis [ 116] for malicious behaviour detection, noting the high effectiveness of logic
+flawsin severalwebapplications.
+Hypervisorsareanimportantpartofenterprisecomputing.Totheendofsecurityimplementa-
+tionofhypervisors,theauthorsofReference[ 252]havecreatedaframeworkforimplementation
+ofsecurityverifiedhypervisorsbasedonbehaviouralcontractsandverifiedusingFRAMA-C[ 225]
+forstaticanalysisofthebehaviouralcontracts.Similarly,theauthorsofReference[ 251]hav ecr e-
+atedahypervisorframeworkforverificationofmemoryintegritywithinsingleguesthypervisors
+utilisingtheCBMCmodel checker[ 67] forautomatedanalysisof most of thecodebase.
+Hardware. Enterprise computing requires significant cloud hardware infrastructure and as-
+surances such as data confidentiality and computational security. Customers often consider
+a cloud provider as an untrusted entity, where the administrators themselves could pose a
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:22 T. Kulik et al.
+securitythreat[ 217].Inthisregard,theauthorsofReference[ 219]createdacloudisolationsystem,
+separating the user data from administrators and limiting the operations that the administrators
+could take against a user’s virtual machine, utilising a hardware module, that the authors named
+Trusted Cloud Module (TCM), which provides a limited set of interfaces to the cloud admin-
+istrator, manages encryption keys, and provides secure storage for the user. The module is built
+fromoff-the-shelfhardwarecomponentsusingtheScytherverificationtool.Similarly,thebasisof
+any trusted computing is the Trusted Platform Module (TPM) co-processor providing secure
+storage and computing environment. Unfortunately, the security of platforms using TPM is of-
+tennotformallyverifiedleadingtovulnerabilities[ 50].Tomitigatethis,theauthorsofReference
+[27]h a v ep r o p o s e d TRUSTFOUND, a formal modelling framework for model checking utilising
+a Trusted CSP#, an extension of CSP#, and LS2[77], where the PAT model checker is used for
+verificationand detectingsiximplied assumptionsand twosevere logic flaws.
+Sometimes, to provide strong authentication, small One Time Password (OTP) generation
+hardware is used by enterprises to authenticate users towards cloud services [ 45]. One such de-
+vice isYubikey, a USB OTP generator. In Reference [ 154], the authors have formally analysed the
+security of the Yubikey OTP and also a security of the Hardware Security Module (HSM) .A n -
+otherchallengeinthisareaisaddressingCPUside-channelattacks.Oneoftheseattacksisatiming
+channelattack,whereanattacker,possiblyavirtualmachine,coulddeterminethealgorithmexe-
+cutedbyanothervirtualmachineinasharedenvironment.Tosolvethis,theauthorsofReference
+[92]haveproposed TimingCompartments ,anisolationschemeimplementedinhardwareisolating
+timing information between parties sharing the resources. The scheme was checked by informa-
+tionflow analysisusingSecVerilog.
+3 FUTURE OUTLOOK
+This survey has provided an overview of use of FM within security in several domains. Based
+on the research conducted within these domains, it is expected that in some cases the use of FM
+will accelerate while, in other cases, the use will increase with a slower pace. There is, however,
+a general trend of increase of adoption. In cases within the financial domain, it is clear that the
+use of FM comes with new financial technologies such as cryptocurrencies and smart contracts.
+This adoption could be seen in a survey aimed specifically at the smart contracts domain [ 119].
+Theuseofmobileapplicationsinthefinancialdomainisalsospurringademandforhighsecurity
+assurance that could be delivered by use of FM. Finally, with the rise of cryptocurrencies, the
+hardware within the financial domain is being specialised to facilitate transactions. It is expected
+thatthesecurityofthishardwarewillcontinuetobescrutinisedformallywithincreasingcoverage
+andcomplexity.
+The industrial domain faces its own set of unique challenges in the area of cyber security. It
+is expected that with increase in automation complexity and use of digital technologies in criti-
+cal industrial installations, FM will play a crucial role. The trend was already presented in 2015
+by Reference [ 148], who have surveyed approaches for security and safety of industrial control
+systems,includinginformalapproaches.Asofnow,mostworkswithinthisdomainareofreactive
+nature, i.e., analysis of existing systems and protocols. However, several works within the survey
+show a trend towards utilisation of FM early in the design process of new industrial installations
+andprotocols.Anotheremergingtrendwithintheindustrialdomainisintegrationofformalveri-
+fication tools with the software development processes, this is clear primarily in terms of robotic
+applications and PLC code. It is expected that with increasing complexity of robotic applications
+andunderlyinghardware,FMwill playa significantrole in thefuture.
+The domain of consumer computation is a rapidly evolving one. The consumer trends move
+fast; however, a somewhat surprising amount of work is already put forward to use of FM in
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:23
+malware protection [ 37], going as far as creation of formally verified Internet browsers. Also, the
+shiftofcomputationfromcomputerstosmartphoneshasbroughtnewsecuritychallenges.Inthis
+area, a lot of focus has already been put on analysis of the Android OS permission system. This
+area shows an increase in the amount of research and as long as the mobile OSs are in use by
+millions of users, the formal verification will accelerate, possibly leading to full formal security
+verification of a popular mobile OS. Consumer hardware such as smartphones is putting into use
+TPMs, securing mobile computation. Also in this area, the use of FM is increasing, specifically to
+ensurethepropertiesofthesecureTPMenclave.
+Finally, the domain of enterprise computation has uncovered several interesting trends. The
+first of these is a trend to use FM against virtualisation hypervisors to analyse security proper-
+ties of existing virtual environments as well as use the knowledge to build fully formally verified
+hypervisors.Anotherimportanttrendisthesignificantinvestmentthatmajorcloudcomputation
+providers are putting into formal verification of security of their products. To this end, not only
+haveexistingtoolsbeenapplied,butthecloudprovidershaveturnedtowardsdevelopmentoftheir
+ownFMtools.Bothofthesetrendsareexpectednotonlytocontinuebutalsotoacceleratedueto
+theever-increasingpopularityofcloudcomputingandvirtualisation.Severalofthesetrendswere
+already mentionedin 2002byReference[ 139].
+Itisimportanttonotethatseveralauthorshaveexpressedawishforimprovementofautomated
+formal verification tools. This is to allow for simplified entry of non-practitioners to the world of
+FM. Both academia and industry are moving towards addressing this wish, with tools becoming
+similar to software development IDEs and in some cases integration of FM toolkit directly to an
+existingIDE.ItisexpectedthatknowledgeofFMwillbecomeimportantforsystemandsoftware
+engineering disciplines in the future, and therefore collaborative projects between industry and
+academiashallprovideexpertsinthisdomain.Theseissueshavebeendiscussedforseveralyears
+now [79].
+WhenitcomestoFMtechniques,staticanalysistoolsarebecomingpopularinsoftwaredevelop-
+ment, while model checking is moving strongly towards system design and protocol verification,
+with model checking being designed for specific problems. Theorem proving is also showing a
+promiseofplayingacrucialroleinthefuture,giventhattheperceivedlargelearningcurvecould
+be minimised.
+AstheuseofFMisacceleratingwithinallofthedifferentdomainsconsideredinthissurvey,it
+isimperativethatanewupdatedsurveyiscarriedoutin5to10years.Bythenitisexpectedthat
+the tools will reach the quality of commercial-grade IDEs and integration with a wide variety of
+texteditors[ 245],andthetechniqueswillbecomeaknownfactorwhendevelopinganddesigning
+a new system,application,or ahardwarecomponent.
+4 CONCLUSIONS
+Morethan30yearsago,Burrowsetal.publishedtheirpioneeringworkontheBANlogicforsecu-
+rityprotocolanalysis[ 52].Theirworkwasnotfullyformalandwasshowntopermitapprovalof
+dangerousprotocols.Nevertheless,theyshowedthattheirlogicwasgoodatrevealingvarioussub-
+tle security flaws and drawbacks, specifically in authentication protocols. They set out to answer
+five questions:
+(1) Doesthisprotocolwork?
+(2) Can it bemade towork?
+(3) Exactly whatdoesthisprotocolachieve?
+(4) Doesthisprotocolneedmore assumptionsthananotherprotocol?
+(5) Doesthisprotocoldo anythingunnecessary?
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:24 T. Kulik et al.
+Their important paper inspired a generation of security researchers to use FM to devise and anal-
+ysesecurityprotocolsandtoanswersimilarquestions.Furthermore,indescribingthebenefitsof
+formal verification for software engineering, Dijkstra famously quoted, “Testing shows the pres-
+ence, not the absence of bugs.” More than 50 years later, in the setting of computer security, we
+mightnowhavesufficientevidencetoclaim“Formalmethodsshowthepresence,nottheabsence
+ofsecurityflaws”[ 54].Thatis,althoughFMprovidesrigoroustoolsandtechniquesforprovingthe
+absenceofsecurityflaws,thisrigourcomeswithaproviso:Proofsareonlypossibleifthesecurity
+flaw is documented and specified within a formal framework. Current limitations mean that FM
+cannotuncoverany newflaws,sincewemay notactually belookingforthem.
+Take for instance the recent Spectre and Meltdown attacks [ 145]. Like many vulnerabilities,
+both attacks have been shown to exist for a range of processors that make use of speculative ex-
+ecution, and mitigation against these requires software-side interventions. However, despite the
+widespread nature of these vulnerabilities, the attacks themselves were not discovered through
+formal verification, but rather through a series of experiments over the training and timing of
+micro-architecturalcomponents.Fortunately,onceasecurityflawhasbeenuncovered,evencom-
+plex attacks such as Spectre and Meltdown can be formally characterised and isolated [ 59]. Once
+this has been done, the next phase is a formal framework for reasoning about such issues, fol-
+lowed by more streamlined tools to scale verification to larger-scale systems. Thus, as important
+as it is to continue research into the practical use of FM in security, it is equally important to ex-
+pand our reasoning capabilities for FM in security through the study of theoretical aspects of the
+discipline. Without this, there is a possibility of a new type of security flaw that falls outside the
+realms of current-day logics. Variants of Spectre and Meltdown, for instance, can be captured by
+subset-closed hyper-properties [ 59]. Hence, without existing works on hyper-properties [ 68]a n d
+subsequentworksontheirverification[ 59,106,107],thespecificationandthereforeuseofFMto
+protectagainstSpectreand Meltdownwould havebeenmuchmore difficult.
+As for the utilisation of different FM techniques, we have uncovered that model checking is
+often a choice of practitioners when analysing wider systems. From the surveyed works, a trend
+could be seen where the model checking is often considered a good approach due to significant
+amount of tool support, plethora of modelling languages to choose from, the ability to carry out
+an exhaustive analysis, and even existence of model checkers specifically aimed at security anal-
+ysis [200]. We could determine that even against problems where model checking would suffer
+from the size of the problem, the authors scope the problem such that it becomes analysed par-
+tially,specificallyaimingatacriticalpartsofthesystemoranapplication.Insomecases,eitherdue
+tothelargesizeoftheproblemortheproblem’ssuitability,theFMpractitionerschoosetoutilise
+theoremproving.Whilethetoolsupportisnotonparwithmodelcheckingandthelearningcurve
+issteeper,theoremprovingprovidesexhaustiveanalysisofsystemsthatwouldoverwhelmmodel
+checkers. We are, however, observing that theorem proving needs to become more accessible to
+systemandsoftwareengineerstoincreaseitsutilisation.Finally,aspecialcategoryoflightweight
+FMprovidesaninterestingentrypointtotheworldofFM.Ononehand,theinabilitytocarryout
+exhaustive analysis could be seen as a downside, but on the other hand, it could be argued that
+lightweightFMarereachingubiquitywithintheengineeringworld.Forexample,staticcodeanal-
+ysersarenotonlybecomingusedwithinsoftware-buildtoolchainsbutoftenintegrateddirectlyto
+software-integrateddevelopmentenvironments[ 221],beingatthefingertipsofsignificantportion
+of software developers around the world. As pondered in the Section 3, this could be one of the
+catalystsbringingtheFM totheforeground insystemdesign anddevelopment.
+Inthisarticle,wehaveshownhowFMhavehadanimpactonsocietysofarandhowthisimpact
+will increase in the future. In the past, security has been an optional extra that industry does not
+want to invest in during development. But times are changing. For example, security has become
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:25
+acoresellingpointforAmazonWebServices(seeSection 2.4).FMhavebeenusedsuccessfullyfor
+securityanalysisinthefinancial,industrial,consumer,and enterprisesectors(seeSection 2).
+Specification Languages and Associated Tools
+Our survey covers more than a decade of the use of FM in security. It reveals the rich variety of
+formal specification languages and their tools, theorem provers, model checkers, and verification
+frameworks. We have recorded more than 40 different specification languages and more than 40
+different verificationtools.Theseincludethefollowing:
+Specification languages. AADL (Architecture Analysis & Design Language) [18,70],ASF
+(Anonymous Secure Framework) [153],ASLan++ (AVANTSSAR Specification Language)
+[20],BANlogic[ 52,228],Boogie[ 31],BoxedAmbients[ 135],CASM(ASM-basedSLforcompil-
+ers)[252],CCS(CalculusofCommunicatingSystems) [152],COVERT(compositionalanal-
+ysisofAndroidapps) [26],CSP(CommunicatingSequentialSystems) [120],CSP#(shared
+variables CSP) [237],CTL (Computation tree temporal logic) [229], Cloud Calculus [ 135],
+Cryptol [ 89], Dynamic State Machine [ 187], ERC20 token contracts [ 199], Event-B [ 83],HLPSL
+(High Level Protocol Specification Language) [44], Hoare logic [ 108],LS2 (Logic of Secure
+Systems) [27],LTL (linear-time temporal logic) [266], Markov Decision Process [ 182], Petri
+nets [15],π-calculus [ 40], PlusCal [ 9], Promela [ 172],RTL (real-time logic) [110],SPDL (Secu-
+rity Protocol Description Language) [168], SysML-Sec [ 18],TLA+ (Temporal Logic of Ac-
+tions)[72],TrustedCSP#[ 27],überSpark[ 252],VDM[98],Verilog[ 164],VHDL[ 111],VML[226],
+vTRUST [ 117],XMHF (eXtensible and ModularHypervisorFramework) [251], Z[265].
+Model checkers. AVISPA (Automated Validation of Internet Security Protocols and Ap-
+plications) [21],Alloy[83],CBMC(BoundedModelCheckerforCandC++) [58],CWB-NC
+(Concurrency Workbench of New Century) [152],Cadence IFV (RTL block-level verifier)
+[111], FDR [103], GROOVE [ 102], jKind [99], NuSMV [ 65],OFMC (on-the-fly model checker)
+[34],PAT (Process Analysis Toolkit for CSP #)[237],PRISM (probabilistic model checker)
+[182],SATMC (SAT-based model checker for security protocols) [44], SPIN [247], TRUST-
+FOUND[ 27],UPPAAL[ 177],UVHM (formalanalysisschemeforhypervisors) [251].
+Theoremprovers. Coq[72],Isabelle/HOL[ 144],K-framework[ 199],TAMARIN[ 154],Why[95].
+Verification tools and frameworks. AndroBugs (Framework For Android Vulnerability
+Scanning) [241],Cl-Atse (protocol analyser) [141],FUDGE (Fuzz driver generator) [24],
+Frama-C[ 252],Krakatau[ 152],Maude(rewriteengine) [193],MobSF(mobilesecurityframe-
+work)[127],phpSAFE[ 195],ProVerif[ 40],Quark[ 134],SAW(SoftwareAnalysisWorkbench)
+[72],SMACK[ 72],SecGuru[ 136],SecVeriLog[ 92],Sugar(SAT-based) [169],TTool(translator
+from SysML-Secto π-calculus) [18],Z3[22].
+This shows how research and application in FM for security has developed since Burrows
+et al.’s seminal paper [ 52]. Our survey concentrated in particular on the practical application of
+these techniques, especially on an industrial scale. Today, it seems inconceivable that a company
+would produce a commercial secure system without subjecting it to formal analysis. We also sus-
+pectthathackersuseformaltechniquestocracksupposedlysecuresystems.
+Asafinalstatement,weneedtoacknowledgethatasurveyprovidesasnapshotintimewithin
+a developing field. It is therefore necessary to return to a survey work every decade, something
+weareplanningondoing.Despitethisshortcoming,itistheopinionoftheauthorsthatasurvey
+work is an important part of the research, as it provides a starting point and a direction indicator
+for new and experienced practitioners looking for works under the large field of formal methods
+in security.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:26 T. Kulik et al.
+APPENDIX
+Thisappendixprovidesanoverviewoftheseveralsurveyedresearchworksintheformofacross-
+tabulation according to Reference [ 166]. We group the 115 covered references by Domain, Level
+OfAbstraction (LOA) andApproach (App.) .
+Table 1. TheSortingof the120 Works Leading totheTaxonomy
+Displayedin Figure 2
+Domain LOA App. Works
+FinancialApplicationMC [ 63,126,152,249]
+TP [ 17,198]
+SystemLW [ 2]
+MC [ 7,87,197,216,268,272]
+ProtocolMC [ 5,11,44,118,266]
+TP [ 168]
+ImplementationLW [ 98,127,241]
+MC [ 16]
+TP [ 94]
+HardwareMC [ 22,62]
+TP [ 19,171]
+IndustrialApplication MC [ 120,146,177,193,254,273]
+SystemLW [ 246]
+MC [ 82,114,150,211,214,255]
+ProtocolLW [ 15,224]
+MC [ 49,187,203]
+TP [ 86]
+ImplementationLW [ 196]
+MC [ 18,70,223,247]
+TP [ 70]
+HardwareMC [ 3]
+TP [ 110,124,162,164]
+ConsumerApplicationLW [ 75,76,167,174]
+MC [ 178,229–231]
+TP [ 227]
+SystemMC [ 25,26,53,83,153,182]
+TP [ 170]
+ProtocolMC [ 60]
+TP [ 71]
+ImplementationLW [ 24,84]
+MC [ 218]
+TP [ 109,133,184]
+HardwareLW [ 93]
+MC [ 111,220,239]
+TP [ 111,163]
+EnterpriseApplicationMC [ 20,72,222,226]
+TP [ 61,72]
+SystemLW [ 270]
+MC [ 42,117,169,232]
+TP [ 135,173,256]
+ProtocolMC [ 8,141,151,212]
+TP [ 33,64,136]
+ImplementationLW [ 195,252,267]
+MC [ 251]
+TP [ 199]
+HardwareLW [ 92]
+MC [ 27]
+TP [ 154,219]
+ACKNOWLEDGMENTS
+WewouldliketothankNickBattle,JacovandePol,andBasSpittersforreviewsofearlierversions
+of this article. We would also very much like to thank the anonymous reviewers of an earlier
+versionof thisarticlefortheirvaluable input,whichdefinitely improved it.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:27
+REFERENCES
+[1] JasperRTLApps.2020.CadenceIFVModelChecker.Retrievedfrom www.cadence.com/en_US/home/tools/system-
+design-and-verification/formal-and-static-verification/jasper-gold-verification-platform.html .
+[2] Fides Aarts, Joeri De Ruiter, and Erik Poll. 2013. Formal models of bank cards for free. In IEEE 6th International
+Conferenceon Software Testing, Verification andValidation Workshops .IEEE, 461–468.
+[3] Imran Hafeez Abbasi, Faiq Khalid Lodhi, Awais Mehmood Kamboh, and Osman Hasan. 2017. Formal verification
+of gate-level multiple side channel parameters to detect hardware trojans. In Formal Techniques for Safety-critical
+Systems,Cyrille Artho andPeterCsabaÖlveczky (Eds.).Springer InternationalPublishing, Cham,75–92.
+[4] Jean-RaymondAbrial.2010. ModelinginEvent-B:SystemandSoftwareEngineering .CambridgeUniversityPress,Cam-
+bridge,UK. DOI:https://doi/10.1017/CBO9781139195881
+[5] S. Abughazalah, K. Markantonakis, and K. Mayes. 2014. Secure mobile payment on NFC-enabled mobile phones
+formallyanalysedusingCasperFDR.In IEEE13thInternationalConferenceonTrust,SecurityandPrivacyinComputing
+and Communications . IEEE, 422–431.
+[6] Sarita V. Adve and Kourosh Gharachorloo. 1996. Shared memory consistency models: A tutorial. IEEE Comput. 29,
+12(1996),66–76.
+[7] Shakeel Ahamad, Siba Udgata, and V. Sastry. 2012. A new mobile payment system with formal verification. Int. J.
+InternetTechnol.Secur. Trans. 4 (012012),71–103. DOI:https://doi/10.1504/IJITST.2012.045153
+[8] Mahdi Aiash. 2015. A formal analysis of authentication protocols for mobile devices in next generation
+networks. Concurr. Computat.: Pract. Exper. 27, 12 (2015), 2938–2953. DOI:https://doi/doi.org/10.1002/cpe.3260
+arXiv:onlinelibrary.wiley.com/doi/pdf/10.1002/cpe.3260 .
+[9] Sabina Akhtar, Ehtesham Zahoor, and Olivier Perrin. 2017. Formal verification of authorization policies for enter-
+prisesocialnetworksusingPlusCal-2.In CollaborativeComputing:Networking,ApplicationsandWorksharing-13th
+International Conference, CollaborateCom 2017, Edinburgh, UK, December 11–13, 2017, Proceedings (Lecture Notes of
+theInstituteforComputerSciences,SocialInformaticsandTelecommunicationsEngineering,Vol.252) ,ImedRomdhani,
+LeiShu, Takahiro Hara,ZhangbingZhou, TimothyJ. Gordon,and DezeZeng(Eds.).Springer, 530–540.
+[10] Jade Alglave, Alastair F. Donaldson, Daniel Kroening, and Michael Tautschnig. 2011. Making software verification
+tools really work. In Automated Technology for Verification and Analysis , Tevfik Bultan and Pao-Ann Hsiung (Eds.).
+Springer Berlin,28–42.
+[11] A.Alshehri,J.A.Briffa,S.Schneider,andS.Wesemeyer.2013.FormalsecurityanalysisofNFCM-couponprotocols
+using Casper/FDR. In 5th International Workshop on Near Field Communication (NFC) .1 – 6 . DOI:https://doi/10.1109/
+NFC.2013.6482439
+[12] R.Alur,C.Courcoubetis,andD.Dill.1990.Model-checkingforreal-timesystems.In 5thAnnualIEEESymposiumon
+Logic in ComputerScience . IEEE, 414–425. DOI:https://doi/10.1109/LICS.1990.113766
+[13] Amazon.com Inc.2019.Amazon SimpleStorage Service (S3). Retrievedfrom http://www.aws.amazon.com/s3/ .
+[14] Amazon.com Inc.2019.s2n. Retrievedfrom http://www.github.com/awslabs/s2n .
+[15] Raphael Amoah, Seyit Camtepe, and Ernest Foo. 2016. Formal modelling and analysis of DNP3 secure authentica-
+tion.J. Netw. Comput. Applic. 59 (2016), 345–360. Retrieved from http://www.sciencedirect.com/science/article/pii/
+S1084804515001228 .
+[16] Marcin Andrychowicz, Stefan Dziembowski, Daniel Malinowski, and Łukasz Mazurek. 2014. Modeling Bitcoin con-
+tracts by timed automata. In Formal Modeling and Analysis of Timed Systems , Axel Legay and Marius Bozga (Eds.).
+Springer InternationalPublishing,Cham,7–22.
+[17] DanilAnnenkovandMartinElsman.2018.Certifiedcompilationoffinancialcontracts.In 20thInternationalSympo-
+sium on Principles and Practice of Declarative Programming (PPDP’18) . Association for Computing Machinery, New
+York, NY. DOI:https://doi/10.1145/3236950.3236955
+[18] L. Apvrille, L. Li, and Y. Roudier. 2016. Model-driven engineering for designing safe and secure embedded systems.
+InArchitecture-Centric Virtual Integration (ACVI) .IEEE, 4–7. DOI:https://doi/10.1109/ACVI.2016.6
+[19] MyrtoArapinis,AndrianaGkaniatsou,DimitrisKarakostas,andAggelosKiayias.2019.Aformaltreatmentofhard-
+ware wallets. In Financial Cryptography and Data Security , Ian Goldberg and Tyler Moore (Eds.). Springer Interna-
+tionalPublishing,Cham,426–445.
+[20] AlessandroArmando,WihemArsac,TigranAvanesov,MicheleBarletta,AlbertoCalvi,AlessandroCappai,Roberto
+Carbone, Yannick Chevalier, Luca Compagna, Jorge Cuéllar, Gabriel Erzse, Simone Frau, Marius Minea, Sebastian
+Mödersheim, David von Oheimb, Giancarlo Pellegrino, Serena Elisa Ponta, Marco Rocchetto, Michael Rusinowitch,
+Mohammad Torabi Dashti, Mathieu Turuani, and Luca Viganò. 2012. The AVANTSSAR platform for the automated
+validation of trust and security of service-oriented architectures. In Tools and Algorithms for the Construction and
+Analysisof Systems ,Cormac FlanaganandBarbaraKönig(Eds.). Springer Berlin,267–282.
+[21] A. Armando, D. Basin, Y. Boichut, Y. Chevalier, L. Compagna, J. Cuellar, P. Hankes Drielsma, P. C. Heám, O.
+Kouchnarenko, J. Mantovani, S. Mödersheim, D. von Oheimb, M. Rusinowitch, J. Santiago, M. Turuani, L. Viganò,
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:28 T. Kulik et al.
+andL.Vigneron.2005.TheAVISPAtoolfortheautomatedvalidationofinternetsecurityprotocolsandapplications.
+InComputerAided Verification , Kousha EtessamiandSriram K.Rajamani(Eds.).Springer Berlin,281–285.
+[22] Anish Athalye, Adam Belay, M. Frans Kaashoek, Robert Morris, and Nickolai Zeldovich. 2019. Notary: A device
+for secure transaction approval.In 27th ACMSymposium on Operating Systems Principles (SOSP’19) . Association for
+ComputingMachinery, NewYork, NY, 97–113. DOI:https://doi/10.1145/3341301.3359661
+[23] Kathy Wain Yee Au, Yi Fan Zhou, Zhen Huang, and David Lie. 2012. PScout: Analyzing the Android permission
+specification.In ACMConferenceonComputerandCommunicationsSecurity (CCS’12) .ACM,NewYork,NY,217–228.
+DOI:https://doi/10.1145/2382196.2382222
+[24] DomagojBabić,StefanBucur,YaohuiChen,FranjoIvančić,TimKing,MarkusKusano,CarolineLemieux,LászlóSzek-
+eres,andWeiWang.2019.FUDGE:Fuzzdrivergenerationatscale.In 201927thACMJointMeetingonEuropeanSoft-
+wareEngineeringConferenceandSymposiumontheFoundationsofSoftwareEngineering (Tallinn,Estonia) (ESEC/FSE
+2019). Association for ComputingMachinery, New York, NY, 975–985. DOI:https://doi/10.1145/3338906.3340456
+[25] HamidBagheri,EunsukKang,SamMalek,andDanielJackson.2018.Aformalapproachfordetectionofsecurityflaws
+intheAndroidpermissionsystem. Form.A sp .Comput. 30,5(01Sep.2018),525–544. DOI:https://doi/10.1007/s00165-
+017-0445-z
+[26] H.Bagheri,A.Sadeghi,J.Garcia,andS.Malek.2015.COVERT:CompositionalanalysisofAndroidinter-apppermis-
+sion leakage. IEEETrans.Softw.Eng. 41,9(Sep.2015),866–886. DOI:https://doi/10.1109/TSE.2015.2419611
+[27] GuangdongBai,JiananHao,JianliangWu,YangLiu,ZhenkaiLiang,andAndrewMartin.2014.TrustFound:Towards
+aformalfoundationformodelcheckingtrustedcomputingplatforms.In FM2014:FormalMethods ,CliffJones,Pekka
+Pihlajasaari,andJun Sun (Eds.). Springer InternationalPublishing,Cham,110–126.
+[28] Manuel Barbosa, Gilles Barthe, Karthik Bhargavan, Bruno Blanchet, Cas Cremers, Kevin Liao, and Bryan Parno.
+2019. SoK: Computer-Aided Cryptography. Cryptology ePrint Archive. Retrieved from http://www.eprint.iacr.org/
+2019/1393 .
+[29] John Barnes.2012. Spark: TheProven Approach to High Integrity Software . AltranPraxis, UK.
+[30] Janet Barnes, Rod Chapman, Randy Johnson, James Widmaier, David Cooper, and Bill Everett. 2006. Engineering
+the Tokeneer enclave protection system. In 1st IEEE International Symposium on Secure Software Engineering . IEEE
+Computer Society Press.
+[31] MichaelBarnett,Bor-YuhEvanChang,RobertDeLine,BartJacobs,andK.RustanM.Leino.2005.Boogie:Amodular
+reusableverifierforobject-orientedprograms.In FormalMethodsforComponentsandObjects,4thInternationalSym-
+posium, FMCO 2005, Amsterdam, The Netherlands, November 1–4, 2005, Revised Lectures (Lecture Notes in Computer
+Science,Vol.4111) ,FrankS.deBoer,MarcelloM.Bonsangue,SusanneGraf,andWillemP.deRoever(Eds.).Springer,
+Berlin,364–387.
+[32] DavidBasin.2021.Formalmethodsforsecurity.In TheCyberSecurityBodyofKnowledgev1.1 ,AwaisRashid,Howard
+Chivers, Emil Lupu, Andrew Martin, and Steve Schneider (Eds.). University of Bristol. Retrieved from http://www.
+www.cybok.org .
+[33] DavidBasin,JannikDreier,LuccaHirschi,SašaRadomirovic,RalfSasse,andVincentStettler.2018.Aformalanalysis
+of 5Gauthentication.In ACMSIGSAC Conferenceon Computer andCommunications Security . 1383–1396.
+[34] David A. Basin, Sebastian Mödersheim, and Luca Viganò. 2005. OFMC: A symbolic model checker for security pro-
+tocols.Int.J.Inf.Sec. 4,3(2005),181–208.
+[35] Elyes Ben Hamida, Kei Leo Brousmiche, Hugo Levard, and Eric Thea. 2017. Blockchain for enterprise: Overview,
+opportunities and challenges. In 13th International Conference on Wireless and Mobile Communications (ICWMC’17) .
+IARIA XPS Press. Retrievedfrom http://www.hal.archives-ouvertes.fr/hal-01591859 .
+[36] Siavosh Benabbas, Rosario Gennaro, and Yevgeniy Vahlis. 2011. Verifiable delegation of computation over large
+datasets.In Advances in Cryptology –CRYPTO2011 , PhillipRogaway(Ed.).Springer Berlin,111–131.
+[37] FabrizioBiondi,ThomasGiven-Wilson,AxelLegay,CassiusPuodzius,andJeanQuilbeuf.2018.Tutorial:Anoverview
+of malwaredetectionandevasiontechniques.In LeveragingApplicationsofFormalMethods,Verification andValida-
+tion. Modeling ,TizianaMargariaandBernhard Steffen (Eds.). Springer InternationalPublishing, Cham,565–586.
+[38] DinesBjørner.1979.TheViennadevelopmentmethod(VDM).In MathematicalStudiesofInformationProcessing ,E.K.
+Blum,M.Paul,andS. Takasu(Eds.). Springer Berlin,326–359.
+[39] M. R. Blackburn, Ramaswamy Chandramouli, and Robert Busser. 2001. Model-based approach to security test au-
+tomation. Qual.Week (012001).
+[40] Bruno Blanchet. 2016. Modeling and verifying security protocols with the applied pi calculus and ProVerif. Found.
+Trends Priv. Secur. 1,1–2 (2016),1–135.
+[41] BrunoBlanchet,BenSmyth,VincentCheval,andMarcSylvestre.2018. ProVerif2.00:AutomaticCryptographicProtocol
+Verifier, User Manual and Tutorial . INRIA.
+[42] Sören Bleikertz, Carsten Vogel, Thomas Groß, and Sebastian Mödersheim. 2015. Proactive security analysis of
+changes in virtualized infrastructures. In 31st Annual Computer Security Applications Conference (ACSAC’15) .A s -
+sociation for ComputingMachinery, NewYork, NY, 51–60. DOI:https://doi/10.1145/2818000.2818034
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:29
+[43] R.Bohn,JohnMessina,FangLiu,JinTong,andJianMao.2011.NISTcloudcomputingreferencearchitecture.594–596.
+DOI:https://doi/10.1109/SERVICES.2011.105
+[44] Sriramulu Bojjagani and V. N. Sastry. 2015. SSMBP: A secure SMS-based mobile banking protocol with formal veri-
+fication.In WiMob Conference .IEEE Computer Society, 252–259.
+[45] J. Bonneau, C. Herley, P. C. v. Oorschot, and F. Stajano. 2012. The quest to replace passwords: A framework for
+comparativeevaluationof web authenticationschemes. In IEEESymposium on Security and Privacy . IEEE, 553–567.
+[46] Ioana Boureanu, Aikaterini Mitrokotsa, and Serge Vaudenay. 2014. Towards secure distance bounding. In Fast Soft-
+ware Encryption , Shiho Moriai (Ed.).Springer Berlin,55–67.
+[47] Alejandro Bracho, Can Saygin, HungDa Wan, Yooneun Lee, and Alireza Zarreh. 2018. A simulation-based platform
+for assessing the impact of cyber-threats on smart manufacturing systems. Procedia Manuf. 26 (2018), 1116–1127.
+Retrievedfrom http://www.sciencedirect.com/science/article/pii/S2351978918308242 .
+[48] Sergey Bratus, Nihal D’Cunha, Evan R. Sparks, and Sean W. Smith. 2008. TOCTOU, traps, and trusted computing.
+InTrusted Computing - Challenges and Applications, First International Conference on Trusted Computing and Trust
+in Information Technologies, Trust 2008, Villach, Austria, March 11–12, 2008, Proceedings (Lecture Notes in Computer
+Science, Vol.4968) , Peter Lipp,Ahmad-Reza Sadeghi,and Klaus-MichaelKoch (Eds.). Springer,Berlin,14–32.
+[49] Alessandro Bruni, Michal Sojka, Flemming Nielson, and Hanne Riis Nielson. 2014. Formal security analysis of the
+MaCAN protocol. In Integrated Formal Methods , Elvira Albert and Emil Sekerinski (Eds.). Springer International
+Publishing,Cham,241–255.
+[50] D. Bruschi, L. Cavallaro, A. Lanzi, and M. Monga. 2005. Replay attack in TCG specification and solution. In 21st
+Annual ComputerSecurity Applications Conference(ACSAC’05) .IEEE.https://doi/10.1109/CSAC.2005.47
+[51] MicheleBugliesi,SilviaCrafa,MassimoMerro,andV.Sassone.2005.Communicationandmobilitycontrolinboxed
+ambients. Inf.Computat. 202(102005),39–86. DOI:https://doi/10.1016/j.ic.2005.06.002
+[52] Michael Burrows, Martín Abadi, and Roger M. Needham. 1990. A logic of authentication. ACM Trans. Comput. Syst.
+8,1(1990),18–36.
+[53] Christoph Busold, Ahmed Taha, Christian Wachsmann, Alexandra Dmitrienko, Hervé Seudié, Majid Sobhani, and
+Ahmad-RezaSadeghi.2013.Smartkeysforcyber-cars:Securesmartphone-basedNFC-enabledcarimmobilizer.In 3rd
+ACMConferenceonDataandApplicationSecurityandPrivacy (CODASPY’13) .AssociationforComputingMachinery,
+New York, NY, 233–242. DOI:https://doi/10.1145/2435349.2435382
+[54] J. N. Buxton and B. Randell. 1970. Software Engineering Techniques: Report of a Conference Sponsored by the NATO
+Science Committee, Rome, Italy, 27-31 Oct. 1969, Brussels, Scientific Affairs Division, NATO .https://dl.acm.org/doi/10.
+5555/1102021
+[55] LucaCardelliandAndrewD.Gordon.2000.Mobileambients. Theoret.Comput.Sci. 240,1(2000),177–213.Retrieved
+fromhttp://www.sciencedirect.com/science/article/pii/S0304397599002315 .
+[56] RobertoCavada,AlessandroCimatti,MicheleDorigatti,AlbertoGriggio,AlessandroMariotti,AndreaMicheli,Sergio
+Mover, Marco Roveri, and Stefano Tonetta. 2014. The nuXmv symbolic model checker. In International Conference
+on Computer -aided Verification . Springer,334–342.
+[57] Common Criteria Recognition Agreement CCRA. 2006. Common Criteria for Information Technology Security Eval-
+uation. Part 1: Introduction and General Model . Technical Report. Tech. Rep. CCMB-2006-09-001, Version 3.1,
+Revision 1.CommonCriteria ManagementBoard.
+[58] Sudipta Chattopadhyay and Abhik Roychoudhury. 2018. Symbolic verification of cache side-channel freedom. IEEE
+Trans.Comput.-aided Des.Integr. Circ. Syst. 37,11(2018),2812–2823.
+[59] K. Cheang, C. Rasmussen, S. Seshia, and P. Subramanyan. 2019. A formal approach to secure speculation. In IEEE
+32nd ComputerSecurity Foundations Symposium (CSF) .288–28815. DOI:https://doi/10.1109/CSF.2019.00027
+[60] S.Chen,H.Fu,andH.Miao.2016.FormalverificationofsecurityprotocolsusingSpin.In IEEE/ACIS15thInternational
+ConferenceonComputer andInformation Science (ICIS) .IEEE, 1–6. DOI:https://doi/10.1109/ICIS.2016.7550830
+[61] Xiaofeng Chen, Jin Li, Jian Weng, Jianfeng Ma, and Wenjing Lou. 2014. Verifiable computation over large database
+with incremental updates. In Computer Security - ESORICS 2014 , Mirosław Kutyłowski and Jaideep Vaidya (Eds.).
+Springer InternationalPublishing,Cham,148–162.
+[62] Tom Chothia, Flavio D. Garcia, Joeri De Ruiter, Jordi Van Den Breekel, and Matthew Thompson. 2015. Relay cost
+bounding for contactless EMV payments. In International Conference on Financial Cryptography and Data Security .
+Springer, Berlin,189–206.
+[63] TomChothia,FlavioD.Garcia,ChrisHeppel,andChrisMcMahonStone.2017.WhyBankerBob(still)can’tgetTLS
+right:AsecurityanalysisofTLSinleadingUKbankingapps.In InternationalConferenceonFinancialCryptography
+and DataSecurity . Springer,Berlin,579–597.
+[64] Andrey Chudnov, Nathan Collins, Byron Cook, Joey Dodds, Brian Huffman, Colm MacCárthaigh, Stephen Magill,
+EricMertens,EricMullen,SerdarTasiran,AaronTomb,andEddyWestbrook.2018.Continuousformalverificationof
+Amazons2n.In ComputerAidedVerification ,HanaChocklerandGeorgWeissenbacher(Eds.).SpringerInternational
+Publishing,Cham,430–446.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:30 T. Kulik et al.
+[65] AlessandroCimatti,EdmundM.Clarke,FaustoGiunchiglia,andMarcoRoveri.1999.NUSMV:Anewsymbolicmodel
+verifier. In 11th International Conference on ComputerAided Verification (CAV’99) .Springer-Verlag, Berlin,495–499.
+[66] AnielloCimitile,FrancescoMercaldo,VittoriaNardone,AntonellaSantone,andCorradoAaronVisaggio.2018.Talos:
+No more ransomware victims with formal methods. Int. J. Inf. Secur. 17, 6 (01 Nov. 2018), 719–738. DOI:https://doi/
+10.1007/s10207-017-0398-5
+[67] Edmund Clarke, Daniel Kroening, and Flavio Lerda. 2004. A tool for checking ANSI-C programs. In Tools and Al-
+gorithms for the Construction and Analysis of Systems , Kurt Jensen and Andreas Podelski (Eds.). Springer Berlin,
+168–176.
+[68] MichaelR. Clarkson andFred B.Schneider. 2010.Hyperproperties. J.Comput. Secur. 18,6(Sep.2010),1157–1210.
+[69] RanceCleavelandandSteveSims.1996.TheNCSUconcurrencyworkbench.In ComputerAidedVerification ,Rajee v
+Alur andThomasA. Henzinger (Eds.). Springer Berlin,394–397.
+[70] D. Cofer, A. Gacek, J. Backes, M. W. Whalen, L. Pike, A. Foltzer, M. Podhradsky, G. Klein, I. Kuz, J. Andronick, G.
+Heiser, and D. Stuart. 2018. A formal approach to constructing secure air vehicle software. Computer 51, 11 (Nov.
+2018),14–23. DOI:https://doi/10.1109/MC.2018.2876051
+[71] K. Cohn-Gordon, C. Cremers, B. Dowling, L. Garratt, and D. Stebila. 2017. A formal security analysis of the signal
+messagingprotocol.In IEEEEuropeanSymposiumonSecurityandPrivacy(EuroS&P) .IEEE,451–466. DOI:https://doi/
+10.1109/EuroSP.2017.27
+[72] Byron Cook. 2018. Formal reasoning about the security of Amazon Web Services. In Computer Aided Verification ,
+Hana Chockler and GeorgWeissenbacher (Eds.). Springer InternationalPublishing,Cham,38–47.
+[73] Cas J. F. Cremers. 2008. The scyther tool: Verification, falsification, and analysis of security protocols. In Computer
+Aided Verification , Aarti GuptaandSharad Malik(Eds.). Springer Berlin,414–418.
+[74] Pascal Cuoq, Florent Kirchner, Nikolai Kosmatov, Virgile Prevosto, Julien Signoles, and Boris Yakobowski. 2012.
+Frama-C — A software analysis perspective. In Software Engineering and Formal Methods - 10th International Con-
+ference,SEFM2012,Thessaloniki,Greece,October1–5,2012.Proceedings (LectureNotesinComputerScience,Vol.7504) ,
+George Eleftherakis,Mike Hinchey, andMikeHolcombe (Eds.).Springer, Berlin,233–247.
+[75] Khanh-Huu-TheDamandTayssirTouili.2017.LearningAndroidmalware.In 12thInternationalConferenceonAvail-
+ability, Reliability and Security (ARES’17) . ACM, New York, NY. DOI:https://doi/10.1145/3098954.3105826
+[76] Khanh Huu The Dam and Tayssir Touili. 2018. Learning malware using generalized graph kernels. In 13th Interna-
+tional Conference on Availability, Reliability and Security (ARES’18) .A C M ,N e wY o r k ,N Y . DOI:https://doi/10.1145/
+3230833.3230840
+[77] AnupamDatta,JasonFranklin,DeepakGarg,andDilsunKaynar.2009.Alogicofsecuresystemsanditsapplication
+totrustedcomputing.In IEEESymposiumonSecurityandPrivacy .IEEE,221–236. DOI:https://doi/10.1109/SP.2009.16
+[78] Lucas Davi, Alexandra Dmitrienko, Ahmad-Reza Sadeghi, and Marcel Winandy. 2011. Privilege escalation attacks
+onAndroid.In InformationSecurity ,MikeBurmester,GeneTsudik,SpyrosMagliveras,andIvanaIlić(Eds.).Springer
+Berlin,346–360.
+[79] JenniferA.Davis,MatthewClark,DarrenCofer,AaronFifarek,JacobHinchman,JonathanHoffman,BrianHulbert,
+Steven P. Miller, and Lucas Wagner. 2013. Study on the barriers to the industrial adoption of formal methods. In
+Formal Methodsfor Industrial Critical Systems ,Charles Pecheur and MichaelDierkes (Eds.).Springer Berlin,63–77.
+[80] LeonardodeMouraandNikolajBjørner.2008.Z3:AnefficientSMTsolver.In ToolsandAlgorithmsfortheConstruc-
+ti ona ndA na ly si sofSy stem s ,C. R.RamakrishnanandJakob Rehof (Eds.). Springer Berlin,337–340.
+[81] Dorothy E. Denning and Giovanni Maria Sacco. 1981. Timestampsin key distribution protocols. Commun. ACM 24,
+8 (Aug.1981),533–536. DOI:https://doi/10.1145/358722.358740
+[82] MichaelDenzel,MarkRyan,andEikeRitter.2017.Amalware-tolerant,self-healingindustrialcontrolsystemframe-
+work. In ICT Systems Security and Privacy Protection , Sabrina De Capitani di Vimercati and Fabio Martinelli (Eds.).
+Springer InternationalPublishing, Cham,46–60.
+[83] PetrN.Devyanin,AlexeyV.Khoroshilov,VictorV.Kuliamin,AlexanderK.Petrenko,andIlyaV.Shchepetkov.2014.
+FormalverificationofOSsecuritymodelwithalloyandevent-B.In AbstractStateMachines,Alloy,B,TLA,VDM,and
+Z,YamineAit Ameur andKlaus-DieterSchewe (Eds.).Springer Berlin,309–313.
+[84] Dino Distefano,Manuel Fähndrich, Francesco Logozzo, and Peter W. O’Hearn. 2019.Scaling static analyses at Face-
+book.Commun. ACM 62,8(2019),62–70.
+[85] Danny Dolev and Andrew Chi-Chih Yao. 1981. On the security of public key protocols (extended abstract). In 22nd
+Annual Symposium on Foundations ofComputer Science . IEEE ComputerSociety, 350–357.
+[86] Jannik Dreier, Maxime Puys, Marie-Laure Potet, Pascal Lafourcade, and Jean-Louis Roch. 2017. Formally verifying
+flowpropertiesinindustrialsystems.In SECRYPT2017-14thInternationalConferenceonSecurityandCryptography
+(Madrid, Spain) (Proceedings of the 14th International Joint Conference on e-Business and Telecommunications (ICETE
+2017) - Volume 4: SECRYPT, Madrid, Spain, July 24–26, 2017.) . SCITEPRESS Science And Technology Publications,
+Portugal, 55–66. DOI:https://doi/10.5220/0006396500550066
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:31
+[87] Zhangbo Duan, Hongliang Mao, Zhidong Chen, Xiaomin Bai, Kai Hu, and Jean-Pierre Talpin. 2018. Formal mod-
+eling and verification of blockchain system. In 10th International Conference on Computer Modeling and Simulation
+(ICCMS’18) .AssociationforComputingMachinery,NewYork,NY,231–235. DOI:https://doi/10.1145/3177457.3177485
+[88] Andrea Enrici, Ludovic Apvrille, and Renaud Pacalet. 2014. TTool/DiplodocusDF: A UML Environment for Hard-
+ware/SoftwareCo-Design of Data-DominatedSystems-on-Chip. DOI:10.1007/978-3-319-11653-2_23
+[89] Levent Erkök and John Matthews. 2009. Pragmatic equivalence and safety checking in Cryptol. In 3 r dW o r k s h o po n
+Programming Languages Meets Program Verification . ACM,New York, NY, 73–82.
+[90] Fabian Vogelsteller and Vitalik Buterin. 2020. ERC20 Token Standard. Retrieved from http://www.github.com/
+ethereum/EIPs/blob/master/EIPS/eip-20.md .
+[91] Adrienne Porter Felt, Erika Chin, Steve Hanna, Dawn Song, and David Wagner. 2011. Android permissions demys-
+tified. In18th ACM Conference on Computer and Communications Security (CCS’11) . ACM, New York, NY, 627–638.
+DOI:https://doi/10.1145/2046707.2046779
+[92] Andrew Ferraiuolo, Yao Wang, Rui Xu, Danfeng Zhang, Andrew C. Myers, and G. Edward Suh. 2017. Full-processor
+TimingChannelProtectionwithApplicationstoSecureHardwareCompartments .TechnicalReport.CornellUniversity
+Library.
+[93] AndrewFerraiuolo,RuiXu,DanfengZhang,AndrewC.Myers,andG.EdwardSuh.2017.Verificationofapractical
+hardware security architecture through static information flow analysis. SIGARCH Comput. Archit. News 45, 1 (Apr.
+2017),555–568. DOI:https://doi/10.1145/3093337.3037739
+[94] D. Fett, P. Hosseyni, and R. Küsters. 2019. An extensive formal security analysis of the OpenID financial-grade API.
+InIEEESymposium on Security andPrivacy (SP) . IEEE, 453–471. DOI:https://doi/10.1109/SP.2019.00067
+[95] Jean-Christophe Filliâtre and Claude Marché. 2007. The Why/Krakatoa/Caduceus platform for deductive program
+verification.In ComputerAidedVerification,19thInternationalConference,CAV2007,Berlin,Germany,July3–7,2007,
+Proceedings (Lecture Notes in Computer Science, Vol. 4590) , Werner Damm and Holger Hermanns (Eds.). Springer,
+Berlin,173–177.
+[96] Kathleen Fisher, John Launchbury, and Raymond Richards. 2017. The HACMS program: Using formal methods to
+eliminateexploitablebugs. Philos.Trans. Roy.Societ. A:Math.,Phys.Eng. Sci. 375,2104(2017),20150401.
+[97] Mike Flynn, Tim Hoverd, and David Brazier. 1989. Formaliser — An interactive support tool for Z. In Proceedings of
+the Fourth Annual Z User Meeting, Oxford, UK, December 15, 1989 (Workshops in Computing) , John E. Nicholls (Ed.).
+Springer, Berlin,128–141. DOI:https://doi/10.1007/978-1-4471-3877-8_8
+[98] Leo Freitas. 2018. VDM at large: Modelling the EMV® 2ndgeneration kernel. In Brazilian Symposium on Formal
+Methods.Springer, Berlin,109–125.
+[99] AndrewGacek,JohnBackes,MikeWhalen,LucasG.Wagner,andElahehGhassabani.2017.TheJKindModelChecker.
+Retrievedfrom http://arxiv.org/abs/1712.01222 .
+[100] GaloisInc.2019.TheSoftwareAnalysis Workbench. Retrievedfrom http://www.saw.galois.com/index.html .
+[101] R.Gandhi,A.Sharma,W.Mahoney,W.Sousan,Q.Zhu,andP.Laplante.2011.Dimensionsofcyber-attacks:Cultural,
+social, economic, and political. IEEE Technol. Societ. Mag. 30, 1 (Spring 2011), 28–38. DOI:https://doi/10.1109/MTS.
+2011.940293
+[102] A.H.Ghamarian,M.J.deMol,ArendRensink,EduardoZambon,andM.V.Zimakova.2010. ModellingandAnalysis
+Using GROOVE . Number TR-CTIT-10-18 in CTIT Technical Report Series. Centre for Telematics and Information
+Technology (CTIT),Netherlands.
+[103] Thomas Gibson-Robinson. 2019. FDR4: The CSP Refinement Checker . Oxford University Department of Computer
+Science. Retrievedfrom www.cs.ox.ac.uk/projects/fdr/ .
+[104] Mario Gleirscher and Diego Marmsoler. 2020. Formal methods in dependable systems engineering: A survey of
+professionals from Europe andNorth America. Empir. Softw.Eng. 25,6 (2020),4473–4546.
+[105] Shafi Goldwasserand Silvio Micali.1984.Probabilisticencryption. J.Comput. Syst.Sci. 28,2(1984),270–299.
+[106] Matt Griffin and Brijesh Dongol. 2021. Verifying secure speculation in Isabelle/HOL. In Formal Methods - 24th
+International Symposium, FM 2021, Virtual Event, November 20–26, 2021, Proceedings (Lecture Notes in Computer
+Science, Vol. 13047) , Marieke Huisman, Corina S. Pasareanu, and Naijun Zhan (Eds.). Springer, 43–60. DOI:https:
+//doi/10.1007/978-3-030-90870-6_3
+[107] RobertoGuanciale,MusardBalliu,andMadsDam.2020.InSpectre:Breakingandfixingmicroarchitecturalvulnerabil-
+itiesbyformalanalysis.In CCS’20:2020ACMSIGSACConferenceonComputerandCommunicationsSecurity,Virtual
+Event, November 9–13, 2020 , Jay Ligatti, Xinming Ou, Jonathan Katz, and Giovanni Vigna (Eds.). ACM, 1853–1869.
+DOI:https://doi/10.1145/3372297.3417246
+[108] Roberto Guanciale, Hamed Nemati, Mads Dam, and Christoph Baumann. 2016. Provably secure memory isolation
+for Linux on ARM: Submission to special issue on verified information flow security. J. Comput. Secur. 24 (12 2016),
+793–837. DOI:https://doi/10.3233/JCS-160558
+[109] Arjun Guha, Matthew Fredrikson, Benjamin Livshits, and Nikhil Swamy. 2011. Verified security for browser exten-
+sions. InIEEESymposium on Security and Privacy . IEEE, 115–130.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:32 T. Kulik et al.
+[110] X. Guo, R. G. Dutta, P. Mishra, and Y. Jin. 2016. Automatic RTL-to-formal code converter for IP security formal
+verification. In 17th International Workshop on Microprocessor and SOC Test and Verification (MTV) . IEEE, 35–38.
+DOI:https://doi/10.1109/MTV.2016.23
+[111] X.Guo,R.G.Dutta,P.Mishra,andY.Jin.2016.ScalableSoCtrustverificationusingintegratedtheoremprovingand
+model checking. In IEEE International Symposium on Hardware Oriented Security and Trust (HOST) . IEEE, 124–129.
+DOI:https://doi/10.1109/HST.2016.7495569
+[112] X. Guo, R. G. Dutta, P. Mishra, and Y. Jin. 2017. Automatic code converter enhanced PCH framework for SoC trust
+verification. IEEE Trans. Very Large Scale Integ. (VLSI) Syst. 25, 12 (Dec. 2017), 3390–3400. DOI:https://doi/10.1109/
+TVLSI.2017.2751615
+[113] J. Octavio Gutierrez-Garcia and Kwang Sim. 2010. Agent-based service composition in cloud computing. Commun.
+Comput. Inf.Sci. 121,1–10. DOI:https://doi/10.1007/978-3-642-17625-8_1
+[114] MulukenHailesellasieandSyedRafayHasan.2018.IntrusiondetectioninPLC-basedindustrialcontrolsystemsusing
+formal verification approach in conjunction with graphs. J. Hardw. Syst. Secur. 2, 1 (01 Mar. 2018), 1–14. DOI:https:
+//doi/10.1007/s41635-017-0017-y
+[115] AnthonyHall.2005.Realisingthebenefitsofformalmethods.In FormalMethodsandSoftwareEngineering ,Kung-Kiu
+LauandRichard Banach(Eds.). Springer,Berlin,1–4.
+[116] Dick Hamlet. 2005. Invariants and state in testing and formal methods. SIGSOFT Softw. Eng. Notes 31, 1 (Sep. 2005),
+48–51. DOI:https://doi/10.1145/1108768.1108806
+[117] JiananHao,YangLiu,WentongCai,GuangdongBai,andJunSun.2013.vTRUST:Aformalmodelingandverification
+framework for virtualization systems. In Formal Methods and Software Engineering , Lindsay Groves and Jing Sun
+(Eds.).Springer, Berlin,329–346.
+[118] DanielHartungandChristophBusch.2012.Biometrictransactionauthenticationprotocol:Formalmodelverification
+and“four-eyes”principleextension.In FinancialCryptographyandDataSecurity ,GeorgeDanezis,SvenDietrich,and
+Kazue Sako (Eds.). Springer,Berlin,88–103.
+[119] DominikHarzandWilliamKnottenbelt.2018.TowardsSaferSmartContracts:ASurvey ofLanguagesandVerifica-
+tion Methods. arXiv:1809.09805v4. https://arxiv.org/abs/1809.09805 .
+[120] J. Heneghan, S. A. Shaikh, J. Bryans, M. Cheah, and P. Wooderson. 2019. Enabling security checking of automotive
+ECUswithformalCSPmodels.In 49thAnnualIEEE/IFIPInternationalConferenceonDependableSystemsandNetworks
+Workshops(DSN-W) .IEEE, 90–97. DOI:https://doi/10.1109/DSN-W.2019.00025
+[121] E.Hildenbrandt,M.Saxena,N.Rodrigues,X.Zhu,P.Daian,D.Guth,B.Moore,D.Park,Y.Zhang,A.Stefanescu,and
+G.Rosu.2018.KEVM:AcompleteformalsemanticsoftheEthereumvirtualmachine.In IEEE31stComputerSecurity
+Foundations Symposium (CSF) .IEEE, 204–217.
+[122] C. A. R. Hoare. 1978. Communicating sequential processes. Commun. ACM 21, 8 (Aug. 1978), 666–677. DOI:https:
+//doi/10.1145/359576.359585
+[123] C. A.R.Hoare. 1985. Communicating Sequential Processes .Prentice-Hall,USA.
+[124] Bo-Yuan Huang, Sayak Ray, Aarti Gupta, Jason M. Fung, and Sharad Malik. 2018. Formal security verification of
+concurrent firmware in SoCs using instruction-level abstraction for hardware. In 55th Annual Design Automation
+Conference (DAC’18) .ACM, New York, NY, 91:1–91:6. DOI:https://doi/10.1145/3195970.3196055
+[125] JohnHughesandEveMaler.2005.Securityassertionmarkuplanguage(SAML)v2.0technicaloverview. OASISSSTC
+Working Draftsstc-saml-tech-overview-2.0-draft-08 13(2005).
+[126] G.Iadarola,F.Martinelli,F.Mercaldo,andA.Santone.2019.FormalmethodsforAndroidbankingmalwareanalysis
+and detection. In 6th International Conference on Internet of Things: Systems, Management and Security (IOTSMS) .
+IEEE, 331–336.
+[127] Fahad Ibrar, Hamza Saleem, Sam Castle, and Muhammad Zubair Malik. 2017. A study of static analysis tools to
+detect vulnerabilities of branchless banking applications in developing countries. In 9th International Conference on
+Information and Communication Technologies and Development (ICTD’17) . Association for Computing Machinery,
+New York, NY. DOI:https://doi/10.1145/3136560.3136595
+[128] Daisuke Inoue and Masahiro Kuroda. 2006.Secure service frameworkon mobileethernet. J.Nat. Inst.Inf. Commun.
+Technol.53(122006),61–71.
+[129] ITSEC. 1991. Information Technology Security Evaluation Criteria (ITSEC): Preliminary Harmonised Criteria .D o c u -
+mentCOM(90)314,Version 1.2.Commission of theEuropean Communities.
+[130] Daniel Jackson. 2000. Automating first-order relational logic. ACM SIGSOFT Symp. Found. Softw. Eng. 25 (09 2000).
+DOI:https://doi/10.1145/357474.355063
+[131] DanielJackson. 2012. Software Abstractions: Logic, Language, andAnalysis .TheMIT Press, Cambridge,MA.
+[132] DanielJackson andJeanetteWing.1996.Lightweightformalmethods. IEEEComput. 29,4(Apr. 1996),22–23.
+[133] Dongseok Jang, Zachary Tatlock, and Sorin Lerner. 2012. Establishing browser security guarantees through formal
+shim verification.In 21stUSENIX Conferenceon Security Symposium (Security’12) . USENIX Association, USA.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:33
+[134] Dongseok Jang, Zachary Tatlock, and Sorin Lerner. 2012. Establishing browser security guarantees through formal
+shimverification.In 21stUSENIXSecuritySymposium(USENIXSecurity’12) .USENIX,113–128.Retrievedfrom www.
+usenix.org/conference/usenixsecurity12/technical-sessions/presentation/jang .
+[135] Y. Jarraya, A. Eghtesadi, M. Debbabi, Y. Zhang, and M. Pourzandi. 2012. Cloud calculus: Security verification in
+elasticcloudcomputingplatform.In InternationalConferenceonCollaborationTechnologiesandSystems(CTS) .IEEE,
+447–454. DOI:https://doi/10.1109/CTS.2012.6261089
+[136] KarthickJayaraman,NikolajBjørner,GeoffOuthred,andCharlieKaufman.2014. AutomatedAnalysisandDebugging
+ofNetwork Connectivity Policies . TechnicalReport.Tech. Rep.MSR-TR-2014-102.MSR, Seattle,WA.
+[137] Kurt Jensen, Lars Michael Kristensen, and Lisa Marie Wells. 2007. Coloured Petri nets and CPN tools for modelling
+and validation of concurrent systems. Int. J. Softw. Tools Technol. Transf. 9, 3/4 (2007), 213–254. DOI:https://doi/10.
+1007/s10009-007-0038-x
+[138] Kurt Jensen and Lars M. Kristensen. 2009. Coloured Petri Nets: Modelling and Validation of Concurrent Systems (1st
+ed.).Springer Publishing Company,Incorporated, Berlin.
+[139] Richard Jüllig. 2002. Formal methods in enterprise computing. In Formal Methods and Software Engineering , Chris
+Georgeand Huaikou Miao (Eds.).Springer, Berlin,22–23.
+[140] Corey Kallenberg, Sam Cornwell, Xeno Kovah, and John Butterworth. 2014. Setup for failure: Defeating secure
+boot. The MITRE Corporation. Retrieved https://infocon.org/cons/SyScan/SyScan%202014%20Singapore/SyScan%
+202014%20presentations/SyScan2014_CoreyKallenberg_SetupforFailureDefeatingSecureBoot_WP.pdf .
+[141] Sheetal Kalra and Sandeep K. Sood. 2015. Secure authentication scheme for IoT and cloud servers. Pervas. Mob.
+Comput.24(2015),210–223.Retrievedfrom http://www.sciencedirect.com/science/article/pii/S1574119215001510 .
+[142] Michael Kenney. 2015. Cyber-terrorism in a post-Stuxnet world. Orbis59 (12 2015). DOI:https://doi/10.1016/j.orbis.
+2014.11.009
+[143] H. Khurana, M. Hadley, N. Lu, and D. A. Frincke. 2010. Smart-grid security issues. IEEE Secur. Priv. 8, 1 (Jan. 2010),
+81–85. DOI:https://doi/10.1109/MSP.2010.49
+[144] GerwinKlein,JuneAndronick,KevinElphinstone,GernotHeiser,DavidCock,PhilipDerrin,DhammikaElkaduwe,
+Kai Engelhardt, Rafal Kolanski, Michael Norrish, Thomas Sewell, Harvey Tuch, and Simon Winwood. 2010. seL4:
+Formal verificationof an operating-system kernel. Commun.ACM 53,6 (2010),107–115.
+[145] P.Kocher,J.Horn,A.Fogh,D.Genkin,D.Gruss,W.Haas,M.Hamburg,M.Lipp,S.Mangard,T.Prescher,M.Schwarz,
+and Y. Yarom. 2019. Spectre attacks: Exploiting speculative execution. In IEEE Symposium on Security and Privacy
+(SP).IEEE, 1–19.
+[146] S. Kottler, M. Khayamy, S. R. Hasan, and O. Elkeelany. 2017. Formal verification of ladder logic programs using
+NuSMV. In SoutheastCon .IEEE, 1–5. DOI:https://doi/10.1109/SECON.2017.7925390
+[147] Simon KramerandJulian C.Bradfield.2010.A generaldefinitionof malware. J.Comput. Virol. 6,2 (2010),105–114.
+[148] SiwarKriaa,LudovicPietre-Cambacedes,MarcBouissou,andYoranHalgand.2015.Asurveyofapproachescombin-
+ing safety and security for industrial control systems. Reliab. Eng. Syst. Safety 139 (2015), 156–178. Retrieved from
+http://www.sciencedirect.com/science/article/pii/S0951832015000538 .
+[149] TomasKulik,BrijeshDongol,PeterGormLarsen,HugoDanielMacedo,SteveSchneider,PeterWürtzVintherTran-
+Jørgensen, andJim Woodcock. 2021.A Survey of PracticalFormal Methods for Security. arXiv: 2109.01362 [cs.FL].
+[150] Tomas Kulik, Peter W. V. Tran-Jørgensen, and Jalil Boudjadar. 2019. Formal security analysis of cloud-connected
+industrial control systems. In Innovative Security Solutions for Information Technology and Communications ,J e a n -
+Louis LanetandCristian Toma(Eds.). Springer InternationalPublishing, Cham,71–84.
+[151] ApurvaKumar.2014.Alightweightformalapproachforanalyzingsecurityofwebprotocols.In InternationalWork-
+shoponRecent Advances inIntrusionDetection . Springer,192–211.
+[152] N. Kumar, V. Kumar, and M. Gaur. 2019. Banking trojans APK detection using formal methods. In 4th International
+ConferenceonInformation Systems and Computer Networks (ISCON) .IEEE, 606–609.
+[153] P. Kumar, A. Braeken, A. Gurtov, J. Iinatti, and P. H. Ha. 2017. Anonymous secure framework in connected smart
+home environments. IEEE Trans. Inf. Forens. Secur. 12, 4 (Apr. 2017), 968–979. DOI:https://doi/10.1109/TIFS.2016.
+2647225
+[154] Robert Künnemann and Graham Steel. 2013. YubiSecure? Formal security analysis results for the Yubikey and
+YubiHSM. In Security and Trust Management , Audun Jøsang, Pierangela Samarati, and Marinella Petrocchi (Eds.).
+Springer Berlin,257–272.
+[155] StefanKupferschmid,MatthewLewis,TobiasSchubert,andBerndBecker.2011.Incrementalpreprocessingmethods
+for usein BMC. Form.Meth.Syst.Des. 39,2(2011),185–204.
+[156] M. Kwiatkowska, G. Norman, and D. Parker. 2011. PRISM 4.0: Verification of probabilistic real-time systems. In
+Proc.23rdInternationalConferenceonComputerAidedVerification(CAV’11)(LNCS,Vol.6806) ,G.Gopalakrishnanand
+S. Qadeer(Eds.).Springer, 585–591.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:34 T. Kulik et al.
+[157] AkashLal,ShazQadeer,andShuvenduK.Lahiri.2012.Asolverforreachabilitymodulotheories.In ComputerAided
+Verification - 24th International Conference, CAV 2012, Berkeley, CA, July 7–13, 2012 Proceedings (Lecture Notes in
+Computer Science, Vol.7358) , P. Madhusudan andSanjitA. Seshia (Eds.). Springer,Berlin,427–443.
+[158] LeslieLamport.2002. SpecifyingSystems:TheTLA+LanguageandToolsforHardwareandSoftwareEngineers .Addison-
+Wesley LongmanPublishing Co.,Inc.,Boston, MA.
+[159] KimG.Larsen,PaulPettersson,andWangYi.1997.Uppaalinanutshell. Int.J.Softw.ToolsTechnol.Transfer 1,1(01
+Dec.1997),134–152. DOI:https://doi/10.1007/s100090050010
+[160] P.G.Larsen,B.S.Hansen,H.Brunn,N.Plat,H.Toetenel,D.J.Andrews,J.Dawes,G.Parkin,etal.1996.Information
+Technology–ProgrammingLanguages,TheirEnvironmentsandSystemSoftwareInterfaces–ViennaDevelopment
+Method – Specification Language–Part 1:Baselanguage.ISO/IEC 13817-1:1996.
+[161] Peter Gorm Larsen, Kenneth Lausdahl, and Nick Battle. 2010. Combinatorial testing for VDM. In 8th IEEE Interna-
+tional Conference on Software Engineering and Formal Methods (SEFM’10) . IEEE Computer Society, Washington, DC,
+278–285. DOI:https://doi/10.1109/SEFM.2010.32 .ISBN 978-0-7695-4153-2.
+[162] Lee W. Lerner, Zane R. Franklin, William T. Baumann, and Cameron D. Patterson. 2014. Using high-level synthe-
+sis and formal analysis to predict and preempt attacks on industrial control systems. In ACM/SIGDA International
+Symposium on Field-Programmable Gate Arrays (FPGA’14) . Association for Computing Machinery, New York, NY,
+209–212. DOI:https://doi/10.1145/2554688.2554759
+[163] Thomas Letan, Pierre Chifflier, Guillaume Hiet, Pierre Neron, and Benjamin Morin. 2016. SpecCert: Specifying and
+verifyinghardware-basedsecurityenforcement.In ProceedingsoftheFM2016:FormalMethods,JohnFitzgerald,Con-
+stance Heitmeyer , StefaniaGnesi,andAnna Philippou(Eds.).496–512.
+[164] E. Love, Y. Jin, and Y. Makris. 2011. Enhancing security via provably trustworthy hardware intellectual property.
+InIEEEInternationalSymposium onHardware-oriented Security andTrust .IEEE,12–17. DOI:https://doi/10.1109/HST.
+2011.5954988
+[165] Gavin Lowe. 1995. An attack on the Needham-Schroeder public-key authentication protocol. Inf. Process. Lett. 56, 3
+(1995),131–133.
+[166] Hugo Daniel Macedo and José Nuno Oliveira. 2015. A linear algebra approach to OLAP. Form. Asp. Comput. 27, 2
+(2015),283–307.
+[167] Hugo Daniel Macedo and Tayssir Touili. 2013. Mining malware specifications through static reachability analysis.
+InEuropean Symposium on Research in ComputerSecurity . Springer Berlin,517–535.
+[168] N. E. Madhoun, F. Guenane, and G. Pujolle. 2016. An online security protocol for NFC payment: Formally analyzed
+bythe Scyther tool. In 2nd International Conferenceon Mobile andSecure Services (MobiSecServ) . IEEE, 1–7.
+[169] TaousMadi,YosrJarraya,AmirAlimohammadifar,SuryadiptaMajumdar,YushunWang,MakanPourzandi,Lingyu
+Wang, and Mourad Debbabi. 2018. ISOTOP: Auditing virtual networks isolation across cloud layers in OpenStack.
+A CMT ra ns.Pri v .Sec u r . 22,1(Oct.2018). DOI:https://doi/10.1145/3267339
+[170] Haohui Mai, Edgar Pek, Hui Xue, Samuel Talmadge King, and Parthasarathy Madhusudan. 2013. Verifying security
+invariants in ExpressOS. In 18th International Conference on Architectural Support for Programming Languages and
+Operating Systems (ASPLOS’13) . Association for Computing Machinery, New York, NY, 293–304. DOI:https://doi/10.
+1145/2451116.2451148
+[171] Antonio Marcedone, Rafael Pass, and Abhi Shelat. 2019. Minimizing trust in hardware wallets with two factor sig-
+natures. In Financial Cryptography and Data Security , Ian Goldberg and Tyler Moore (Eds.). Springer International
+Publishing, Cham,407–425.
+[172] Fabio Martinelli, Francesco Mercaldo, and Vittoria Nardone. 2018. Identifying insecure features in android applica-
+tions using model checking. In Proceedings of the 4th International Conference on Information Systems Security and
+Privacy,ICISSP2018,Funchal,Madeira-Portugal,January22–24,2018 ,PaoloMori,StevenFurnell,andOlivierCamp
+(Eds.).SciTePress, 589–596.
+[173] Fatma Masmoudi, Monia Loulou, and Ahmed Hadj Kacem. 2014. Formal security framework for agent based cloud
+systems.In InternationalWorkshoponAdvancedInformationSystemsforEnterprises .DOI:https://doi/10.1109/IWAISE.
+2014.15
+[174] Jackson R. Mayo, Robert C. Armstrong, and Geoffrey C. Hulette. 2015. Digital system robustness via design con-
+straints: The lesson of formalmethods. In Annual IEEESystems Conference(SysCon) .IEEE, 109–114.
+[175] MaryamMehrnezhad,MohammedAamirAli,FengHao,andAadvanMoorsel.2016.NFCpaymentspy:Aprivacyat-
+tackoncontactlesspayments.In SecurityStandardisationResearch ,LidongChen,DavidMcGrew,andChrisMitchell
+(Eds.).Springer InternationalPublishing, Cham,92–111.
+[176] SimonMeier,BenediktSchmidt,CasCremers,andDavidBasin.2013.TheTAMARINproverforthesymbolicanalysis
+ofsecurityprotocols.In ComputerAidedVerification:25thInternationalConference,CAV2013,SaintPetersburg,Russia,
+July 13–19, 2013, Proceedings (Lecture Notes in Computer Science, Vol. 8044) , Natasha Sharygina and Helmut Veith
+(Eds.).Springer, Berlin,696–701. DOI:https://doi/10.1007/978-3-642-39799-8_48
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:35
+[177] F. Mercaldo, F. Martinelli, and A. Santone. 2019. Real-time SCADA attack detection by means of formal methods.
+InIEEE28thInternationalConferenceonEnablingTechnologies:InfrastructureforCollaborativeEnterprises(WETICE) .
+IEEE, 231–236. DOI:https://doi/10.1109/WETICE.2019.00057
+[178] Francesco Mercaldo, Vittoria Nardone, Antonella Santone, and Corrado Aaron Visaggio. 2016. Downloadmalware?
+No, thanks: How formal methods can block update attacks. In 4th FME Workshop on Formal Methods in Software
+Engineering (FormaliSE’16) .A C M ,N e wY o r k ,NY . DOI:https://doi/10.1145/2897667.2897673
+[179] JoséMeseguer.2000.RewritinglogicandMaude:Awide-spectrumsemanticframeworkforobject-baseddistributed
+systems.In FormalMethodsforOpenObject-basedDistributedSystemsIV ,ScottF.SmithandCarolynL.Talcott(Eds.).
+Springer US, Boston, MA,89–117.
+[180] AndrewMiller,ZhichengCai,andSomeshJha.2018.Smartcontractsandopportunitiesforformalmethods.In Lever-
+agingApplicationsofFormalMethods,VerificationandValidation.IndustrialPractice ,TizianaMargariaandBernhard
+Steffen (Eds.).Springer InternationalPublishing, Cham,280–299.
+[181] R.Milner.1989. Communication and Concurrency . Prentice-Hall,Inc.,USA.
+[182] M. Mohsin, M. U. Sardar, O. Hasan, and Z. Anwar. 2017. IoTRiskAnalyzer: A probabilistic model checking based
+framework for formal risk analytics of the Internet of Things. IEEE Access 5 (2017), 5494–5505. DOI:https://doi/10.
+1109/ACCESS.2017.2696031
+[183] R.Moreno-Vozmediano,R.S.Montero,andI.M.Llorente.2012.IaaScloudarchitecture:Fromvirtualizeddatacenters
+to federatedcloudinfrastructures. Computer 45,12(2012),65–72.
+[184] Greg Morrisett, Gang Tan, Joseph Tassarotti, Jean-Baptiste Tristan, and Edward Gan. 2012. RockSalt: Better, faster,
+stronger SFI for the X86. In 33rd ACM SIGPLAN Conference on Programming Language Design and Implementation
+(PLDI’12).Association forComputingMachinery, NewYork, NY, 395–404. DOI:https://doi/10.1145/2254064.2254111
+[185] SaschaMühlbachandSebastianWallner.2008.Securecommunicationinmicrocomputerbussystemsforembedded
+devices.J. Syst. Archit. 54, 11 (2008), 1065–1076. Retrieved from http://www.sciencedirect.com/science/article/pii/
+S1383762108000611 .
+[186] Roberto Nardone, Ugo Gentile, Adriano Peron, Massimo Benerecetti, Valeria Vittorini, Stefano Marrone, Renato
+De Guglielmo, Nicola Mazzocca, and Luigi Velardi. 2015. Dynamic state machines for formalizing railway control
+systemspecifications.In FormalTechniquesforSafety-criticalSystems ,CyrilleArthoandPeterCsabaÖlveczky(Eds.).
+Springer InternationalPublishing,Cham,93–109.
+[187] R. Nardone, R. J. Rodríguez, and S. Marrone. 2016. Formal security assessment of Modbus protocol. In 11th Interna-
+tional Conference for Internet Technology and Secured Transactions (ICITST) . IEEE, 142–147. DOI:https://doi/10.1109/
+ICITST.2016.7856685
+[188] ZainalabedinNavabi.1993. VHDL:Analysisand Modelingof Digital Systems ,Vol. 2.McGraw-HillNew York.
+[189] George C. Necula. 2011. Proof-carrying code. In Encyclopedia of Cryptography and Security, 2nd ed. ,H e n kC .A .v a n
+TilborgandSushil Jajodia (Eds.).Springer, Berlin,984–986.
+[190] Roger M. Needham and Michael D. Schroeder. 1978. Using encryption for authentication in large networks of com-
+puters.Commun.ACM 21,12(1978),993–999.
+[191] Matias Negrete-Pincetic, Felipe Yoshida, and George Gross. 2009. Towards quantifying the impacts of cyber attacks
+in the competitive electricity market environment. In IEEE Bucharest PowerTech Conference . IEEE, 1–8. DOI:https:
+//doi/10.1109/PTC.2009.5282237
+[192] B.Ngabonziza,D.Martin,A.Bailey,H.Cho,andS.Martin.2016.TrustZoneexplained:Architecturalfeaturesanduse
+cases.InIEEE2ndInternationalConferenceonCollaborationandInternetComputing(CIC) .IEEE,445–451. DOI:https:
+//doi/10.1109/CIC.2016.065
+[193] V. Nigam and C. Talcott. 2019. Formal security verification of industry 4.0 applications. In 24th IEEE International
+ConferenceonEmergingTechnologiesandFactoryAutomation(ETFA) .IEEE,1043–1050. DOI:https://doi/10.1109/ETFA.
+2019.8869428
+[194] TobiasNipkow andGerwin Klein.2014. ConcreteSemantics — with Isabelle/HOL .Springer,Berlin.
+[195] P. J. C. Nunes, J. Fonseca, and M. Vieira. 2015. phpSAFE: A security analysis tool for OOP web application plugins.
+In45th Annual IEEE/IFIP International Conference on Dependable Systems and Networks . IEEE, 299–306. DOI:https:
+//doi/10.1109/DSN.2015.16
+[196] Peter W. O’Hearn. 2018. Continuous reasoning: Scaling the impact of formal methods. In 33rd Annual ACM/IEEE
+Symposium on Logic in Computer Science (LICS’18) . Association for Computing Machinery, New York, NY, 13–25.
+DOI:https://doi/10.1145/3209108.3209109
+[197] Iqra Obaid, Syed Kazmi, and Awais Qasim. 2017. Modeling and verification of payment system in E-banking. Int. J.
+Adv.Comput. Sci. Applic. 8(012017). DOI:https://doi/10.14569/IJACSA.2017.080825
+[198] Daejun Park, Yi Zhang, Manasvi Saxena, Philip Daian, and Grigore Roşu. 2018. A formal verification tool for
+Ethereum VM bytecode. In 26th ACM Joint Meeting on European Software Engineering Conference and Symposium
+on the Foundations of Software Engineering (ESEC/FSE’18) . Association for Computing Machinery, New York, NY,
+912–915. DOI:https://doi/10.1145/3236024.3264591 .
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:36 T. Kulik et al.
+[199] DaejunPark,YiZhang,ManasviSaxena,PhilipDaian,andGrigoreRoşu.2018.Aformalverificationtoolforethereum
+VM bytecode. In 2018 26th ACM Joint Meeting on European Software Engineering Conference and Symposium on the
+FoundationsofSoftwareEngineering(ESEC/FSE2018) .AssociationforComputingMachinery,NewYork,NY,912–915.
+DOI:https://doi/10.1145/3236024.3264591
+[200] Jianhua Peng, Feng Liu, Zhenju Zhao, Danqing Huang, and Rui Xue. 2010. ASM-SPV: A model checker for security
+protocols.In 6thInternationalConferenceonIntelligentInformationHidingandMultimediaSignalProcessing .458–461.
+DOI:https://doi/10.1109/IIHMSP.2010.117
+[201] Uta Priss. 2006. Formal concept analysis in information science. Ann. Rev. Inf. Sci. Technol. 40 (01 2006). DOI:https:
+//doi/10.1002/aris.1440400120
+[202] MartinL.Puterman.1994. MarkovDecisionProcesses:DiscreteStochasticDynamicProgramming (1sted.).JohnWiley
+& Sons, Inc., USA.
+[203] MaximePuys,Marie-LaurePotet,andPascalLafourcade.2016.FormalanalysisofsecuritypropertiesontheOPC-UA
+SCADAprotocol.In ComputerSafety,Reliability,andSecurity ,AmundSkavhaug,JérémieGuiochet,andFriedemann
+Bitsch (Eds.). Springer InternationalPublishing, Cham,67–75.
+[204] DavideQuarta,MarcelloPogliani,MarioPolino,FedericoMaggi,AndreaMariaZanchettin,andStefanoZanero.2017.
+An experimental security analysis of an industrial robot controller. In IEEE Symposium on Security and Privacy (SP) .
+IEEE, 268–286. DOI:https://doi/10.1109/SP.2017.20
+[205] MorganQuigley,KenConley,BrianP.Gerkey,JoshFaust,TullyFoote,JeremyLeibs,RobWheeler,andAndrewY.Ng.
+2009.ROS:AnOpen-sourceRobotOperatingSystem.Retrieved http://robotics.stanford.edu/~ang/papers/icraoss09-
+ROS.pdf.
+[206] ZvonimirRakamaricandMichaelEmmi.2014.SMACK:Decouplingsourcelanguagedetailsfromverifierimplemen-
+tations. In Computer Aided Verification - 26th International Conference, CAV 2014, Held as Part of the Vienna Summer
+ofLogic,VSL2014,Vienna,Austria,July18–22,2014.Proceedings(LectureNotesinComputerScience,Vol.8559) ,Armin
+Biereand Roderick Bloem (Eds.). Springer,Berlin,106–113.
+[207] R.Rana,M.Staron,C.Berger,A.Nilsson,R.Scandariato,A.Weilenmann,andM.Rydmark.2015.Ontheroleofcross-
+disciplinary research and SSE in addressing the challenges of the digitalization of society. In 6th IEEE International
+Conference on Software Engineering and Service Science (ICSESS) . IEEE, 1106–1109. DOI:https://doi/10.1109/ICSESS.
+2015.7339245
+[208] Awais Rashid, Howard Chivers, Emil Lupu, Andrew Martin, and Steve Schneider (Eds.). 2021. The Cyber Security
+Body ofKnowledgev1.1 . University of Bristol. Retrievedfrom www.cybok.org .
+[209] R. Rieke, M. Zhdanova, J. Repp, R. Giot, and C. Gaber. 2013. Fraud detection in Mobile payments utilizing process
+behavior analysis.In International Conferenceon Availability, Reliability and Security . IEEE, 662–669.
+[210] Marco Rocchetto and Nils Ole Tippenhauer. 2016. CPDY: Extending the Dolev-Yao Attacker with Physical-Layer
+Interactions. Retrievedfrom http://arxiv.org/abs/1607.02562 .
+[211] MarcoRocchettoandNilsOleTippenhauer.2017.Towardsformalsecurityanalysisofindustrialcontrolsystems.In
+ACM on Asia Conference on Computer and Communications Security (ASIA CCS’17) . ACM, New York, NY, 114–126.
+DOI:https://doi/10.1145/3052973.3053024
+[212] S. Roy, S. Chatterjee, A. K. Das, S. Chattopadhyay, N. Kumar, and A. V. Vasilakos. 2017. On the design of provably
+secure lightweight remote user authentication scheme for mobile cloud computing services. IEEE Access 5 (2017),
+25808–25825. DOI:https://doi/10.1109/ACCESS.2017.2764913
+[213] PeterY.A.Ryan,SteveSchneider,MichaelGoldsmith,GavinLowe,andBillRoscoe.2001. ModellingandAnalysisof
+Security Protocols .Addison-Wesley-Longman, USA.
+[214] O. Rysavy, J. Rab, and M. Sveda. 2013. Improving security in SCADA systems through firewall policy analysis. In
+Federated Conferenceon ComputerScience and Information Systems .IEEE, 1435–1440.
+[215] CaitlinSadowski,EdwardAftandilian,AlexEagle,LiamMiller-Cushon,andCieraJaspan.2018.Lessonsfrombuild-
+ingstatic analysistools atGoogle. Commun. ACM 61,4(Mar.2018),58–66. DOI:https://doi/10.1145/3188720
+[216] Antonella Santone, Valentina Intilangelo, and Domenico Raucci. 2013. Efficient formal verification in banking pro-
+cesses. In IEEE9thWorldCongressonServices . IEEE, 325–332.
+[217] N. Santos, Krishna P. Gummadi, and Rodrigo Rodrigues. 2009. Towards trusted cloud computing. In Conference on
+HotTopics in CloudComputing . USENIX Association.
+[218] Ralf Sasse, Samuel T. King, José Meseguer, and Shuo Tang. 2012. IBOS: A correct-by-construction modular browser.
+InInternational WorkshoponFormal Aspects ofComponentSoftware .Springer, Berlin,224–241.
+[219] Jinho Seol, Seongwook Jin, Daewoo Lee, Jaehyuk Huh, and Seungryoul Maeng. 2015. A trusted IaaS environment
+withhardwaresecuritymodule. IEEETrans.Serv.Comput. 9(012015),1–1. DOI:https://doi/10.1109/TSC.2015.2392099
+[220] J. Sepulveda, D. Aboul-Hassan, G. Sigl, B. Becker, and M. Sauer. 2018. Towards the formal verification of security
+properties of a Network-on-Chip router. In IEEE 23rd European Test Symposium (ETS) . IEEE, 1–6. DOI:https://doi/10.
+1109/ETS.2018.8400692
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:37
+[221] Rida Shaukat, Arooba Shahoor, and Aniqa Urooj. 2018. Probing into code analysis tools: A comparison of C# sup-
+portingstaticcodeanalyzers.In 15thInternationalBhurbanConferenceonAppliedSciencesandTechnology(IBCAST) .
+455–464. DOI:https://doi/10.1109/IBCAST.2018.8312264
+[222] Yuchao She, Hui Li, and Hui Zhu. 2013. UVHM: Model checking based formal analysis scheme for hypervisors. In
+InformationandCommunicationTechnology ,KhabibMustofa,ErichJ.Neuhold,A.MinTjoa,EdgarWeippl,andIlsun
+You (Eds.).Springer, Berlin,300–305.
+[223] Roshan Shrestha, Hoda Mehrpouyan, and Dianxiang Xu. 2018. Model checking of security properties in industrial
+control systems (ICS). In 8th ACM Conference on Data and Application Security and Privacy (CODASPY’18) . Associa-
+tionfor ComputingMachinery, NewYork, NY, 164–166. DOI:https://doi/10.1145/3176258.3176949
+[224] Irfan Siddavatam, Sachin Parekh, Tanay Shah, and Faruk Kazi. 2017. Testing and validation of Modbus/TCP proto-
+col for secure SCADA communication in CPS using formal methods. Scalable Comput.: Pract. Exper. 18 (11 2017).
+DOI:https://doi/10.12694/scpe.v18i4.1331
+[225] Julien Signoles, Pascal Cuoq, Florent Kirchner, Nikolai Kosmatov, Virgile Prevosto, and Boris Yakobowski. 2012.
+Frama-C:Asoftwareanalysisperspective. Form.Asp.Comput. 27(102012). DOI:https://doi/10.1007/s00165-014-0326-
+7
+[226] R. Skowyra, A. Lapets, A. Bestavros, and A. Kfoury. 2014. A verification platform for SDN-enabled applications. In
+IEEEInternational ConferenceonCloudEngineering . IEEE, 337–342. DOI:https://doi/10.1109/IC2E.2014.72
+[227] Eric Smith and Alessandro Coglio. 2016. Android platform modeling and Android app verification in the ACL2
+theorem prover. In Verified Software: Theories, Tools, and Experiments , Arie Gurfinkel and Sanjit A. Seshia (Eds.).
+Springer InternationalPublishing,Cham,183–201.
+[228] E. Snekkenes. 1991. Exploring the BAN approach to protocol analysis. In IEEE Computer Society Symposium on Re-
+search in Security andPrivacy . IEEE, 171–181. DOI:https://doi/10.1109/RISP.1991.130785
+[229] FuSongandTayssirTouili.2012.Efficientmalwaredetectionusingmodel-checking.In InternationalSymposiumon
+Formal Methods .Springer,Berlin,418–433.
+[230] Fu Song and Tayssir Touili. 2014. Model-checking for Android malware detection. In Programming Languages and
+Systems,Jacques Garrigue (Ed.).Springer InternationalPublishing,Cham,216–235.
+[231] FuSongandTayssirTouili.2014.Pushdownmodelcheckingformalwaredetection. Int.J.Softw.ToolsTechnol.Trans-
+fer16,2(2014),147–173.
+[232] S. Souaf, P. Berthome, and F. Loulergue. 2018. A cloud brokerage solution: Formal methods meet security in cloud
+federations.In InternationalConferenceonHighPerformanceComputingSimulation(HPCS) .691–699. DOI:https://doi/
+10.1109/HPCS.2018.00113
+[233] J.M. Spivey.1989. TheZNotation:A Reference Manual .Prentice-Hall, USA.
+[234] AndreiStefanescu,DaejunPark,ShijiaoYuwen,YilongLi,andGrigoreRoşu.2016.Semantics-basedprogramverifiers
+for all languages. In ACM SIGPLAN International Conference on Object-Oriented Programming, Systems, Languages,
+andApplications(OOPSLA’16) .AssociationforComputingMachinery,NewYork,NY,74–91. DOI:https://doi/10.1145/
+2983990.2984027
+[235] Susan Stepney, David Cooper, and Jim Woodcock. 2000. An Electronic Purse: Specification, Refinement, and Proof .
+Technical Monograph PRG-126.OxfordUniversity ComputingLaboratory.
+[236] C.StewardJr.,L.A.Wahsheh,A.Ahmad,J.M.Graham,C.V.Hinds,A.T.Williams,andS.J.DeLoatch.2012.Software
+security: The dangerous afterthought. In 9th International Conference on Information Technology - New Generations .
+IEEE, 815–818. DOI:https://doi/10.1109/ITNG.2012.60
+[237] JunSun,YangLiu,andJinSongDong.2008.ModelcheckingCSPrevisited:Introducingaprocessanalysistoolkit.In
+LeveragingApplicationsofFormalMethods,VerificationandValidation ,TizianaMargariaandBernhardSteffen(Eds.).
+Springer Berlin,307–322.
+[238] J. Sun, Y. Liu, J. S. Dong, and C. Chen. 2009. Integrating specification and programs for system modeling and verifi-
+cation.In 3rd IEEEInternational Symposium onTheoretical Aspects of Software Engineering . IEEE, 127–135.
+[239] FaridMolazemTabriziandKarthikPattabiraman.2016.Formalsecurityanalysisofsmartembeddedsystems.In 32nd
+AnnualConferenceonComputerSecurityApplications(ACSAC’16) .AssociationforComputingMachinery,NewYork,
+NY, 1–15. DOI:https://doi/10.1145/2991079.2991085
+[240] Naoyuki Tamura, Tomoya Tanjo, and Mutsunori Banbara. 2008. System Description of a SAT-based CSP Solver
+Sugar., 71–75pages.Retrieved https://tamura70.gitlab.io/papers/pdf/cpai08t.pdf .
+[241] Vincent F. Taylor and Ivan Martinovic. 2017. Short paper: A longitudinal study of financial apps in the Google Play
+store. InFinancial Cryptography and Data Security , Aggelos Kiayias (Ed.). Springer International Publishing, Cham,
+302–309.
+[242] The Coq Development Team. 2019. The Coq Reference Manual . LogiCal Project. Retrieved from http://coq.inria.fr .
+Version 8.9.1.
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.5:38 T. Kulik et al.
+[243] DonaldThomasandPhilipMoorby.2008. TheVerilog®HardwareDescriptionLanguage .SpringerScience&Business
+Media.
+[244] EminaTorlakandDanielJackson.2007.Kodkod:Arelationalmodelfinder.In ToolsandAlgorithmsfortheConstruc-
+ti ona ndA na ly si sofSy stem s ,OrnaGrumbergandMichael Huth (Eds.).Springer Berlin,632–647.
+[245] Peter Würtz Vinther Tran-Jørgensen and Tomas Kulik. 2019. Migrating overture to a different IDE. In 17th Over-
+ture Workshop (Technical Report Series, CS-TR- 1530 - 2019) , Carl Gamble and Luis Diogo Couto (Eds.). Newcastle
+University, UK, 32–47.
+[246] Peter W. V. Tran-Jørgensen, Tomas Kulik, Jalil Boudjadar, and Peter Gorm Larsen. 2019. Security analysis of cloud-
+connected industrial control systems using combinatorial testing. In 17th ACM-IEEE International Conference on
+Formal Methods and Models for System Design (MEMOCODE’19) . Association for Computing Machinery, New York,
+NY.DOI:https://doi/10.1145/3359986.3361211
+[247] K.Tsukada,K.Sawada,andS.Shin.2016.AtoolchainonmodelcheckingSPINviaKalmanDecompositionforcontrol
+system software. In IEEE International Conference on Automation Science and Engineering (CASE) . IEEE, 300–305.
+DOI:https://doi/10.1109/COASE.2016.7743421
+[248] Mathieu Turuani. 2006. The CL-Atse protocol analyser. In Term Rewriting and Applications , Frank Pfenning (Ed.).
+Springer, Berlin,277–286.
+[249] Mathieu Turuani, Thomas Voegtlin, and Michael Rusinowitch. 2016. Automated verification of Electrum wallet. In
+International Conference on Financial Cryptography and Data Security . Springer,Berlin,27–42.
+[250] Nils Urbach and Frederik Ahlemann. 2019. Digitalization as a Risk: Security and Business Continuity Management
+Are Central Cross-Divisional Functions of the Company . Springer International Publishing, Cham, 85–92. DOI:https:
+//doi/10.1007/978-3-319-96187-3_9
+[251] A. Vasudevan, S. Chaki, L. Jia, J. McCune, J. Newsome, and A. Datta. 2013. Design, implementation and verification
+of an eXtensible and modular hypervisor framework. In IEEE Symposium on Security and Privacy . IEEE, 430–444.
+DOI:https://doi/10.1109/SP.2013.36
+[252] Amit Vasudevan, Sagar Chaki, Petros Maniatis, Limin Jia, and Anupam Datta. 2016. überSpark: Enforcing ver-
+ifiable object abstractions for automated compositional security analysis of a hypervisor. In 25th USENIX Secu-
+rity Symposium (USENIX Security’16) . USENIX Association, 87–104. Retrieved from www.usenix.org/conference/
+usenixsecurity16/technical-sessions/presentation/vasudevan .
+[253] David von Oheimb and Sebastian Mödersheim. 2012. ASLan++ — A formal security specification language for dis-
+tributedsystems.In Formal MethodsforComponentsandObjects ,BernhardK.Aichernig, FrankS.deBoer,andMar-
+celloM. Bonsangue(Eds.). Springer,Berlin,1–22.
+[254] R. Wang, Y. Guan, H. Song, X. Li, X. Li, Z. Shi, and X. Song. 2019. A formal model-based design method for robotic
+systems.IEEESyst.J. 13,1(Mar.2019),1096–1107. DOI:https://doi/10.1109/JSYST.2018.2867285
+[255] T. Wang, Q. Su, and T. Chen. 2017. Formal analysis of security properties of cyber-physical system based on timed
+automata.In IEEE2ndInternationalConferenceonDataScienceinCyberspace(DSC) .534–540. DOI:https://doi/10.1109/
+DSC.2017.44
+[256] W. Wang, Q. Zeng, and A. P. Mathur. 2012. A security assurance framework combining formal verification and
+security functional testing. In 12th International Conference on Quality Software . 136–139. DOI:https://doi/10.1109/
+QSIC.2012.34
+[257] Dean C. Wardell, Robert F. Mills, Gilbert L. Peterson, and Mark E. Oxley. 2016. A method for revealing and ad-
+dressing security vulnerabilities in cyber-physical systems by modeling malicious agent interactions with formal
+verification. Procedia Comput. Sci. 95 (2016), 24–31. Retrieved from http://www.sciencedirect.com/science/article/
+pii/S1877050916324619 .
+[258] SharonWeinberger.2011.Computersecurity:Isthisthestartofcyberwarfare? Nature474(062011),142–5. DOI:https:
+//doi/10.1038/474142a
+[259] TobiasWich,DanielNemmert,andDetlefHühnlein.2017.Towardssecureandstandard-compliantimplementations
+of the PSD2 directive. In Open Identity Summit 2017, October 5–6, 2017, Karlstad University, Sweden (LNI, Vol. P-277) ,
+LotharFritsch,HeikoRoßnagel,andDetlefHühnlein(Eds.).GesellschaftfürInformatik,Bonn,DE,63–80.Retrieved
+fromhttp://www.dl.gi.de/20.500.12116/3581 .
+[260] M. Williams, L. Axon, J. R. C. Nurse, and S. Creese. 2016. Future scenarios and challenges for security and privacy.
+InIEEE 2nd International Forum on Research and Technologies for Society and Industry Leveraging a Better Tomorrow
+(RTSI). IEEE, 1–6. DOI:https://doi/10.1109/RTSI.2016.7740625
+[261] J. M. Wing. 1990. A specifier’s introduction to formal methods. Computer 23, 9 (Sep. 1990), 8–22. DOI:https://doi/10.
+1109/2.58215
+[262] Jeannette M. Wing. 1998. A symbiotic relationship between formal methods and security. In Proceedings Computer
+Security, Dependability, andAssurance: From Needs toSolutions (Cat.No.98EX358) . IEEE, 26–38.
+[263] JimWoodcock andJim Davies.1996. Using Z:Specification, Refinement, andProof .Prentice-Hall,USA.
+FormalAspects of Computing,Vol. 34,No.1,Article 5.Publicationdate:July 2022.A Survey of Practical Formal Methods for Security 5:39
+[264] JimWoodcock,PeterGormLarsen,JuanBicarregui,andJohnFitzgerald.2009.Formalmethods:Practiceandexperi-
+ence.ACMComput. Surv. 41,4(Oct.2009). DOI:https://doi/10.1145/1592434.1592436
+[265] Jim Woodcock, Susan Stepney, David Cooper, John Clark, and Jeremy Jacob. 2008. The certification of the Mondex
+electronic purseto ITSEC LevelE6. Formal Asp.Comput. 20,1(2008),5–19.
+[266] Meihua Xiao, Zilong Wan, and Hongling Liu. 2014. The formal verification and improvement of simplified SET
+protocol. J.Softw.9(092014). DOI:https://doi/10.4304/jsw.9.9.2302-2308
+[267] Luyi Xing, Yangyi Chen, XiaoFeng Wang, and Shuo Chen. 2013. InteGuard: Toward automatic protection of third-
+party web service integrations. In 20th Annual Network and Distributed System Security Symposium . The Internet
+Society. Retrieved from www.ndss-symposium.org/ndss2013/integuard-toward-automatic-protection-third-party-
+web-service-integrations .
+[268] J.Yoo,Y.Jung,D.Shin,M.Bae,andE.Jee.2019.Formalmodelingandverificationofafederatedbyzantineagreement
+algorithm for blockchain platforms. In IEEE International Workshop on Blockchain Oriented Software Engineering
+(IWBOSE) .IEEE, 11–21.
+[269] Yu Zheng, D. He, Xiaohu Tang, and Hongxia Wang. 2005. AKA and authorization scheme for 4G Mobile networks
+based on trusted mobile platform. In 5th International Conference on Information Communications Signal Processing .
+976–980. DOI:https://doi/10.1109/ICICS.2005.1689196
+[270] Wen Zeng, Maciej Koutny, Paul Watson, and Vasileios Germanos. 2016. Formal verification of secure information
+flow in cloudcomputing. J.Inf.Secur. Applic. 27(2016),103–116.
+[271] Danfeng Zhang, Yao Wang, G. Edward Suh, and Andrew C. Myers. 2015. A hardware design language for timing-
+sensitive information-flow security. In 20th International Conference on Architectural Support for Programming
+Languages and Operating Systems (ASPLOS’15) . Association for Computing Machinery, New York, NY, 503–516.
+DOI:https://doi/10.1145/2694344.2694372
+[272] WeiZhang,WenkeMa,HuilingShi,andFu-qiangZhu.2012.Modelcheckingandverificationoftheinternetpayment
+system with SPIN. JSW7,9 (2012),1941–1949.
+[273] S. Zonouz, J. Rrushi, and S. McLaughlin. 2014. Detecting industrial control malware using automated PLC code
+analytics. IEEESecur. Priv. 12,6(Nov. 2014),40–47. DOI:https://doi/10.1109/MSP.2014.113
+Received April 2021; accepted January 2022
+Formal Aspects of Computing,Vol. 34,No. 1,Article5.Publicationdate:July 2022.

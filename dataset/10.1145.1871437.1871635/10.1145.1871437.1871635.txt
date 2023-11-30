@@ -1,0 +1,541 @@
+A New Mathematics Retrieval System
+Shahab Kamali
+University Of Waterloo
+skamali@cs.uwaterloo.caFrank Wm. Tompa
+University Of Waterloo
+fwtompa@cs.uwaterloo.ca
+ABSTRACT
+The Web contains a large collection of documents, some with
+mathematical expressions. Because mathematical expres-
+sions are objects with complex structures and rather few
+distinct symbols, conventional text retrieval systems are notvery successful in mathematics retrieval. The lack of a deﬁ-
+nition for similarity between mathematical expressions, and
+the inadequacy of searching for exact matches only, makes
+the problem of mathematics retrieval even harder. As a re-
+sult, the few existing mathematics retrieval systems are not
+very helpful in addressing users’ needs.
+We propose a powerful query language for mathemati-
+cal expressions that augments exact matching with approx-imate matching, but in a way that is controlled by the user.We also introduce a novel indexing scheme that scales well
+for large collections of expressions. Based on this indexing
+scheme, an eﬃcient lookup algorithm is proposed.
+Categories and Subject Descriptors
+H.3.3 [ INFORMATION STORAGE AND RETRIEVAL ]:
+Information Search and Retrieval
+General Terms
+Design, Algorithms, Performance
+1. INTRODUCTION
+Retrieving the mathematical content of the Web is cur-
+rently very limited. Conventional text retrieval systems
+are not tuned for mathematical expressions, which are ob-
+jects with complex structures and rather few distinct terms.Moreover, there is no clear deﬁnition for similarity between
+mathematical expressions, and merely searching for exact
+matches often results in missing useful information.
+Each mathematical expression has two sides, its mathe-
+matical meaning, often expressed in L
+ATEX [6] or Presen-
+tation MathML [4], and its appearance, usually expressed
+using Content MathML [4] or OpenMath [3]. The majority
+of mathematical expressions on the Web are represented by
+Permission to make digital or hard copies of all or part of this work for
+personal or classroom use is granted without fee provided that copies arenot made or distributed for proﬁt or commercial advantage and that copies
+bear this notice and the full citation on the ﬁrst page. To copy otherwise, to
+republish, to post on servers or to redistribute to lists, requires prior speciﬁc
+permission and/or a fee.CIKM’10, October 26–30, 2010, Toronto, Ontario, Canada.
+Copyright 2010 ACM 978-1-4503-0099-5/10/10 ...$10.00.their appearance. The lack of content information forces a
+retrieval system to rely mostly on the presentation of ex-
+pressions, which makes it hard to judge whether two expres-
+sions are mathematically similar or not. The relevance oftwo expressions depends on the users’ needs, and while in
+one users’s opinion two expressions are related, another user
+might ﬁnd them totally dissimilar. For example, a user who
+is interested in sin
+2(x) might also be interested in sin3(x)
+but not in sin2(x+1), and another user might ﬁnd the former
+irrelevant and the latter useful. We know of no consensus
+for similarity in general. On the other hand, by limiting the
+search to exact matches, many relevant expressions will be
+missed, and the user might need to issue a large number of
+queries to ﬁnd a useful answer. For example if the user is
+looking for10P
+i=11
+(i+1)2,t h e n10P
+j=11
+(j+1)2,nP
+i=11
+(i+1)2,a n dnP
+x=11
+x2
+probably address her needs.
+Currently, the few content-based mathematics retrieval
+systems [5, 9] are limited to resources that encode the se-
+mantics of mathematical expressions, which are not very
+popular on the Web. There are a few mathematics retrieval
+systems [2, 8, 10, 12, 13] that rely on the presentation ofmathematical expressions, but they either can ﬁnd exact
+matches only, or they use a “bag of symbols” model that
+usually returns a large number of irrelevant results.
+The rest of this paper is organized as follows. In Section 2,
+we describe the problems that we address in this paper. Ourquery language is described in Section 3. In Section 4 the
+indexing algorithm is explained, and in Section 5 the match-ing and lookup algorithms are presented. We ﬁnally present
+an evaluation of our algorithms before concluding the paper.
+2. PROBLEM STATEMENT
+Given a mathematical expression, the problem is to ﬁnd
+expressions that match it. In the absence of a consensus
+deﬁnition for similarity, we have no basis on which to judge
+relevance, which is necessary to build an automatic retrieval
+system. We therefore choose to augment the query withextra information from the user. In this paper we propose
+a powerful query language that uses various forms of wild
+cards. It is speciﬁc enough to reduce irrelevant results whileit provides the ﬂexibility to capture many similar expres-
+sions.
+As an information retrieval system, the mathematics re-
+trieval system should scale well to the size of the Web whichis a huge repository of mathematical expressions. Collect-
+ing these expressions and eﬃciently indexing them is also
+an important problem. We propose a novel indexing scheme
+1413that is eﬃcient in terms of memory consumption and lookup
+time, and allows fast matching and lookup of expressions.Based on this indexing scheme, we propose an eﬃcient lookup
+algorithm.
+We assume all expressions are encoded with Presenta-
+tion MathML. There are translation tools that automati-
+cally translate expressions from most encoding schemes to
+this form [7, 11], so this assumption does not limit our re-
+trieval system. A MathML-encoded expression can be rep-resented as a tree, e.g. Figure 1. Our indexing and lookup
+algorithms are based on this tree representation.
+3. THE QUERY LANGUAGE
+As shown in the introduction, searching only for exact
+matches to a given expression is not adequate as some rel-
+evant expressions would not be retrieved. On the other
+hand, ranking mathematical expressions based on approxi-mate matching of expressions results in the retrieval of many
+irrelevant expressions. In general only the user can judge
+whether two expressions that look similar are useful for her
+or not. To solve this problem, in this section we propose
+a new query language that allows approximate matching of
+expressions, but in a controlled way.
+We express queries as mathematical expressions that in-
+clude wild cards . The following wild cards are deﬁned:
+•[Ni] matches any number.
+•[Vi] matches any variable.
+•[Oi] matches any operator.
+•[Ei] matches any expression.
+In the above, iis a natural number denoting the index of
+a wild card, e.g. [ N1], [O3 ] .I fi naq u e r yw i l dc a r d so ft h e
+same type have the same indices, they must match subtrees
+that are equal.For example if the query is [ V1][V1],t h e ni t
+matches xxandyybut not xy, but if it is [ V1][V2]then it
+matches all three. Similarly,[E1]
+[E1]+1matchesx
+x+1and also
+x2
+x2+1but not√x
+x2+1, while[E1]
+[E2]+1matches all of them. Wild
+cards with no index, such as [ E], are also allowed. If such
+a wild card is repeated, then the matching subtrees do notneed to be equal. For example [ N]x
+[N]matches 2 x3as well
+as 2x2.
+Constraints can be speciﬁed for wild cards in a query using
+a “where” clause. For example the query “[ E]2[O1]3where
+O1∈{+,−}”m a t c h e s x2+3 ,a n d( x+1 )2−3 but not
+x2×3. For a number wild card, a constraint on the range of
+the number can be speciﬁed, e.g. “ x[N1]where 1≤N1≤5”
+matches x2but not x9orx−1. Constraints can be deﬁned
+for other types of wild cards similarly. The following is a list
+of constraints that our system currently supports:
+•Number wild cards: The number should belong to a speciﬁc
+range or domain. The domain of a number can be natural,real, etc.
+•Variable wild cards: The variable should belong to a speciﬁc
+set of possible names, e.g. “ V∈{x, y}”.
+•Operator wild cards: The operator should belong to a spe-ciﬁc set of operators, e.g. “ O∈{+,−}”.
+•Expression wild cards: The expression should contain a
+speciﬁc subexpression: “ {E contains Q
+/prime}” (i.e. Q/primematches
+a subtree of E).Q/primecan be any query, including one with
+wild cards and constraints.
+The constraint on expressions allows us to perform subex-
+pression matching. For example “[ E1] + 1 where E1con-
+tains x2”m a t c h e s x2+ 1 andp
+x2+y+ 1 but not x+1 ,or√x+1 . “ [ E1]where E1contains [E2]2” matches all
+expressions that contain a quadratic.
+We also support optional patterns, which are represented
+in braces, such as {E}. An optional part might not appear in
+some matching expressions. For example, x2+[N]m a t c h e s
+x2+ 1 but not x2,w h e r e a s x2{+[N]}matches both.
+In our implementation we use LATEX [6] to express our
+queries. Although we could have chosen to use any othermarkup language, L
+ATEX is widely used for publishing math-
+ematical information and is fairly easy to learn. In addition
+there are automatic tools that translate expressions from
+LATEX to Presentation MathML, e.g. Tralics [7].
+4. INDEXING
+Assume we are given a set of mathematical expressions
+in the form of Presentation MathML trees. First, we as-
+sign a data structure called exp-info to each expression. It
+stores information such as the Web address of the pages
+from which the expression is taken, and a list of the labelsof all leaves in the same left-to-right order that they appear
+in the tree. Then, we perform a simple syntactic normaliza-
+tion as follows. We remove nodes that represent numbersand variables. These nodes can be detected by the labelsof their parents, “ <mn>”a n d“ <mi>”, see Figure 1-b. We
+also remove the nodes representing brackets and add newnodes with a special label, e.g. “()”, as the parent of the sur-rounded expression (see Figure 1-c) (Note that we are not
+performing any mathematical normalization.). In the rest
+of this paper we assume all trees are normalized and we use
+terms “tree” and “normalized tree” interchangeably.
+Some stored trees represent mathematical expressions taken
+directly from web pages, and some trees instead representtheir subtrees. We call the former a web expression ,a n d
+the latter a proper subtree . The label of the root of com-
+plete trees is always “ <math >”, so they can be easily dis-
+tinguished from proper subtrees.
+/0/0/0/0/1/1/1/1
+/0/0/1/1/0/0/0/0/1/1/1/1
+/0/0/0/0/1/1/1/1/0/0/1/1
+/0/0/0/0/1/1/1/1/0/0/0/0/1/1/1/1
+/0/0/0
+/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0
+/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/1/1/1/1/0/0/1/1
+/0/0/0/0/1/1/1/1/0/0/0/0/1/1/1/1
+/0/0/0/0/1/1/1/1/0/0/1/1
+/0/0/0
+/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0
+/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+2 x<mo> <mi> <mn><msup>
+<mn>
+− 1<mrow>
+2 x<mo> <mi> <mn><msup>
+<mn>
+1<mrow>
++<mfrac>
+/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0
+/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0
+/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0
+/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1<mrow>
+<mo> <mo> <mo> <mi> <mn>
+( x +) 1/0/0/0
+/1/1/1/0/0/0
+/1/1/1/0/0/0
+/1/1/1/0/0/0
+/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0
+/1/1/1
+/0/0/0
+/1/1/1/0/0/0
+/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1<mrow>
+<mo> <mo> <mo> <mi> <mn>
+(+)/0/0/0/0/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0
+/1/1/1/0/0/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1<mrow>
+( )
+<mn> <mi> <mo>
++
+(a) (b) (c) (d)
+Figure 1: (a) Presentation MathML tree forx2−1
+x2+1(b)
+A subtree representing (x+1 ). (b)After values of num-
+bers and names of variables are removed. (c)After the
+brackets are transformed.
+Our indexing algorithm is based on the observation that
+many subtrees appear repeatedly in various trees. To inves-
+tigate this, we ran experiments on a collection of 297,300
+expressions taken from articles with various topics. (In Sec-
+tion 6 we explain how web expressions were collected.) The
+number of subtrees of speciﬁc sizes and the average numberof their repetitions is presented in Figure 2, which shows
+that many expression trees share several common subtrees.
+The basis of our indexing algorithm is to store each sub-tree once only and to allow subexpressions to point to them.
+This signiﬁcantly decreases the size of the index, and as we
+will explain later, it also speeds up the lookup algorithm.The motivation behind storing the structure of each tree in-
+dependently of the values of numbers and names of variables
+(by normalizing them as explained above) is to increase the
+number of common subtrees further.
+1414(a) (b)
+Figure 2: (a) The number of distinct subtrees of speciﬁc
+size. (b) Average number of repetitions.
+<mn>
+{<http://www.wikipedia...}
+<math> <mfrac><mrow>
+<mrow><msup><mi>
+<mo>
+<mo>    +   −
+Figure 3: The index afterx2−1
+x2+1is added.
+We assign a hash signature to each subtree such that
+equal subtrees have the same signatures. A table of unique
+MathML (sub)trees, indexed by their signatures, forms the
+basis of our index. Each entry of the table contains the label
+of the root, and a list of pointers to entries corresponding tothe list of the children of the root. Given a tree, we ﬁnd thecorresponding entry by computing its signature and looking
+it up in the table. Initially, the index is empty. We add
+expression trees one by one to the index. To add a tree, T,
+we ﬁrst perform a lookup in the table. If it is found, we
+return a pointer to the corresponding entry in the table. We
+also update the exp-info ifTis a complete tree. If Tis not
+found, we add a new entry for Tto the table. Then, we
+recursively insert subtrees that correspond to the childrenof the root of Tin the index, and insert a list of the pointers
+to their corresponding entries in the entry for T. This algo-
+rithm guarantees that each tree is inserted once only, evenif it repeats. In Figure 3 a schematic of the index is shown
+after
+x2−1
+x2+1is added.
+5. THE LOOKUP ALGORITHM
+Similar to an expression, a query is represented as a MathML
+tree, with some extra tags that represent wild cards and op-
+tional parts. We normalize a query tree as explained in Sec-
+tion 4 and also modify subtrees that represent wild cards.
+We also mark each optional subtree with a special ﬂag that isstored in its root and remove the surrounding braces (“ {}”).
+An example is shown in Figure 4.
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0
+/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1/0/0/0/0/1/1/1/1
+/0/0/0
+/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0/0/1/1/1/1/0/0/1/1<mn>
+4<math>
+<mn>
+<mo><mo>
+[E 1 ]<mo> <mrow> <mo><msup><mrow>
+} 2 {/0/0/0
+/1/1/1
+/0/0/0
+/1/1/1/0/0/0/0/0/0
+/1/1/1/1/1/1
+/0/0/0/0/1/1/1/1/0/0/0/0/1/1/1/1
+/0/0/0/0/1/1/1/1
+/0/0/0/0/0/0
+/1/1/1/1/1/1<math>
+<mn><msup>
+<mn>*
+E1<wild−expr>{2, [E1], 4}
+(a) (b)
+Figure 4: (a) A query tree representing {2}[E1]4(b)
+Modiﬁed tree.
+Consider a tree, T.T.root is the root of TandCTis
+t h en u m b e ro fc h i l d r e no f T.root .T[i], 1≤i≤CT,i st h e
+subtree rooted at the ithchild of T.root from the left, and
+T[i..j] is the sequence of subtrees T[i]t oT[j].
+Given a query Qand expression E,match (Q, E) returns
+either true or false. If Qdoes not contain any wild card
+or optional parts, match (Q, E) is true if they have the same
+signatures. If Qcontains wild cards, but the root is not itself
+a wild card, then if QandEhave diﬀerent roots, the result
+is false. The result is also false if CQ<C E. If there are
+koptional subtrees among the children of Q.root , then theresult is false if CQ−k>C E. If none of these cases happen,
+we recursively match the children of both trees using the
+boolean function m:
+m(Q[1..CQ],E[1..CE]) =8
+>>>>>>>>>>>>>>>>>>>>>><
+>>>>>>>>>>>>>>>>>>>>>>:false ifmatch (Q[1],E[1]) is false
+andQ[1] is not optional
+m(Q[2..C
+Q],E[2..CE])
+ifmatch (Q[1],E[1]) is true
+andQ[1] is not optional
+m(Q[2..CQ],E[2..CE])OR
+m(Q[2..CQ],E[1..CE])
+ifmatch (Q[1],E[1]) is true
+andQ[1] is optional
+m(Q[2..CQ],E[1..CE])
+ifmatch (Q[1],E[1]) is false
+andQ[1] is optional
+If the root of Qis a wild card, we evaluate the match as
+follows, and if the match is successful and the wild card has
+an index, we bind the wild card to E. First if the wild card
+has an index, we need to determine whether it has already
+been bound to a subtree because of a previous match havingbeen made when matching another part of the query. If a
+subtree representing expression E
+/primeis already bound to the
+wildcard represented by Q,t h e n Qmatches Eonly if Eand
+E/primeare equal, i.e. have the same signatures. If no expression
+has previously been bound to Q, we need to compare the
+types of labels at the roots. If Qis a number wild card and E
+is not a number, i.e. its root’s label is not“ <mn>”, then the
+result is false. Similarly, variable, operator, and expression
+wild cards must match variables, operators, and expressionsrespectively. Otherwise, if there are no constraints on the
+wild card, we return true.
+Assume Qis an operator wild card with the constraint
+that it should belong to a speciﬁc set of operators, S.I t
+matches Eonly if E.root is “<mo>” and its child’s label is
+inS.I fQis an expression wild card and there is a constraint
+thatEshould contain Q
+/prime, we match all subtrees of Eagainst
+Q/primeand return true as soon as a match is found; otherwise,
+if no match is found, we return false. While matching trees,
+we keep track of the matched nodes that represent numbers
+or variables (whose children are removed and stored in the
+exp-info during the normalization). It allows us to check
+constraints on number or variable wild cards by retrieving
+the corresponding values from the exp-info .
+In Section 4, we showed that many subtree structures re-
+peat several times in various expressions. This implies that
+while performing a search, the same subtrees are repeat-edly compared against the query subtrees, so we can cache
+and reuse the result of these comparisons to optimize our
+lookup algorithm. In particular, we allocate a local cachefor each index entry, and any time we attempt to match the
+corresponding tree against another tree, we ﬁrst examine
+its cache. Only if a cache miss occurs do we run the moreextensive match, whereupon we save the result in the cache.
+6. EXPERIMENTAL RESULTS
+In this section we present the results of the empirical eval-
+uation of our algorithms. We crawled a set of web pages
+totaling 60GB in size. We extracted 4000 mathematical ex-
+pressions encoded with MathML (content and presentation),
+3000 of them from the web pages of the MathML test suite
+maintained by W3C. Some main publishers of mathemati-cal information, including Wikipedia and Wolfram, present
+1415Query Lookup Examples of
+time matched
+expressions
+x2−1
+x2+1250 ms
+x+y=(x1+y1,x2+y2) 275 ms
+[E]2−1
+[E]2+1410 ms(x+1)2−1
+(x+1)2+1
+[E]3240 ms y3,(1
+x)3
+[V]3230 ms x3,y3
+[N1 ]+[ N2]where N1/negationslash=N2270 ms 2 + 4, 43 + 70
+[V][N]220 ms x2,y3
+k[V1]−k−[V1]
+q−q−1[O]t[E] 255 mski−k−i
+q−q−1→ti+1
+[N]R
+[V1]=[N][E1]d[V1] 390 ms10R
+x=11
+x2dx
+where E1contains x2
+[N]P
+[V1]=[N][E1][E2]d[V1] 630 ms5P
+i=21
+sin(π
+i)1
+cos(π
+i)
+where E1contains sin(π
+[V1])
+and E2contains cos(π
+[V1])
+[E1][E1]270 ms xx,√
+R√
+R
+[E1]where E1contains x2460 ms 2x2,x2,1
+x2
+[V1]
+[V1][O1]1where [O1]∈{+,−} 240 msi
+i+1,i
+i−1
+[E1][N1]where 2≤N1≤9510 ms1
+sin(x)5
+and E1contains sin(x)
+[N]P
+[V1]=[N]1
+[E1]430 ms10P
+i=11
+2i2
+where E1contains [V1]2
+x2{+1} 470 ms x2,x2+1
+x2+[N]{[E]}
+x+1670 msx2+1
+x+1,x2+2(x+2)
+x+1
+Table 1: Sample queries and lookup times.
+mathematical expressions as images. They also annotate
+these with pieces of LATEX. We could collect a set of 293,300
+expressions encoded this way. After reﬁning the expressions
+to ﬁx their LATEX errors, we translated the collected expres-
+sions into MathML using a T EX to presentation MathML
+translator [7]. So in total we could collect 297,300 expres-
+sions from various resources on the Web [1]. The resultspresented in this section are based on this set of expres-
+sions. We ran our experiments on a PC with a 3GHz AMD
+Athlon Dual Core Processor, 2GB memory, and Linux ver-
+sion 2.6.24-27 operating system.
+We deﬁne a simple index to be a set of expression trees
+that are stored independently from each other. Note thatin a simple index common subtrees are stored several times
+while in our index they are stored only once. Figure 5, in
+which the x-axis represents the number of indexed expres-sions, presents the ratio of the size of the simple index to
+the size of our index as new expressions are indexed. This
+ﬁgure implies that the size of our index grows slower as more
+Figure 5: The ratio of the memory usage of the simple
+index and our index.expressions are indexed. The reason is that the size of the
+simple index grows linearly as new expressions are addedwhile the size of our index increases slower because repeat-
+ing subtrees are stored only once.
+Table 1 lists some sample queries and the lookup time (in
+milliseconds) for each one. Looking up queries that contain
+optional patterns or require subexpression matching takes
+relatively longer because in these cases generally a larger
+number of subtrees are matched. In all cases the lookuptimes of the listed queries are less than one second. Assum-
+ing that these queries represent a wide range of queries that
+our system supports, we can conclude that our matchingand lookup algorithms are quite eﬃcient.
+7. CONCLUSIONS
+We propose a novel and powerful query language for math-
+ematical expressions that allows users to issue queries that
+ﬂexibly match various expressions. We also propose an eﬃ-
+cient indexing scheme, and based on this indexing scheme,
+we propose fast matching and lookup algorithms. Our eval-uations highlight the performance of our algorithms in termsof memory consumption and lookup time. We believe that
+our query language will allow users to pose queries that
+match expressions relevant to their needs, but the eﬀective-ness of the language remains to be tested. We also believe
+that our approach based on wild cards and our eﬃcient in-
+dex can be applied to other tree-structured data matching,such as the retrieval of chemical formulae, symbolic logic
+expressions, or perhaps musical passages.
+8. REFERENCES
+[1] http://db.uwaterloo.ca/mathretrieval.
+[2] G. Bancerek. Information retrieval and rendering with
+MML Query. pages 266–279, 2006.
+[3] O. Caprotti, D. Carlisle, and A. Cohen. The
+OpenMath standard. The OpenMath Esprit
+Consortium , 2002.
+[4] D. Carlisle, P. Ion, and R. Miner. Mathematical
+Markup Language (MathML) version 3.0. 2009.
+[5] T. H. Einwohner and R. J. Fateman. Searching
+techniques for integral tables. In ISSAC ’95 , pages
+133–139, New York, NY, USA, 1995. ACM.
+[6] G. Gratzer. Math into LATEX: An Introduction to
+LATEXand AmS-LATEX. 1995.
+[7] J. Grimm. Tralics, A LATEX to XML translator . 2008.
+[8] F. Guidi and I. Schena. A query language for a
+metadata framework about mathematical resources. In
+MKM , pages 105–118, 2003.
+[9] M. Kohlhase and I. A. Sucan. A search engine for
+mathematical formulae. In Proc. of Artiﬁcial
+Intelligence and Symbolic Computation, number 4120
+in LNAI , pages 241–253. Springer, 2006.
+[10] R. Munavalli and R. Miner. Mathﬁnd: a math-aware
+search engine. In SIGIR ’06 , pages 735–735, New
+York, NY, USA, 2006. ACM.
+[11] L. A. Sobreviela. A reduce-based OpenMath-MathML
+translator. SIGSAM Bull. , 34(2):31–32, 2000.
+[12] A. Youssef. Search of mathematical contents: Issues
+and methods. IASSE , 2005.
+[13] A. Youssef. Methods of relevance ranking and
+hit-content generation in math search.
+Calculemus/MKM , 2007.
+1416

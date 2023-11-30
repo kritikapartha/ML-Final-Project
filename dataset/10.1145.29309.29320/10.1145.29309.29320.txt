@@ -1,0 +1,164 @@
+Public Key Encryption 
+Wolfgang Kiichlin 
+ETH Ziirich 
+Ronald Peikert 
+University of Minnesota, Minneapolis 
+ABSTRACT 
+The RSA method is used for the interchange of secret messages via insecure channels. It 
+is elegant in theory and fast and reliable in practice. Applications are in the field of communi- 
+cation networks. 
+The method is initialized by choosing some suitable large prime numbers. Encrypting and 
+decrypting of a message are done by modular arithmetic. The modulus is a large integer (e.g. 
+200 decimal digits). Any attempt to break the system amounts to factoring the modulus. 
+The basic operations that are needed for an implementation are fundamental for any com- 
+puter algebra package, e.g. SAC-2 offers them in an suitable way. This project therefore 
+requires only little programming, but some insight into theory and the ability to find and put 
+together existing components. An optional part of the project deals with the security of the 
+method. 
+Project-No.: 
+Title: 
+Subject: 
+Programs: 
+References: 
+Typesetting: 
+Version: 004-006 
+Public Key Encryption 
+Algebra 
+SAC-2 
+001-006 Public-Key Verschlfisselung 
+mltroff[1] 
+10/24/86 
+69The Mathematical Laboratory Public Key Encryption 
+1. Goal of the Project 
+The goal of this project is to make you familiar with some problems and methods in algebra and computer science, 
+namely: 
+Big number arithmetic and modular arithmetic on the computer 
+The computer algebra system SAC-2 and the programming language ALDES 
+Some concepts of computational complexity (especially the problem of factonng big numbers). 
+The notion of probabilistic algorithms (A probabilistic pnmality test will be used). 
+The Public Key method 
+2. Summary of the Problem 
+The exisdng SAC-2 program rsa simulates an environment for communicating encrypted messages. Extend the pro- 
+gram by some additional features (see paragraph 'Extensions') and answer some theoretical questions about the Pub- 
+lic Key method. 
+3. Current state of the program 
+Your communication "station" offers you the following options ("Function keys" 1 thru 4): 
+/1/ You can send an encrypted message to the partner A. 
+/2/ You can decrypt a message that you have received. 
+/3/ (This key of your station cannot be used yet.) 
+/4/ (This key of your station cannot be used yet.) 
+In addition to that you can simulate an environment (Function keys 5 thru 8): 
+/5/ A reads the message received from you and sends you an (encrypted) answer. 
+/6/ B (a new parmer who has joined the network) reads the message received from you and sends you an 
+(encrypted) answer. 
+/71/ B sends an encrypted message to A. 
+/8/ A sends an encrypted message to B. 
+4. Extensions 
+You now want to improve your station as follows: 
+a) Using function key/1/any partner can be addressed (not just A). 
+b) Function key/3/starts an attempt to break a message that you have b~n able to catch (e.g. a message from B 
+to A). 
+c) Function key/4/allows you to change your own encryption/decryption key. 
+d) Function key/22/still works properly even after/4/has been performed, i.e. using/2/you can decrypt mes- 
+sages that have been encrypted with your actual encryption key. 
+5. The Public Key Method 
+This method allows you to interchange secret messages via insecure channels (which can be tapped by unauthorized 
+persons). Both the encryption algorithm and the encryption keys for all participants can be made public without 
+endangering security. 
+70The Mathematical Laboratory Public Key Encrypfion 
+There can now be a public list containing the encryption keys for each party in the network. This table might look 
+as follows: 
+Party n e 
+Name1 n 1 e l 
+Name 2 n 2 e2 
+Name3 n3 e3 
+The pair <ni, ei> of natural numbers is the encrypfion key for party number i. 
+The encryption algorithm E is also public. When written as a function, E transforms an integer x into an integer x', 
+using n i and ei as parameters, i.e. 
+x'~---E(x, n i, ei) (5-1) 
+In the same way, D is the decryption algorithm, which is public, too. D reverses step 5-1, namely transforms x' 
+back to x. The parameters used here are ni as above and di which must be kept secret. 
+x<~--D(x', ni, di) (5-2) 
+And finally, there is a public algorithm K which, controlled by random, generates a triple <nk, ek, dk> that can be 
+used as a new valid combination of an encryption key and a decryption key. 
+The only part that is not public is the number dl (which has also been produced by party number i using algorithm 
+x3. 
+6. Properties: 
+Everybody can send a message x encrypted as x'~--E(x, ni, el) to party number i. 
+x can be reconstructed from x" only when di is known. Algorithm D is used for that. 
+di cannot be computed from n i and ei nor from a pair <x, x'>. 
+Exceptions: if the keys have not been produced properly or if x is an extremely short message (a few letters 
+only) or if a "brute force" method is applied. The latter is believed to require a number of operations which 
+is exponential in the length of the encryption key. 
+Remark: 
+This surprising phenomenon of practical irreversibility exists also for some mathematical operations. One such 
+example is multiplying two large prime numbers. Knowing only the product, it is hard to compute the (uniquely 
+determined) two prime factors. In fact, the factorization problem has been used in the RSA scheme. Another such 
+example (which has been used for Public Key encryption) would be the so-called knapsack problem. 
+7. The program rsa 
+The ALDES main program rsa contains the "station" in the state described above. The extensions to be built in 
+are a) thru d) (see section 4). To save you from programming user dialogs, some dummy routines already exist. 
+Load the compiled versions of rsa, dummy, rsal and rsa2. You will get an executable program that is complete up 
+to the cases a) thru d) where dummy routines are called. You can then procceed by replacing the dummy routines in 
+dummy one at the time. The existing routines in dummy make some calls to routines in rsal. The source of rsal is 
+the only one that is not meant to be read by you. Instead make yourself familiar with the SAC-2 documentation[2] 
+and look for algorithms that appear useful to you. 
+71The Mathematical Laboratory Public Key Encryption 
+The parts to be programmed are now: 
+a) an ALDES function NCRYPT for the encryption based on an arbitrary key. (The existing version has the key 
+of A engraved.) 
+b) an ALDES function BREAK for an attempt to find the decryption key of someone else. (Of course, this 
+makes sense only for small keys. Please do not block the machine trying to break the key of B.) 
+c) an ALDES function NEWKEY for generating a new key triple. Here arises the problem of finding a prime 
+number close to a randomly chosen integer. For a simpler version rely on the prime number generator pro- 
+vided by SAC-2 which allows you to produce primes up to 2 28 and hence, keys up to approx. 256. In a more 
+realistic version, make use of the algorithm piprnd in rsa2. 
+d) an ALDES function DCRYPT for decryption with an arbitrary decryption key. (The existing version has the 
+original key engraved.) 
+8. Full description of the problem: 
+1) (Theoretical question) How can the method of Rivest, Shamir und Adleman be used to authentize a message, 
+i.e. allow the receiver to verify the effective sender? 
+2) Under what conditions can messages be signed in such a way that the sender cannot claim later that someone 
+else has faked the message? 
+3) Experiment with the incomplete but executable program rsa and study the sources of rsa, dummy and rsa2. 
+4) Modify a copy of dummy.publ. Extend it according to the above list of functions a) thru d). 
+5) Produce a printed copy of a terminal session showing that your program is working. 
+. 
+6) Optional problems 
+(Theoretical question) Intruders 
+A stock-exchange information service is using the RSA system for communicating insider knowledge. For 
+efficiency, only one pair of well-chosen prime numbers P and Q and the resulting modulus M=P*Q is used 
+for all participants. Of course, each participant uses his own ei and di, where the ei are public as usual. 
+Typically, the service sends identical messages to all its customers. Now, you managed to get two messages 
+encrypted for different addressees and you assume that their contents is the same. You also know who the 
+addressees of the messages are and you know the modulus M. 
+Prove now the following: 
+If the two keys el and e2 are relatively prime, then the message x can easily be computed from the two 
+encrypted versions cl and c2 of x. In an exception case (which one?) you can even break the whole system, 
+i.e. find out P and Q. Complete the following ALDES function (do not implement it) which computes x" 
+given cl, c2, el, e2 and the modulus M, where x" is identical with the message x in the normal case. Ignore 
+the excpetion case. (In the exception case, your function will most probably return either P or Q instead of x.) 
+XP=RSACMB (C 1,C2,E 1,E2,M) 
+$(RSA-SYSTEM, BREAK COMMON MESSAGE BLOCK. 
+C1, C2, El, E2, AND M, ARE INTEGERS SUCH THAT CI=X**E1 (MOD M), 
+C2=X**E2 (MOD M), FOR SOME INTEGER X, M=P*Q FOR PRIME NUMBERS P AND Q, 
+AND GCD(E1, E2)=l. THEN EITHER XP=X, OR XP=P, OR XP=Q.) 
+72The Mathematical Laboratory Public Key Encrypfion 
+7) (Empirical) Optimizing the Key Generation 
+How does the cost of probabilistic prime number generation depend on the two parameters 'length of the 
+prime number' and 'error probability'. (Experiment). 
+How good is the Solovay/Strassen test in practice? Experiment to find out whether the observed error proba- 
+bility is close to the theoretical bound or whether it is substantially better. (Use the same non-prime number 
+repeatedly). What are the consequences for large numbers? Is there an independent test for finding non-prime 
+numbers that passed the Solovay/Strassen test? 
+Try to implement some of the additional requirements for good prime numbers according to the article[3]. 
+References 
+1. Roman E. Maeder, "Eqn- and ms-Macros for the Mathematical Laboratory," The Mathematical Laboratory 
+No. 001-901, Mathematik ETH, Zurich, 1986. 
+2. G.E. Collins and R. Loos, SAC-2 System Documentation. 
+3. R.L. Rivest, A. Shamir, and A. Adleman, "A Method for Obtaining Digital Signatures and Public-Key Cryp- 
+tosystems," Comm. ACM, vol. 21, no. 2, 1978. Also: Comm. ACM vol. 26, no. 1, pp. 96-99, 1978 
+4. G.J. Simmons, "A "weak" privacy protocol using the RSA crypto algorithm," Cryptologia. 
+5. G.E. Collins and R. G. K. Loos, "The Jacobi Symbol Algorithm," ACM SIGSAM Bulletin, vol. 16, no. 1, pp. 
+12-16, 1982. 
+73

@@ -1,0 +1,872 @@
+IEEE/ACM TRANSACTIONS ONAUDIO,SPEECH, AND LANGUAGE PROCESSING,VOL.23 , NO. 5, MAY 2015 863
+Learning Dynamic Stream Weights For
+Coupled-HMM-Based Audio-Visual
+Speech Recognition
+AhmedHussen Abdelaziz , Student Member, IEEE , Steffen Zeiler, and Dorothea Kolossa , Senior Member, IEEE
+Abstract— With the increasing use of multimedia data in com-
+municationtechnologies,theidea ofemployingvisualinformation
+in automatic speech recognition (ASR) has recently gathered mo-mentum.Inconjunctionwiththeaco usticalinformation,thevisual
+data enhances the recognition per formance and improves the ro-
+bustness of ASR systems in noisy and reverberant environments.In audio-visual systems, dynamic weighting of audio and videostreams according to their insta ntaneous conﬁdence is essential
+forreliablyandsystematicallyac hievinghighperformance.Inthis
+paper,wepresentacompletefram eworkthatallowsblindestima-
+tionofdynamicstreamweightsforaudio-visualspeechrecognitionbased on coupled hidden Markov models (CHMMs). As a streamweight estimator, we consider using multilayer perceptrons andlogistic functions to map multid imensional reliability measure
+features to audiovisual stream weights. Training the parametersof the stream weight estimator requires numerous input-outputtuples of reliability measure fea tures and their corresponding
+stream weights.We estimatethesestream weights based on oracleknowledge using an expectation maximization algorithm. Wedeﬁne 31-dimensional feature vectors that combine model-basedand signal-based reliability measures as inputs to the streamweight estimator. During decoding, the trained stream weightestimator is used to blindly estimate stream weights. The entireframework is evaluated using the Grid audio-visual corpus andcompared to state-of-the-art strea m weight estimation strategies.
+The proposed framework signiﬁcantly enhances the performanceof the audio-visual ASR system in all examined test conditions.
+Index Terms— Audio-visual speech recognition, coupled hidden
+Markov model, logistic regression, multilayer perceptron, relia-
+bility measure, stream weight.
+I. INTRODUCTION
+ALTHOUGH statistical models, like the hidden Markov
+models (HMMs), have shown great success in modeling
+and recognizing speech signals u nder lab conditions, noise and
+reverberation preclude wider use of ASR systems. This is due
+Manuscript received June 16, 2014; re vised November 07, 2014; accepted
+February16,2015.DateofpublicationMarch09,2015;dateofcurrentvers ion
+March27,2015.ThisworkwassupportedbytheMinistryofEconomicAffairsand Energy of the State of North Rhine-Westphalia under Grant IV.5-43-02/2-005-WFBO-009 and by the German Research Foundation DFG under GrantKO3434/4-1. The associate editor coordinating the review of this manuscr ipt
+and approving it for publication was Dr. Dong Yu.
+The authors are with the Cognitive Signal Processing Group, Institute
+of Communication Acoustics, Ruhr-Universität Bochum, 44780 Bochum,Germany (e-mail: ahmed.hussenabdelaziz@rub.de; steffen.zeiler@rub. de;
+dorothea.kolossa@rub.de).
+Colorversionsofoneormoreoftheﬁguresinthispaperareavailableonlin e
+at http://ieeexplore.ieee.org.
+Digital Object Identiﬁer 10.1109/TASLP.2015.2409785to the massive corruption of sp eech signals in real-world envi-
+ronments, which leads to a rapid degradation in the ASR per-formance under adverse acous tical conditions [1]. A range of
+front-end and back-end methods [2], [3] have been proposedin order to improve the ASR performance in the presence ofnoise.Oneofthesemethodsthathasrecentlyattractedresearchinterest is using visual featur es encoding the appearance and
+shape of the speaker’s mouth in conjunction with the conven-tional acoustical features. The motivation of this approach isthat the visual features are independent of the acoustical envi-ronment while relevant to the speech production process.
+In order to model the speech pr oduction process using both
+the acoustical and visual information, many models have beenproposed. These models differ regarding the point where thefusionoftheaudioandvideostreamstakesplace.Forexample,in direct integration (DI) models, the fusion is applied on thefeature level by simply concat enating the audio and visual
+features [4], or by combining the features in a more complexmanner using techniques like dominant or motor recording[5], [6]. Alternatively, separate integration (SI) models [6],[7] integrate the audio and video modality at the classiﬁeroutput level. The fusion level in SI models varies accordingto the deﬁnition of the classiﬁer o utput, e.g., phrase, word, or
+phoneme level.
+Between these two extreme integration models, there arethe
+state-based decision fusion (SBD F) models, e.g., the fully syn-
+chronizedmultistreamHMM(MSHMM)[8]–[12].InthispaperweuseanSBDFmodelcalledthecoupledHMM[9]–[11],[13].CHMMs have the advantage of allowing asynchrony on thestatelevelwhilepreservingthenaturaldependencybetweentheaudio and video modality by forcing synchronization at certainspeech units (here, at word boundaries).
+IncontrasttotheDImodels,bothSIandSBDFmodelshave
+the capability to deploy so-cal led stream weights. Depending
+on the reliability of each modali ty, which varies according to
+its information content and the time-varying environmental in-ﬂuences, the stream weights con trol the contribution of each
+modalitytotheﬁnaldecision.Forexample,iftheacousticalen-vironmentisverynoisy,theacousticalfeatureswillbeseverelycorruptedandtheyshouldcontributelesstothetotalscorethanthe visual features, as the latter are almost independent of theacoustical environment. On the other hand, in clean acousticalenvironments,theacousticalfeat uresshouldcontributemoreto
+the total score than the visual f eatures, since they contain more
+phonetic information.
+2329-9290 © 2015 IEEE. Personal use is permitted, but republication/redi stribution requires IEEE permission.
+See http://www.ieee.org/publications _standards/publications/righ ts/index.html for more information.864 IEEE/ACMTRANSACTIONS ONAUDIO,SPEECH,AND LANGUAGEPROCESSING,VOL .23 ,NO.5,MA Y2 0 15
+While in some prior works, the stream weight for the whole
+dataset has been set to a ﬁxed value, which was found usinggrid search, e.g., [11], [14] o r using other tuning algorithms,
+e.g., [15], some authors have assumed that the stream weightis a model parameter and have estimated it using generative[16]ordiscriminative[17],[18]criteria.Inrealscenarios,how-ever, the reliability of the audio and video modality can varyquickly, even on the frame level, and such ﬁxed or model-de-pendentestimationmightleadtoworseresultsthanusingBayesfusion, i.e., equal weights. Therefore, in this paper we proposea framework that blindly estim ates optimal stream weights for
+each time frame.
+For this purpose, we consider training frame-dependent
+streamweightestimatorsinasupervisedmannerasaregressionproblem. Hence, it can be split into three sub-problems:
+1) Estimating the ideal ( oracle) stream weights, i.e., the
+training targets
+2) Choosing the input features used as arguments for the re-
+gression function
+3) Choosing a function suitabl e to optimally map the input
+features to the dynamic stream weights
+Theproposedframeworkinvol vesasolutionforeachofthese
+three sub-problems: As a solution for the ﬁrst sub-problem, wepresent an expectation maximi zation (EM) algorithm that es-
+timates oracle dynamic (frame -dependent) stream weights for
+CHMM-basedAVASR.TheestimatedstreamweightsusingtheproposedEMalgorithmaretermed oraclebecausepriorknowl-
+edgeofthecorrectwordsequence entersintotheircomputation.
+Hence, they are only usable during training but not during testtime. The large number of oracle stream weights provided bythis algorithm makes it possible to use multidimensional relia-bility measure feature vectors, wh ich combine different signal-
+based and model-based reliability measures, as arguments forthe regression function. The proposed multidimensional relia-bility measure feature vectors contain the so-called acoustical
+feature uncertainties ,softandhardvoiceactivitydetectioncues,
+andallreliabilitymeasuresused in[19],e.g.,theentropyandthe
+signal-to-noise ratio. Finally, addressing the third problem, weconsider two different mapping functions, multilayer percep-tronsorlogisticfunctions,toblindlyestimatethestreamweightsusing the proposed reliability measure feature vectors.
+The remaining paper is structured as follows: After dis-
+cussing the relation of the proposed framework to prior worksin Section II, we give a brief overview of the CHMM inSectionIII.Next,inSectionI V,anEMalgorithmforestimating
+the oracle dynamic stream wei ghts is introduced. Further,
+a greedy optimization strategy that estimates a reasonableinitialization for the oracle stream weight vectors is shownand a summary of the entire algorithm is given. In Section V,we introduce the deﬁnitions of some reliability measures thathave previously been used in works like [19], and of otherreliability measures that are n ewly proposed. In Section VI,
+we discuss some investigations done for choosing the mappingfunction. The entire framewor k is summarized in Section VII.
+Experiments and results are described in Section VIII, whichis structured as follows: After i ntroducing the experimental
+setup in Section VIII-A, the EM- based oracle dynamic stream
+weights are evaluated in Section VIII-B. In Section VIII-C,we introduce the baseline results that are obtained using [19].
+Having established this reference, we compare the resultsobtained using the proposed framework to the best results inthe baseline in Section VIII-D. Finally, we conclude the paper
+a n dg i v ea no u t l o o ko nf u r t h e rw o r ki nS e c t i o nI X .
+II. R
+ELATION TO PRIORWORKS
+The three sub-problems introduced in Section I have been
+solved as follows in [19]: The oracle weights have been setto global ﬁxed values, which have been obtained empiricallyfor each noise type and level, i.e., for each available dataset,by a grid search. The global stream weights are assumed tobe mapped from one-dimensional reliability measures, e.g. thesignal-to-noise ratio (SNR), us ing a second order exponential
+function. In order to train the parameters of this mapping func-tion, the global ﬁxed stream weights have been used as the or-acle target outputs of the mapping function and the average ofall reliability measures in the c orresponding dataset has been
+considered as the corresponding input. During recognition, themappingfunctionisemployedineachframe,andcanthustaketemporal variations of the stream reliability into considerationeven on the segment-level.
+One problem of this approach is that the number of input-
+output tuples used for estimating the mapping function param-etersequalsthenumberofdatasets,whichisverysmall.More-over,theparametersofthemappingfunctionhavebeenlearnedfromﬁxedstreamweights,althoughthemappingfunctionisin-tended to be deployed on a frame-by-frame basis. In our ap-proach, we have avoided these limitations by estimating oracleframe-dependent stream weight s using the expectation maxi-
+mization algorithm introduced in Section IV. Another issue oftheapproachintroducedin[19]isthatonlyone-dimensionalre-liability measures of the audio stream have been considered asinputfeatures,ineffectconsideringthevideodatatobeofcon-stant reliability and utility. For our data, however, we have ob-served strong changes in the reliability of video signals acrossdifferent speakers, and we have not found a single reliabilitymeasureforcompletelyassessingthequalityoftheaudiosignal.We are therefore considering 31- dimensional reliability mea-
+sure feature vectors that include signal-based and model-basedreliabilitymeasuresextractedfromboththeaudioandthevideostream.
+Unlike [19], the authors of [9], [20] have considered video
+and audio reliability measures as input features of a multidi-
+mensional sigmoid function. The parameters of this functionhave been estimated so that a proposed discriminative func-tion is maximized. This approach needs frame-level labels for
+audio-visual (AV) observations . Those labels have been found
+by applyingtheforcedalignm entalgorithmtothecleanspeech
+features alone. The obtained frame-state alignments have beenused as the required labels for th e audio-visual states. The au-
+thors of [21] claimed that this type of alignment may be in-consistent for CHMMs and re-estimation of frame-state align-mentismandatory.Theexpectat ionmaximizationalgorithmde-
+ployed in our framework has enabled us to avoid this problemby estimating newtwo-dimensiona l stateoccupation probabili-
+ties in every EM iteration.ABDELAZIZ et al.: LEARNINGDYNAMIC STREAM WEIGHTS FOR COUPLED-HMM-BASEDAUDIO-VISUALSP EECHRECO GNITION 865
+In [22], two approaches have been proposed to train the
+stream weight estimator. In the ﬁrst one, the reliability mea-sures have been ﬁrstly clustered into
+clusters. The averages
+of these clusters have then been used with the oracle streamweights found via grid search to train the parameters of asigmoidfunction.Thisﬁrstapproachisverysimilarto[19]andtherefore has its limitations. T he second approach models the
+conditional probability of the reliability measures—given theoracle stream weight again det ermined by a grid search—as
+a full covariance Gaussian mixture model (FCGMM). Thestream weights are then estima ted either as the conditional
+mean of the stream weight given the reliability measures or asthe argument that maximizes the posterior probability of thestream weight given the reliab ility measures. In addition to the
+problem of using global ﬁxed weights, this approach may beintractable by considering the stream weight as a continuousquantity, as stated by the authors [22]. We have avoided thisproblem in the proposed framework by using the MLPs orlogistic functions instead of the FCGMM in order to capturethe variability and the correlation of the reliability measurefeatures given a continuous (n on-quantized) stream weight.
+Comparedtoourtworecentmetho dsin[23],[24],thispaper
+contains detailed and rigorous mathematical derivations of thetraining approaches, see Appendix A. Moreover, we comparetheresultsobtainedfromourgreed yinitializationapproachwith
+theresultsoftheproposedEMa lgorithmandprovidethedevel-
+opment set results of all experiments. This comparison showstheneedoffurthersmoothingthestreamweightsobtainedfromtheinitializationalgorithmbyusingtheproposedEMalgorithm.
+Sincetheformofthemappingfunctionisgenerallyunknown
+[22],theregressionfunctionshavebeenheuristicallychoseninthe related prior works, including [19], which is adopted hereas our baseline. In Sections VI and VIII-C, we provide newanalyses and experimental result s in order to investigate which
+type of mapping function is optimal for blindly estimatingstream weights.
+III. C
+OUPLEDHIDDENMARKOVMODELS
+The CHMM is an audio-visual fusion model that takes into
+account the asynchronicities bet ween the visible articulator
+movements and the acoustic voice production, while enforcingtheir synchronization at word boundaries. A CHMM consists
+of a 2-dimensional matrix of composite states
+.T h eC H M M
+composite states are composed of the marginal audio state
+and the marginal video state , cf. Fig. 1. Each composite
+statehas an emission score
+(1)
+where and are the audio- and video-only
+state-conditionalobservation likelihoods,res pectively,and
+is the stream weight, which reﬂects the relative relia-
+bility of the acoustical observation compared to the visual
+observation . Note that the audio-visual observation vector
+is deﬁned as . The transition probability be-
+tween two composite states and in a
+CHMM can be written as
+(2)
+Fig. 1. Coupled HMM with composite states.
+where is the transition probability of the corresponding
+states of the single-stream HMMs.
+SincetheparametersofthemarginalsinglestreamHMMsare
+trained separately, the number of CHMM parameters increaseslinearly, although the number of the CHMM states increases
+with
+(cf.Fig.1).Therefore,thelog-likelihoodcompu-
+tationoverheadalsoincreaseson lylinearly.Thiscanbethought
+of as parameter tying [9].
+Another advantage of using the CHMM as a fusion model
+is that the number of states of the marginal models can bechosen independently to match different sampling rates and
+other recording conditions of different modalities. Moreover,
+each marginal model can be replaced at any time with a bettermodel without retraining all model parameters.
+IV. O
+RACLEDYNAMICSTREAMWEIGHTS
+A. Expectation Maximization Algorithm
+In the following, by a bold symbol quantity we denote a se-
+quence of this quantity. For example, by and,w ed e n o t ea
+sequence of oracle dynamic stream weights and a sequence of
+audio-visual observations, respectively.
+Weestimatetheoracledynamicstreamweights
+given an audio-visual observation sequence and
+the corresponding true word sequence as
+(3)
+As shown in [23], the joint probability in (3) can be
+computed by marginalizing the joint probability
+over all possible 2-dimen sional state sequences . This means
+that
+(4)
+where
+(5)866 IEEE/ACMTRANSACTIONS ONAUDIO,SPEECH,AND LANGUAGEPROCESSING,VOL .23 ,NO.5,MA Y2 0 15
+and is one particular state sequence. To simplify
+the equationsin the following, we drop the sequencespace .
+Since the logarithm is a monotonically increasing function,
+we deﬁne the equivalent optimization problem
+(6)
+(7)
+with the new objective function
+(8)
+Following the technique in [25], it can be shown1that
+(9)
+is a strong-sense auxiliary function of the objective func-
+tion in (8). This means that by iteratively maximizing
+, a local maximum ofcan be found. In (9),
+is a summation index over all state sequences.
+The joint log-probability in (9) can be factored
+as:
+(10)
+(11)
+where is the initial state probability. In (11), is the
+transitionprobabilityfromthecompositestate tothecom-
+posite state and is the emission score of the com-
+positestate giventheaudio-visualobservationvector and
+thestreamweight attimeframe .Thestepfrom(10)to(11)
+follows from the assumption
+(12)
+In (12), the vector is assumed to be independent of the word
+sequence and consists of independent and identically dis-
+tributed (iid) random variables .I n s e r t i ng( 1 1 )in( 9 ) ,weg e t
+independent of
+(13)
+1See Appendix ANeglecting the terms independent of in (13), we get
+(14)
+(15)
+(16)
+where
+(17)
+and
+(18)
+The coupled (composite) state occupation probability is
+theprobabilityofbeinginthecoupledstate attimeframe .The
+auxiliary function in (15) can now be optimized by separately
+optimizing for each frame . By applying (1) to (15)
+we get the following expression for the auxiliary function at
+each:
+(19)
+independent of
+(20)
+where andare the single-modality acoustical and visual
+statescomposingthecoupledstate .Neglectingthe
+independenttermsin(20)andusingthefactthat ,
+we get
+(21)
+Ifisassumedtobeuniformlydistributed,theauxiliaryfunc-
+tion (21) will be a linear function of . Optimizing this func-
+tion leads to the problem already reported in [26], [27], that
+can take only the boundary values, i.e., .I no t h e r
+words, at each time frame , one stream should be turned off.
+Whichstreamisunnecessarydependsonlyonthesign—notonABDELAZIZ et al.: LEARNINGDYNAMIC STREAM WEIGHTS FOR COUPLED-HMM-BASEDAUDIO-VISUALSP EECHRECO GNITION 867
+the magnitude—of the derivative of (21). However, if is as-
+sumed to be normally distributed with mean and standard
+deviation ,theauxiliaryfunctionwillbeaquadraticfunction
+and we need to ﬁnd
+(22)
+The solution of this problem can be expressed as follows:
+(23)
+where
+(24)
+is the solution of (22), but without constraints. Equations (23)
+and (24) represent the maximization step of the EM algorithm.In order to compute (24), the composite state occupation prob-
+abilities
+should be found for each co mposite state at all
+time frames. As can be s een in (17), estimating ,w h i c h
+represents the expectation step o f the EM algorithm, requires a
+predeﬁnedinitialstreamweightvector .Findingareasonable
+starting vector is a critical issue as the EM algorithm only
+estimatesalocalmaximumnearthisstartingvector.Inthenext
+section wepropose a greedy layer -wiseoptimization algorithm
+to suitably ﬁnd an initialization vector .
+B. EM Initialization
+In order to ﬁnd an initial vector , we apply a layer-wise
+greedy optimization algorithm as follows: At time frame ,w e
+estimate as
+(25)
+(26)
+Theobjectivefunction canbereformulatedasfollows:
+(27)
+(28)
+(29)
+The weights in (29) can be written as
+(30)where isthejointprobabilityofthepartialobservation
+sequence and state given the correct word
+sequence ,i . e . ,
+(31)
+Thevaluesoftheforwardparameters arecomputedusingthe
+forwardalgorithm[25]andthestateemissionscoresdeﬁnedin
+(1), in turn, are computed usin g the optimized stream weights
+oftheprecedingtimeframes .Applying(1)to(29),we
+obtain the ﬁnal expression for the objective function:
+(32)
+Assuming a Gaussian prior, i.e., ,a s
+discussed in Section IV-A, the objective functions in (32) are
+convex in the feasible region, i.e. , and can be op-
+timized by gradient ascent [28]. The inequality constraints can
+be taken into account by adding a logarithmic barrier function.
+C. Summary
+Thelastpieceofthepuzzleishowtosetthepriorparameters
+and. A plausible choice of the mean , which we call
+thebiasparameter,istheglobalﬁxedstreamweight ,which
+can be found experimentally by grid search [11]. We consider
+the standard deviation as the sensitivity parameter because
+it controls the dynamic range of the stream weights. In orderto ﬁnd an optimal value for the sensitivity parameter
+,w e
+start with a small value,i.e. low dynamic range,and increaseit
+iteratively until the estim ated stream weight vector contains
+only binary values. Indeed, increasing more than that does
+not make any sense because it w ill not change the resulting .
+After each iteration, the utter ance is blindly r ecognized using
+the estimated weights. Finally, we choose the weight vector
+that achieves best recognition accu racy. The entire approach is
+summarized in Algorithm 1.
+Fig. 2 shows one example of the oracle dynamic stream
+weights (ODSWs) estimated using this algorithm. It can be
+seen that the absolute values of the oracle stream weights de-crease with decreasing SNRs, whic h is plausible. For different
+SNRs, however, the temporal evolution of the oracle stream
+weights is quite similar. It can be seen that the stream weights
+drop during silence intervals for all SNRs. The stream weights
+for silence intervals at high SNRs still take on smaller values
+than non-silence frames at low SNRs. A similar observationregarding the reliability measures has been reported in [19]:
+The reliability measure ratios in s peech intervals are different
+from these ratios in silence intervals. It has also been shownin [7] that under adverse acoustical conditions, the modality
+that can better detect silence acquires a larger weight. This ob-
+servation has led the authors of [ 19] to train different mapping
+functions for speech and silence intervals. Apart from these
+effects, it is difﬁcult to recognize the correlation between the
+spectrogram of thespeechsignala ndtheoraclestream weights
+by inspection. This can be attributed to the fact that the stream868 IEEE/ACMTRANSACTIONS ONAUDIO,SPEECH,AND LANGUAGEPROCESSING,VOL .23 ,NO.5,MA Y2 0 15
+Algorithm 1 Oracle Dynamic Stream Weights For
+CHMM-based AVASR
+A. Set the prior parameters
+(4) Set to the global ﬁxed stream weight .
+(5) Initialize with a small value, e.g., 0.1.
+B. Initialization
+(6) Find using the greedy layer-wise algorithm
+introduced in Section IV-B.
+C. EM Algorithm
+(1) Calculate
+Es t e p
+(1) Use to calculate for all time frames and all
+coupled states (a 3-D Matrix).
+Ms t e p
+(1) Update using the procedure introduced in
+Section IV-A.
+Convergence test
+(1) Calculate
+(2) If
+,g ot o( 5 )
+else
+go to (9).
+D. Recognition
+(3) Use the estimated to blindly recognize the training
+utterance and calculate the accuracy .
+E. Iteration
+(4) Increment and repeat (3-10) until all values of
+become zero or one.
+(5) Choose that achieves maximum accuracy.
+Fig.2. (a)Spectrogramofacleansignal.(b)EM-basedoracledynamicstre am
+weights (ODSWs) for the corresponding clean and distorted signals. The no ise
+applied here is babble noise with the SNR dB.
+weights do not only depend on the acoustical environment,
+but also on the temporal information content of one modalitycompared to the other.V. R
+ELIABILITY MEASURES
+Reliability measures can be grouped into two main cate-
+gories: signal-based and model-based reliability measures. Themost important acoustical signal-based reliability measure isthe signal-to-noise ratio (SNR). In this paper, we use a Wienerﬁlter [29] to enhance the audio signal before extracting theacoustical features. The noise power estimate needed for the
+Wiener ﬁlter is obtained using improved minima controlled
+recursive averaging (IMCRA) [30],–[32]. The clean signaland noise estimated by this speech pre-processor can be usedto estimate the instantaneous ap r i o r i SNRs as the ratio of
+the estimated clean signal energy
+to the estimated noise
+energy at time frame :
+(33)
+The instantaneous SNR measures the absolute conﬁdence of
+the acoustical modality at each time frame. The SNRs, how-ever, do not reﬂect the degree to which the acoustical featuresare matched to their model, e.g., in the case of multi-condition
+training.Moreover,theSNRsdonotmeasuretheratioofconﬁ-dencesofbothmodalities.Therefore,usingtheSNRastheonlyreliability measure implicitly assumes that the visual modalityhas a constant reliability, which is not always true. This ex-plains the need for additional rel iability measures such as the
+memory-lessinstantaneousentropyH[33],–[35]anddispersionD[ 4 ] ,[ 7 ] ,[ 1 9 ] .
+The instantaneous entropy can be computed independently
+for each modality by
+(34)
+In(34), istheinstantaneousprobabilitydis-
+tributionofthesingle-modalitystates ,giventhe
+single-modalit yfeaturevector attimeframe .These poste-
+riors can be computed via
+(35)
+The prior can be found during the training proce-
+dure of the single-modality marginal models as follows:
+(36)
+In (36), is a summation index over the utterances used in
+training and denotes the length of each utterance. Given an
+observation sequence and its correspondi ng correctly-la-
+beledwordsequence ,whosemodelscontainthestate ,
+the posterior probabilities can be found
+fromthelastestimationstepo ftheBaum-Welchalgorithm[25]
+usedformarginal-modeltrainingofthemodality .Thesumma-
+tion in (36) is applied over all word sequences that containABDELAZIZ et al.: LEARNINGDYNAMIC STREAM WEIGHTS FOR COUPLED-HMM-BASEDAUDIO-VISUALSP EECHRECO GNITION 869
+the state ,a n dis a normalization constant that can be
+computed via
+(37)
+Assuming that is a discrete random variable, the entropy
+computedin(34)isameasureoftheuncertaintyinthisrandomvariable that remains after knowing the observation
+at time
+frame.Fromthisdeﬁnition,thesmallerthevalueoftheentropy
+in (34) becomes, the more useful the observation is at this timeframe.
+Thesecondmodel-basedreliabilitymeasureisthedispersion,
+which can be computed as follows:
+(38)
+Before the dispersion is calculated as in (38), the posteriorsneedtobearrangedindescendingorder.Unlikefortheentropy,wherethesummationisapp liedoverallmodelstates
+,forthe
+dispersion,thesummationcanbelimitedtothe largestposte-
+riors. It is worth mentioning that the dispersion is alternativelydeﬁned in [19] using likelihoods
+instead of
+posteriors.
+The dispersion is a heuristic measure of the decoder’s dis-
+criminative power: The larger the dispersion, the less confusedis the decoder and the larger is its capability of identifying thebest state at frame
+.
+We call the entropy and the dispersion memory-less mea-
+sures, because they do not take into account past informationsuch as the previous states and their transition probabilities tothe current state. Therefore, ev en posteriors of states that are
+unreachable at time because of the m odel topology constraints
+are still involved in the summations of Equation (34) and (38).However, replacing the memory-less posteriors in (34) and(38) by the full posteriors
+reduces the
+overall performance. Therefore, the memory-less reliability
+measures deﬁned in Equation (34) and (38) will be used in thefollowing.
+Inadditiontotheﬁveconventionalreliabilitymeasuresmen-
+tioned above,namely,theSNR andtheaudioandvideodisper-sions and entropies, we propose to use hard (binary) and soft(probabilistic) voice activit y detection (VAD) cues as signal-
+basedreliabilitymeasures.TheVADcuesareinvolvedtoallowfor the mapping function to behave differently in silence andspeech intervals.
+Finally, we propose to consider the so-called acoustical
+featureuncertainties[2]asanaddi tionalsignal-basedreliability
+measure. The feature uncertainties can be estimated whenspeech signals are pre-processed by a speech enhancementalgorithm, e.g. to reduce signal distortions due to additive andconvolutive noise. The enhanced signals are not compensatedperfectlyandtypicallycontainres idualnoise,estimationerrors,
+andevenartifactsintroducedbyth epre-processorsthemselves.
+Fortunately, Bayesian speech enhancement algorithms likethe Wiener ﬁlter—the speech enhancement algorithm used inthis study—can compute the uncertainty of their estimation.
+Fig. 3. Oracle dynamic stream weights (ODSWs) versus frame-based SNRs.
+Datapointsextractedfromcleandata andfromsignalsembeddedinbabble( BB)
+noise at 10 dB and 0 dB are shown.
+Particularly speaking, as the Wiener ﬁlter computes a point
+estimate of the clean discrete Fourier transform (DFT)
+coefﬁcient at each time frame and frequency bin as
+(39)
+the variance can be considered as the un-
+certainty of the estimated features [36]. In (39), is the
+correspondingobservednoisydi screteFouriertransform(DFT)
+coefﬁcient.
+Allmentionedsignal-basedandmodel-basedreliabilitymea-
+suresareconcatenatedtoformmu ltidimensionalfeaturevectors
+that are used for training the mapping function parameters andlater for blind estimation of dynamic stream weights.
+VI. M
+APPINGFUNCTION FOR STREAMWEIGHTESTIMATION
+The last sub-problem of the stream weight regression
+problem introduced in Section I is choosing a suitable function
+to map the reliability measure f eatures to stream weights. To
+get an insight into which type of function could be used, weplot frame-based SNRs, disper sions and entropies against the
+corresponding oracle dynamic stream weights provided by the
+proposed EM algorithm in Figs. 3, 4, and 5. The data pointsin these ﬁgures have been extracted from utterances arbitrarily
+selected from a clean dataset and from a dataset artiﬁciallydistorted with babble noise at average SNRs of 0 and 10 dB.
+Figs. 3–5 show that the scatter plots of all reliability mea-
+sures against stream weights look fairly chaotic. According totheseplots,thereisactuallynodirectfunctionalrelationshipbe-tween the SNR, the dispersion or the entropy and the streamweight. This shows the need for deploying more sophisticatedmapping functions that accept multi dimensional input feature
+vectors.Therefore,wepropos eusinganMLPoramultidimen-
+sional logistic function as this mapping function.
+VII. T
+HEENTIREFRAMEWORK AT A GLANCE
+In Fig. 6, we summarize the en tire framework proposed
+here for the blind estimation of dynamic stream weights. Inthe training phase, the EM algorithm uses the audio and visual870 IEEE/ACMTRANSACTIONS ONAUDIO,SPEECH,AND LANGUAGEPROCESSING,VOL .23 ,NO.5,MA Y2 0 15
+Fig. 4. Oracle dynamic stream weight s versus frame-based dispersions.
+Fig. 5. Oracle dynamic stream weights versus frame-based entropies.
+featuresofthedevelopmentsetin conjunctionwiththeircorre-
+sponding labels to estimate the oracle dynamic stream weightsas discussed in Section IV. These oracle dynamic streamweights are then used with all r eliability measure features
+discussed in Section V to train the parameters of the chosenmapping function (an MLP or a m ultidimensional logistic
+function). During testing, the mapping function is used to mapthe reliability measure feature vectors of the test set to streamweights. Finally, the estimated stream weights are deployed inthe CHMM-AVASR system using (1).
+The framework shown in Fig. 6 can be applied in real-time
+due to the following aspects: During decoding, all reliabilitymeasures are computed from au xiliary information already
+computedbythespeechpre-proce ssorandbythelog-likelihood
+calculator. Moreover, computing the stream weights throughthe neural network f eed-forward process or by applying the
+logistic function can be done in real time on a standard PC.Finally, real-time implementation of CHMM-AV-ASR is pos-sible, see, e.g. [37].
+VIII. E
+XPERIMENTS AND RESULTS
+A. Experimental Setup
+We use the Grid audio-visual corpus [38] as a
+small-vocabulary ASR task to evaluate all approaches.The Grid database consist s of 34000 sentences spoken
+Fig. 6. Proposed framework for dynamic stream weight estimation.
+by 34 speakers, i.e., 1000 sentences per speaker.
+Of these, we use 33 speakers, as the video dataof one speaker is missing in the database. The task ofthe Grid corpus is to recognize sentences from a smallvocabulary (51 words) with a ﬁxed grammar of the form:
+.
+The utterances of each speaker have been divided into a
+training (90%), a d evelopment (5%) and a test set (5%). In
+order to create corrupted versions of the Grid corpus, twoacousticalnoisetypeshavebeenar tiﬁciallyaddedtothesignals
+of the test and development sets at different SNRs in the rangefrom 15 dB down to 0 dB. We have chosen speech babbleand white noise as examples of non-stationary and stationarynoise,respectively.Thenoise signalshavebeentaken fromthe
+NOISEX database [39].
+All signals have been down-sampled to
+kHz and
+enhanced using a Wiener ﬁlter. The noise power estimateneeded for the Wiener ﬁlter has been obtained using improved
+minima-controlled recursive averaging (IMCRA). We haveused the ﬁrst 13 static MFCCs [40] along with the 26 corre-sponding
+and coefﬁcients as the audio features. The
+static MFCC features have been extracted according to theETSI advanced front-end (AFE) recommendations [41] asfollows: The spectrograms h ave been computed using a 25 ms
+Hanning window with 15 ms overlap and an FFT length of256 samples. A 24-channel mel ﬁlterbank has been appliedto the magnitude-squared spectrogram followed by the DCT.The video features are the ﬁrst 64 DCT coefﬁcients, encoding
+the appearance and shape of the speaker’s mouth. The cor-responding mouth region was determined automatically by aViola-Jones face and mouth detector [42]. The dimension ofboth audio and video features has been reduced to 31 by lineardiscriminant analysis (LDA) [43], [44].ABDELAZIZ et al.: LEARNINGDYNAMIC STREAM WEIGHTS FOR COUPLED-HMM-BASEDAUDIO-VISUALSP EECHRECO GNITION 871
+TABLE I
+IDEALGLOBALSTREAMWEIGHTSAND THECORRESPONDING ACCURACIES
+Themarginal single-stream HM Mshavebeentrained gener-
+atively using the clean signals of the training sets. Each HMMset consists of 51 whole-word HMMs and one silence HMM.The word HMMs are speaker-dep endent left-to-right linear
+models, with three states per phone in audio HMMs and onestate per phone in video HMMs. The audio and video stateconditional probabilities are 3- and 4-component diagonalcovariance GMMs, respectivel y. The Gaussian mixtures have
+been split in the direction of the ﬁrst eigenvector of the datacovariance. This strategy has proven useful in [45], [46]. Allexperiments have been conducted using our in-house JavaAudio-visual SPEech Recogni zer Jasper, see, e.g., [47].
+The ASR performance has been evaluated in terms of word
+accuracy,whichisdeﬁnedasafun ctionofthenumberofrefer-
+ence labels
+, substitutions , insertions and deletions
+via
+(40)
+B. Oracle Results
+In this section, we introduce the oracle results, which have
+beenobtainedusingthecorrecttr anscriptionsoftheutterances.
+The visual ASR accuracy in all experiments is 83.54% and theresults are obtained using the development set.
+TableIshowstheoracleresults ,whichareobtainedusingthe
+ideal global stream weights
+. The stream weights shown
+in this table are found using grid search.
+Table II shows the word accuracies of the audio-only ASR
+and the AVASR when the following oracle stream weights areused:
+• the ideal global stream weight,• the initialized oracle dynami c stream weights, which are
+e s t i m a t e da sd i s c u s s e di nS e c t i o nI V - B ,
+• theEM-basedoracledynami cstreamweightswithrandom
+initialization, and
+• the EM-based oracle dynamic stream weights introduced
+in Algorithm 1.
+Using the proposed EM-based oracle dynamic stream
+weights improves the recognition performance of the AVASRineveryconsideredcase,byon average3.17%comparedtothe
+idealglobalstreamweights.Ther esultswithasterisksachieved
+statistically signiﬁcant improvements relative to the resultsobtained using the best global stream weights, according toFisher’s exact test [48] applied at
+.TABLE II
+ASR PERFORMANCE IN DIFFERENT ENVIRONMENTS .THEAVASR R ESULTS
+AREOBTAINED USING THE IDEALGLOBALSTREAMWEIGHTS,THEINITIAL
+STREAMWEIGHTS,THERANDOMLY INITIALIZED ORACLEDYNAMICSTREAM
+WEIGHTS AND THE ORACLEDYNAMICSTREAMWEIGHTS
+Comparing the results of the third and the ﬁfth column in
+Table II, it can be seen that the EM iterations signiﬁcantly im-prove the results obtained from t he proposed initialization ap-
+proach (Initial) discussed in Section IV-B. Indeed, estimatingnew stream weights in each iteration also changes the frame-statealignment.Thisinturnyieldsanewset of stream weightsandsoon.TheresultsshowhowcriticaltheseEMiterationsarefor improving the estimation of the stream weights.
+It is well known that the EM algorithm converges only to
+a local maximum. Therefore, th e solution of the optimization
+problemdiffersaccordingtothestartingpoint.ThiscanbeseenbycomparingtheresultsobtainedusingtheEMalgorithmwithrandom initialization (ODSW-R) and with the Viterbi-like ini-tialization (ODSW) int roduced in Section IV-B.
+Finally, Table II shows the large improvements that can be
+achieved by optimally fusing the audio and video stream com-pared to only using a single stream.
+C. Blind Estimation of Stream Weights Using Global Oracle
+Targets
+In this section, we provide the b aseline accuracies obtained
+using the approach introduced in [19] and summarized inSection II. In this approach, t he ideal global stream weights
+that minimize the word error rate (WER) for a speciﬁc
+acoustic condition are used as training targets for univariatemapping functions. The ideal global stream weights are de-termined for each development dataset, corresponding to onespeciﬁc SNR and noise type, using grid search. This meansthat we have only nine ideal global weights for nine devel-opment datasets, i.e. one clean dataset, four datasets distortedby babble noise and four distorted by white noise either withSNRs
+dBdBdBdB. Since the reliability
+measures introduced in Section V have been estimated perframe,theyareaveragedoverallframesofthedevelopmentset(
+frames/signal signals) to ﬁnd one corresponding
+inputforeachdataset.Inthisexpe riment,weusetheaudio-only
+entropiesanddispersionsandth eSNRsasreliabilitymeasures,
+corresponding to the reference work in [19].
+Thefunctionsthatmapreliabili tymeasurestostreamweights
+areoften chosen without giving explicit reasons for optimality.In[7]and[19],asigmoidandasecond-orderexponentialfunc-tionhavebeenused.Inthispaper,wecomparetheperformanceofﬁvedifferentmappingfunctionsforeachreliabilitymeasure.872 IEEE/ACMTRANSACTIONS ONAUDIO,SPEECH,AND LANGUAGEPROCESSING,VOL .23 ,NO.5,MA Y2 0 15
+Fig.7. First-orderexponentialfunctionmappingthedispersionDtothes tream
+weight.Theblackpointsaretheglobalstreamweights asafunctionof
+the averaged dispersions for each development set.
+Fig. 8. Second-order exponential function mapping the SNR to the stream
+weight.
+Fig. 9. Sigmoid function mapping the entropy H to the stream weight .
+The chosen functions are ﬁrst- and second-order exponential
+functions, ﬁrst- and second-order polynomial functions (linearandquadraticfunctions)andasigmoidfunction.Theoutputsofthose mapping functions, whose range is not bounded betweenzero and one, are clipped to these values.
+Themappingfunctionparameterscanbeestimatedusingfor
+exampleaminimummeansquare error(MMSE)objectivefunc-
+tion [19].Figs.7, 8 and 9 show examplesof themapping func-tions estimated using the Ma tlab curve ﬁtting toolbox.
+During recognition, for each fr ame, the estimated mapping
+functionsareemployedtoestimatetheframe-dependentstreamweights.Thestreamweightsarethenusedinthelikelihoodeval-uations according to Equation (1).
+Tables III–VIII show the AVASR word accuracy, when the
+AVASR system is used to recognize the development and testTABLE III
+DEVELOPMENT SET AVASR W ORDACCURACIES OBTAINED USING
+FRAME-DEPENDENT STREAMWEIGHTS,WHICH ARE MAPPEDFROM THE
+ESTIMATED FRAME-DEPENDENT DISPERSIONS USINGDIFFERENT UNIVARIATE
+MAPPINGFUNCTIONS UNDERDIFFERENT ACOUSTICAL CONDITIONS
+TABLE IV
+DEVELOPMENT SET AVASR W ORDACCURACIES OBTAINED USING
+FRAME-DEPENDENT STREAMWEIGHTS,WHICH ARE MAPPED
+FROM THE ESTIMATED FRAME-DEPENDENT SNR S
+TABLE V
+DEVELOPMENT SET AVASR W ORDACCURACIES OBTAINED USING
+FRAME-DEPENDENT STREAMWEIGHTS,WHICH ARE MAPPED
+FROM THE ESTIMATED FRAME-DEPENDENT ENTROPIES
+set signals. The similar performance of this approach on both
+sets shows its good generaliza tion to unseen data. However, it
+can be observed that there is no single mapping function thatperforms best for all reliabili ty measures under all acoustical
+conditions.Theﬁrst-orderexpon entialfunction,however,gives
+the best average performance with the model-based reliabilitymeasures,i.e.,entropyanddispersion.Ontheotherhand,whenthe SNR is used, all mapping functions give almost the sameaverage performance.
+In very non-stationary noisy environments and at high noise
+levels, the performance of the SNR in general is signiﬁcantlybetterthanthemodel-basedreli abilitymeasures,whichpointsat
+thenon-robustnessofthesemeasuresundersuchconditions.OnABDELAZIZ et al.: LEARNINGDYNAMIC STREAM WEIGHTS FOR COUPLED-HMM-BASEDAUDIO-VISUALSP EECHRECO GNITION 873
+TABLE VI
+TEST SETAVASR W ORDACCURACIES OBTAINED USINGFRAME-DEPENDENT
+STREAMWEIGHTS,WHICH ARE MAPPEDFROM THE ESTIMATED
+FRAME-DEPENDENT DISPERSIONS
+TABLE VII
+TEST SETAVASR W ORDACCURACIES OBTAINED USINGFRAME-DEPENDENT
+STREAMWEIGHTS,WHICH ARE MAPPEDFROM THE ESTIMATED
+FRAME-DEPENDENT SNR S
+TABLE VIII
+TEST SETAVASR W ORDACCURACIES OBTAINED USINGFRAME-DEPENDENT
+STREAMWEIGHTS,WHICH ARE MAPPEDFROM THE ESTIMATED
+FRAME-DEPENDENT ENTROPIES
+the other hand, in mild stationary noise, the performance ofthe
+SNRisworsethanthatofthemodel-basedreliabilitymeasures.The above observations may change, however, when using an-other acoustical speech pre-pr ocessor for SNR estimation.
+D. Blind Estimation of Stream Weights Using Oracle Dynamic
+Targets
+Inthissection,wedemonstratetheresultsobtainedusingthe
+framework shown in Fig. 6 and compare them to the baselineresults introduced in Section VIII-C. As mentioned previously,we use an MLP and a multivariate l ogistic function as alterna-
+tivemappingfunctions.Trainin gofthesemappingfunctionshas
+been done using the signals of all nine development datasets.From each signal, we have extract ed a sequence of reliabilitymeasure feature vectors. The 31-dimensional reliability mea-
+sure feature vectors are compos ed of the four model-based re-
+liability measures, i.e., audio a nd video entropies and disper-
+sions, and the 27 signal-based reliability measures, which con-taintheSNR,thehardandsoftVADcues,andthe24acousticalfeature uncertainties. The dimension of the uncertainties is re-duced from the DFT length to 24 by linear transform using theMelﬁlterbankmatrix.ThebinaryandtheprobabilisticVADfea-turesareprovidedineachtime-f requencybinbytheIMCRAap-
+proach[31],[32].Theaverage valuesofeachofthesetwoVAD
+featurevectorsoverallfrequenc ybinsareusedinthereliability
+measure featurevector. Thetota l numberof the feature vectors
+extractedfromthedevelopmentsetisabout1.15million,whichis large enough to well train the stream weight estimators. Thesame number of the oracle stream weights has been estimatedusing the EM algorithm discussed in Section IV.
+Theparametersofthelogisticfunctionhavebeenestimatedto
+minimizetheregularizedlogistic regressioncostfunctionusing
+the Polak-Ribiére conjug ate gradient method [49].
+We have tested different MLP architectures, changing the
+number of layers and the number of units in each layer. Theexperimental results show that increasing the depth of theMLP does not improve the overall performance of the AVASRsystem signiﬁcantly. The architecture that has given the bestperformance on the development set is composed of an inputlayer with 31 units, two hidden layers each with 10 units and aone-dimensional output layer . In order to fairly compare deep
+architectures with conventiona l ones, we have initialized the
+MLP weights of different archit ectures using restricted-Boltz-
+mann-machine (RBM) pre-training [50], [51]. Finally, wehave ﬁne-tuned all MLP weights via back-propagation [52],[53], with the reliability measure feature vectors as inputsand the oracle stream weights a s target outputs. The Leven-
+berg-Marquardt back-propagation algorithm of the Matlabneural network toolbox has been used for this purpose. Themean squared error between the MLP outputs and the oraclestream weights approaches
+after 300 epochs.
+Tables IX and X present the word accuracies of the AVASR
+when it is applied to the development set and the test set sig-nals. It can be seen that again, no overﬁtting has occurred, asthe performance on the developm ent set is quite similar to that
+on the test set. In the last two columns of Tables IX and X, thestream weight estimator has b een trained using the oracle dy-
+namic stream weights that have been estimated using our pro-p o s e da p p r o a c hi nS e c t i o nI V .A sd i s c u s s e di nS e c t i o nV I ,t w otypes of mapping functions have been used, a logistic functionandanMLP.Thecolumns3-5inTablesIXandXshowthebestresults of the baseline approach.
+Theresultsshowthattrainingst reamweightestimatorsusing
+oracle dynamic stream weights c onsistently and signiﬁcantly
+improvestheAVASRperformanceineverytestconditioncom-pared to the baseline results, which are obtained using streamweight estimators trained on oracle global stream weights. Al-thoughtheresultsobtainedusingtheMLParebetterthanthoseusing the logistic function in almost every case, the improve-ments are not statistically signiﬁcant.
+Theresultsobtainedusingtheproposedframeworkapproach
+thoseobtainedusingtheidealglobalstreamweights
+.Still,874 IEEE/ACMTRANSACTIONS ONAUDIO,SPEECH,AND LANGUAGEPROCESSING,VOL .23 ,NO.5,MA Y2 0 15
+TABLE IX
+DEVELOPMENT SET AVASR P ERFORMANCE OBTAINED USING
+DYNAMICSTREAMWEIGHTS,ESTIMATED VIA LOGISTIC
+REGRESSION AND USING AN MLP
+TABLE X
+TEST SETAVASR P ERFORMANCE OBTAINED USINGDYNAMICSTREAM
+WEIGHTS,ESTIMATED VIA LOGISTICREGRESSION AND USING AN MLP
+thereisagapbetweenthe estimated streamweightsandthe or-
+acledynamic stream weights. We aim at reducing this gap be-
+tweentheachievedperformanceandthistheoreticalupperlimitin future work, e.g. by ﬁnding additional—more robust—reli-ability measure features, and by including reliability measures
+concerning the quality of the video signal as well.
+IX. C
+ONCLUSIONS
+Optimizing the contribution of the audio and video modality
+to the recognition decision using stream weights has a great
+impactontheoverallperformanceofAVASRsystems.Inmany
+prior works, the stream weig hts have been estimated using
+heuristically chosen mapping fun ctions, which are trained in a
+supervised manner considering oracle global stream weights
+as their target outputs. In this paper, we have presented anEM algorithm that estimates or acle dynamic stream weights
+on a frame-by-frame basis for CHMMs. The EM algorithm
+solves the problem of pre-deﬁning frame-state alignmentsand provides a new upper bound that can be achieved using
+AVASR systems. The numerous data points provided by the
+EM algorithm enable parameters o f sophisticated multidimen-
+sional mapping functions such as MLPs and multidimensional
+logistic functions to be well trained. The presented framework
+enables all available reliabi lity measures to be combined in
+high-dimensional input feature v ectors and utilized together.
+The AVASR results obtained using the proposed framework
+aresigniﬁcantlybetterthanthebaselineresultsinallconsideredtest conditions. However, the results are still far from those ob-
+tained using EM-based oracle dynamic stream weights. These
+oracleweightsarenotusableinpracticeduetotheirrelianceon
+t h et r u ew o r dt r a n s c r i p t i o n ,b u t can nonetheless serve as an in-
+dication of the maximum perform ance theoretically achievable
+by dynamic stream weighting.
+Weaimatextendingeachofthethreepartsoftheintroduced
+framework as follows: We will consider estimating the oracle
+dynamic stream weights using a discriminative objective func-
+tion for the EM algorithm, as we believe that this will allowus to dispense with the assumption of certain priors of the PDF
+underlying the stream weights. Another future work direction,
+which can reduce the gap betw een the achieved performance
+and that obtained using oracle knowledge, is the inc lusion of
+other noise-robust reliability measure features as well as videoquality measures as additional in puts. Finally, we will consider
+improving the MLP performance by intermediately training it
+to detect high-level features li ke the noise type and level, and
+thenusingthesefeaturesinconjunctionwithallotherreliabilitymeasures to estimate the stream weights.
+Inthiswork,wehaveconsideredtheperformanceofthepro-
+posed framework when the acoustical features are distorted byacoustical noise. Another aspect that needs to be considered
+in future work is the performance of the proposed frameworkunder adverse visual conditions.
+A
+PPENDIXA
+AUXILIARY FUNCTION
+In order to prove that is an auxiliary function for
+, we need to prove the following inequality:
+(41)
+or
+(42)
+F o rs a k eo fs i m p l i c i t y ,w eu s et h ef o l l o w i n gn o t a t i o n s :
+The auxiliary function can be rewritten as follows:
+(43)
+(44)
+(45)ABDELAZIZ et al.: LEARNINGDYNAMIC STREAM WEIGHTS FOR COUPLED-HMM-BASEDAUDIO-VISUALSP EECHRECO GNITION 875
+(46)
+(47)
+where
+(48)
+and thus
+(49)
+By applying (47) and (49) and the deﬁnition of in (8) to
+(42), we get the following expression
+(50)
+We now need to prove the following inequality:
+(51)
+or
+(52)
+By using the fact that , we can prove (52) by
+proving that
+(53)
+(54)
+(55)
+(56)
+(57)
+This proves that is a strong sense auxiliary function
+for .REFERENCES
+[1] E.Vincent,J.Barker,S.Watanab e,J.LeRoux,F.Nesta,andM.Matas-
+soni, “The second ‘CHiME’ speech separation and recognition chal-
+lenge:Datasets,tasksandbaselines,”in Proc. ICASSP ,Vancouver,BC,
+Canada, 2013, pp. 126–130.
+[2]Robust speech recognition of uncertain or missing data ,D .K o l o s s a
+and R. Haeb-Umbach, Eds. Berlin/Hei delberg, Germany: Springer ,
+2011.
+[3]Techniques for Noise Robustness in Automatic Speech Recognition ,
+T. Virtanen, B. Raj, and R. Singh, Eds. West Sussex, U.K.: Wiley,
+2012.
+[4] A. Adjoudani and C. Benoit, “On the integration of auditory and vi-
+sual parameters in an HMM-based ASR,” in Proc. NATO ASI Conf.
+Speech Reading by Man Mach.: Models, Syst., Applicat. , Berlin, Ger-
+many, 1996.
+[5] T. Watanabe and M. Kohda, “Lip-reading of Japanese vowels using
+neural networks,” in Proc. ICSLP , Kobe, Japan, 1990.
+[ 6 ]P .T e i s s i e r ,J .R o b e r t - R i b e s ,J . - L .S c h w a r t z ,a n dA .G u é r i n - D u g u é ,
+“Comparing models for audiovisual fusion in a noisy-vowel recog-
+nition task,” IEEE Trans. Speech Audio Process. , vol. 7, no. 6, pp.
+629–642, Nov. 1999.
+[7] M. Heckmann, F. Berthommier, and K. Kroschel, “Noise adaptive
+stream weighting in audio-v isual speech recognition,” EURASIP J.
+Adv. Signal Process. , vol. 2002, pp. 1260–1273, Nov. 2002.
+[8] C.Neti,G.Potamianos,J.Luettin,I.Matthews,H.Glotin,andD.Ver-
+gyri, “Large-vocabulary audio-visual speech recognition: A summaryof the Johns Hopkins summer 2000 workshop,” in Proc. IEEE Work-
+shop Multimedia Signal Process. ,Cannes,France,2001,pp.619–624.
+[9] G.Potamianos,C.Neti,G.Gravi er,A.Garg,andA.W.Senior,“Recent
+advances in the automatic reco gnition of audio visual speech,” Proc.
+IEEE, vol. 91, no. 9, pp. 1306–1326, Sep. 2003.
+[10] J. Luettin, G. Potamianos, and C. Neti, “Asynchronous stream mod-
+eling for large vocabulary audi o-visual speech recognition,” in Proc.
+ICASSP, Salt Lake City, UT, USA, 2001, pp. 169–172.
+[11] A.Neﬁan,L.Liang,X.Pi,X.Liu,andK.Murphy,“DynamicBayesian
+networks for audio-visual speech recognition,” EURASIP J. Adv.
+Signal Process. , vol. 2002, no. 11, pp. 1274–1288, 2002.
+[12] H. Bourlard and S. Dupont, “A new ASR approach based on inde-
+pendent processing and recombination of partial frequency bands,” in
+Proc. ICSLP , Philadelphia, PA, USA, 1996.
+[13] M. Tomlinson, M. Russell, and N. M. Brooke, “Integrating audio and
+visual information to provide highly robust speech recognition,” in
+Proc. ICASSP , Atlanta, GA, USA, 1996, pp. 821–824.
+[14] S. Dupont and J. Luettin, “Audio-visual speech modeling for contin-
+uous speech recognition,” IEEE Trans. Multimedia , vol. 2, no. 3, pp.
+141–151, Sep. 2000.
+[15] A. Kantor and M. Hasegawa-Johnson, “Stream weight tuning in dy-
+namic Bayesian networks,” in Proc. ICASSP ,L a sV e g a s ,N V ,U S A ,
+2008, pp. 4525–4528.
+[16] J.Hernando,“Maximumlikelihoo d weightingofdynamicspeechfea-
+tures for CDHMM speech recognition,” in Proc. ICASSP ,M u n i c h ,
+Germany, 1997, pp. 1267–1270.
+[17] G. Gravier, S. Axelrod, G. Potamianos, and C. Neti, “Maximum en-
+tropyandMCEbasedHMMstreamweightestimationforaudio-visual
+ASR,” in Proc. ICASSP , Orlando, FL, USA, 2002, pp. 853–856.
+[18] P.LiuandZ.Wang,“StreamweighttrainingbasedonMCEforaudio-
+visual LVCSR,” Tsinghua Sci. Technol. , vol. 10, no. 2, pp. 141–144,
+Apr. 2005.
+[19] V. Estellers, M. Gurban, and J.-P. Thiran, “On dynamic stream
+weighting for audio-visual speech recognition,”
+IEEE Trans. Audio,
+Speech, Lang. Process. , vol. 20, no. 4, pp. 1145–1157, May 2012.
+[20] A. Garg, G. Potamianos, C. Neti, and T. S. Huang, “Frame-depen-
+dent multi-stream reliability indicators for audio-visual speech recog -
+nition,”in Proc. Int. Conf. Multimedia and Expo ,Baltimore,MD,USA,
+2003, pp. 605–608.
+[21] S. Nakamura, K. Kumatani, and S. Tamura, “State synchronous mod-
+elingofaudio-visual information forbi-modal speech recognition,” in
+Proc . IEEE Workshop Autom. Speech Recogn. Understand. ,Madonna
+di Campiglio, Italy, 2001, pp. 409–412.
+[22] E. Marcheret, V. Libal, and G. Potamianos, “Dynamic stream weight
+modelingforaudio-visu alspeechrecognition,”in Proc. ICASSP ,Hon-
+olulu, HI, USA, 2007, pp. 945–948.
+[23] A. H. Abdelaziz, S. Zeiler, and D. Kolossa, “A new EM estimation of
+dynamicstreamweightsforcoupled-HMM-basedaudio-visualASR,”inProc. ICASSP , Florence, Italy, 2014, pp. 1527–1531.876 IEEE/ACMTRANSACTIONS ONAUDIO,SPEECH,AND LANGUAGEPROCESSING,VOL .23 ,NO.5,MA Y2 0 15
+[24] A.H.AbdelazizandD.Kolossa,“Dynamicstreamweightestimationin
+coupled-HMM-basedaudio-visualspeechrecognitionusingmultilayer
+perceptrons,” in Proc. Interspeech , Singapore, 2014.
+[25] L.R.Rabiner,“AtutorialonhiddenMarkovmodelsandselectedappli-
+cationsinspeechrecognition,” Proc. IEEE ,vol.77,no.2,pp.257–286,
+Feb. 1989.
+[26] P. Jourlin, “Word-dependent acoustic-labial weights in HMM-based
+speech recognition,” in Proc. Eur. Tutorial Workshop Audio-visual
+Speech Recogn. , Rhodes, Greece, 1997.
+[27] G. Potamianos and H. P. Graf, “Discriminative training of HMM
+stream exponents for audio-visual speech recognition,” in Proc.
+ICASSP, Seattle, WA, USA, 1998, pp. 3373–3376.
+[28] S. Boyd and L. Vandenberghe , Convex Optimization ,7 t he d .e d .
+Cambridge, U.K.: Cambridge Univ. Press, 2009.
+[29] R. McAulay and M. Malpass, “Speech enhancement usin gas o f t - d e -
+cision noise suppression ﬁlter,” IEEE Trans. Acoust., Speech, Signal
+Process., vol. ASSP-28, no. 2, pp . 137–145, Apr. 1980.
+[30] R. Martin, “Noise power spectral density e stimation based on optimal
+smoothing and minimum statistics,” IEEE Trans. Speech Audio
+Process., vol. 9, no. 5, pp. 504–512, Jul. 2001.
+[31] I. Cohen and B. Berdugo, “Noise estima tion by minima controlled
+recursive averaging for robust speech enhancement,” IEEE Signal
+Process. Lett. , vol. 2002, no. 1, pp. 12–15, Jan. 9, .
+[32] I. Cohen, “Noise spectrum estimat ion in adverse environments: Im-
+proved minima controlled recursive averaging,” IEEE Trans. Speech
+Audio Process. , vol. 11, no. 5, pp. 466–475, Sep. 2003.
+[33] M. Gurban and J.-P. Thiran, “Using entropy as a stream reliability
+estimate for audio-visual speech recognition,” in Proc. Eur. Signal
+Process. Conf. , Lausanne, Switzerland, 2008.
+[34] G. Potamianos and C. Net i, “Stream conﬁdence estimation for audio-
+visual speech recognition,” in Proc . ICSLP , Beijing, China, 2000.
+[35] H.Misra,H.Bourlard,andV.Tyag i,“Newentropybasedcombination
+ruleinHMM/ANNmu lti-streamASR,”in Proc. ICASSP ,HongKong,
+2003, pp. 741–744.
+[36] R. F. Astudillo, D. Kolossa, and R. Orglmeister, “Accounting for
+the uncertain ty of speech estimates in the complex domain for min-
+imum mean square error s peech enhancement,” in Proc. Interspeech ,
+Brighton, U.K., 2009.
+[37] D. Kolossa, J. Chong, S. Zeiler, and K. Keutzer, “Efﬁcient many core
+CHMM speech recognition for audiovisual and multistream data,” in
+Proc. Interspeech , Makuhari, Japan, 2010.
+[38] M. Cook e, J. Barker, S. Cunningham, and X. Shao, “An audio-visual
+corpus for speech per ception and automatic speech recognition,” J..
+Acoust. Soc. Amer. , vol. 120, no. 5, pp. 2421–2424, 2006.
+[39] A. Va rga and H. J. Steeneken, “Assessment for automatic speech
+recognition: II. NOISEX-92: A database and an experiment to study
+the effect of additive noise on speech recognition systems,” Speech
+Commun., vol. 12, no. 3, pp. 247–251, Jul. 1993.
+[40] S. Davis and P. Mermelstein, “Comparison of parametric representa-
+tions for monosyllabic word recognition in continuously spoken sen-tences,” IEEE Trans. Acoust., Speech, Signal Process. , vol. ASSP-28,
+no. 4, pp. 357–366, Aug. 1980.
+[41] Speech Processing, Transmission and Quality Aspects (STQ); Dis-
+tributed speech recognition; Advanced front-end feature extraction
+algorithm; Compression algorithms , ETSI, ES.202.050 Std., 2003.
+[42] G. Bradski and A. Kaehler , Computer Vision with the OpenCV Li-
+brary. Sebastopol, CA, USA: Reilly Media, 2008.
+[43] R. A. Johnson and D. W. Wichern , Applied Multivariate Statistical
+Analysis, 6th ed. Upper Saddle River, NJ, USA: Pearson Education,
+2007.
+[44] D.Kolossa,S.Zeiler,R.Saeidi,andR.Astudillo,“Noise-adaptiveL DA:
+Anewapproachforspeechrecognitionunderobservationuncertainty,”IEEE Signal Process. Lett. ,vol.20,no.11,pp.1018–1021,Nov.2013.
+[45] D.Kolossa,R.F.Astudillo,A.Abad,S.Zeiler,R.Saeidi,P.Mowlaee,
+J. P. da Silva Neto, and R. Martin, “CHiME challenge: Approachestorobustnessusingbeamforminganduncertainty-of-observationtech-
+niques,” in Proc. CHiME Workshop Mach. Listen. Multisource Env-
+iron., Florence, Italy, 2011.
+[46] H. Meutzner, A. Schlesinger, S. Zeiler, and D. Kolossa, “Binaural
+signal processing for enhanced speech recognition robustness in
+complex listening environments,” in Proc. CHiME Workshop Mach.
+Listen. Multisource Environ. , Vancouver, BC, Canada, 2013.[47] A.Vorwerk,S.Zeiler,D.Kolossa,R.F.Astudillo,andD.Lerch,“Use
+of missing and unreliable data for audiovisual speech recognition,”
+inRobust Speech Recognition of Uncertain or Missing Data .N e w
+York, NY, USA: Springer, 2011, pp. 345–373.
+[48] A. Agresti, “A survey of exact in ference for contingency tables,”
+Statist. Sci. , vol. 7, no. 1, pp. 131–153, Feb. 1992.
+[49] E.PolakandG.Ribiére,“Noteontheconvergenceofmethodsofcon-
+jugate directions,” Revue Francaise d’Inform atique et de Recherche
+Operationnelle , vol. 3, no. 16, pp. 35–43, 1969.
+[50] G. E. Hinton, S. Osindero, and Y.-W. Teh, “A fast learning algorithm
+for deep belief nets,” Neural Comput. , vol. 18, no. 7, pp. 1527–1554,
+Jul. 2006.
+[51] H. Larochelle, Y. Bengio, J. Louradour, and P. Lamblin, “Exploring
+strategiesfortrainingdeepneuralnetworks,” J. Mach. Learn. Res. ,vol.
+1, pp. 1–40, 2009.
+[52] M. Hagan and M.-B. Menhaj, “Training feedforward networks with
+theMarquardtalgorithm,” IEEE Trans. Neural Netw. ,vol.5,no.6,pp.
+989–993, Nov. 1994.
+[53] M. T. Hagan, H. B. Demuth, and M. Beale , Neural network design .
+Boston, MA, USA: PWS-Kent, 1996.
+AhmedHussenAbdelaziz receivedtheB.Sc.degree
+in electricalengineeringa ndinformation technology
+from Alazhar University, Cairo, Egypt, in 2006 andthe M.Sc. degree in electrical engineering and infor-mation technology from Ruhr-Universität Bochum,Germany,in2010.HeiscurrentlypursuingthePh.D.degreeatRuhr-UniversitätBochum,Germany.Since2010,hehasbeenaResearchandTeachingAssistantat the Cognitive Signal Processing group, Instituteof Communication Acoustics, Ruhr-UniversitätBochum, Germany. His research interests include
+audio-visual speech recognition and sp eech enhancement, and noise robus t
+speech recognition of uncertain or missing data.
+SteffenZeiler receivedhisPh.D.degreeinelectrical
+engineering from Technische Universität Berlin in2012. He is now a Postdoctoral Researcher at theCognitiveSignalProcessinggroup,InstituteofCom-munication Acoustics, Ruhr-Universität Bochum,Germany. His research interests include machinelearning and pattern recognition with applicationsfor audio-visual speech recognition of uncertain ormissing data.
+Dorothea Kolossa received the Dipl.-Ing. degree
+in computer engineering and the Ph.D. degree inelectrical engineering from Technische UniversitätBerlin, Germany, in 1999 and 2007, respectively.From 1999 until 2000, she worked on controlsystems design at DaimlerChrysler Research andTechnology, Hennigsdorf, Germany. She was aResearch Assistant at Technische Universität Berlinfrom 2000 until 2004, and as a Senior Researcherfrom 2004 until 2010, also staying at UC BerkeleysParlab as visiting faculty in 2009/2010. Since 2010,
+she has been working in a faculty position at the Institute of Communicatio n
+Acoustics,Ruhr-UniversitätBochum,Germany,wherecurrently,sheishe ading
+the Cognitive Signal Processing group as an Associate Professor. Her rese arch
+interests include speech recognition in adverse environments and robustclassiﬁcation methods for communication and technical diagnostics. She has
+authored and co-au thored more than 60 scientiﬁc papers and book chapters.
+Dr. Kolossa is co-chair of the DEGA working group on speech acoustics,and a member of the IEEE Audio and Acoustic Signal Processing TechnicalCommittee.

@@ -1,0 +1,1012 @@
+The Winning Ways of Concurrent Games
+Pierre Clairambault, Julian Gutierrez, Glynn Winskel
+Computer Laboratory
+University of Cambridge
+Cambridge, England
+Abstract —A bicategory of concurrent games, where
+nondeterministic strategies are formalized as certain maps
+of event structures, was introduced recently. This paper studies
+an extension of concurrent games by winning conditions,
+specifying players’ objectives. The introduction of winning
+conditions raises the question of whether such games are
+determined, that is, if one of the players has a winning strategy.
+This paper gives a positive answer to this question when the
+games are well-founded and satisfy a structural property,
+race-freedom, which prevents one player from interfering with
+the moves available to the other . Uncovering the conditions
+under which concurrent games with winning conditions are
+determined opens up the possibility of further applications of
+concurrent games in areas such as logic and veriﬁcation, where
+both winning conditions and determinacy are most needed. A
+concurrent-game semantics for predicate calculus is provided as
+an illustration.
+Keywords -Concurrent games; Nondeterministic strategies;
+Winning conditions; Determinacy; Event structures.
+I. I NTRODUCTION
+The games that have arisen in mathematical logic [3] have
+typically been games between two players (we call them
+Player and Opponent), trying to achieve complementary goals.
+The goals are given by winning conditions, specifying which
+sets of plays lead to a win for one player or the other.
+Games have a long history in logic and philosophy but in
+the last few decades have become invaluable in computer
+science as a tool to express and solve complex problems,
+both in the formal semantics of computational processes and
+in algorithmic questions. Solutions to a great many problems
+can be naturally phrased in terms of the existence of a winning
+strategy for one of the two players.
+Not surprisingly, such reductions to games with winning
+conditions generally rely on the existence of winning strategies
+for one or other player—on the fact that the games are
+determined. For traditional games this is usually the case since
+the winning conditions obtained most often form Borel sets,
+and as shown in Martin’s seminal result [9] Borel games are
+determined; the problem being represented by the game then
+has a solution (although the solution might not be computable).
+Logic games are usually played on graphs, the nodes of
+which determine whether it is the turn of Player or Opponent,
+and of a very sequential nature. This feature makes traditional
+two-player games an unnatural model in some contexts, for
+instance, when dealing with distributed and concurrent sys-
+tems. As a result, in the last decade, a number of games
+models where the two players can interact concurrently havebeen proposed. In this paper we study the model developed in
+[12], a notion of concurrent game based on event structures.
+Event structures are the concurrency analogue of trees; just as
+transition systems, an “interleaving” model, unfold to trees so
+do Petri nets, a “concurrent” model, unfold to event structures.
+In this model, games are represented by event structures
+with polarities , and a strategy on a game 𝐴is a (certain)
+polarity-preserving map of event structures 𝜎∶𝑆→𝐴.I n
+[12] concurrent games and strategies were shown to form
+a bicategory, the aim to establish a new, alternative basis
+for the semantics of programming languages. Albeit general,
+the games model introduced in [12] was not equipped with
+the means to express players’ objectives, a feature needed to
+model several algorithmic problems in areas such as logic and
+veriﬁcation. In order to overcome this limitation this paper
+extends the framework of concurrent games, based on event
+structures, with winning conditions. As concurrent games on
+event structures encompass traditional approaches of games
+and generalize them by allowing the players to interact in a
+highly distributed fashion, we expect this games model to be
+a fruitful framework, for instance, well adapted to the formal
+study of concurrent and distributed systems.
+Following in the steps of Martin, our ﬁrst goal is to provide
+classes of concurrent games that are determined. As we will
+see, the high level of concurrency present in our framework
+makes the problem very subtle, even for ﬁnite games. The
+paper contains three main technical contributions: ﬁrstly, we
+extend the results of [12] by giving a very general bicate-
+gory of concurrent games with winning conditions and non-
+deterministic winning strategies. Secondly, for well-founded
+games ( i.e.when all conﬁgurations are ﬁnite), we characterise
+determined games as those which satisfy a property called
+race-freedom, which prevents one player from interfering
+with the moves available to the other. Thirdly, in order to
+illustrate the use of concurrent games with winning conditions,
+we show how to give a concurrent-game interpretation of
+ﬁrst-order predicate logic consistent with Tarski’s semantics.
+Our interpretation exploits the additional mathematical space
+surrounding concurrent games and provides techniques to
+effectively build and deconstruct nondeterministic winning
+strategies in a compositional manner.
+Related work: Concurrent games and determinacy prob-
+lems have been studied elsewhere, though separately in most
+cases. Melli `es et al. [2], [10], [11] have done extensive work
+on concurrent games on asynchronous transition systems;
+however, determinacy issues were not addressed. Concurrent
+2012 27th Annual ACM/IEEE Symposium on Logic in Computer Science
+1043-6871/12 $26.00 © 2012 IEEE
+DOI 10.1109/LICS.2012.34235games on graphs [4], [5] have also been studied to solve
+veriﬁcation problems for open systems; such games are unde-
+termined in the general case and as a consequence stochastic
+strategies are used. Of the several treatments of winning
+conditions in game semantics, initiated in [1], ours is close
+to Hyland’s [7], which it can be seen as generalizing directly.
+Finally, concurrent games on partial orders were developed in
+[6]; in this case a determinacy result is given when restricted
+to regular winning conditions and very simple game boards.
+The paper is structured as follows: Sections II-IV give an
+introduction to event structures and the bicategory of concur-
+rent games and nondeterministic strategies. Section V contains
+the extension of the concurrent games model with winning
+conditions as well as a study of some of its properties. Then,
+in Sections VI and VII, the proof of determinacy is presented.
+Finally, in Section VIII, the concurrent-game semantics for
+predicate calculus is described.
+More detailed proofs may be found in [14], though the
+determinacy proof in [14] has been improved by the proof
+sketched here.
+II. E VENT STRUCTURES
+An event structure comprises (𝐸,Con,≤), consisting of a
+set𝐸,o f events which are partially ordered by ≤,t h e causal
+dependency relation , and a nonempty consistency relation Con
+consisting of ﬁnite subsets of 𝐸, which satisfy
+{𝑒′∣𝑒′≤𝑒}is ﬁnite for all𝑒∈𝐸,
+{𝑒}∈Con for all𝑒∈𝐸,
+𝑌⊆𝑋∈Con∨Leftrightline⇒𝑌∈Con,and
+𝑋∈Con &𝑒≤𝑒′∈𝑋∨Leftrightline⇒𝑋∪{𝑒}∈Con.
+The conﬁgurations ,C∞(𝐸), of an event structure 𝐸consist
+of those subsets𝑥⊆𝐸which are
+Consistent: ∀𝑋⊆𝑥.𝑋 is ﬁnite ⇒𝑋∈Con , and
+Down-closed: ∀𝑒,𝑒′.𝑒′≤𝑒∈𝑥∨Leftrightline⇒𝑒′∈𝑥.
+Often we shall be concerned with just the ﬁnite conﬁgurations
+of an event structure. We write C(𝐸)for the ﬁnite conﬁgura-
+tions of an event structure 𝐸.
+Two events which are both consistent and incomparable
+w.r.t. causal dependency in an event structure are regarded
+asconcurrent . In games the relation of immediate dependency
+𝑒/rightarrowtriangle𝑒′, meaning𝑒and𝑒′are distinct with 𝑒≤𝑒′and no
+event in between, will play an important role. For 𝑋⊆𝐸we
+write[𝑋]for{𝑒∈𝐸∣∃𝑒′∈𝑋.𝑒≤𝑒′}, the down-closure of
+𝑋; note if𝑋∈Con , then[𝑋]∈Con is a conﬁguration.
+Notation 1.Let𝐸be an event structure. We use 𝑥−⊂𝑦to mean
+𝑦covers𝑥inC∞(𝐸),i.e.𝑥⊂𝑦inC∞(𝐸)with nothing in
+between, and𝑥𝑒−∨leftrightline⊂𝑦to mean𝑥∪{𝑒}=𝑦for𝑥,𝑦∈C∞(𝐸)and
+event𝑒∉𝑥.W eu s e𝑥𝑒−∨leftrightline⊂ , expressing that event 𝑒is enabled
+at conﬁguration𝑥, when𝑥𝑒−∨leftrightline⊂𝑦for some𝑦.
+A. Maps of event structures
+Let𝐸and𝐸′be event structures. A (partial) map of event
+structures𝑓∶𝐸⇀𝐸′is a partial function on events 𝑓∶𝐸⇀𝐸′such that for all𝑥∈C(𝐸)its direct image𝑓𝑥∈C(𝐸′)and
+𝑒1,𝑒2∈𝑥&𝑓(𝑒1)=𝑓(𝑒2)(with both deﬁned) ∨Leftrightline⇒𝑒1=𝑒2.
+The map expresses how the occurrence of an event 𝑒in
+𝐸induces the coincident occurrence of the event 𝑓(𝑒)in
+𝐸′whenever it is deﬁned. Partial maps of event structures
+compose as partial functions, with identity maps given by
+identity functions. We will say the map is total if the function
+𝑓is total. Notice that for a total map 𝑓the condition on maps
+now says it is locally injective , in the sense that w.r.t. any
+conﬁguration𝑥of the domain the restriction of 𝑓to a function
+from𝑥is injective; the restriction of 𝑓to a function from 𝑥
+to𝑓𝑥is thus bijective. A total map of event structures which
+preserves causal dependency is called rigid .
+B. Process operations
+1) Products: The category of event structures with partial
+maps has products𝐴×𝐵with projections Π1to𝐴andΠ2
+to𝐵. The effect is to introduce arbitrary synchronisations
+between events of 𝐴and events of𝐵in the manner of process
+algebra.
+2) Restriction: The restriction of an event structure 𝐸to
+a subset of events 𝑅, written𝐸↾𝑅, is the event structure
+with events𝐸′={𝑒∈𝐸∣[𝑒]⊆𝑅}and causal dependency
+and consistency induced by 𝐸.
+3) Synchronized compositions and pullbacks: Synchronized
+compositions play a central role in process algebra, with such
+seminal work as Milner’s CCS and Hoare’s CSP . Synchronized
+compositions of event structures 𝐴and𝐵are obtained as
+restrictions𝐴×𝐵↾𝑅. We obtain pullbacks as a special case.
+Let𝑓∶𝐴→𝐶and𝑔∶𝐵→𝐶be maps of event structures.
+Deﬁning𝑃to be
+𝐴×𝐵↾{𝑝∈𝐴×𝐵∣𝑓Π1(𝑝)=𝑔Π2(𝑝)with both deﬁned }
+we obtain a pullback square
+𝑃
+Π1
+/d127/d127/d126/d126/d126/d126/d126/d126/d126/d63/d127Π2
+/d32/d32/d64/d64/d64/d64/d64/d64/d64
+𝐴
+𝑓/d31/d31/d64/d64/d64/d64/d64/d64/d64𝐵
+𝑔/d126/d126/d126/d126/d126/d126/d126/d126/d126
+𝐶
+in the category of event structures. When 𝑓and𝑔are total the
+same construction gives the pullback in the category of event
+structures with total maps.
+4) Projection: Let(𝐸,≤,Con)be an event structure. Let
+𝑉⊆𝐸be a subset of ‘visible’ events. Deﬁne the projection
+of𝐸on𝑉,t ob e𝐸↓𝑉=def(𝑉,≤𝑉,Con 𝑉), where𝑣≤𝑉
+𝑣′iff𝑣≤𝑣′&𝑣,𝑣′∈𝑉and𝑋∈Con 𝑉iff𝑋∈Con &𝑋⊆𝑉.
+5) Preﬁxes and sums: The preﬁx of an event structure 𝐴,
+written ●.𝐴, comprises the event structure in which all the
+events of𝐴are made to causally depend on an event ●.T h e
+category of event structures has sums given as coproducts;
+a coproduct ∑𝑖∈𝐼𝐸𝑖is obtained as the disjoint juxtaposition
+of an indexed collection of event structures, making events
+236in distinct components inconsistent. In Section VIII we shall
+use preﬁxed sums ∑𝑖∈𝐼●.𝐴𝑖in games for modelling ﬁrst-order
+logical quantiﬁers.
+III. E VENT STRUCTURES WITH POLARITY
+Both a game and a strategy in a game are to be represented
+by event structures with polarity, which comprise (𝐸,pol)
+where𝐸is an event structure with a polarity function pol∶
+𝐸→{ +,−}ascribing a polarity +(Player) or −(Opponent) to
+its events. The events correspond to (occurrences of) moves.
+Maps of event structures with polarity are maps of event
+structures which preserve polarities.
+A. Basic operations
+1) Dual: The dual ,𝐸⊥, of an event structure with polarity
+𝐸comprises the same underlying event structure 𝐸but with
+a reversal of polarities.
+2) Simple parallel composition: This operation juxtaposes
+two event structures with polarity. Let (𝐴,≤𝐴,Con 𝐴,pol𝐴)
+and(𝐵,≤𝐵,Con 𝐵,pol𝐵)be event structures with polarity.
+The events of𝐴∥𝐵are({1}×𝐴)∪({ 2}×𝐵), their polarities
+unchanged, with the causal dependency relation given by
+(1,𝑎)≤( 1,𝑎′)iff𝑎≤𝐴𝑎′and(2,𝑏)≤( 2,𝑏′)iff𝑏≤𝐵𝑏′;a
+subset of events𝐶is consistent in𝐴∥𝐵iff{𝑎∣(1,𝑎)∈𝐶}∈
+Con 𝐴and{𝑏∣(2,𝑏)∈𝐶}∈Con 𝐵. The empty event structure
+with polarity, written ∅, is the unit w.r.t. ∥.
+IV . C ONCURRENT STRA TEGIES
+A. Pre-strategies
+Let𝐴be an event structure with polarity, thought of as
+a game; its events stand for the possible occurrences of
+moves of Player and Opponent and its causal dependency and
+consistency relations the constraints imposed by the game. A
+pre-strategy represents a nondeterministic play of the game—
+all its moves are moves allowed by the game and obey the
+constraints of the game; the concept will later be reﬁned to
+that of strategy (and winning strategy in Section V). A pre-
+strategy in𝐴is deﬁned to be a total map 𝜎∶𝑆→𝐴from an
+event structure with polarity 𝑆. Two pre-strategies 𝜎∶𝑆→𝐴
+and𝜏∶𝑇→𝐴in𝐴will be essentially the same when they
+are isomorphic, i.e. there is an isomorphism 𝜃∶𝑆≅𝑇such
+that𝜎=𝜏𝜃; then we write𝜎≅𝜏.
+Let𝐴and𝐵be event structures with polarity. Following
+Joyal [8], a pre-strategy from 𝐴to𝐵is a pre-strategy in 𝐴⊥∥𝐵,
+so a total map𝜎∶𝑆→𝐴⊥∥𝐵. It thus determines a span
+𝑆
+𝜎1
+/d126/d126/d126/d126/d126/d126/d126/d126/d126/d126𝜎2
+/d32/d32/d64/d64/d64/d64/d64/d64/d64/d64
+𝐴⊥ 𝐵,
+of event structures with polarity where 𝜎1,𝜎2are partial
+maps. In fact, a pre-strategy from 𝐴to𝐵corresponds to
+such spans where for all 𝑠∈𝑆either, but not both, 𝜎1(𝑠)
+or𝜎2(𝑠)is deﬁned. Two pre-strategies from 𝐴to𝐵will
+be isomorphic when they are isomorphic as pre-strategies in
+𝐴⊥∥𝐵, or equivalently are isomorphic as spans. We write𝜎∶𝐴+ /d47/d47𝐵to express that𝜎is a pre-strategy from 𝐴to
+𝐵. Note that a pre-strategy 𝜎inag a m e𝐴,e.g.𝜎∶𝑆→𝐴,
+coincides with a pre-strategy from the empty game ∅tothe
+game𝐴,i.e.𝜎∶∅+ /d47/d47𝐴.
+B. Composing pre-strategies
+We can present the composition of pre-strategies via pull-
+backs.1Given two pre-strategies 𝜎∶𝑆→𝐴⊥∥𝐵and𝜏∶
+𝑇→𝐵⊥∥𝐶, ignoring polarities we can consider the maps
+on the underlying event structures, viz.𝜎∶𝑆→𝐴∥𝐵and
+𝜏∶𝑇→𝐵∥𝐶. Viewed this way we can form the pullback in
+the category of event structures as shown below
+𝑃
+Π1
+/d122/d122/d117/d117/d117/d117/d117/d117/d117/d117/d117/d117/d63/d127 Π2
+/d36/d36/d73/d73/d73/d73/d73/d73/d73/d73/d73/d73
+𝑆∥𝐶
+𝜎∥id𝐶/d36/d36/d72/d72/d72/d72/d72/d72/d72/d72/d72𝐴∥𝑇
+id𝐴∥𝜏/d122/d122/d118/d118/d118/d118/d118/d118/d118/d118/d118
+𝐴∥𝐵∥𝐶
+/d15/d15
+𝐴∥𝐶,
+where the map𝐴∥𝐵∥𝐶→𝐴∥𝐶is undeﬁned on𝐵and acts
+as identity on𝐴and𝐶. Note there are three kinds of events
+𝑝∈𝑃:synchronizations between events of 𝑆and𝑇, where
+𝜎2Π1(𝑝)=𝜏1Π2(𝑝)∈𝐵;asynchronous occurrences of events
+in𝑆, where𝜎1Π1(𝑝)∈𝐴;asynchronous occurrences of events
+in𝑇, where𝜏2Π2(𝑝)∈𝐶. The partial map from 𝑃to𝐴∥𝐶
+given by the diagram above (either way round the pullback
+square) factors as the composition of the partial map 𝑃→𝑃↓
+𝑉, where𝑉is the set of events of 𝑃at which the map 𝑃→
+𝐴∥𝐶is deﬁned, and a total map 𝑃↓𝑉→𝐴∥𝐶. The resulting
+total map gives us the composition 𝜏⊙𝜎∶𝑃↓𝑉→𝐴⊥∥𝐶
+once we reinstate polarities.
+C. Concurrent copy-cat
+Identities w.r.t. composition are given by copy-cat strategies.
+Let𝐴be an event structure with polarity. The copy-cat strategy
+from𝐴to𝐴is an instance of a pre-strategy, so a total map
+𝛾𝐴∶CC𝐴→𝐴⊥∥𝐴. It describes a concurrent strategy based
+on the idea that Player moves, of +ve polarity, always copy
+previous corresponding moves of Opponent, of −ve polarity.
+For𝑐∈𝐴⊥∥𝐴we use𝑐to mean the corresponding copy of 𝑐,
+of opposite polarity, in the alternative component. Deﬁne CC𝐴
+to comprise the event structure with polarity 𝐴⊥∥𝐴together
+with the extra causal dependencies generated by 𝑐≤CC𝐴𝑐for
+all events𝑐with pol𝐴⊥∥𝐴(𝑐)=+ .T h e copy-cat pre-strategy
+𝛾𝐴∶𝐴+ /d47/d47𝐴is deﬁned to be the map 𝛾𝐴∶CC𝐴→𝐴⊥∥𝐴
+where𝛾𝐴is the identity on the common set of events.
+1The construction here gives the same result as that via synchronized
+composition in [12]—we are grateful to Nathan Bowler for this observation.
+Notice the analogy with the composition of relations 𝑆⊆𝐴×𝐵,𝑇⊆𝐵×𝐶
+which can be deﬁned as 𝑇○𝑆=(𝑆×𝐶∩𝐴×𝑇)↓𝐴×𝐶, the image of
+triples 𝑆×𝐶∩𝐴×𝑇under the projection of 𝐴×𝐵×𝐶to𝐴×𝐶.
+237D. Strategies
+The main result of [12], presented summarily here, is that
+two conditions on pre-strategies, receptivity and innocence ,
+are necessary and sufﬁcient for copy-cat to behave as identity
+w.r.t. the composition of pre-strategies. Receptivity ensures
+an openness to all possible moves of Opponent. Innocence
+restricts the behaviour of Player; Player may only introduce
+new relations of immediate causality of the form ⊖/rightarrowtriangle⊕
+beyond those imposed by the game.
+Receptivity. A pre-strategy 𝜎 is receptive iff
+𝜎𝑥𝑎−∨leftrightline⊂ &pol𝐴(𝑎)=−⇒∃ !𝑠∈𝑆.𝑥𝑠−∨leftrightline⊂ &𝜎(𝑠)=𝑎.
+Innocence. A pre-strategy𝜎isinnocent when it is both
++-innocent: if𝑠/rightarrowtriangle𝑠′&pol(𝑠)=+ then𝜎(𝑠)/rightarrowtriangle𝜎(𝑠′), and
+−-innocent: if𝑠/rightarrowtriangle𝑠′&pol(𝑠′)=− then𝜎(𝑠)/rightarrowtriangle𝜎(𝑠′).
+Theorem 2 (from [12]) .Let𝜎∶𝐴+ /d47/d47𝐵be pre-strategy.
+Copy-cat behaves as identity w.r .t. composition, i.e. 𝜎○𝛾𝐴≅𝜎
+and𝛾𝐵○𝜎≅𝜎,i f f𝜎is receptive and innocent. Copy-cat pre-
+strategies𝛾𝐴∶𝐴+ /d47/d47𝐴are receptive and innocent.
+E. The bicategory of concurrent games and strategies
+Theorem 2 motivated the deﬁnition of a strategy as a
+pre-strategy which is receptive and innocent. In fact, we
+obtain a bicategory, Games , in which the objects are event
+structures with polarity—the games, the arrows from 𝐴to𝐵
+are strategies𝜎∶𝐴+ /d47/d47𝐵and the 2-cells are maps of spans.
+The vertical composition of 2-cells is the usual composition
+of maps of spans. Horizontal composition is given by the
+composition of strategies ⊙(which extends to a functor on
+2-cells via the universality of pullback).
+As t r a t e g y𝜎∶𝐴+ /d47/d47𝐵corresponds to a dual strategy 𝜎⊥∶
+𝐵⊥+ /d47/d47𝐴⊥. This duality arises from the correspondence be-
+tween pre-strategies 𝜎∶𝑆→𝐴⊥∥𝐵and𝜎⊥∶𝑆→(𝐵⊥)⊥∥𝐴⊥.
+The dual of copy-cat, 𝛾⊥
+𝐴, is isomorphic to the copy-cat of the
+dual,𝛾𝐴⊥,f o r𝐴an event structure with polarity. The dual of
+a composition of pre-strategies (𝜏⊙𝜎)⊥is isomorphic to the
+composition𝜎⊥⊙𝜏⊥.
+F . The subcategory of deterministic strategies
+Say an event structure with polarity 𝑆isdeterministic iff
+∀𝑋⊆ﬁn𝑆.Neg[𝑋]∈Con 𝑆∨Leftrightline⇒𝑋∈Con 𝑆,
+where Neg[𝑋]=def{𝑠′∈𝑆∣pol(𝑠′)=− &∃𝑠∈𝑋.𝑠′≤𝑠}.
+In other words,𝑆is deterministic iff any ﬁnite set of moves
+is consistent when it causally depends only on a consistent set
+of opponent moves. Say a strategy 𝜎∶𝑆→𝐴is deterministic
+if𝑆is deterministic.
+Lemma 3. An event structure with polarity 𝑆is deterministic
+iff for all𝑠,𝑠′∈𝑆,𝑥∈C (𝑆),
+𝑥𝑠−∨leftrightline⊂ &𝑥𝑠′
+−∨leftrightline⊂ &pol(𝑠)=+ ∨Leftrightline ⇒𝑥∪{𝑠,𝑠′}∈C(𝑆).
+A copy-cat strategy 𝛾𝐴can fail to be deterministic. How-
+ever,𝛾𝐴is deterministic iff immediate conﬂict in 𝐴respectspolarity, or equivalently that there is no immediate conﬂict
+between +ve and −ve events, a condition we call ‘race-free.’
+Lemma 4. Let𝐴be an event structure with polarity. The copy-
+cat strategy𝛾𝐴is deterministic iff for all 𝑥∈C (𝐴),𝑎,𝑎′∈𝐴,
+𝑥𝑎−∨leftrightline⊂ &𝑥𝑎′
+−∨leftrightline⊂ &pol(𝑎)≠pol(𝑎′)
+∨Leftrightline⇒𝑥∪{𝑎,𝑎′}∈C(𝐴).(Race−free)
+Lemma 5. The composition of deterministic strategies is
+deterministic.
+Lemma 6. A deterministic strategy 𝜎∶𝑆→𝐴is injective
+on conﬁgurations (equivalently, 𝜎is mono in the category of
+event structures with polarity).
+We obtain a sub-bicategory DGames ofGames by
+restricting objects to race-free games and strategies to be-
+ing deterministic. Via Lemma 6, deterministic strategies in
+a game correspond to certain subfamilies of conﬁgurations
+of the game. A characterisation of those subfamilies which
+correspond to deterministic strategies [12] shows them to co-
+incide with the receptive ingenuous strategies of Mimram and
+Melli `es [11]. Via the presentation of deterministic strategies as
+families DGames is equivalent to an order-enriched category.
+Melli `es programme of “asynchronous games” arose from
+his earlier work with Abramsky where deterministic concur-
+rent strategies were represented essentially by partial closure
+operators on the domain of conﬁgurations of an event struc-
+ture [2]. For us, a deterministic strategy 𝜎∶𝑆→𝐴determines
+a closure operator 𝜑onC∞(𝑆):f o r𝑥∈C∞(𝑆),
+𝜑(𝑥)=𝑥∪{𝑠∈𝑆∣pol(𝑠)=+ &Neg[{𝑠}] ⊆𝑥}.
+Because C∞(𝑆)forms a subfamily C∞(𝐴), a deterministic
+strategy does indeed give rise to a partial closure operator
+onC∞(𝐴). (Strictly speaking, instead of working with partial
+closure operators, Abramsky and Melli `es worked with closure
+operators on domains C∞(𝐴)⊺, extended with a top element
+⊺, with every conﬁguration of 𝐴unreachable according to the
+strategy being sent to ⊺.)
+V. W INNING STRA TEGIES
+Agame with winning conditions comprises𝐺=(𝐴,𝑊)
+where𝐴is an event structure with polarity and 𝑊⊆C∞(𝐴)
+consists of the winning conﬁgurations for Player. We deﬁne
+the losing conditions to be𝐿=defC∞(𝐴)∖𝑊. Clearly a game
+with winning conditions is fully deﬁned once we specify either
+its winning or losing conditions.
+As t r a t e g yi n𝐺is a strategy in𝐴. A strategy in𝐺is
+regarded as winning if it always prescribes Player moves to
+end up in a winning conﬁguration, no matter what the activity
+or inactivity of Opponent. Formally, a strategy 𝜎∶𝑆→𝐴
+in𝐺iswinning (for Player) if𝜎𝑥∈𝑊 for all +-maximal
+conﬁgurations𝑥∈C∞(𝑆)—a conﬁguration 𝑥is +-maximal if
+whenever𝑥𝑠−∨leftrightline⊂ then the event𝑠has−ve polarity.
+Clearly, we can equivalently say a strategy 𝜎∶𝑆→𝐴in
+𝐺is winning if it always prescribes Player moves to avoid
+ending up in a losing conﬁguration; a strategy 𝜎∶𝑆→𝐴
+238in𝐺is winning if𝜎𝑥∉𝐿for all +-maximal conﬁgurations
+𝑥∈C∞(𝑆). Any achievable position 𝑧∈C∞(𝑆)of the game
+can be extended to a +-maximal, so winning, conﬁguration (via
+Zorn’s Lemma). So a strategy prescribes Player moves to reach
+a winning conﬁguration whatever state of play is achieved
+following the strategy.
+Note that for a game 𝐴, if winning conditions 𝑊=C∞(𝐴),
+i.e. every conﬁguration is winning, then any strategy in 𝐴
+is a winning strategy. Also note that in the special case of
+a deterministic strategy 𝜎∶𝑆→𝐴in𝐺, it is winning iff
+𝜎𝜑(𝑥)∈𝑊for all𝑥∈C∞(𝑆), where𝜑is the closure operator
+𝜑∶C∞(𝑆)→C∞(𝑆)determined by𝜎—see Section IV-F.
+We can also understand a strategy as winning for Player
+if when played against any counter-strategy of Opponent, the
+ﬁnal result is a win for Player. Suppose 𝜎∶𝑆→𝐴is a strategy
+in a game with winning conditions (𝐴,𝑊). A counter-strategy
+is strategy of Opponent, so a strategy 𝜏∶𝑇→𝐴⊥in the
+dual game. We can view 𝜎as a strategy𝜎∶∅+ /d47/d47𝐴and𝜏
+as a strategy𝜏∶𝐴+ /d47/d47∅. Their composition 𝜏⊙𝜎∶∅+ /d47/d47∅
+is not in itself so informative. Rather it is the status of the
+conﬁgurations in C∞(𝐴)their full interaction induces which
+decides which of Player or Opponent wins. Ignoring polarities,
+we have total maps of event structures 𝜎∶𝑆→𝐴and𝜏∶𝑇→
+𝐴. Form their pullback,
+𝑃
+Π1
+/d126/d126/d125/d125/d125/d125/d125/d125/d125/d125/d63/d127Π2
+/d32/d32/d65/d65/d65/d65/d65/d65/d65/d65
+𝑆
+𝜎/d32/d32/d64/d64/d64/d64/d64/d64/d64/d64𝑇
+𝜏/d126/d126/d126/d126/d126/d126/d126/d126/d126/d126
+𝐴,
+to obtain the event structure 𝑃resulting from the interaction
+of𝜎and𝜏. Because𝜎or𝜏may be nondeterministic there
+can be more than one maximal conﬁguration 𝑧inC∞(𝑃).A
+maximal conﬁguration 𝑧inC∞(𝑃)images to a conﬁguration
+𝜎Π1𝑧=𝜏Π2𝑧inC∞(𝐴). Deﬁne the set of results of the
+interaction of𝜎and𝜏to be
+⟨𝜎,𝜏⟩=def{𝜎Π1𝑧∣𝑧is maximal in C∞(𝑃)}.
+We shall show the strategy 𝜎is winning for Player iff all the
+results of the interaction ⟨𝜎,𝜏⟩lie within𝑊, for any counter-
+strategy𝜏∶𝑇→𝐴⊥of Opponent.
+It will be convenient to have facts about +-maximality in
+the broader context of the composition of arbitrary strategies.
+Lemma 7. Let𝜎∶𝑆→𝐴⊥∥𝐵and𝜏∶𝑇→𝐵⊥∥𝐶be receptive
+pre-strategies. Let 𝑃be the pullback of 𝜎∥id𝐶andid𝐴∥𝜏—see
+Section IV-B. Then,
+𝑧∈C∞(𝑃)is +-maximal iff
+Π1𝑧∈C∞(𝑆)is +-maximal &Π 2𝑧∈C∞(𝑇)is +-maximal.
+Proof sketch. A convention is being adopted. Refer to
+Section IV-B. A synchronization event in 𝑃is regarded as not
+having a polarity; otherwise, an event of 𝑃adopts the polarityof its image in𝐴⊥or𝐶. A conﬁguration 𝑧∈C∞(𝑃)is +-
+maximal if whenever 𝑧𝑝−∨leftrightline⊂ then𝑝has−ve polarity. If𝑧is not
++-maximal,𝑧𝑝−∨leftrightline⊂ where either𝑝is +ve or a synchronisation.
+In either case, Π1𝑧Π1(𝑝)−∨leftrightline⊂ orΠ2𝑧Π2(𝑝)−∨leftrightline⊂ , ensuring Π1𝑧orΠ2𝑧
+is not +-maximal. Conversely, if e.g.Π1𝑧is not +-maximal,
+Π1𝑧𝑠−∨leftrightline⊂ with𝑠+ve. Either𝜎1(𝑠)∈𝐴⊥when there is a +ve
+𝑝∈𝑃with Π1(𝑝)=𝑠, associated with the asynchronous
+occurrence of𝑠,o r𝜎2(𝑠)∈𝐵when by receptivity of 𝜏there
+is a synchronization 𝑝∈𝑃with Π1(𝑝)=𝑠and𝑧𝑝−∨leftrightline⊂ .◻
+Lemma 8. Let𝜎∶𝑆→𝐴be a strategy in a game (𝐴,𝑊).
+The strategy𝜎is winning for Player iff ⟨𝜎,𝜏⟩⊆𝑊 for all
+(deterministic) strategies 𝜏∶𝑇→𝐴⊥.
+Proof. “Only if”: Suppose𝜎is winning, i.e.𝜎𝑥∈𝑊for all
++-maximal𝑥∈C∞(𝑆).L e t𝜏∶𝑇→𝐴⊥be a strategy. As a
+special case of Lemma 7,
+𝑥∈C∞(𝑃)is +-maximal
+iff
+Π1𝑥∈C∞(𝑆)is +-maximal &Π 2𝑥∈C∞(𝑇)is +-maximal.
+Letting𝑥be maximal in C∞(𝑃)it is certainly +-maximal,
+whence Π1𝑥is +-maximal in C∞(𝑆). It follows that𝜎Π1𝑥∈
+𝑊as𝜎is winning. Hence ⟨𝜎,𝜏⟩⊆𝑊.
+“If”: Assume ⟨𝜎,𝜏⟩⊆𝑊 for all strategies 𝜏∶𝑇→𝐴⊥.
+Suppose𝑥is +-maximal in C∞(𝑆). Deﬁne𝑇to be the event
+structure given as the restriction
+𝑇=def𝐴⊥↾𝜎𝑥∪{𝑎∈𝐴⊥∣pol𝐴⊥=− }.
+The pre-strategy𝜏∶𝑇→𝐴⊥deﬁned to be the inclusion map
+𝑇↪𝐴⊥can be checked to be receptive and innocent, so a
+strategy. (In fact, 𝜏is a deterministic strategy as all its +ve
+events lie within the conﬁguration 𝜎𝑥.) One way to describe
+a pullback of𝜏along𝜎is as the “inverse image” 𝑃=def
+𝑆↾{𝑠∈𝑆∣𝜎(𝑠)∈𝑇}:𝑃 /d79/d111
+/d127/d127/d127/d127/d127/d127/d127/d127/d127/d63/d127𝜎↾𝑃
+/d31/d31/d64/d64/d64/d64/d64/d64/d64
+𝑆
+𝜎/d31/d31/d63/d63/d63/d63/d63/d63/d63𝑇 /d79/d111
+𝜏/d127/d127/d126/d126/d126/d126/d126/d126/d126
+𝐴
+From the deﬁnition of 𝑇and𝑃we see𝑥∈C∞(𝑃); and
+moreover that𝑥is maximal in C∞(𝑃)as𝑥is +-maximal
+inC∞(𝑆). Hence𝜎𝑥∈⟨𝜎,𝜏⟩ensuring𝜎𝑥∈𝑊, as required.
+The proof is unaffected if we restrict to deterministic counter-
+strategies𝜏∶𝑇→𝐴⊥. ◻
+Corollary 9. There are the following four equivalent ways to
+say that a strategy 𝜎∶𝑆→𝐴is winning in (𝐴,𝑊)—we write
+𝐿for the losing conﬁgurations C∞(𝐴)∖𝑊:
+1)𝜎𝑥∈𝑊for all +-maximal conﬁgurations 𝑥∈C∞(𝑆), i.e.
+the strategy prescribes Player moves to reach a winning
+conﬁguration, no matter what the activity or inactivity
+of Opponent;
+2392)𝜎𝑥∉𝐿for all +-maximal conﬁgurations 𝑥∈C∞(𝑆), i.e.
+the strategy prescribes Player moves to avoid ending up
+in a losing conﬁguration, no matter what the activity or
+inactivity of Opponent;
+3)⟨𝜎,𝜏⟩⊆𝑊 for all strategies 𝜏∶𝑇→𝐴⊥, i.e. all plays
+against counter-strategies of the Opponent result in a
+win for Player;
+4)⟨𝜎,𝜏⟩⊆𝑊 for all deterministic strategies 𝜏∶𝑇→𝐴⊥,
+i.e. all plays against deterministic counter-strategies of
+the Opponent result in a win for Player .
+Example 10.Not all games with winning conditions have
+winning strategies. Consider the game 𝐴consisting of one
+Player move ⊕and one Opponent move ⊖inconsistent with
+each other, with {{⊕}} as its winning conditions. This game
+has no winning strategy; any strategy 𝜎∶𝑆→𝐴, being
+receptive, will have an event 𝑠∈𝑆with𝜎(𝑠)=⊖ , and so
+the losing {𝑠}as a +-maximal conﬁguration.
+A. Operations
+1) Dual: There is an obvious dual of a game with winning
+conditions𝐺=(𝐴,𝑊 𝐺):
+𝐺⊥=def(𝐴⊥,C∞(𝐴)∖𝑊𝐺),
+reversing the role of Player and Opponent, and consequently
+that of winning and losing conditions.
+2) Parallel composition: The parallel composition of two
+games with winning conditions 𝐺=(𝐴,𝑊 𝐺),𝐻=(𝐵,𝑊 𝐻)
+is
+𝐺`𝐻=def(𝐴∥𝐵,𝑊 𝐺∥C∞(𝐵)∪C∞(𝐴)∥𝑊𝐻)
+where𝑋∥𝑌={ {1}×𝑥∪{2}×𝑦∣𝑥∈𝑋&𝑦∈𝑌}when𝑋
+and𝑌are subsets of conﬁgurations. In other words, for 𝑥∈
+C∞(𝐴∥𝐵),
+𝑥∈𝑊𝐺`𝐻iff𝑥1∈𝑊𝐺or𝑥2∈𝑊𝐻,
+where𝑥1={𝑎∣(1,𝑎)∈𝑥}and𝑥2={𝑏∣(2,𝑏)∈𝑥}.T ow i n
+in𝐺`𝐻is to win in either game. Its losing conditions are
+𝐿𝐴∥𝐿𝐵—to lose is to lose in both games 𝐺and𝐻. The unit
+of`is(∅,∅).
+3) Tensor: Deﬁning𝐺⊗𝐻=def(𝐺⊥`𝐻⊥)⊥we obtain a
+game where to win is to win in both games 𝐺and𝐻—so to
+lose is to lose in either game. More explicitly,
+(𝐴,𝑊 𝐴)⊗(𝐵,𝑊 𝐵)=def(𝐴∥𝐵,𝑊 𝐴∥𝑊𝐵).
+The unit of ⊗is(∅,{∅}) .
+4) Function space: With𝐺⊸𝐻=def𝐺⊥`𝐻a win in
+𝐺⊸𝐻is a win in𝐻conditional on a win in 𝐺.
+Proposition 11. Let𝐺=(𝐴,𝑊 𝐺)and𝐻=(𝐵,𝑊 𝐻)be
+games with winning conditions. Write 𝑊𝐺⊸𝐻for the winning
+conditions of𝐺⊸𝐻,s o𝐺⊸𝐻=(𝐴⊥∥𝐵,𝑊 𝐺⊸𝐻).F o r
+𝑥∈C∞(𝐴⊥∥𝐵),
+𝑥∈𝑊𝐺⊸𝐻 iff𝑥1∈𝑊𝐺∨Leftrightline⇒𝑥2∈𝑊𝐻.B. The bicategory of winning strategies
+We can again follow Joyal and deﬁne strategies between
+games now with winning conditions: a (winning) strategy
+from𝐺, a game with winning conditions, to another 𝐻is
+a (winning) strategy in 𝐺⊸𝐻=𝐺⊥`𝐻. We compose
+strategies as before. We ﬁrst show that the composition of
+winning strategies is winning.
+Lemma 12. Let𝜎be a winning strategy in 𝐺⊸𝐻and𝜏be
+a winning strategy in 𝐻⊸𝐾. Their composition 𝜏⊙𝜎is a
+winning strategy in 𝐺⊸𝐾.
+Proof. Suppose𝑥∈C∞(𝑇⊙𝑆)is +-maximal. The event
+structure𝑇⊙𝑆is obtained as the projection of the pullback 𝑃
+to the set of ‘visible’ events 𝑉. Hence the down-closure [𝑥]in
+𝑃forms a conﬁguration [𝑥]∈C∞(𝑃). By Zorn’s Lemma we
+can extend [𝑥]to a maximal conﬁguration 𝑧⊇[𝑥]inC∞(𝑃)
+with the property that all events of 𝑧∖[𝑥]are synchronizations.
+Then,𝑧will be +-maximal in C∞(𝑃)with
+𝜎1Π1𝑧=𝜎1Π1[𝑥]&𝜏2Π2𝑧=𝜏2Π2[𝑥]. (1)
+By Lemma 7,
+Π1𝑧is +-maximal in𝑆&Π 2𝑧is +-maximal in𝑇.
+As𝜎and𝜏are winning,
+𝜎Π1𝑧∈𝑊𝐺⊸𝐻&𝜏Π2𝑧∈𝑊𝐻⊸𝐾.
+Now𝜎Π1𝑧∈𝑊𝐺⊸𝐻expresses that
+𝜎1Π1𝑧∈𝑊𝐺∨Leftrightline⇒𝜎2Π1𝑧∈𝑊𝐻 (2)
+and𝜏Π2𝑧∈𝑊𝐻⊸𝐾that
+𝜏1Π2𝑧∈𝑊𝐻∨Leftrightline⇒𝜏2Π2𝑧∈𝑊𝐾, (3)
+by Proposition 11. But 𝜎2Π1𝑧=𝜏1Π2𝑧, so (2) and (3) yield
+𝜎1Π1𝑧∈𝑊𝐺∨Leftrightline⇒𝜏2Π2𝑧∈𝑊𝐾.
+By (1),
+𝜎1Π1[𝑥]∈𝑊𝐺∨Leftrightline⇒𝜏2Π2[𝑥]∈𝑊𝐾,
+i.e. from the deﬁnition of 𝜏⊙𝜎,
+(𝜏⊙𝜎)1𝑥∈𝑊𝐺∨Leftrightline⇒ (𝜏⊙𝜎)2𝑥∈𝑊𝐾
+in the span of the composition 𝜏⊙𝜎. Hence𝑥∈𝑊𝐺⊸𝐾,a s
+required to show 𝜏⊙𝜎is winning. ◻
+Example 13.For a general game with winning conditions
+(𝐴,𝑊)the copy-cat strategy 𝛾𝐴∶CC𝐴→𝐴∥𝐴⊥need not
+be winning. Let𝐴be as in Example 10. The event structure
+CC𝐴is:
+𝐴⊥⊖/rightarrowtriangle⊕𝐴
+⊕/leftarrowtriangle⊖
+To see that𝛾𝐴∶CC𝐴→𝐴∥𝐴⊥is not winning consider the
+conﬁguration𝑥consisting of the two −ve events in CC𝐴.
+Then𝑥is +-maximal as any +ve event is inconsistent with 𝑥.
+However,𝑥1∈𝑊while𝑥2∉𝑊, failing the winning condition
+of(𝐴,𝑊)⊸(𝐴,𝑊).
+240Each event structure with polarity 𝐴possesses a ‘Scott order’
+on its conﬁgurations C∞(𝐴):
+𝑥′⊑𝑥iff𝑥′⊇−𝑥∩𝑥′⊆+𝑥.
+Above we use the special inclusions
+𝑥⊆−𝑦iff𝑥⊆𝑦&pol𝐴(𝑦∖𝑥)⊆{ − },and
+𝑥⊆+𝑦iff𝑥⊆𝑦&pol𝐴(𝑦∖𝑥)⊆{ + }
+for𝑥,𝑦∈C∞(𝐴). The Scott order is indeed a partial order,
+in which there are two ways to increase in the order: adjoin
+more ‘output’ in the form of +ve events, or use less ‘input’ in
+the form of −ve events.
+A necessary and sufﬁcient condition for copy-cat to be
+winning w.r.t. a game (𝐴,𝑊):
+if𝑥′⊑𝑥&𝑥′is +-maximal &𝑥is−-maximal,
+then𝑥∈𝑊∨Leftrightline⇒𝑥′∈𝑊, for all𝑥,𝑥′∈C∞(𝐴).(Cwins)
+Lemma 14. Let(𝐴,𝑊)be a game with winning conditions.
+The copy-cat strategy 𝛾𝐴∶CC𝐴→𝐴⊥∥𝐴is winning iff (𝐴,𝑊)
+satisﬁes (Cwins) .
+Race-freedom, seen earlier in Lemma 4, is a robust condi-
+tion sufﬁcient to ensure that copy-cat is a winning strategy for
+all choices of winning conditions.
+Proposition 15. Let𝐴be an event structure with polarity.
+Copy-cat is a winning strategy for all games (𝐴,𝑊)with
+winning conditions 𝑊 iff𝐴is race-free.
+We can now reﬁne the bicategory of strategies Games to
+the bicategory WGames with objects games with winning
+conditions𝐺,𝐻,⋯satisfying (Cwins )and arrows winning
+strategies𝐺+ /d47/d47𝐻; 2-cells, their vertical and horizontal com-
+position is as before. Its restriction to deterministic strategies
+yields a bicategory WDGames equivalent to a simpler order-
+enriched category.
+VI. O N DETERMINED GAMES
+In this section, we deﬁne and make some observations
+on determinacy for concurrent games. In particular we show
+that games that are not race-free (see Lemma 4) are not
+necessarily determined, and that race-free games need not have
+a deterministic winning strategy.
+A game with winning conditions 𝐺is said to be determined
+when either Player or Opponent has a winning strategy. Not
+all games are determined, for instance the game (𝐴,𝑊)in
+Example 10 is not determined. Note that in such an example
+the game is not race-free (see Lemma 4), so it is reasonable to
+assume race-freedom in a characterisation of determinacy. We
+are now going to prove a ﬁrst direction of this equivalence: that
+whenever an event structure with polarity 𝐴is not race-free,
+there is a set𝑊of winning conﬁgurations such that (𝐴,𝑊)is
+undetermined. This uses the following notion of reachability:
+Notation 16.Let𝜎∶𝑆→𝐴b eas t r a t e g y .W es a y 𝑦∈C∞(𝐴)
+is𝜎-reachable iff𝑦=𝜎𝑥 for some𝑥∈C∞(𝑆).L e t𝑦′⊆
+𝑦inC∞(𝐴). Say𝑦′is−-maximal in𝑦iff𝑦−−∨leftrightline⊂𝑦′′implies𝑦′′/⊆𝑦, where𝑦−−∨leftrightline⊂𝑦′′means𝑦𝑒−∨leftrightline⊂𝑦′′for some event𝑒with
+𝑝𝑜𝑙(𝑒)=− . Similarly, say𝑦′is+-maximal in𝑦iff𝑦+−∨leftrightline⊂𝑦′′
+implies𝑦′′/⊆𝑦, with the obvious interpretation of+−∨leftrightline⊂ .
+Lemma 17. Let(𝐴,𝑊)be a game with winning conditions.
+Let𝑦∈C (𝐴). Suppose
+∀𝑦′∈C (𝐴).
+𝑦′⊆𝑦&𝑦′is−-maximal in𝑦&not+-maximal in𝑦
+∨Leftrightline⇒
+{𝑦′′∈C (𝐴)∣𝑦′⊆+𝑦′′&(𝑦′′∖𝑦′)∩𝑦=∅ }∩𝑊=∅.
+Then𝑦is𝜎-reachable in all winning strategies 𝜎.
+Lemma 18. If𝐴, an event structure with polarity, is not race-
+free, then there are winning conditions 𝑊for which the game
+(𝐴,𝑊)is not determined.
+Proof sketch. If𝐴is not race-free there is 𝑦∈C (𝐴)such
+that𝑦𝑎−∨leftrightline⊂𝑦1and𝑦𝑎′
+−∨leftrightline⊂𝑦2andpol(𝑎)=− &pol(𝑎′)=+ and
+𝑦∪{𝑎,𝑎′}/∈C (𝐴).L e t𝑊be deﬁned by the following rules:
+(i) for𝑦′′with𝑦1⊆+𝑦′′, assign𝑦′′∉𝑊;
+(ii) for𝑦′′with𝑦2⊆−𝑦′′, assign𝑦′′∈𝑊;
+(iii) for𝑦′′with𝑦′⊆+𝑦′′and(𝑦′′∖𝑦′)∩𝑦=∅ ,f o rs o m e
+sub-conﬁguration 𝑦′of𝑦with𝑦′−-maximal and not +-
+maximal in𝑦, assign𝑦′′∉𝑊;
+(iv) for𝑦′′with𝑦′⊆−𝑦′′and(𝑦′′∖𝑦′)∩𝑦=∅ ,f o rs o m e
+sub-conﬁguration 𝑦′of𝑦with𝑦′+-maximal and not −-
+maximal in𝑦, assign𝑦′′∈𝑊;
+(v) assign arbitrarily in all other cases.
+The assignment is well-deﬁned and complete. Moreover, 𝑦
+is reachable for any winning strategy, either for Player or
+Opponent. W.r.t. any winning strategy for Player 𝑦1must be
+reachable, by receptivity, but by construction this entails there
+is +-maximal conﬁguration of the strategy whose image in 𝐴
+is losing. Similarly, Opponent has no winning strategy. ◻
+It is tempting to believe that a nondeterministic winning
+strategy always has a winning deterministic sub-strategy. How-
+ever, this is not so, as the following example shows.
+Example 19.A winning strategy need not have a winning
+deterministic sub-strategy. Consider the game (𝐴,𝑊)where
+𝐴consists of two −ve events 1,2and one +ve event 3all
+consistent with each other and
+𝑊={ ∅,{1,3},{2,3},{1,2,3}}.
+Let𝑆be the event structure
+⊕ /d47/d111 /d47/d111 /d47/d111⊕
+⊖/d95/d76/d76/d82
+⊖/d95/d76/d76/d82
+and𝜎∶𝑆→𝐴the only possible total map of event structures
+with polarity. Then 𝜎is a winning strategy for 𝐴. However,
+𝐴has no deterministic winning strategy: as we have seen in
+Section IV-F, any deterministic strategy on 𝐴yields a (partial)
+closure operator𝜑onC∞(𝐴). Moreover, this closure operator
+241is necessarily stable ,i.e.𝜑(𝑥1∩𝑥2)=𝜑(𝑥1)∩𝜑(𝑥2)for𝑥1,𝑥2
+within its domain of deﬁnition. If 𝜑comes from a winning
+strategy, we must have 𝜑({1}) = { 1,3}and𝜑({2}) = { 2,3},
+and therefore𝜑(∅) = { 3}.B u t{3}is a+-maximal losing
+conﬁguration, so the deterministic strategy 𝜑cannot come
+from any winning strategy.
+Therefore,𝜎is a winning strategy for which there is no
+deterministic sub-strategy. ◻
+The above example shows that determinacy does not hold
+if we restrict to deterministic strategies. Note that some of
+the previous approaches to concurrent games [2], [11] were
+restricted to deterministic strategies, hence by the example
+above could not enjoy determinacy. In our setting, the ability
+to handle nondeterminism permits a determinacy result.
+The following example shows that for games where con-
+ﬁgurations can have inﬁnitely many events, race-freedom is
+not sufﬁcient to ensure determinacy. It also shows that the
+existence of a winning receptive pre-strategy does not imply
+that there is a winning strategy.
+Example 20.Consider the inﬁnite game 𝐴comprising the
+event structure with polarity
+⊖⊕/d31 /d44/d44/d50⊕/d31 /d44/d44/d50⊕/d31 /d44/d44/d50⋯/d31 /d44/d44/d50⊕/d31 /d44/d44/d50⋯
+where Player wins iff
+(i) Player plays all ⊕moves and Opponent does nothing, or
+(ii) Player plays ﬁnitely many ⊕moves and Opponent plays.
+In this case there is a winning pre-strategy for Player. Infor-
+mally, this is to continue playing moves until Opponent moves,
+then stop. Formally, it is described by the event structure with
+polarity𝑆
+⊕/d31 /d44/d44/d50
+/d0 /d26/d26/d37/d64/d64/d64/d64/d64/d64/d64⊕/d31 /d44/d44/d50
+/d0 /d26/d26/d37/d64/d64/d64/d64/d64/d64/d64⊕ ⋯⊕/d31 /d44/d44/d50
+/d0 /d26/d26/d37/d64/d64/d64/d64/d64/d64/d64⊕/d31 /d44/d44/d50
+/d4 /d28/d28/d38/d68/d68/d68/d68/d68/d68/d68/d68⋯
+⊖/d79/d15/d79/d15/d79/d15
+⊖/d79/d15/d79/d15/d79/d15
+⊖/d79/d15/d79/d15/d79/d15
+⋯⊖/d79/d15/d79/d15/d79/d15
+⊖/d79/d15/d79/d15/d79/d15
+⋯
+with pre-strategy the unique total map to 𝐴. The pre-strategy
+is receptive and winning in the sense that its +-maximal
+conﬁgurations image to winning conﬁgurations in 𝐴. It follows
+that there is no winning strategy for Opponent (if 𝜎is a
+winning receptive pre-strategy then ⟨𝜎,𝜏⟩will be a subset of
+winning conﬁgurations, exactly as in the proof of Lemma 8,
+so must result in a loss for 𝜏, which cannot be winning). Nor
+is there a winning strategy for Player. Suppose 𝜎∶𝑆→𝐴was
+a winning strategy for Player; for 𝜎to win against the empty
+strategy there must be 𝑥∈𝑆such that𝜎𝑥 comprises all +ve
+events of𝐴. But now, using receptivity and −-innocence, there
+must be𝑠∈𝑆such that𝜎(𝑠)=⊖ with𝑥∪{𝑠}∈C∞(𝑆)losing
+and +-maximal—a contradiction. ◻
+VII. D ETERMINACY FOR WELL -FOUNDED GAMES
+Deﬁnition 21. A game𝐴iswell-founded if every conﬁgura-
+tion in C∞(𝐴)is ﬁnite.
+It is shown that any well-founded, race-free concurrent
+game is determined.Deﬁnition 22. Let𝐴be an event structure with polarity. Let
+𝑊⊆C∞(𝐴). Let𝑦∈C∞(𝐴). Deﬁne𝐴/𝑦to be the event
+structure with polarity comprising events
+{𝑎∈𝐴∖𝑦∣𝑦∪[𝑎]𝐴∈C∞(𝐴)},
+also called𝐴/𝑦, with consistency relation
+𝑋∈Con 𝐴/𝑦iff𝑋⊆ﬁn𝐴/𝑦&𝑦∪[𝑋]𝐴∈C∞(𝐴),
+and causal dependency the restriction of that on 𝐴. Deﬁne
+𝑊/𝑦⊆C∞(𝐴/𝑦)by
+𝑧∈𝑊/𝑦iff𝑧∈C∞(𝐴/𝑦)&𝑦∪𝑧∈𝑊.
+Finally, deﬁne (𝐴,𝑊)/𝑦=def(𝐴/𝑦,𝑊/𝑦).
+Proposition 23. Let𝐴be an event structure with polarity and
+𝑦∈C∞(𝐴). Then,
+𝑧∈C∞(𝐴/𝑦)iff𝑧⊆𝐴/𝑦&𝑦∪𝑧∈C∞(𝐴).
+Deﬁnition 24. The value𝑣(𝑥)of𝑥∈C∞(𝐴)is deﬁned as +
+if Player has a winning strategy in 𝐴/𝑥,a s−if Opponent has
+a winning strategy in 𝐴/𝑥, and as 0otherwise.
+Lemma 25. Suppose𝐴is race-free. If𝑥∈C∞(𝐴)such that
+𝑥𝑎−∨leftrightline⊂ with pol(𝑎)=+ and𝑣(𝑥∪{𝑎}) = + , then𝑣(𝑥)=+ .
+Proof sketch. Given a winning strategy 𝜎∶𝑆→𝐴/(𝑥∪
+{𝑎}), we build a new strategy ext𝑎𝜎∶𝑆′→𝐴/𝑥by adding
+a new minimal Player event 𝑠in𝑆, mapped to𝑎byext𝑎𝜎.
+Here, the fact that 𝐴is race-free is used in a crucial way
+to prove that ext𝑎𝜎is receptive. It is winning because all
++-maximal conﬁgurations of 𝑆′contain𝑠, therefore they are
+in bijection with +-maximal conﬁgurations of 𝑆and map to
+winning conﬁgurations of 𝐴/𝑥. ◻
+The case of negative extensions requires us to introduce the
+following lemma, proved by taking an adequate quotient.
+Lemma 26. If𝜎∶𝑆→𝐴is innocent and weakly receptive,
+i.e. for all𝑥∈C (𝑆)such that𝜎𝑥𝑎−∨leftrightline⊂ with pol(𝑎)=− there
+is at least one𝑠∈𝑆such that𝑥𝑠−∨leftrightline⊂ and𝜎(𝑠)=𝑎, then there
+is a strategy𝜎′∶𝑆′→𝐴and a rigid map of event structures
+ℎ∶𝑆→𝑆′surjective on conﬁgurations such that 𝜎=𝜎′○ℎ.
+Recall from Section II that a rigid map of event structures
+is a map which preserves causal dependency.
+Lemma 27. If𝑥∈C (𝐴)is such that𝑥∈𝑊𝐴and that for all
+𝑒∈𝐴such that pol(𝑒)=− and𝑥𝑒−∨leftrightline⊂ we have𝑣(𝑥∪{𝑒}) = + ,
+then𝑣(𝑥)=+ .
+Proof sketch. Take the family (𝑒𝑖)𝑖∈𝐼of negative extensions of
+𝑥,i.e.events in𝐴such that pol(𝑒𝑖)=− and𝑥𝑒𝑖−∨leftrightline⊂ . For each𝑖∈
+𝐼,𝑣(𝑥∪{𝑒𝑖}) = + so there exists a winning strategy 𝜎𝑖∶𝑆𝑖→
+𝐴/(𝑥∪{𝑒𝑖}). The proof relies on the construction of a strategy
+case 𝑖∈𝐼𝜎𝑖∶𝑆′→𝐴/𝑥, which picks𝑖∈𝐼nondeterministically
+and plays according to 𝜎𝑖.
+For each𝑖∈𝐼, we ﬁrst deﬁne the event structure with
+polarity ⊖𝑖⋉𝑆𝑖as the maximum preﬁxing of a new event ⊖𝑖
+with an event structure with polarity 𝑆𝑖allowed by innocence,
+242i.e.⊖𝑖≤𝑠iffpol(𝑠)=+ orpol(𝑠)=− and𝑒𝑖≤𝐴𝜎𝑖(𝑠). Then
+we deﬁne𝑆=Σ𝑖∈𝐼⊖𝑖⋉𝑆𝑖, with all events in the 𝑖-th copy
+conﬂicting with all events in the 𝑗-th copy if𝑖≠𝑗. We deﬁne
+𝜎∶𝑆→𝐴/𝑥by:
+𝜎(⊖𝑖)=𝑒𝑖
+𝜎((𝑖,𝑠)) =𝜎𝑖(𝑠)
+One can show that it is a winning innocent pre-strategy. It is
+not necessarily receptive since many negative minimal events
+inΣ𝑖∈𝐼⊖𝑖⋉𝑆𝑖may be mapped by 𝜎to the same negative
+minimal event in 𝐴/𝑥. However it is weakly receptive, hence
+by Lemma 27 we get a strategy 𝜎′∶𝑆′→𝐴and a map
+ℎ∶𝑆→𝑆′surjective on conﬁgurations. Then, case 𝑖∈𝐼𝜎𝑖=𝜎′
+is winning. Indeed if 𝑦′∈C (𝑆′)is+-maximal there must be
+𝑦∈C (𝑆)such thatℎ(𝑦)=𝑦′. Moreover,𝑦is+-maximal as
+well sinceℎpreserves polarity, thus 𝜎′(𝑦′)=𝜎(𝑦)∈𝑊𝐴/𝑥
+andcase 𝑖∈𝐼𝜎𝑖is a winning strategy, so 𝑣(𝑥)=+ . ◻
+Theorem 28. Let𝐴be a well-founded game. Then 𝐴is race-
+free iff (𝐴,𝑊)is determined for all winning conditions 𝑊.
+Proof. We have already proved in Lemma 18 that if (𝐴,𝑊)is
+determined for all winning conditions 𝑊, then𝐴is race-free.
+Suppose that𝐴is race-free, and let 𝑊⊆C (𝐴)be arbitrary
+winning conditions on 𝐴.L e t𝑥∈C(𝐴)be maximal such that
+𝑣(𝑥)=0. If there exists 𝑎∈𝐴such that pol(𝑎)=+ and
+𝑥𝑎−∨leftrightline⊂ and𝑣(𝑥∪{𝑎}) = + , then𝑣(𝑥)=+ by Lemma 25,
+a contradiction. By the same argument on 𝐴⊥/𝑥if there is
+𝑎∈𝐴such that pol(𝑎)=− and𝑥𝑎−∨leftrightline⊂ and𝑣(𝑥∪{𝑎}) = − ,
+then𝑣(𝑥)=− by Lemma 25. If𝑥∈𝑊𝐴, then let (𝑒𝑖)𝑖∈𝐼be the
+family of negative extensions of 𝑥. By the reasoning above,
+for all𝑖∈𝐼we have𝑣(𝑥∪{𝑒𝑖}) = + , therefore𝑣(𝑥)=+ by
+Lemma 27, a contradiction. Similarly, if 𝑥/∈𝑊𝐴, then𝑥∈𝑊𝐴⊥
+and an application of Lemma 27 on 𝐴⊥shows that𝑣(𝑥)=− ,
+a contradiction. Therefore, there is no such maximal 𝑥. Since
+𝐴is well-founded, this implies that all conﬁgurations of 𝐴
+have non-zero value, so 𝐴is determined. ◻
+VIII. E XAMPLE
+We now apply the tools developed in the previous sections
+of this paper to give an interpretation of ﬁrst-order predicate
+logic. Although similar in spirit to the usual games interpreta-
+tion of ﬁrst-order logic, our construction differs technically by
+exploiting the extra space allowed by concurrency. In partic-
+ular only quantiﬁers add new events and logical connectives
+are modelled in a concurrent way by variants of the parallel
+composition operation.
+The syntax for predicate calculus: formulae are given by
+𝜙,𝜓,⋯ ∶∶=𝑅(𝑥1,⋯,𝑥𝑘)∣𝜙∧𝜓∣𝜙∨𝜓∣¬𝜙∣∃𝑥.𝜙∣∀𝑥.𝜙
+where𝑅ranges over basic relation symbols of a ﬁxed arity
+and𝑥,𝑥1,𝑥2,⋯,𝑥𝑘over variables.
+A model𝑀 for the predicate calculus comprises a non-
+empty universe of values 𝑉𝑀and an interpretation for each of
+the relation symbols as a relation of appropriate arity on 𝑉𝑀.
+Following Tarski we can then deﬁne by structural inductionthe truth of a formula of predicate logic w.r.t. an assignment of
+values in𝑉𝑀to the variables of the formula. We write 𝜌⊧𝑀𝜙
+iff formula𝜙is true in𝑀w.r.t. environment 𝜌;w et a k ea n
+environment to be a function from variables to values.
+W.r.t. a model𝑀 and an environment 𝜌, we can denote
+af o r m u l a𝜙by/llbracket𝜙/rrbracket𝑀𝜌, a concurrent game with winning
+conditions, so that 𝜌⊧𝑀𝜙iff the game /llbracket𝜙/rrbracket𝑀𝜌has a winning
+strategy.
+The denotation as a game is deﬁned by structural induction:
+/llbracket𝑅(𝑥1,⋯,𝑥𝑘)/rrbracket𝑀𝜌=⎧⎪⎪⎨⎪⎪⎩(∅,{∅}) if𝜌⊧𝑀𝑅(𝑥1,⋯,𝑥𝑘),
+(∅,∅) otherwise.
+/llbracket𝜙∧𝜓/rrbracket𝑀𝜌=/llbracket𝜙/rrbracket𝑀𝜌⊗/llbracket𝜓/rrbracket𝑀𝜌
+/llbracket𝜙∨𝜓/rrbracket𝑀𝜌=/llbracket𝜙/rrbracket𝑀𝜌`/llbracket𝜓/rrbracket𝑀𝜌
+/llbracket¬𝜙/rrbracket𝑀𝜌=(/llbracket𝜙/rrbracket𝑀𝜌)⊥
+/llbracket∃𝑥.𝜙/rrbracket𝑀𝜌=⊕
+𝑣∈𝑉𝑀/llbracket𝜙/rrbracket𝑀𝜌[𝑣/𝑥]
+/llbracket∀𝑥.𝜙/rrbracket𝑀𝜌=⊖
+𝑣∈𝑉𝑀/llbracket𝜙/rrbracket𝑀𝜌[𝑣/𝑥].
+We use𝜌[𝑣/𝑥]to mean the environment 𝜌updated to assign
+value𝑣to variable𝑥.T h eg a m e (∅,{∅}) , the unit w.r.t. ⊗,
+is the game used to denote true and the game (∅,{∅}) ,t h e
+unit w.r.t. `, to denote false. Denotations of conjunctions
+and disjunctions are denoted by the operations of ⊗and
+`on games, while negations denote dual games. Universal
+and existential quantiﬁers denote preﬁxed sums of games,
+operations which we now describe.
+The game ⊕𝑣∈𝑉(𝐴𝑣,𝑊𝑣)has underlying event structure
+with polarity the sum (=coproduct) ∑𝑣∈𝑉⊕.𝐴𝑣where the
+winning conditions of a component are those conﬁgurations
+𝑥∈C∞(⊕.𝐴)of the form {⊕} ∪𝑦for some𝑦∈𝑊.I n
+∑𝑣∈𝑉⊕.𝐴𝑣a conﬁguration is winning iff it is the image of
+a winning conﬁguration in a component under the injection
+to the sum. Note in particular that the empty conﬁguration of
+⊕𝑣∈𝑉𝐺𝑣is not winning—Player must make a move in order
+to win. The game ⊖𝑣∈𝑉𝐺𝑣is deﬁned dually, as (⊕𝑣∈𝑉𝐺⊥
+𝑣)⊥.
+In this game the empty conﬁguration is winning but Opponent
+gets to make the ﬁrst move. Writing 𝐺𝑣=(𝐴𝑣,𝑊𝑣),t h e
+underlying event structure of ⊖𝑣∈𝑉𝐺𝑣is the sum ∑𝑣∈𝑉⊖.𝐴𝑣
+with a conﬁguration winning iff it is empty or the image
+under the injection of a winning conﬁguration in a preﬁxed
+component.
+It is easy to check by structural induction that:
+Proposition 29. F or any formula𝜙the game /llbracket𝜙/rrbracket𝑀𝜌is well-
+founded and race-free, so a determined game by the result of
+the last section.
+The following facts are useful for building strategies.
+Proposition 30.
+(i) If𝜎∶𝑆→𝐴is a strategy in𝐴and𝜏∶𝑇→𝐵is a
+strategy in𝐵, then𝜎∥𝜏∶𝑆∥𝑇→𝐴∥𝐵is a strategy in
+𝐴∥𝐵.
+(ii) If𝜎∶𝑆→𝑇is a strategy in𝑇and𝜏∶𝑇→𝐵is a
+strategy in𝐵, then their composition as maps of event
+structures with polarity 𝜏𝜎∶𝑆→𝐵is a strategy in𝐵.
+243There are ‘projection’ strategies from a tensor product of
+games to its components:
+Proposition 31. Let𝐺=(𝐴,𝑊 𝐺)and𝐻=(𝐵,𝑊 𝐻)be
+race-free games with winning conditions. The map of event
+structures with polarity
+id𝐴⊥∥𝛾𝐵∶𝐴⊥∥CC𝐵→𝐴⊥∥𝐵⊥∥𝐵
+is a winning strategy 𝑝𝐻∶𝐺⊗𝐻+ /d47/d47𝐻. The map of event
+structures with polarity
+id𝐵⊥∥𝛾𝐴∶𝐵⊥∥CC𝐴→𝐵⊥∥𝐴⊥∥𝐴≅𝐴⊥∥𝐵⊥∥𝐴
+is a winning strategy 𝑝𝐺∶𝐺⊗𝐻+ /d47/d47𝐺.
+The following lemma is used to build and deconstruct
+strategies in preﬁxed sums of games. The lemma concerns the
+more basic preﬁxed sums of event structures. These are built
+as coproducts ∑𝑖∈𝐼●.𝐵𝑖of event structures ●.𝐵𝑖in which an
+event●is preﬁxed to𝐵𝑖, making all the events in 𝐵𝑖causally
+depend on ●.
+Lemma 32. Suppose𝑓∶𝐴→∑𝑖∈𝐼●.𝐵𝑖is a total map of
+event structures, with codomain a preﬁxed sum. Then, 𝐴is
+isomorphic to a preﬁxed sum, 𝐴≅∑𝑗∈𝐽●.𝐴𝑗, and there is
+a function𝑟∶𝐽→𝐼and total maps of event structures 𝑓𝑗∶
+𝐴𝑗→𝐵𝑟(𝑗)for which the following diagram commutes.
+∑𝑗∈𝐽●.𝐴𝑗≅
+[●.𝑓𝑗]𝑗∈𝐽
+/d15/d15𝐴
+𝑓/d123/d123/d118/d118/d118/d118/d118/d118/d118/d118/d118/d118
+∑𝑖∈𝐼●.𝐵𝑖
+With the help of Propositions 30 and 31 and Lemma 32
+we can build and deconstruct strategies to establish the
+next lemma, and the main theorem of this section. Theorem
+34 follows by a straightforward structural induction using
+Lemma 33.
+Lemma 33. Let𝐺,𝐻,𝐺 𝑣, where𝑣∈𝑉, be race-free games
+with winning conditions. Then,
+(i)𝐺⊗𝐻has a winning strategy iff 𝐺has a winning strategy
+and𝐻has a winning strategy.
+(ii)⊕𝑣∈𝑉𝐺𝑣has a winning strategy iff 𝐺𝑣has a winning
+strategy for some 𝑣∈𝑉.
+(iii)⊖𝑣∈𝑉𝐺𝑣has a winning strategy iff 𝐺𝑣has a winning
+strategy for all𝑣∈𝑉.
+If in addition𝐺and𝐻are determined,
+(iv)𝐺`𝐻has a winning strategy iff 𝐺has a winning strategy
+or𝐻has a winning strategy.
+Theorem 34. F or all formulae𝜙and environments 𝜌,𝜌⊧𝑀𝜙
+iff the game /llbracket𝜙/rrbracket𝑀𝜌has a winning strategy.
+IX. C ONCLUSION AND FURTHER WORK
+For games one of the most fundamental mathematical
+questions is that of determinacy. This paper shows that to give
+a positive answer—even for well-founded (race-free) games—
+one has to consider nondeterministic (winning) strategies. Inparticular nondeterministic strategies are needed to faithfully
+represent parallel disjunctive behaviour, one of the reasons
+why our concurrent interpretation of predicate calculus is
+possible. Nondeterministic winning strategies are indeed com-
+putationally more powerful than deterministic ones.
+In contrast, it may come as a surprise that if a strategy
+is not winning, then it can always be beaten by a deter-
+ministic counter-strategy. This fact is relevant from the point
+of view of veriﬁcation since a deterministic strategy on a
+game corresponds to a subfamily of conﬁgurations of the
+game: whenever a game 𝐴is ﬁnite, the process of effectively
+checking whether a strategy 𝜎∶𝑆→𝐴is winning can be
+performed by inspecting the results of playing 𝜎against all
+possible deterministic counter-strategies 𝜏∶𝑇→𝐴⊥, and these
+are bounded within subfamilies of conﬁgurations of 𝐴⊥. Hence
+a basic decidability theorem for ﬁnite games, which is needed
+to solve veriﬁcation problems, follows from the results here.
+There are several ways of extending the work on concurrent
+games with winning conditions: stochastic behaviour , perhaps
+with the use of probabilistic event structures [13], so as to de-
+ﬁne proﬁles of mixed strategies and Nash equilibria; imperfect
+information as the key concept for reasoning, more faithfully,
+about real-life distributed systems; and determinacy results for
+games with inﬁnite behaviour so that more complex winning
+conditions can be handled, e.g. B¨uchi or parity conditions.
+These extensions are within the focus of our current research.
+ACKNOWLEDGMENT
+The authors gratefully acknowledge the support of the ERC
+Advanced Grant ECSYM.
+REFERENCES
+[1] S. Abramsky and R. Jagadeesan, “Games and full completeness for
+multiplicative linear logic,” J. Symb. Log. , vol. 59, no. 2, pp. 543–574,
+1994.
+[2] S. Abramsky and P .-A. Melli `es, “Concurrent games and full complete-
+ness,” in LICS ’99 . IEEE Computer Society, 1999, pp. 431–442.
+[3] J. V . Benthem, “Logic games, from tools to models of interaction,” in
+Logic at the Crossroads . Allied Publishers, 2007, pp. 283–317.
+[4] L. de Alfaro and T. A. Henzinger, “Concurrent omega-regular games,”
+inLICS ’00 . IEEE Computer Society, 2000, pp. 141–154.
+[5] L. de Alfaro, T. A. Henzinger, and O. Kupferman, “Concurrent reacha-
+bility games,” Theor . Comput. Sci. , vol. 386, no. 3, pp. 188–217, 2007.
+[6] J. Gutierrez, “Concurrent logic games on partial orders,” in WoLLIC ,
+ser. LNCS, vol. 6642. Springer, 2011, pp. 146–160.
+[7] M. Hyland, “Game semantics,” in Semantics and Logics of Computation .
+Publications of the Newton Institute, 1997.
+[8] A. Joyal, “Remarques sur la th ´eorie des jeux `a deux personnes,” Gazette
+des sciences math ´ematiques du Qu ´ebec, 1(4) , 1977.
+[9] D. A. Martin, “Borel determinacy,” The Annals of Mathematics ,v o l .
+102, no. 2, pp. 363–371, 1975.
+[10] P .-A. Melli `es, “Asynchronous games 2: The true concurrency of inno-
+cence,” Theor . Comput. Sci. , vol. 358, no. 2-3, pp. 200–228, 2006.
+[11] P .-A. Melli `es and S. Mimram, “Asynchronous games : innocence without
+alternation,” in CONCUR ’07 , ser. LNCS, vol. 4703. Springer, 2007,
+pp. 395–411.
+[12] S. Rideau and G. Winskel, “Concurrent strategies,” in LICS’11 . IEEE
+Computer Society, 2011, pp. 409–418.
+[13] D. V aracca, H. V ¨olzer, and G. Winskel, “Probabilistic event structures
+and domains,” Theor . Comput. Sci. , vol. 358, no. 2-3, pp. 173–199, 2006.
+[14] G. Winskel, “Event structures, stable families and games,” Lecture notes,
+Aarhus University, At http://daimi.au.dk/ ∼gwinskel , 2011.
+244

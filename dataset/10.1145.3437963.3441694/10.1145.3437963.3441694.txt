@@ -1,0 +1,358 @@
+AnaSearch: Extract, Retrieve and Visualize Structured Results
+from Unstructured Text for Analytical Queries
+Tongliang Li∗
+tonyliangli@buaa.edu.cn
+State Key Lab of Software
+Development Environment
+Beihang University
+Beijing, ChinaLei Fang
+leifa@microsoft.com
+Microsoft Research
+Beijing, ChinaJian-Guang Lou
+jlou@microsoft.com
+Microsoft Research
+Beijing, China
+Zhoujun Li†
+lizj@buaa.edu.cn
+State Key Lab of Software
+Development Environment
+Beihang University
+Beijing, ChinaDongmei Zhang
+dongmeiz@microsoft.com
+Microsoft Research
+Beijing, China
+ABSTRACT
+Modern search engines retrieve results mainly based on the key-
+word matching techniques, and thus fail to answer analytical queries
+like “apps with more than 1 billion monthly active users” or “popula-
+tion growth of the US from 2015 to 2019”, which requires numerical
+reasoning or aggregating results from multiple web pages. Such
+analytical queries are very common in the data analysis area, the
+expected results would be structured tables or charts. In most cases,
+these structured results are not available or accessible, they scat-
+ter in various text sources. In this work, we build AnaSearch, a
+search system to support analytical queries, and return structured
+results that can be visualized in the form of tables or charts. We
+collect and build structured quantitative data from the unstruc-
+tured text on the web automatically. With AnaSearch, data analysts
+could easily derive insights for decision making with keyword or
+natural language queries. Specifically, we build AnaSearch under
+the COVID-19 news data, which makes it easy to compare with
+manually collected structured data.
+CCS CONCEPTS
+•Information systems →Information retrieval ;Structured
+text search ; Question answering.
+KEYWORDS
+structured data; quantitative information; information retrieval;
+data visualization
+∗This work was done when the first author was an intern at Microsoft Research.
+†Corresponding Author
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for third-party components of this work must be honored.
+For all other uses, contact the owner/author(s).
+WSDM ’21, March 8–12, 2021, Virtual Event, Israel
+©2021 Copyright held by the owner/author(s).
+ACM ISBN 978-1-4503-8297-7/21/03.
+https://doi.org/10.1145/3437963.3441694
+Retrieve from
+Scattered SourcesInput & Parse 
+Analytical QueryMonthly Active Users of TikTok in the past three months.
+TikTok’s MAU has increased to 800million as of now (September 2020 ).TikTok also claimed that it had around 689million global monthly active users by July.
+As of August 2020 ,TikTok now has 700million monthly active users globally.Context Entity Time
+(TikTok; Monthly Active Users; September)(TikTok; Monthly Active Users; August)(TikTok; Monthly Active Users; July)
+700 million
+800 million689 million
+692 million×2
+×1689millionConflict Vote
+Aggregate & Rank
+Visualize
+TikTok’s MAU is estimated to reach 692million by July.TikTok‘s global MAU numbers shot up to about 689million (July 2020 ).
+Figure 1: Analytical query processing and retrieval in
+AnaSearch.
+ACM Reference Format:
+Tongliang Li, Lei Fang, Jian-Guang Lou, Zhoujun Li, and Dongmei Zhang.
+2021. AnaSearch: Extract, Retrieve and Visualize Structured Results from
+Unstructured Text for Analytical Queries. In Proceedings of the Fourteenth
+ACM International Conference on Web Search and Data Mining (WSDM ’21),
+March 8–12, 2021, Virtual Event, Israel. ACM, New York, NY, USA, 4 pages.
+https://doi.org/10.1145/3437963.3441694
+1 INTRODUCTION
+Modern search engines like Google or Bing consider user queries
+as simple keywords, and retrieve a ranked list of web pages as
+the search result. By leveraging techniques in information extrac-
+tion, question answering, and knowledge graphs, search engines
+now are also capable of retrieving information from structured or
+semi-structured data sources, like tables on the web or pre-built
+knowledge graphs. For example, Google can return a list of enti-
+ties for queries with entity type description like “2019 Nobel prize
+winners”.
+However, modern search engines usually fail to answer ana-
+lytical queries that require numerical reasoning, or aggregating
+Demo Session I
+ 
+WSDM ’21, March 8–12, 2021, Virtual Event, Israel
+906results from multiple web pages. Consider the following examples
+of analytical queries:
+•Companies with PE Ratio lower than 10.
+•GDP of the US, EU and China in recent 5 years.
+•Monthly active user of TikTok in the past three months.
+These queries usually contain quantities, entities, and time expres-
+sions, which aim to acquire the data of a specific case or event.
+Search engines fail to answer these queries and return web pages
+instead. Taking the third query as an example, one way to achieve
+the expected results with a modern search engine is to split the orig-
+inal query into multiple queries, like “Monthly active user of TikTok
+in August”, and manually collect the results for each split query. To
+support these analytical queries, in most cases, we need to extract
+quantitative related information, and aggregate the extracted results
+from multiple web pages to build the structured data. In this demo,
+we build AnaSearch to retrieve and visualize quantitative structured
+data for analytical queries. The structured data is automatically con-
+structed from unstructured text. Figure 1 is an overview of analyti-
+cal query processing and retrieval in AnaSearch. With AnaSearch,
+data analysts could easily derive insights for decision making with
+keywords or natural language queries. Specifically, the prototype
+system presented in this demo paper is built on the news data of
+the COVID-19 pandemic. One benefit is that we could verify the
+effectiveness of AnaSearch with manually collected golden data, for
+example, the COVID-19 tracker from Johns Hopkins University1
+and Bing2. The demo is available at http://aka.ms/anasearch.
+2 SYSTEM OVERVIEW
+AnaSearch consists of three main phases: quantitative data ex-
+traction, query parsing & retrieval, and data visualization. In this
+section, we will introduce quantitative data extraction and query
+parsing & retrieval, as is shown in Figure 2. Data visualization will
+be described in Section 3.
+2.1 Quantitative Data Extraction
+We build AnaSearch upon news data, which is formatted as title,
+content, URL, and published time. For each document, we extract
+numerical values with Recognizers-Text3, and perform entity linking
+with the Text Analytics API4.
+For each numerical value, we extract quantitative facts as a triple
+of<related, value &unit, time>based on the constituency pars-
+ing tree. related is the quantitative related information, including
+what the value measures (denoted as quantified ), and entities that
+influence or motivate the value ;value is the numerical value with a
+resolution (exact, approximate, upper/lower bound and interval);
+time is the time when a quantity takes on a particular value, note
+that it could be different from the published time.
+Constituency parsing breaks text into constituent or tokens
+based on the phrase structure grammar. One observation is that
+for a given numerical value, the quantitative facts are usually its
+siblings or siblings of its ancestors in the constituency parsing
+tree. Thus, we could search on the constituency tree to extract the
+1https://coronavirus.jhu.edu/
+2https://bing.com/covid
+3https://github.com/microsoft/Recognizers-Text
+4https://docs.microsoft.com/en-us/azure/cognitive-services/text-analytics/
+Unstructured TextExtract Quantitative FactsRelatedValueTimeQuery ParsingEntitybased𝐸∗,𝐶∗,𝑑∗RetrieveQuantitative FactsAggregateExtractionRetrieval
+entityquantifiedEntitybasedQuantitybasedEntityMatchingEntity TypeMatchingContext MatchingTime MatchingCandidate Results(Entity; Context; Time; CandidateValue)…Group by entity, context, and timeChoose the value with the highest occurrenceTableLine ChartBar ChartResultQuantityMatchingsourceUserQuery
+Quantitybased𝑞∗,t∗,𝐶∗,𝑑∗	
+Figure 2: Extraction, query parsing & retrieval.
+“related ” part. The values (with units ) and the normalized time ex-
+pressions can be extracted by Recognizers-Text. In the constituency
+parse tree, we consider a non-terminal node as a “value node” or
+“time node” if it contains a value or time expression. We further
+define “value mention” as the bottom level value node.
+related Extraction: related consists of what the value measures
+(quantified ) and entities that influence or motivate the value. quan-
+tified should be close to the value mention. We extract quantified
+as 1) nouns with their modifiers right to the value, 2) sibling noun
+phrases (NPs) of the value mention, and all its ancestor value nodes.
+We further merge the words and phrases that are adjacent in the
+original text as the quantified. To extract entities that influence
+or motivate the values, we first extract the least verb phrase (VP)
+ancestor of the value mention as the predicate of the sentence, then
+extract the left closest sibling NP node of the predicate as the entity
+candidates. Sentences are filtered out if the entity candidates are
+not linked with known entities by the entity linking API.
+time Extraction: There are quite a lot of time expressions like “last
+week”, “on Tuesday”, “in the last 24 hours”. Recognizers-Text could
+only extract and normalize formal time expressions. We design a
+simple rule-based approach to resolve and normalize the above time
+expression. For example, given the published time “2020-09-23” and
+“on Monday” in the news, we will resolve “Monday” to “2020-09-21”.
+2.2 Query Parsing & Retrieval
+Query Parsing. AnaSearch supports two types of queries: entity-
+based query and quantity-based query. The entity-based query is
+parsed into <E∗,X∗, 𝑑∗>, where:
+•E∗is the entity condition, which is a set of entities in the
+query obtained through the Text Analytics API.
+•𝑑∗is the time condition, which can be time or time range
+extracted with Recognizers-Text from the query.
+•X∗is the context condition, which is similar to the context
+defined in QSearch [ 6].X∗is a set of remaining nouns or
+noun phrases of the query with entity and time removed.
+For example, “Sales of Tesla Model S and BMW i8 in 2019.” is an
+entity-based query where E∗={Tesla Model S ,BMW i8},X∗=
+{Sales}, and 𝑑∗=2019. The result is a collection of numerical values
+for each mentioned entity in E∗, which could be visualized in a
+table or chart.
+Demo Session I
+ 
+WSDM ’21, March 8–12, 2021, Virtual Event, Israel
+907The quantity-based query denoted by <𝑞∗, 𝑡∗,X∗, 𝑑∗>is similar
+to the query defined in QSearch [6], where:
+•𝑞∗is the quantity condition which consists of a value, a com-
+parison operator (exact, approximate, upper/lower bound
+and interval), and a unit. We employ the quantitative fact
+extraction method introduced in Section 2.1 to extract 𝑞∗
+from the query.
+•𝑡∗is the specified entity type, which is extracted with a
+dictionary of entity types from YAGO [11].
+•X∗and𝑑∗are the context and time conditions, respectively.
+The extractions of X∗and𝑑∗are the same as in entity-based
+queries.
+Given an example quantity-based query “cars with sales over 5,000
+in April”, the quantity condition 𝑞∗is(5,000,+∞), the semantic
+type 𝑡∗is𝑐𝑎𝑟, the context condition X∗will be{𝑠𝑎𝑙𝑒𝑠}, and the time
+condition 𝑑∗is 2020-04. The results of a quantity-based query are
+usually a collection of entities with type 𝑡∗that satisfy the quantity
+condition 𝑞∗, the context condition X∗, and the time condition 𝑑∗.
+Data Retrieval. For an entity-based query <E∗,X∗, 𝑑∗>, we re-
+trieve quantitative facts with 1) entity matching, 2) context match-
+ing, and 3) time matching.
+For entity matching, we only consider those quantitative facts
+whose entity of the related are in E∗. For context matching, we
+obtain the context Xfor each quantitative fact by selecting the non-
+entity nouns or noun phrases of related. To ensure the relevance
+between X∗andX, we consider a quantitative fact related to the
+query if X∗overlaps with Xor the semantic similarity of XandX∗
+is above the threshold. For time matching, we filter out quantitative
+facts of which the time does not satisfy the time condition 𝑡∗.
+For a quantity-based query <𝑞∗, 𝑡∗,X∗, 𝑑∗>, the matching pro-
+cess will be 1) quantity matching, 2) entity type matching, 3) con-
+text matching, and 4) time matching. The context and time match-
+ing methods for entity-based queries also apply to quantity-based
+queries.
+For quantity matching, we require that the value &unit from
+quantitative facts satisfy the quantity condition 𝑞∗. It should be
+noted that the unit should be comparable and the value should
+satisfy the comparison operator. For example, “$6,000” satisfies the
+quantity condition “more than $5000”. For entity type matching,
+we only retrieve those quantitative facts whose entity of the related
+has type 𝑡∗. We use the type information from YAGO [ 11] to obtain
+the entity types for the linked entities.
+There might be duplicated or inconsistent values for the same
+entity, time, and context X(exactly or semantically the same) among
+the candidate results retrieved from multiple sources. We group the
+candidate results by the entity, time, and context X. For each group,
+we simply choose the value with the most occurrences as the final
+result <entity, time, context X,value >.
+3 DEMONSTRATION
+We build the prototype of AnaSearch on the COVID-19 news data.
+For COVID-19, the most frequent quantified topics are confirmed
+cases, recovered cases, and deaths. Therefore, we filter out quanti-
+tative facts that are not related to these three quantified topics, and
+we use a predefined keyword list to map the quantitative facts and
+the user input query to the following COVID-19 types : confirmedtotal, confirmed change, recovered total, recovered change, death
+total, and death change, where “change” means the change of the
+quantified topics for a given time range. Figure 3 shows the home-
+page of AnaSearch on COVID-19, Figure 4 is the result page of two
+example entity-based queries. Throughout this paper, we mainly
+demonstrate the entity-based queries, the quantity-based queries
+are similar to QSearch [7], and thus are omitted.
+Query Parsing Visualization. For entity-based queries on COVID-
+19, the entities mainly refer to the locations, like names of countries,
+states, or cities. The context Xis mapped to the COVID-19 types.
+For the query “How many cases and deaths have Israel reported by
+April 21st?” shown in Figure 4, the parsed query (each condition) is
+displayed under the search box labeled with entity, COVID-19 type
+from context, and time.
+Structured Results Visualization. The structured results are vi-
+sualized in table and chart (page 1 is the table view and page 2 is
+the chart view in Figure 4). The table view shows the values of the
+quantified COVID-19 types for each location (entity ) and date (time ).
+For the chart view, we design two types of charts. A line chart is
+adopted when the time condition is date range or multiple dates,
+such as Query 1 in Figure 4, each chart represents the structured
+results of one location. A bar chart is adopted if the time condi-
+tion of the query is a single date, see Query 2 in Figure 4. Users
+could switch the COVID-19 types by clicking on the selection menu
+(marked as “Click to change the COVID-19 type ” in Figure 4). As a
+reference, we also show the manually collected data from the Bing
+COVID-19 tracker. The total amount and correct amount of values
+are displayed on the top right-hand corner. For results displayed in
+table form, values marked with a green box are correct ones while
+incorrect ones are marked with a red box. For results displayed in a
+chart, we draw another series representing the manually collected
+data from the Bing tracker for comparison.
+By clicking on rows from the table or data points from the chart
+(marked as “Click to view original news” in Figure 4), the original
+text of the extracted quantitative fact is shown, which contains the
+entity (linked to Wikipedia page) and a text snippet from where the
+quantitative facts are extracted. The entity, value & unit, time and
+context Xare shown in different colors. We further allow users to
+check different links for the same text snippet by clicking on each
+original text (marked as “Click to view links” in Figure 4).
+Figure 3: The homepage of AnaSearch.
+Demo Session I
+ 
+WSDM ’21, March 8–12, 2021, Virtual Event, Israel
+908Click to view original news
+Click to view linksClick to view original newsClick to change the COVID-19 typePage 1: Table
+Page 2: GraphQuery Input & Query Parsing
+Line ChartBar ChartClick to view original newsClick to view linksQuery 1Query 2Figure 4: Structured results visualized in table/chart.
+4 RELATED WORK
+Our work is related to 1) quantitative information extraction and 2)
+semantic search. The output of quantitative information extraction
+is structured quantitative facts. Prior work focuses on recognizing
+and extracting quantitative information with dependency pattern
+matching [ 8,10], phrase chunking [ 1], and sequence tagging tech-
+niques [ 6]. We extract quantitative facts mainly by searching on
+the constituent parsing tree, which is simple yet effective.
+From semantic search, our work is related to studies like search-
+ing entities starting from a type description or an entity name
+(e.g. [ 2–5]), and answering queries with quantities from text [ 7].
+Compared to these studies, the main difference is that our work
+supports analytical queries and return structured results that can be
+visualized in tables/charts. Building and visualizing structured data
+have been studied by prior work like DeepTrack [ 9]. But such work
+lacks information retrieval abilities and is limited to building and
+visualizing Spatio-temporal data from both structured and unstruc-
+tured text. Our work supports extracting and retrieving structured
+results from unstructured text.
+5 CONCLUSION
+We propose AnaSearch to extract, retrieve, and visualize structured
+data from the unstructured text for analytical queries. We build
+the prototype of AnaSearch on the COVID-19 news data. For fu-
+ture work, we will improve the quantitative information extraction
+approach and the ranking part of the result retrieval.ACKNOWLEDGMENTS
+This work was supported in part by the National Natural Science
+Foundation of China (Grant Nos.U1636211, 61672081, 61370126),
+and the Fund of the State Key Laboratory of Software Development
+Environment (Grant No.SKLSDE-2019ZX-17).
+REFERENCES
+[1]Omar Alonso and Thibault Sellam. 2018. Quantitative Information Extraction
+From Social Data. In Proceedings of the 41st International ACM SIGIR. 1005–1008.
+[2]Krisztian Balog. 2018. Entity-Oriented Search. The Information Retrieval Series,
+Vol. 39. Springer.
+[3]Darío Garigliotti. 2018. A Semantic Search Approach to Task-Completion Engines.
+InProceedings of the 41st International ACM SIGIR. 1457.
+[4]Darío Garigliotti and Krisztian Balog. 2018. Towards an Understanding of Entity-
+Oriented Search Intents. In Advances in Information Retrieval - the 40th ECIR.
+[5]Faegheh Hasibi, Krisztian Balog, Darío Garigliotti, and Shuo Zhang. 2017. Nordlys:
+A Toolkit for Entity-Oriented and Semantic Search. In Proceedings of the 40th
+International ACM SIGIR. 1289–1292.
+[6]Vinh Thinh Ho, Yusra Ibrahim, Koninika Pal, Klaus Berberich, and Gerhard
+Weikum. 2019. Qsearch: Answering Quantity Queries from Text. In Proceedings
+of the 18th ISWC. 237–257.
+[7]Vinh Thinh Ho, Koninika Pal, Niko Kleer, Klaus Berberich, and Gerhard Weikum.
+2020. Entities with Quantities: Extraction, Search, and Ranking. In Proceedings of
+the 13th WSDM. 833–836.
+[8]Kyle Hundman and Chris A. Mattmann. 2017. Measurement Context Extraction
+from Text: Discovering Opportunities and Gaps in Earth Science. In Proceedings
+of the 23rd ACM SIGKDD (Data-Driven Discovery Workshop).
+[9]Yuyu Luo, Wenbo Li, Tianyu Zhao, Xiang Yu, Lixi Zhang, Guoliang Li, and Nan
+Tang. 2020. DeepTrack: Monitoring and Exploring Spatio-Temporal Data: A Case
+of Tracking COVID-19. Proc. VLDB Endow. 13, 12 (August 2020), 2841–2844.
+[10] Swarnadeep Saha, Harinder Pal, and Mausam. 2017. Bootstrapping for Numerical
+Open IE. In Proceedings of the 55th ALC (Volume 2: Short Papers). 317–323.
+[11] Fabian M. Suchanek, Gjergji Kasneci, and Gerhard Weikum. 2007. Yago: a core
+of semantic knowledge. In Proceedings of the 16th WWW. 697–706.
+Demo Session I
+ 
+WSDM ’21, March 8–12, 2021, Virtual Event, Israel
+909

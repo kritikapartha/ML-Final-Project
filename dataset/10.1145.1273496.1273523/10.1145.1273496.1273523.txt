@@ -1,0 +1,789 @@
+Information-TheoreticMetricLearning
+Jason V. Davis JDAVIS@CS.UTEXAS.EDU
+Brian Kulis KULIS@CS.UTEXAS.EDU
+Prateek Jain PJAIN@CS.UTEXAS.EDU
+Suvrit Sra SUVRIT@CS.UTEXAS.EDU
+Inderjit S. Dhillon INDERJIT @CS.UTEXAS.EDU
+Dept. of Computer Science, University of Texas at Austin, Au stin, TX 78712
+Abstract
+Inthispaper,wepresentaninformation-theoretic
+approach to learning a Mahalanobis distance
+function. We formulate the problem as that
+of minimizing the differential relative entropy
+between two multivariate Gaussians under con-
+straints on the distance function. We express
+this problem as a particular Bregman optimiza-
+tionproblem—thatofminimizingtheLogDetdi-
+vergencesubjecttolinearconstraints. Ourresult-
+ing algorithm has several advantages over exist-
+ingmethods. First,ourmethodcanhandleawide
+varietyofconstraintsandcanoptionallyincorpo-
+rate a prior on the distance function. Second, it
+is fast and scalable. Unlike most existing meth-
+ods,noeigenvaluecomputationsorsemi-deﬁnite
+programming are required. We also present an
+online version and derive regret bounds for the
+resulting algorithm. Finally, we evaluate our
+method on a recent error reporting system for
+software called Clarify, in the context of met-
+riclearningfornearestneighborclassiﬁcation,as
+well as onstandard data sets.
+1.Introduction
+Selecting an appropriate distance measure (or metric) is
+fundamentaltomanylearningalgorithmssuchas k-means,
+nearest neighbor searches, and others. However, choosing
+such a measure is highly problem-speciﬁc and ultimately
+dictatesthesuccess—orfailure—ofthelearningalgorithm.
+To this end, there have been several recent approaches
+that attempt to learn distance functions, e.g., (Weinberge r
+et al., 2005; Xing et al., 2002; Globerson & Roweis, 2005;
+Shalev-Shwartz et al., 2004). These methods work by ex-
+ploiting distance information that is intrinsically avail able
+in many learning settings. For example, in the problem of
+semi-supervisedclustering,pointsareconstrainedtobee i-
+Appearing in Proceedings of the 24thInternational Conference
+on Machine Learning , Corvallis, OR, 2007. Copyright 2007 by
+the author(s)/owner(s).ther similar (i.e., the distance between them should be rel-
+atively small) or dissimilar (the distance should be larger ).
+In information retrieval settings, constraints between pa irs
+of distances can be gathered from click-through feedback.
+In fully supervised settings, constraints can be inferred s o
+thatpointsinthesameclasshavesmallerdistancestoeach
+other thantopoints indifferent classes.
+While existing algorithms for metric learning have been
+shown to perform well across various learning tasks, each
+fails to satisfy some basic requirement. First, a metric
+learningalgorithmshouldbesufﬁcientlyﬂexibletosuppor t
+the variety of constraints realized across different learn ing
+paradigms. Second, the algorithm must be able to learn a
+distance function that generalizes well to unseen test data .
+Finally, thealgorithm should befastand scalable.
+In this paper, we propose a novel approach to learn-
+ing a class of distance functions—namely, Mahalanobis
+distances—that have been shown to possess good gener-
+alization performance. The Mahalanobis distance general-
+izes the standard Euclidean distance by admitting arbitrar y
+linearscalingsandrotationsofthefeaturespace. Wemodel
+the problem in an information-theoretic setting by leverag -
+ing the relationship between the multivariate Gaussian dis -
+tribution and the set of Mahalanobis distances. We trans-
+late the problem of learning an optimal distance metric to
+thatoflearningtheoptimalGaussianwithrespecttoanen-
+tropic objective. In fact, a special case of our formulation
+can be viewed as a maximum entropy objective: maximize
+the differential entropy of a multivariate Gaussian subjec t
+toconstraints on theassociated Mahalanobis distance.
+Our formulation is quite general: we can accommodate a
+range of constraints, including similarity or dissimilari ty
+constraints, and relations between pairs of distances. We
+can also incorporate prior information regarding the dis-
+tance function itself. For some problems, standard Eu-
+clideandistancemayworkwell. Inothers,theMahalanobis
+distance using the inverse of the sample covariance may
+yield reasonable results. In such cases, our formulation
+ﬁnds a distance function that is ‘closest’ to an initial dis-
+tance function whilealsosatisfyingthegiven constraints .
+209Information-TheoreticMetric Learning
+We show an interesting connection of our metric learning
+problem to a recently proposed low-rank kernel learning
+problem (Kulis et al., 2006). In the latter problem a low-
+rank kernel Kis learned that satisﬁes a set of given dis-
+tanceconstraintsbyminimizingtheLogDetdivergencetoa
+given initial kernel K0. This allows our metric learning al-
+gorithm to be kernelized, resulting in an optimization over
+a larger class of non-linear distance functions. Algorith-
+mically, the connection also implies that the problem can
+be solved efﬁciently: it was shown that the kernel learning
+problem can be optimized using an iterative optimization
+procedure with cost O(cd2)per iteration, where cis the
+number of distance constraints, and dis the dimensional-
+ity of the data. In particular, this method does not require
+costly eigenvalue computations or semi-deﬁnite program-
+ming. We also present an online version of the algorithm
+and derive associated regret bounds.
+To demonstrate our algorithm’s ability to learn a distance
+functionthatgeneralizeswelltounseenpoints,wecompare
+it to existing state-of-the-art metric learning algorithm s.
+We apply the algorithms to Clarify, a recently developed
+system that classiﬁes software errors using machine learn-
+ing(Haetal.,2007). Inthisdomain,weshowthatouralgo-
+rithm effectively learns a metric for the problem of nearest
+neighbor software support. Furthermore, on standard UCI
+datasets,weshowthatouralgorithmconsistentlyequalsor
+outperforms the best existing methods when used to learn
+adistance function for k-NN classiﬁcation.
+2.Related Work
+Mostoftheexistingworkinmetriclearningreliesonlearn-
+ing a Mahalanobis distance, which has been found to be a
+sufﬁciently powerful class of metrics that work on many
+real-world problems. Earlier work by (Xing et al., 2002)
+uses a semideﬁnite programming formulation under simi-
+larity and dissimilarity constraints. More recently, (Wei n-
+berger et al., 2005) formulate the metric learning problem
+in a large margin setting, with a focus on k-NN classiﬁ-
+cation. They also formulate the problem as a semideﬁnite
+programming problem and consequently solve it using a
+combination of sub-gradient descent and alternating pro-
+jections. (Globerson & Roweis, 2005) proceed to learn a
+metric in the fully supervised setting. Their formulation
+seeksto‘collapseclasses’byconstrainingwithinclassdi s-
+tances to be zero while maximizing the between class dis-
+tances. While each of these algorithms was shown to yield
+excellent classiﬁcation performance, their constraints d o
+notgeneralizeoutsideoftheirparticularproblemdomains ;
+incontrast,ourapproachallowsarbitrarylinearconstrai nts
+on the Mahalanobis matrix. Furthermore, these algorithms
+all require eigenvalue decompositions, an operation that i s
+cubic inthe dimensionality of the data.
+Other notable work wherein the authors present methodsforlearningMahalanobismetricsincludes(Shalev-Shwart z
+et al., 2004) (online metric learning), Relevant Compo-
+nentsAnalysis(RCA)(Shentaletal.,2002)(similartodis-
+criminant analysis), locally-adaptive discriminative me th-
+ods(Hastie&Tibshirani,1996),andlearningfromrelative
+comparisons (Schutz & Joachims, 2003).
+Non-Mahalanobisbasedmetriclearningmethodshavealso
+been proposed, though these methods usually suffer from
+suboptimal performance, non-convexity, or computational
+complexity. Someexamplemethodsincludeneighborhood
+component analysis (NCA) (Goldberger et al., 2004) that
+learns a distance metric speciﬁcally for nearest-neighbor
+based classiﬁcation; convolutional neural net based meth-
+odsof(Chopraetal.,2005);andageneralRiemannianmet-
+riclearning method (Lebanon, 2006).
+3.ProblemFormulation
+Given a set of npoints {x1,...,xn}inRd, we seek a pos-
+itive deﬁnite matrix Awhich parameterizes the (squared)
+Mahalanobis distance.
+dA(xi,xj) = (xi−xj)TA(xi−xj).(3.1)
+We assume that prior knowledge is known regarding in-
+terpoint distances. Consider relationships constraining
+the similarity or dissimilarity between pairs of points.
+Two points are similar if the Mahalanobis distance be-
+tween them is smaller than a given upper bound, i.e.,
+dA(xi,xj)≤ufor a relatively small value of u. Simi-
+larly, two points are dissimilar if dA(xi,xj)≥ℓfor suf-
+ﬁciently large ℓ. Such constraints are typically inputs for
+many semi-supervised learning problems, and can also be
+readily inferred in a classiﬁcation setting where class la-
+belsareknownforeachinstance: distancesbetweenpoints
+in the same class can be constrained as similar, and points
+indifferent classes can be constrained asdissimilar.
+Given a set of interpoint distance constraints as described
+above, our problem is to learn a positive-deﬁnite matrix A
+thatparameterizesthecorrespondingMahalanobisdistanc e
+(3.1). Typically, this learned distance function is used to
+improve the accuracy of a k-nearest neighbor classiﬁer, or
+toincorporatesemi-supervisionintoadistance-based clu s-
+teringalgorithm. Inmanysettings,priorinformationabou t
+the Mahalanobis distance function itself is known. In set-
+tings where data is Gaussian, parameterizing the distance
+function by the inverse of the sample covariance may be
+appropriate. In other domains, squared Euclidean distance
+(i.e. theMahalanobisdistancecorrespondingtotheidenti ty
+matrix)mayworkwellempirically. Thus,weregularizethe
+Mahalanobis matrix Ato be as close as possible to a given
+Mahalanobis distance function, parameterized by A0.
+We now quantify the measure of “closeness” between A
+andA0viaanaturalinformation-theoreticapproach. There
+210Information-TheoreticMetric Learning
+exists a simple bijection (up to a scaling function) be-
+tweenthesetofMahalanobisdistancesandthesetofequal-
+mean multivariate Gaussian distributions (without loss of
+generality, we can assume the Gaussians have mean µ).
+Given a Mahalanobis distance parameterized by A, we ex-
+pressitscorrespondingmultivariateGaussianas p(x;A) =
+1
+Zexp(−1
+2dA(x,µ)), where Zis a normalizing constant
+andA−1is the covariance of the distribution. Using this
+bijection, we measure the distance between two Maha-
+lanobis distance functions parameterized by A0andAby
+the(differential)relativeentropybetweentheircorresp ond-
+ingmultivariate Gaussians:
+KL(p(x;Ao)/bardblp(x;A)) =/integraldisplay
+p(x;A0)logp(x;A0)
+p(x;A)dx.
+(3.2)
+The distance (3.2) provides a well-founded measure of
+“closeness” between two Mahalanobis distance functions
+and formsthe basis ofour problem given below.
+Given pairs of similar points Sand pairs of dissimilar
+points D, our distance metriclearning problem is
+min
+AKL(p(x;A0)/bardblp(x;A))
+subject to dA(xi,xj)≤u (i,j)∈S,
+dA(xi,xj)≥ℓ (i,j)∈D.(3.3)
+Intheaboveformulation,weconsidersimpledistancecon-
+straints for similar and dissimilar points; however, it is
+straightforward to incorporate other constraints. For ex-
+ample, (Schutz & Joachims, 2003) consider a formulation
+wherethedistancemetricislearnedsubjecttorelativenea r-
+ness constraints (as in, the distance between iandjis
+closer than the distance between iandk). Our approach
+can be easily adapted to handle this setting. In fact, it is
+possible to incorporate arbitrary linear constraints into our
+framework in a straightforward manner. For simplicity, we
+presentthealgorithmunderthesimpledistanceconstraint s
+given above.
+4.Algorithm
+Inthissection,weﬁrstshowthatourinformation-theoreti c
+objective (3.3) can be expressed as a particular type of
+Bregman divergence, which allows us to adapt Bregman’s
+method (Censor & Zenios, 1997) tosolve the metric learn-
+ing problem. We then show a surprising equivalence to a
+recently-proposedlow-rankkernellearningproblem(Kuli s
+et al.,2006), allowing kernelization of thealgorithm.
+4.1. Metric Learning as LogDet Optimization
+The LogDet divergence is a Bregman matrix divergence
+generated by the convex function φ(X) =−log det X
+deﬁned over the cone of positive-deﬁnite matrices, and itequals (for n×nmatrices A,A0)
+Dℓd(A,A0) = tr( AA−1
+0)−log det( AA−1
+0)−n.(4.1)
+It has been shown that the differential relative entropy be-
+tween two multivariate Gaussians can be expressed as the
+convex combination of a Mahalanobis distance between
+mean vectors and the LogDet divergence between the co-
+variance matrices (Davis & Dhillon, 2006). Assuming the
+means of theGaussians tobethe same, wehave,
+KL(p(x;A0)/bardblp(x;A)) =1
+2Dℓd(A−1
+0,A−1)
+=1
+2Dℓd(A,A0),(4.2)
+where thesecond linefollows from deﬁnition (4.1).
+The LogDet divergence is also known as Stein’s loss, hav-
+ing originated in the work of (James & Stein, 1961). It
+can be shown that Stein’s loss is the unique scale invari-
+antloss-functionforwhichtheuniformminimumvariance
+unbiasedestimatorisalsoaminimumriskequivariantesti-
+mator(Lehmann&Casella,2003). Inthecontextofmetric
+learning, the scale invariance implies that the divergence
+(4.1) remains invariant under any scaling of the feature
+space. The result can be further generalized to invariance
+under any invertible linear transformation S,since
+Dℓd(STAS,STBS) =Dℓd(A,B).(4.3)
+We can exploit the equivalence in (4.2) to express the
+distance metric learning problem (3.3) as the following
+LogDet optimization problem:
+min
+A/followsequal0Dℓd(A,A0)
+s.t.tr(A(xi−xj)(xi−xj)T)≤u (i,j)∈S,
+tr(A(xi−xj)(xi−xj)T)≥ℓ (i,j)∈D,
+(4.4)
+Note that the distance constraints on dA(xi,xj)translate
+intothe above linear constraints on A.
+In some cases, there may not exist a feasible solution to
+(4.4). Topreventsuchascenariofromoccurring,weincor-
+porateslackvariables intotheformulationtoguaranteethe
+existenceofafeasible A. Letc(i,j)denotetheindexofthe
+(i,j)-th constraint, and let ξbe a vector of slack variables,
+initialized to ξ0(whose components equal ufor similarity
+constraints and ℓfor dissimilarity constraints). Then we
+can pose thefollowing optimization problem:
+min
+A/followsequal0,ξDℓd(A,A0) +γ≤Dℓd(diag(ξ),diag(ξ0))
+s. t. tr(A(xi−xj)(xi−xj)T)≤ξc(i,j)(i,j)∈S,
+tr(A(xi−xj)(xi−xj)T)≥ξc(i,j)(i,j)∈D,
+(4.5)
+211Information-TheoreticMetric Learning
+Algorithm 1 Information-theoretic metriclearning
+Input: X: input d×nmatrix, S: setof similarpairs
+D: setof dissimilarpairs, u, ℓ: distance thresholds
+A0: inputMahalanobis matrix, γ: slack
+parameter, c: constraint index function
+Output: A: outputMahalanobis matrix
+1.A←A0,λij←0∀i, j
+2.ξc(i,j)←ufor(i, j)∈S;otherwise ξc(i,j)←ℓ
+3.repeat
+3.1. Pick aconstraint (i, j)∈Sor(i, j)∈D
+3.2.p←(xi−xj)TA(xi−xj)
+3.3.δ←1if(i, j)∈S,−1otherwise
+3.4.α←min/parenleftBig
+λij,δ
+2/parenleftBig
+1
+p−γ
+ξc(i,j)/parenrightBig/parenrightBig
+3.5.β←δα/(1−δαp)
+3.6.ξc(i,j)←γξc(i,j)/(γ+δαξc(i,j))
+3.7.λij←λij−α
+3.8.A←A+βA(xi−xj)(xi−xj)TA
+4.untilconvergence
+return A
+The parameter γcontrols the tradeoff between satisfying
+theconstraints and minimizing Dℓd(A,A0).
+To solve the optimization problem (4.5), we extend the
+methods from (Kulis et al., 2006). The optimization
+method which forms the basis for the algorithm repeatedly
+computes Bregman projections—that is, projections of the
+current solution onto a single constraint. This projection is
+performed via theupdate
+At+1=At+βAt(xi−xj)(xi−xj)TAt,(4.6)
+where xiandxjare the constrained data points, and βis
+the projection parameter (Lagrange multiplier correspond -
+ingtotheconstraint)computedbythealgorithm. Eachcon-
+straint projection costs O(d2), and so a single iteration of
+loopingthroughallconstraintscosts O(cd2). Westressthat
+no eigen-decomposition is required in the algorithm. The
+resulting algorithm is given as Algorithm 1. The inputs to
+the algorithm are the starting Mahalanobis matrix A0, the
+constraintdata,andtheslackparameter γ. Ifnecessary,the
+projectionscanbecomputedefﬁcientlyoverafactorizatio n
+Wof theMahalanobis matrix, such that A=WTW.
+4.2. Connection toLow-Rank Kernel Learning
+The kernel learning problem posed in (Kulis et al., 2006)
+seeks to optimize a kernel Ksubject to constraints on the
+pairwise distances between points within the kernel. This
+is quite similar to our proposed metric learning problem,
+wherepointsbetweendistancesareconstraineddirectly. I n
+this section, we present an equivalence between the two
+models,thusallowingforkernelizationofthemetriclearn -
+ing problem. The kernel learning problem posed by (Kulis
+etal.,2006)seekstooptimizeakernel KsubjecttoasetoflinearconstraintswhileminimizingtheLogDetdivergence
+toaspeciﬁedkernel K0. Given X= [x1x2...xn],andthe
+inputn×nkernelmatrix K0=XTA0X,theoptimization
+problem is:
+min
+KDℓd(K,K 0)
+subject to Kii+Kjj−2Kij≤u (i,j)∈S,
+Kii+Kjj−2Kij≥ℓ (i,j)∈D,
+K/{ollowsequal0.(4.7)
+In addition to being convex in the ﬁrst argument, the
+LogDet divergence between two matrices is ﬁnite if and
+only if their range spaces are the same (Kulis et al., 2006).
+Thus, the learned matrix Kcan be written as a kernel
+XTAX, for some (d×d)positive deﬁnite matrix A. The
+resultsbelowcanbeeasilygeneralizedtoincorporateslac k
+variables in(4.7).
+First we establish that the feasible solutions to (3.3) coin -
+cide withthefeasible solutions to(4.7).
+Lemma1. Giventhat K=XTAX,Aisfeasiblefor(3.3)
+ifand only if Kisfeasiblefor (4.7).
+Proof.Theexpression Kii+Kjj−2Kijcanbewrittenas
+(ei−ej)TK(ei−ej),orequivalently (xi−xj)TA(xi−
+xj) =dA(xi,xj). Thus, if we have a kernel matrix K
+satisfying constraints of the form Kii+Kjj−2Kij≤u
+orKii+Kjj−2Kij≥ℓ,weequivalentlyhaveamatrix A
+satisfying dA(xi,xj)≤uordA(xi,xj)≥ℓ.
+We can now show an explicit relationship between the op-
+timal solutionto(3.3) and (4.7).
+Theorem 1. LetA∗be the optimal solution to (3.3) and
+K∗be theoptimal solutionto(4.7). Then K∗=XTA∗X.
+Proof.We give a constructive proof for the theorem. The
+Bregman projection update for(4.4) isexpressed as
+At+1=At+βAt(xi−xj)(xi−xj)TAt.(4.8)
+Similary, theBregman update for(4.7) isexpressed as
+Kt+1=Kt+βKt(ei−ej)(ei−ej)TKt.(4.9)
+Itisstraightforwardtoprovethatthevalueof βisthesame
+for (4.9) and (4.8). We can inductively prove that at each
+iteration t, updates KtandAtsatisfy Kt=XTAtX. At
+the ﬁrst step, K0=XTA0X, so the base case trivially
+holds. Now, assume that Kt=XTAtX; by the Bregman
+projection update, Kt+1
+=XTAtX+βXTAtX(ei−ej)(ei−ej)TXTAtX
+=XTAtX+βXTAt(xi−xj)(xi−xj)TAtX
+=XT(At+βAt(xi−xj)(xi−xj)TAT
+t)X.
+212Information-TheoreticMetric Learning
+Comparing with (4.8), we see that Kt+1=XTAt+1X.
+Since the method of Bregman projections converges to the
+optimal A∗andK∗of(3.3)and(4.7),respectively(Censor
+& Zenios, 1997), we have K∗=XTA∗X. Hence, the
+metriclearning(3.3)andthekernellearning(4.7)problem s
+areequivalent.
+Wehaveproventhattheinformation-theoreticmetriclearn -
+ing problem is related to a low-rank kernel learning prob-
+lem. We can easily modify Algorithm 1 to optimize for
+K—this is necessary in order to kernelize the algorithm.
+As input, the algorithm provides K0instead of A0, the
+valueof piscomputedas Kii+Kjj−2Kij,theprojection
+isperformed using (4.9),and the output is K.
+4.3. Kernelizing the Algorithm
+We now consider kernelizing our metric learning algo-
+rithm. In this section, we assume that A0=I; that is,
+the maximum entropy formulation that regularizes to the
+baseline Euclidean distance. Kernelizing for other choice s
+ofA0is possible, but not presented. If A0=I, the corre-
+sponding K0from the low-rank kernel learning problem is
+K0=XTX,theGrammatrixoftheinputs. Ifinsteadofan
+explicitrepresentation Xofourdatapoints,wehaveasin-
+putakernelfunction κ(x,y) =φ(x)Tφ(y),alongwiththe
+associatedkernelmatrix K0overthetrainingpoints,anat-
+ural question to ask is whether we can evaluate the learned
+metric on new points in the kernel space. This requires the
+computation of
+dA/parenleftbig
+φ(x/parenrightbig
+,φ(y)) =/parenleftbig
+φ(x)−φ(y)/parenrightbigTA/parenleftbig
+φ(x)−φ(y)/parenrightbig
+=φ(x)TAφ(x)−2φ(x)TAφ(y) +φ(y)TAφ(y).
+We now deﬁne a new kernel function ˜κ(x,y) =
+φ(x)TAφ(y). The ability to generalize to unseen data
+points reduces to the ability to compute ˜κ(x,y). Note that
+Arepresents an operator in a Hilbert space, and its size is
+equal to the dimensionality of φ(x), which can potentially
+be inﬁnite (if the original kernel function is the Gaussian
+kernel, forexample).
+Eventhoughwecannotexplicitlycompute A,itisstillpos-
+sible to compute ˜κ(x,y). AsA0=I, we can recursively
+“unroll” the learned Amatrixsothat itisof the form
+A=I+/summationdisplay
+i,jσijφ(xi)φ(xj)T.
+This follows by expanding Equation (4.6) down to I. The
+new kernel function istherefore computed as
+˜κ(x,y) =κ(x,y) +/summationdisplay
+i,jσijκ(x,xi)κ(xj,y),
+and is a function of the original kernel function κand the
+σijcoefﬁcients. The σijcoefﬁcientsmaybeupdatedwhileminimizing Dℓd(K,K 0)without affecting the asymptotic
+running time of the algorithm; in other words, by optimiz-
+ing the low-rank kernel learning problem (4.7) for K, we
+can obtain the necessary coefﬁcients σijfor evaluation of
+˜κ(x,y). This leads to a method for ﬁnding the nearest
+neighbor of a new data point in the kernel space under the
+learnedmetricwhichcanbeperformedin O(n2)totaltime.
+Details areomitted due tolack ofspace.
+5.Online Metric Learning
+In this section, we describe an onlinealgorithm for met-
+ric learning and prove bounds on the total loss when using
+LogDet divergence as the regularizer.
+5.1. Problem Formulation
+Asinbatchmetriclearning,thealgorithmreceivespairsof
+points;however,unlikeinthebatchscenario,theonlineal -
+gorithm receives the “target” distance for these points (as
+opposed to just upper and lower bounds on the target dis-
+tance). Before receiving the target distance, the algorith m
+uses its current Mahalanobis matrix to predict the distance
+betweenthegivenpairofpointsateachstep. Thisformula-
+tionisstandardinmanyonlineregressionsettings(Kivine n
+& Warmuth, 1997).
+More formally, assume the algorithm receives an instance
+(xt,yt,dt)at time step t, and predicts ˆdt=dAt(xt,yt)
+using the current model At. The loss associated with this
+predictionismeasuredby lt(At) = (dt−ˆdt)2,where dtis
+the “true” (or target) distance between xtandyt. After in-
+curringtheloss,thealgorithmupdates Attothenewmodel
+At+1and itstotalloss isgiven by/summationtext
+tlt(At).
+Ifthereisnocorrelationbetweeninputpointsandtheirtar -
+get distances, then a learning algorithm could incur un-
+bounded loss. Hence, a reasonable goal is to compare
+the performance of an online learning algorithm with the
+best possible ofﬂine algorithm. Given a T-trial sequence
+S={(x1,y1,d1),(x2,y2,d2),... ,(xT,yT,dT)},letthe
+optimal ofﬂine solutionbe given by
+A∗= argmin
+A/followsequal0T/summationdisplay
+t=1lt(A).
+Typically, the goal of an online algorithm is to bound its
+total lossincomparison tothelossobtained by A∗.
+A common approach for online learning is to solve the
+following regularized optimization problem at each time
+step(Kivinen & Warmuth, 1997):
+min
+A/followsequal0f(A) =Regularization Term/bracehtipdownleft/bracehtipupright/bracehtipupleft/bracehtipdownright
+D(A,A t) +ηtLoss Term/bracehtipdownleft/bracehtipupright/bracehtipupleft/bracehtipdownright
+lt(A),(5.1)
+where ηtis the learning rate at the t-th step, and D(A,A t)
+is measures the divergence between the new Mahalanobis
+213Information-TheoreticMetric Learning
+Algorithm 2 Online MetricLearning (OML)Algorithm
+Initialize: η0←1
+8,A0←1
+nI
+Prediction: Given (xt,yt),predict ˆdt=dAt(xt,yt).
+Update: Upon receiving “true” dt,update modelas
+At+1←At−2ηt(ˆdt−dt)At(xt−yt)(xt−yt)TAt
+1 + 2ηt(ˆdt−dt)(xt−yt)TAt(xt−yt),
+where ηt=η0ifˆdt−dt≥0;otherwise, ηt=
+min/braceleftbigg
+η0,1
+2(dt−ˆdt)/parenleftBig
+1
+(xt−yt)T(I+(A−1
+t−I)−1)(xt−yt)/parenrightBig/bracerightbigg
+.
+matrix Aand the current matrix At. In (5.1), the regular-
+ization term favors Mahalanobis matrices that are “close”
+to the current model At, representing a tendency towards
+conservativeness. On the other hand, the loss term is min-
+imized when Ais updated to exactly satisfy the target dis-
+tance speciﬁed at the current time step. Hence, the loss
+term has a tendency to satisfy target distances for recent
+examples. The tradeoff between regularization and loss is
+handled by the learning rate ηt, which is a critical parame-
+ter formany online learning problems.
+As in batch metric learning, we select D(A,A t) =
+Dℓd(A,A t)as theregularizer for (5.1):
+At+1= argmin
+ADℓd(A,A t) +ηt(dt−ˆdt)2.
+To our knowledge, no relative loss bounds have been
+proven for the above problem. In fact, we know of no
+existing loss bounds for any LogDet-based online algo-
+rithms(Tsudaetal.,2005). Wepresentbelowanovelalgo-
+rithm with guaranteed bound on the regret. Our algorithm
+usesgradientdescent,butitadaptsthelearningrateaccor d-
+ingtotheinputdatatomaintainpositive-deﬁnitenessof A.
+5.2. Algorithm and Analysis
+The online metric learning (OML) algorithm is shown as
+Algorithm2. Notethat (A−1
+t−I)−1canbeobtainedfrom
+(A−1
+t−1−I)−1by using the Sherman-Morrison-Woodbury
+formula. Thus, the overall complexity of each iteration of
+theOML algorithm is O(n2), which isoptimal.
+We now show that the total loss incurred by OML is
+bounded with respect to the minimum loss incurred by
+any batch learning algorithm. Let LOML=/summationtext
+tlt(At)be
+the loss obtained by the online algorithm, and let LA∗=/summationtext
+tlt(A∗)be the loss obtained by the ofﬂine algorithm.
+Without loss of generality we can assume that the input
+data is scaled, so that /bardblx−y/bardbl2≤R2for ﬁxed Rand for
+allxandy. One of the key steps in guaranteeing an upper
+bound on the regret incurred by an online algorithm is to
+bound thelossincurred ateachstepintermsofthelossin-
+curred by the optimal ofﬂine solution. Below, we state the
+result—thefullproof can be found in(Jainet al., 2007).Lemma 2 (Loss at one step) .
+at(ˆdt−dt)2−bt(d∗
+t−dt)2≤
+Dℓd(A∗,At)−Dℓd(A∗,At+1),
+where A∗istheoptimalofﬂinesolution, d∗
+t=dA∗(xt,yt),
+at,btareconstants s.t. 0≤at≤ηtandbt=ηt
+1−2ηtR2.
+ArepeateduseofLemma2allowsustoobtainalossbound
+forthe overall OML algorithm.
+Theorem 2 (OnlineMetricLearning Loss Bound) .
+LOML≤1
+4ηminR2LA∗+1
+ηminDℓd(A∗,I),
+where LOMLandLA∗are the losses incurred by OML and
+theoptimalbatchalgorithm,respectively; ηmin= min tηt.
+Proof.Adding the loss bound given by Lemma 2 over all
+thetrialsfrom 1≤t≤T,weobtain
+T/summationdisplay
+t=1ηt(ˆdt−dt)2≤T/summationdisplay
+t=1ηt
+1−2ηtR2(d∗
+t−dt)2
++Dℓd(A∗,I)−Dℓd(A∗,AT).
+Thus wecan conclude that,
+LOML≤1
+4ηminR2LA∗+1
+ηminDℓd(A∗,I).
+Note that this bound depends on ηmin, which in turn de-
+pends on the input data. If the data is scaled properly then
+generally ηtwill not change much at any time step, an ob-
+servation that has been veriﬁed empirically.
+6.Experiments
+WecompareourInformationTheoreticMetricLearningal-
+gorithm (ITML) to existing methods across two applica-
+tions: semi-supervised clustering and k-nearest neighbor
+(k-NN)classiﬁcation.
+We evaluate metric learning for k-NN classiﬁcation via
+two-fold cross validation with k= 4. All results presented
+represent the average over 5 runs. Binomial conﬁdence in-
+tervals are given at the 95%level.
+To establish the lower and upper bounds of the right hand
+side of our constraints ( ℓanduin problem (3.3)), we use
+(respectively) the 5thand95thpercentiles of the observed
+distribution of distances between pairs of points within th e
+dataset. To determine the constrained point pairs, we ran-
+domly choose 20c2pairs, where cis the number of classes
+in the dataset. Pairs of points in the same class are con-
+strained to be similar, and pairs with differing class label s
+are constrained to be dissimilar. Overall, we found the al-
+gorithm to be robust to these parameters. However, we did
+214Information-TheoreticMetric Learning
+Wine Ionosphere Scale Iris SoybeanITML−MaxEnt
+ITML−Online
+Euclidean
+Inverse Covariance
+MCML
+LMNNError
+0.0 0.1 0.2 0.3 0.4
+Latex Mpg321 Foxpro IptablesITML−MaxEnt
+ITML−Inverse Covariance
+Euclidean
+Inverse Covariance
+MCML
+LMNNError
+0.0 0.1 0.2 0.35 10 15 20 250.20.250.30.350.40.450.5
+Number of DimensionsErrorITML−MaxEnt
+Euclidean
+MCML
+LMNN
+(a)UCI Datasets (b)ClarifyDatasets (c)Latex
+Figure1. Classiﬁcation error rates for k-nearest neighbor classiﬁcation via different learned metrics. We see in ﬁgures (a) and (b) that
+ITML-MaxEnt is the only algorithm to be optimal (within the 95%conﬁdence intervals) across all datasets. ITML is also robust at
+learning metrics over higher dimensions. In(c),wesee thatthe errorr ate forthe Latex datasetstays relatively constantfor ITML.
+ﬁndthatthevariancebetweenrunsincreasedifthenumber
+of constraints used was too small (i.e., fewer than 10c2).
+The slack variable parameter, γ, is tuned using cross val-
+idation over the values {.01,.1,1,10}. Finally, the online
+algorithm isrunfor approximately 105iterations.
+In Figure 1(a), we compare ITML-MaxEnt (regularized to
+theidentitymatrix)andtheonlineITMLalgorithmagainst
+existing metric learning methods for k-NN classiﬁcation.
+We use the squared Euclidean distance, d(x,y) = (x−
+y)T(x−y)as a baseline method. We also use a Maha-
+lanobisdistanceparameterizedbytheinverseofthesample
+covariance matrix. This method is equivalent to ﬁrst per-
+forming a standard PCA whitening transform over the fea-
+ture space and then computing distances using the squared
+Euclidean distance. We compare our method to two re-
+cently proposed algorithms: Maximally Collapsing Met-
+ric Learning (Globerson & Roweis, 2005) (MCML), and
+metriclearningviaLargeMarginNearestNeighbor(Wein-
+berger et al., 2005) (LMNN). Consistent with existing
+work (Globerson & Roweis, 2005), we found the method
+of(Xingetal.,2002)tobeveryslowandinaccurate. Over-
+all, ITML is the only algorithm to obtain the optimal error
+rate (within the speciﬁed 95%conﬁdence intervals) across
+alldatasets. Forseveraldatasets,theonlineversionisco m-
+petitive with the best metric learning algorithms. We also
+observed that the learning rate ηremained fairly constant,
+yielding relatively smallregret bounds (Theorem 2).
+In addition to our evaluations on standard UCI datasets,
+we also evaluate apply our algorithm to the recently pro-
+posedproblemofnearestneighborsoftwaresupportforthe
+Clarify system (Ha et al., 2007). The basis of the Clarify
+system lies in the fact that modern software design pro-
+motes modularity and abstraction. When a program ter-
+minates abnormally, it is often unclear which component
+should be responsible for (or is capable of) providing anerror report. The system works by monitoring a set of pre-
+deﬁned program features (the datasets presented use func-
+tion counts) during program runtime which are then used
+by a classiﬁer in the event of abnormal program termina-
+tion. Nearest neighbor searches are particularly relevant to
+this problem. Ideally, the neighbors returned should not
+only have the correct class label, but should also represent
+those with similar program conﬁgurations or program in-
+puts. Such a matching can be a powerful tool to help users
+diagnosetherootcauseoftheirproblem. Thefourdatasets
+shown here are Latex (the document compiler, 9 classes),
+Mpg321 (an mp3 player, 4 classes), Foxpro (a database
+manager, 4 classes), and Iptables (a Linux kernel applica-
+tion, 5classes).
+ThedimensionalityoftheClarifydatasetcanbequitelarge .
+However, it was shown (Ha et al., 2007) that high clas-
+siﬁcation accuracy can be obtained by using a relatively
+small subset of available features. Thus, for each dataset,
+we use a standard information gain feature selection test
+to obtain a reduced feature set of size 20. From this, we
+learn metrics for k-NN classiﬁcation using the above de-
+scribed procedure. We also evaluate the method ITML-
+Inverse Covariance, which regularizes to the inverse co-
+variance matrix. Results are given in Figure 1(b). The
+ITML-MaxEnt algorithm yields signiﬁcant gains for the
+Latex benchmark. Note that for datasets where Euclidean
+distance performs better than using the inverse covariance
+metric,theITML-MaxEntalgorithmthatnormalizestothe
+standard Euclidean distance yields higher accuracy than
+that regularized to the inverse covariance matrix (ITML-
+Inverse Covariance). In general, for the Mpg321, Foxpro,
+and Iptables datasets, learned metrics yield only marginal
+gains over thebaseline Euclidean distance measure.
+Figure 1(c) shows the error rate for the Latex datasets with
+avaryingnumberoffeatures(thefeaturesetsareagaincho-
+215Information-TheoreticMetric Learning
+Table 1.Training time (in seconds) for the results presented in
+Figure1(b).
+Dataset ITML-MaxEnt MCML LMNN
+Latex 0.0517 19.8 0.538
+Mpg321 0.0808 0.460 0.253
+Foxpro 0.0793 0.152 0.189
+Iptables 0.149 0.0838 4.19
+Table 2.Unsupervised k-meansclusteringerror,alongwithsemi-
+supervisedclusteringerror with 50constraints.
+Dataset Unsupervised ITMLHMRF-KMeans
+Ionosphere 0.314 0.113 0.256
+Digits-389 0.226 0.175 0.286
+sen using the information gain criteria). We see here that
+ITML is surprisingly robust. Euclidean distance, MCML,
+andLMNNallachievetheirbesterrorratesforﬁvedimen-
+sions. ITML,however,attainsitslowesterrorrateof.15at
+d= 20dimensions.
+In Table 1, we see that ITML generally learns metrics sig-
+niﬁcantly fasterthanother metriclearningalgorithms. Th e
+implementations for MCML and LMNN were obtained
+from their respective authors. The timing tests were run
+on a dual processor 3.2 GHz Intel Xeon processor running
+UbuntuLinux. Timegivenisinsecondsandrepresentsthe
+average over 5runs.
+Finally, we present some semi-supervised clustering re-
+sults. Note that both MCML and LMNN are not amenable
+tooptimizationsubjecttopairwisedistanceconstraints. In-
+stead,wecompareourmethodtothesemi-supervisedclus-
+tering algorithm HMRF-KMeans (Basu et al., 2004). We
+useastandard2-foldcrossvalidationapproachforevaluat -
+ing semi-supervised clustering results. Distances are con -
+strained to be either similar or dissimilar, based on class
+values, and are drawn only from the training set. The en-
+tire dataset is then clustered into cclusters using k-means
+(where cisthenumberofclasses)anderroriscomputedus-
+ing only the test set. Table 2 provides results for the base-
+linek-means error, as well as semi-supervised clustering
+resultswith50 constraints.
+Acknowledgments : This research was supported by NSF
+grant CCF-0431257, NSF Career Award ACI-0093404,
+and NSF-ITR award IIS-0325116.
+References
+Basu, S., Bilenko, M., & Mooney, R. J. (2004). A Probabilistic
+Framework for Semi-Supervised Clustering. Proc. 10th ACM
+SIGKDDInt.Conf.onKnowledgeDiscoveryandDataMining .
+Censor, Y., & Zenios, S. A. (1997). Parallel Optimization: The-
+ory,Algorithms,andApplications . OxfordUniversity Press.Chopra,S.,Hadsell,R.,&LeCun,Y.(2005). LearningaSimilar-
+ity Metric Discriminatively, with Application to Face Veriﬁca-
+tion.IEEEConf.onComputerVisionandPatternRecognition .
+Davis, J. V., & Dhillon, I. S. (2006). Differential Entropic Clus-
+teringofMultivariateGaussians. Adv.inNeuralInf.Proc.Sys.
+(NIPS).
+Globerson,A.,&Roweis,S.(2005). MetricLearningbyCollaps-
+ingClasses. Adv.inNeuralInf.Proc.Sys.(NIPS) .
+Goldberger, J., Roweis, S., Hinton, G., & Salakhutdinov, R.
+(2004). Neighbourhood Component Analysis. Adv. in Neural
+Inf.Proc.Sys.(NIPS) .
+Ha, J., Rossbach, C., Davis, J., Roy, I., Chen, D., Ramadan, H. ,
+& Witchel, E. (2007). Improved Error Reporting for Software
+that Uses Black Box Components. Programming Language
+Designand Implementation . Toappear.
+Hastie,T.,&Tibshirani,R.(1996). Discriminantadaptivenearest
+neighbor classiﬁcation. Pattern Analysis and Machine Intelli-
+gence,18, 607–616.
+Jain, P., Kulis, B., & Dhillon, I. S. (2007). Online linear re-
+gressionusingburgentropy (TechnicalReportTR-07-08). The
+Univ. of Texas at Austin,Dept. of Comp.Sci.
+James, W., & Stein, C. (1961). Estimation with quadratic loss.
+InProc. fourth berkeley symposium on mathematical statistics
+andprobability , vol. 1,361–379. Univ. of CaliforniaPress.
+Kivinen, J., & Warmuth, M. K. (1997). Exponentiated gradient
+versusgradientdescentforlinearpredictors. Inf.Comput. ,132,
+1–63.
+Kulis,B.,Sustik,M.,&Dhillon,I.S.(2006). LearningLow-rank
+Kernel Matrices. Int.Conf.on Machine Learning(ICML) .
+Lebanon, G. (2006). Metric Learning for Text Documents. Pat-
+ternAnalysisand Machine Intelligence ,28, 497–508.
+Lehmann, E. L., & Casella, G. (2003). Theory of Point Estima-
+tion. Springer.Second edition.
+Schutz, M., & Joachims, T. (2003). Learning a Distance Met-
+ric from Relative Comparisons. Adv. in Neural Inf. Proc. Sys.
+(NIPS).
+Shalev-Shwartz, S., Singer, Y., & Ng, A. Y. (2004). Online and
+Batch Learning of Pseudo-Metrics. Int. Conf. on Machine
+Learning(ICML) .
+Shental, N., Hertz, T., Weinshall, D., & Pavel, M. (2002). Ad-
+justment learning and relevant component analysis. Proc. of
+EuropeanConf.Computer Vision . Copenhagen, DK.
+Tsuda, K., Raetsch, G., & Warmuth, M. K. (2005). Matrix ex-
+ponentiated gradient updates of online learning and bregman
+projection. JournalofMachine Learning Research ,6.
+Weinberger, K. Q., Blitzer, J., & Saul, L. K. (2005). Distance
+Metric Learning for Large Margin Nearest Neighbor Classiﬁ-
+cation.Adv.inNeuralInf.Proc.Sys.(NIPS) .
+Xing, E. P., Ng, A. Y., Jordan, M. I., & Russell, S. (2002). Dis-
+tance metric learning with application to clustering with side-
+information. Adv. inNeuralInf. Proc.Sys.(NIPS) .
+216

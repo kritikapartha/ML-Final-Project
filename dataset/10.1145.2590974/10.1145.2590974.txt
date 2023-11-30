@@ -1,0 +1,1104 @@
+ii
+ii
+i
+ii
+i8Social-Sensed Image Search
+PENG CUI, SHAO-WEI LIU, and WEN-WU ZHU , Tsinghua University
+HUAN-BO LUAN and TAT-SENG CHUA , National University of Singapore
+SHI-QIANG YANG , Tsinghua University
+Although Web search techniques have greatly facilitate users’ information seeking, there are still quite a
+lot of search sessions that cannot provide satisfactory results, which are more serious in Web image searchscenarios. How to understand user intent from observed data is a fundamental issue and of paramount sig-niﬁcance in improving image search performance. Previous research efforts mostly focus on discovering userintent either from clickthrough behavior in user search logs (e.g., Google), or from social data to facilitatevertical image search in a few limited social media platforms (e.g., Flickr). This article aims to combine thevirtues of these two information sources to complement each other, that is, sensing and understanding users’interests from social media platforms and transferring this knowledge to rerank the image search results ingeneral image search engines. Toward this goal, we ﬁrst propose a novel social-sensed image search frame-work, where both social media and search engine are jointly considered. To effectively and efﬁciently lever-age these two kinds of platforms, we propose an example-based user interest representation and modelingmethod, where we construct a hybrid graph from social media and propose a hybrid random-walk algorithm
+to derive the user-image interest graph. Moreover, we propose a social-sensed image reranking method to
+integrate the user-image interest graph from social media and search results from general image searchengines to rerank the images by fusing their social relevance and visual relevance. We conducted extensiveexperiments on real-world data from Flickr and Google image search, and the results demonstrated that theproposed methods can signiﬁcantly improve the social relevance of image search results while maintainingvisual relevance well.
+Categories and Subject Descriptors: H.3.3 [ Information Storage and Retrieval ]: Information Search and
+Retrieval
+General Terms: Algorithms, Human Factors, Experimentation
+Additional Key Words and Phrases: Social media, image search, image ranking, hybrid random walk
+ACM Reference Format:
+Cui, P., Liu, S.-W., Zhu, W.-W., Luan, H.-B., Chua, T.-S., and Yang, S.-Q. 2014. Social-sensed image search.ACM Trans. Inf. Syst. 32, 2, Article 8 (April 2014), 23 pages.
+DOI: http://dx.doi.org/10.1145/2590974
+1. INTRODUCTION
+Although the rapid advances of search techniques have greatly facilitate users’ infor-
+mation needs, it is still a hard nut to crack for all search engines to provide satisfac-tory results for users with different intentions but with the same query. According to
+Smyth [2007], approximately 50% of search sessions fail to ﬁnd satisfactory results for
+searchers. The lack of understanding of user intent is one of the key causes, which is
+This work is supported by the National Natural Science Foundation of China, No. 61370022, No. 61303075,
+and No. 61210008, by the International Science and Technology Cooperation Program of China, No.
+2013DFG12870, and by the National Program on Key Basic Research Project, No. 2011CB302206. It has
+also been supported by the NExT Research Center funded by MDA, Singapore, under research grantWBS:R-252-300-001-490.Author’s address: P. Cui (corresponding author); email: cuip@tsinghua.edu.cn.
+Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted
+without fee provided that copies are not made or distributed for proﬁt or commercial advantage and thatcopies bear this notice and the full citation on the ﬁrst page. Copyrights for components of this work ownedby others than ACM must be honored. Abstracting with credit is permitted. To copy otherwise, or repub-
+lish, to post on servers or to redistribute to lists, requires prior speciﬁc permission and/or a fee. Request
+permissions from permissions@acm.org.
+c/circlecopyrt2014 ACM 1046-8188/2014/04-ART8 $15.00
+DOI: http://dx.doi.org/10.1145/2590974
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:2 P. C u i e t a l .
+Fig. 1 . An illustration of the social-sensed image search.
+more serious in image search due to two reasons. First, image search often becomes
+more exploratory, and users are often looking for an image with a particular visual
+style that cannot be clearly expressed by query. Second, image search is often used for
+entertainment to explore in visual space with no clear end goal [Andr ´e et al. 2009].
+How to discover users’ latent intent from limited observed data is of paramount impor-
+tance to improving image search performance.
+In recent years, the personalization of search results attracted much research inter-
+est. Basically, these research efforts can be categorized into two scenarios: (1) the per-
+sonalization of general search engines (e.g., Google) by mining query logs [Sugiyamaet al. 2004; Sun et al. 2005], and (2) the personalization of vertical search in social plat-
+forms (e.g., Flickr) by user proﬁling [Lerman et al. 2007; Sang et al. 2012]. The former
+category suffers from lack of explicit user identities and scarcity of user proﬁles, whilethe latter, like a vertical image search, can only cover a tiny proportion of images in
+the Internet. Our goal is to combine the virtues of the two information sources (i.e., so-
+cial platforms and image search engines) to complement each other. It resonates wellwith the idea that underpins social-sensed image search , where the user proﬁles and
+behaviors in social platforms are sensed, harnessed, and shared to adapt the results of
+general image-search engines.
+Let us consider a novel image search scenario (as shown in Figure 1), where a user
+conducts image search in Google by providing his/her Flickr ID in addition to the
+query. We can then derive the user’s personal data from Flickr, discover his/her in-tent, and rerank the search results of a general search engine like Google accordingly.
+This raises a fundamental but unexpected problem: how to represent and model user
+intent in social platforms and map it into the same space as image search results inorder to guide the reranking process? In this article, we further decompose this task
+into three key problems.
+(1)Intent Representation . User intents can be expressed by both long-term interests
+[Teevan et al. 2005] and immediate information needs [Jansen et al. 2007]. As thelatter can be better mined from search logs [Jansen et al. 2007], we focus more on
+long-term user interests representation and modeling in social platforms. Although
+this problem has been studied for years in text corpus, for example, ontology-based [Sieg et al. 2007] or topic-based [Qiu and Cho 2006] interest modeling, these
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:3
+Fig. 2 . The framework for social-sensed image search.
+methods are difﬁcult to apply to interest modeling of images, especially when most
+images are accompanied with no tag or mostly inaccurate tags. How to represent
+and discover user interests in images is still an open issue.
+(2)User Interest Comprehension . How to understand and extract users’ interests from
+social media platforms is the central problem that needs to be solved. In social-
+sensed image search, it is assumed that the favorite images of users can well re-
+ﬂect user interests. However, the large volume of users and images intrinsicallyresults in the sparseness of user-image interactions. Therefore, most users only
+possess a small number of favored images, from which it is difﬁcult to discover
+their interests. As there are various types of social data in social platforms, suchas the interest groups and user proﬁles in Flickr, etc., it is possible to alleviate
+the sparseness problem by collaboratively and deeply exploiting these auxiliary
+information to enrich user-image relations.
+(3)Fusion of Social and Visual Relevance . The ultimate goal of social-sensed image
+search is that the reranked image results have good performance in both social
+relevance (i.e., the degree of relevance with user interest) and visual relevance (i.e.,
+the degree of relevance with query). Visual relevance, which has been well sup-
+ported by general image search engines, such as Google, can guarantee the quality
+and representativeness of returned images to the query; while social relevance,
+which is the focus of this article, can guarantee the matching of returned images
+to user interest. Thus, both social relevance and visual relevance need to be ad-dressed and subtly balanced.
+Although some existing research works have touched upon these problems [Datta
+et al. 2008; Diplaris et al. 2012], almost all existing efforts concentrate on either the
+Google-style image search engine platforms or on Flickr-style social media platforms.To the best of our knowledge, the problem of how to combine these two kinds of plat-
+forms to personalize or socialize general search engines by leveraging the knowledge
+extracted from social media platforms has not been explored, which is the goal of thisarticle.
+To address these problems, we ﬁrst propose a novel social-sensed image search
+framework, as shown in Figure 2. In this framework, one online module and oneofﬂine module are included, where the ofﬂine module is dedicated to deriving user
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:4 P. C u i e t a l .
+interests from social media data, while the online module adapts the image-search re-
+sults according to user interests. To effectively and efﬁciently bridge the two kinds
+of platforms, we then propose an example-based user interest representation and
+modeling method, where we propose a hybrid random-walk algorithm to derive theuser-image interest graph from social media. We further propose a social-sensed
+image reranking method to attain the expected results, which integrate the search
+results from image search engines and user interests from social media into the social-visual graph, and rerank the search results by fusing their social relevance and visual
+relevance.
+We conducted extensive experiments on real datasets extracted from Flickr and
+Google image search engines. The experimental results demonstrated the effective-
+ness of the proposed method and validated the following assumptions that underpin
+the idea of social-sensed image search. First, general image search engines can signiﬁ-cantly beneﬁt from integration with social media platforms in alleviating the intention
+gap problem. Second, users’ favorite images can reﬂect user interests, and the rich
+information in social media (such as interest groups) can help to densify the sparseuser-image favoring links. Third, visual factors (such as visual styles) that often drive
+users’ image searching behaviors can be incorporated into image-based user interest
+representation and modeling.
+The contributions of this article are as follows.
+(1) We propose a novel social-sensed image search framework to enable current image
+search engines to personalize their image search results according to user interest
+by leveraging the rich social data from social media platforms. The framework canbe easily adapted to other applications (e.g., recommender systems, e-commerce,
+etc.) with minor changes in the online modules.
+(2) We propose an image-based user interest representation and modeling method
+which can be naturally linked with any third-party general image search engines,
+and a hybrid random-walk method is proposed to incorporate heterogeneous social
+data to alleviate the user-image sparsity problem.
+(3) We propose a social-sensed image reranking method where both social relevance
+and visual relevance are incorporated to rank the image results from image search
+engines so that the reranked results have a good matching with user interest whilemaintaining relevance with the query.
+The rest of the article is organized as follow. We review related works in Section 2
+and propose the user interest representation and modeling methods in Section 3. This
+is followed by the social-sensed image reranking method in Section 4. The experimentsettings and results are described in Section 5, which is followed by the conclusion and
+future work in Section 6.
+2. RELATED WORKS
+Our work aims to transfer social knowledge sensed from social media platforms to
+personalize image search results from general image search engines by reranking.
+It is mainly related to personalized image search, social image analysis, and image
+ranking, which are brieﬂy reviewed as follows.
+Personalized search has been studied for many years in text domain. The main tar-
+get is to construct accurate and complete user proﬁles and use that to rerank the
+search results by measuring the distance between the search results and user proﬁles[Chirita et al. 2005; Qiu and Cho 2006; Xu et al. 2008]. More speciﬁcally, the user pro-
+ﬁles were represented by ontology [Sieg et al. 2007] and topics [Qiu and Cho 2006],
+etc, which are mined from the metadata, searching logs and social media. Teevanet al. [2009] further enriched user proﬁles by group information. Also, they argued
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:5
+that not every query can beneﬁt from personalization and proposed a predictive model
+to identify queries for personalization [Teevan et al. 2008]. Recently, some of these
+techniques have been transferred into personalized image search, especially image
+search in Flickr. Considering the special characteristics of social images, Lu and Li[2011] proposed a co-clustering method to discover the latent interests of users and
+mapped the Flickr search results into the latent space to measure their matching de-
+gree. Lerman et al. [2007] exploited user-generated metadata in the form of contactsand image annotations in Flickr to describe user interest and used them to rerank the
+image search results in Flickr. Sang et al. [2012] constructed personal topics for each
+user and calculated topic-sensitive user preferences over images. More recently, Liu[2013, 2014] proposed a PageRank-based method to leverage social relations and so-
+cial groups to rerank Flickr images so that the image search results can better comply
+with users’ interests reﬂected by their friends and joined interest groups. Most of theseworks focus on the personalization of Flickr image search results, but the personaliza-
+tion of general image search engines (e.g., Google image search, Bing image search,
+etc), which lack personal and social information of users, are rarely studied.
+In order to better understand and exploit social images, a number of methods were
+proposed for social image analysis. Most works in this research topic focus on image tag
+analysis. Li et al. [2009] proposed a neighbor voting method to quantize tag relevance
+and demonstrated that using highly-relevant tags can alleviate the problem of noisy
+tags and signiﬁcantly improve image search results. Larson et al. [2011] improved theinformativeness of image tags by considering physical object distribution in the real
+world and statistics of natural language use patterns. Sun and Bhowmick [2010] pro-
+posed using cohesion and separation to quantify tag visual-representativeness. Withthe given tags, many works [Chen et al. 2010, 2012b; Gao et al. 2013; Xu et al. 2009]
+investigated image retrieval methods based on image tags, and studied how to im-
+prove retrieval results by tag reﬁnement and re-tagging. Wang et al. [2012] studiedthe correspondences between images and accompanying texts in social media. In order
+to cover the images that do not have accompanying tags, many works focus on tag rec-
+ommendation and annotation [Sang et al. 2011]. Although these works help improvethe quality of tags, the subjectivity, ambiguity, and noise problems still limit the utility
+of tags. Also, tags have good potential in describing objects or events in images, but it
+is difﬁcult to reﬂect the abstract concept and visual factors (e.g., visual styles) by tags,which are important for image search.
+User modeling is crucial to addressing the intention gap problem in image search.
+Qiu and Cho [2006] represented user interest by topics and proposed a method tolearn user preferences from past query click history in Google. Agichtein et al. [2006]
+proposed a method to learn the user interaction model with which user preference
+over the search results can be predicted. Teevan et al. [2005] explored rich models forinterest modeling by combining multiple resources, such as search-related informa-
+tion, user-relevant documents, and emails. More recently, Jiang et al. [2012a, 2012b]
+and Cui et al. [2011] investigated user-information interaction behavior patterns insocial network environments. The interest modeling problem is more challenging in
+the image domain due to the high-dimensional space and the semantic-gap problem.
+Lipczak et al. [2013] analyzed user favorite behavior patterns in Flickr. Xie et al. [2005]proposed detecting user interests from user-image interaction behaviors recorded by
+image browsing logs. Yang et al. [2013] investigated the emotion prediction problem
+for individual users when watching social images. Tags of images are mined to con-struct the topics and ontology to represent user preferences [Lu and Li 2011; Negoescu
+and Gatica-Perez 2010; Sang et al. 2012]. Similar to the problem that user intentions
+cannot be well represented by query words in image search [Andr ´e et al. 2009], user
+interests in images cannot be well represented by tags as well. Visual factors, such
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:6 P. C u i e t a l .
+as visual style and visual quality, eventually play important roles in user interest
+formation.
+To further improve (or personalize) image search results, image ranking (or rerank-
+ing) is an important technique. The basic scheme of image reranking is to ﬁrst derivethe image search results by text query and then rerank the returned images on the
+basis of visual (and textual) similarity. Pseudo-relevance feedback assumes that top-
+ranked images returned from text-based image search or other external resources (e.g.,Wiki) have high relevance with the query and can be used as positive data. The bottom-
+ranked images or images returned from other queries can be used as negative training
+data. Then classiﬁers are trained for image reranking [Schroff et al. 2011; Wang andForsyth 2008; Yan et al. 2003]. Also, clustering-based approaches were proposed to re
+rank images by their distance from the largest cluster formed by top-ranked images
+[Ben-Haim et al. 2006; Zitouni et al. 2008]. None of these methods address the issueof user intent. Jain and Varma [2011] proposed a Gaussian process regression model
+to predict user click behaviors over images by mining user click logs and used the pre-
+dicted score to rerank image results. Trevisiol et al. [2012] investigated different fac-tors extracted from user browsing behaviors that affect image ranking performances
+in the Flickr dataset and provided insights on the roles of social interactions, internal
+and external factors in image ranking. Weber and Jaimes [2011] analyzed a large-scale
+query log and discovered the behavior patterns of groups of users with similar demo-
+graphic information. Most of these works focus on one platform, and few works attemptor can be straightforwardly applied to exploit the knowledge from one platform to
+rerank the image results from another platform.
+To summarize, our work differs from previous research in following aspects:
+(1) rather than focus only on either social media platforms (e.g., Flickr) or general
+image search engines (e.g., Google image search), we aim to leverage the social knowl-
+edge sensed from social media to personalize the search results from any general im-age search engines, and thus we focus on how to take advantage of these two kinds
+of resources when designing the social-sensed image search framework and methods;
+(2) we discover user interests from their interaction behaviors with images (such asuser-image favoring links and user-group joining links), rather than image tags, and
+use image-based interest representation method for user modeling so that visual fac-
+tors can be incorporated in user model; (3) we jointly consider user interest and queryrelevance in image reranking to address user intents for general image search engines
+rather than vertical social image search engines without any user intervention.
+3. USER INTEREST REPRESENTATION AND MODELING
+In this section, we introduce the details on how to derive user interests from social
+media. In order to efﬁciently link user interest models with image search results, wepropose an example-based interest representation, that is, using a set of images to
+represent user interest so that the user interest model and search image results can
+share the same feature space and their matching degree can be efﬁciently calculated.Although most users have some favorite images (the favorite images marked by the
+user), it is too sparse to represent user interest compared to the scale of the whole
+image set, so we transform the user interest modeling problem into a link prediction (orgraph completion) problem between users and images. Table I lists the main notations
+used in this article.
+3.1. Hybrid Graph Construction
+There are a number of explicit direct links between users and images, based on which
+we should be able to predict the implicit (or missing) user-image links. However, theexplicit links are too sparse, which limits link-prediction accuracy. To deal with the
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:7
+Table I. Symbols List
+Symbol Explanation
+Ui,Ii,Gi theith user, image, and group, respectively
+U,I,G the set of users, images, and groups, respectively
+L set of links
+U,G attribute set of users and groups, respectively
+G the constructed graphs
+˜G the completed graphs
+sparsity problem, we take advantage of interest groups that consist of users and im-
+ages and use them as the bridge to link users and images indirectly. We thus construct
+a hybrid graph which consists of three inter-linked domains, including the user do-
+main, image domain, and group domain. The vertex in each domain represents therespective entities, for example, the vertex in the user domain represents a user. The
+links in the hybrid graph, including the within-domain links (i.e., user-user following
+link, image-image afﬁnity link, group-group afﬁnity link) and cross-domain links (i.e.,user-image favoring link, user-group joining link, and group-image including link) are
+calculated as follow.
+Image Afﬁnity Link. It measures the pairwise content similarity between images.
+We ﬁrst extract SIFT descriptors of each image as [Jing and Baluja 2008; Zhang et al.2009], after which a hierarchical visual vocabulary tree [Nist ´er and Stew ´enius 2006] is
+built based on hierarchical k-means clustering, and the leaf nodes of the hierarchical
+vocabulary tree are deﬁned as the visual words. After that, an image can be regardedas a document and represented by a bag-of-words. We can then efﬁciently count the
+co-occurrence of visual words in two images, and the weight of the image afﬁnity link
+can be calculated as
+L
+II(i,j)=|C(Ii)∩C(Ij)|
+|C(Ii)∪C(Ij)|,( 1 )
+where C(Ii)is the visual word set of image Ii,a n d |.|is the cardinality of a set. As
+visual words can represent the local content of images, the measurement on visual
+word co-occurrence can well reﬂect the visual afﬁnities between images.
+Group Afﬁnity Link. It measures the pairwise similarity between groups. Most
+groups have clear themes, which are reﬂected by the included images and joined users,
+in addition to the group name. It is difﬁcult to measure the similarity from the group
+name by calculating their semantic distance, but we can ﬁnd the like-minded groupsby measuring how many users and images co-join or co-appear in these groups. Ac-
+cordingly, the weights of group afﬁnity links are calculated as
+L
+GG(i,j)=λ1|GU
+i∩GU
+j|
+|GU
+i∪GU
+j|+(1−λ1)|GI
+i∩GI
+j|
+|GI
+i∪GI
+j|,( 2 )
+where GU
+irepresents the user set in group Gi,a n d GI
+iis the image set in group Gi. The
+contributions of users and images in determining group similarity can be adjusted by
+λ1. In our case, we treat users and images equally and set λ1=0.5.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:8 P. C u i e t a l .
+User Afﬁnity Link. It measures the pairwise similarity between users. Most users
+mark their set of favored images and often join interest groups to reﬂect their interests.
+We can thus calculate the weights of user afﬁnity links in a similar way to group
+afﬁnity links:
+LUU(i,j)=λ2|UI
+i∩UI
+j|
+|UI
+i∪UI
+j|+(1−λ2)|UG
+i∩UG
+j|
+|UG
+i∪UG
+j|,( 3 )
+where UI
+iis the set of favorite images of Ui,a n d UG
+iis the set of groups Uijoined. We
+setλ2=0.5 to equally balance the weights of user factor and group factor.
+The cross-domain links, including user-image links LUI, user-group links LUG,a n d
+group-image links LGI, are straightforwardly derived from the social data, where
+LUI
+ij=/braceleftbigg1,if U ifavored I j
+0,otherwise,( 4 )
+LUG
+ij=/braceleftbigg1,if U ijoined G j
+0,otherwise,( 5 )
+LGI
+ij=/braceleftbigg1,if G iincluded I j
+0,otherwise.( 6 )
+Until now, we derive the whole social graph G={U∪I∪G,L}, which can be projected
+into the following six subgraphs.
+—User-user subgraph .GUU={U,LUU}.
+—Image-image subgraph .GII={I,LII}.
+—Group-group subgraph .GGG={G,LGG}.
+—User-image subgraph .GUI={U∪I,LUI}.
+—User-group subgraph .GUG={U∪G,LUG}.
+—Group-image subgraph .GGI={G∪I,LGI}.
+3.2. Hybrid Random Walk
+In this section, we derive a random-walk algorithm over the hybrid graph to predict
+the missing links in LUI, which includes both within-domain random walk and cross-
+domain random walk. This is different from Chen et al.’s random walk algorithm over
+integrated tripartite graphs [2012a], which only considers cross-domain random walk.
+There are also several works addressing the problem of random walk over multiple
+graphs [Hsu et al. 2007; Minkov and Cohen 2010], but few of them consider multiple
+relational graphs with both within-domain links and cross-domain links.
+For the within-domain random walk over GUU,GII,a n d GGG, we adopt the Ran-
+dom Walk with Restart (RWR) method [Tong et al. 2006] and use the steady state
+of transition probability distribution to describe the intrinsic pairwise relevance be-
+tween users, groups, and images. Let us assume a random walker starts from vertex i
+and iteratively jumps to other vertices in the same domain with transition probabili-
+tiespi={pi1...pij...pin}. After reaching the steady state, the probability of the random
+walker staying at vertex jcan be used to represent vertex j’s relevance score with
+respect to vertex i. More speciﬁcally, for the three within-domain graphs, we represent
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:9
+the vertices and their transition probabilities in matrix form and calculate their tran-
+sition probability matrices by row-normalized weight matrices (whose diagonal line
+entries are all zero):
+PUU=(DUU)−1LUU,
+PII=(DII)−1LII,( 7 )
+PGG=(DGG)−1LGG,
+where Pis the transition probability matrix, and the Dis the normalization ma-
+trix. The steady-state probability distribution matrices can be iteratively updated
+as follows:
+RUU
+t+1=αPUURUU
+t+(1−α)I,
+RII
+t+1=βPIIRII
+t+(1−β)I,( 8 )
+RGG
+t+1=γPGGRGG
+t+(1−γ)I,
+where R.
+tis the state probability matrix at time tin a certain domain with entry rij
+representing the probability of the random walker jumping from vertex ito vertex j
+in the same domain, and 0 <α,β,γ< 1 are the prior probabilities that the random
+walker will leave its current state. The random-walk processes will converge into the
+following steady-state probability matrices when t→∞ :
+˜RUU=(1−α)(I−αPUU)−1,
+˜RII=(1−β)(I−βPII)−1,( 9 )
+˜RGG=(1−γ)(I−γPGG)−1.
+For the cross-domain random walk, we calculate the transition probability
+matrices as
+PUI=(DUI)−1LUI,
+PUG=(DUG)−1LUG, (10)
+PGI=(DGI)−1LGI,
+where the entries pUI
+ij,pUG
+ij,a n d pGI
+ijrepresent the probability of user Uifavoring image
+Ij, the probability of user Uijoining group Gj, and the probability of group Giincluding
+image Ij, respectively.
+The ultimate goal of user interest modeling is to predict the missing links in LUI,
+that is, to estimate PUI. We propose two strategies in this article: one is called
+DIRECT, which directly targets the links, in LUI, treats the other cross-domain links
+as known links, and keeps them unchanged; the other is called COMPLETE, which
+simultaneously predicts the missing links in LUI,LUG,a n d LGI.
+(1)DIRECT Strategy . For higher efﬁciency, we conduct cross-domain random walk
+with only LUIupdated in this strategy. Here we consider three paths to predict
+each user-image link LUI
+ij, as shown in Figure 3(a).
+—LUU
+il⊕LUI
+lj→LUI
+ij.I fUiis relevant with Ul,a n d Ulfavored Ij,t h e n Uiwill
+probably favor Ij.
+—LUI
+ik⊕LII
+kj→LUI
+ij.I fUifavored Ik,a n d Ikhas similar content to Ij,t h e n Uiis
+probable to favor Ij.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:10 P. C u i e t a l .
+Fig. 3 . The random-walk paths for predicting missed links. The red dashed lines are the targeting predicted
+link, and the real lines with different colors represent different paths for predicting the target link.
+—LUG
+ih⊕LGI
+hj→LUI
+ij.I fUijoined Gh,a n d Ghincludes Ij,t h e n Uiis probable to
+favor Ij.
+⊕is the path concatenation symbol, and →means approximation.
+Now we consider the previous paths and estimate the probabilities in GUIby
+pUI
+ij=δ/summationdisplay
+Ul∈UrUU
+ilpUIlj+η/summationdisplay
+Ik∈IpUI
+ikrII
+kj+(1−δ−η)/summationdisplay
+Gh∈GpUG
+ihpGIhj, (11)
+where 0 ≤δ,η≤1 are the parameters that balance the importance of different
+paths.
+(2)COMPLETE Strategy . In addition to predicting the LUIlinks in the DIRECT strat-
+egy, we also update the three kinds of cross-domain links alternately in COM-PLETE strategy so that the method can make full use of the data and greatly
+alleviate the sparsity problem. The paths for predicting the links in L
+UGandLGI
+are shown in Figure 3(b) and 3(c), respectively.
+—LUGlinks prediction.
+—LUG
+ih⊕LGG
+hq→LUG
+iq.I fUijoined Gh,a n d Ghis relevant with Gq,t h e n Ui
+will probably join Gq.
+—LUU
+il⊕LUG
+lq→LUG
+iq.I fUiis relevant with Ul,a n d Uljoined Gq,t h e n Uiwill
+probably join Gq.
+—LUI
+ik⊕LGI
+kq→LUG
+iq.I fUifavored Ik,a n d Ikis included in Gq,t h e n Uiwill
+probably join Gq.
+—LGIlinks prediction.
+—LUG
+ih⊕LUI
+ik→LGI
+hk.I fUijoined Gh, meanwhile Uifavored Ik,t h e n Ghwill
+probably include Ik.
+—LGI
+hj⊕LII
+jk→LGI
+hk.I fGhincluded Ij,a n d Ikhas similar content with Ij,t h e n
+Ghwill probably include Ik.
+—LGG
+hq⊕LGI
+qk→LGI
+hk.I fGhis relevant with Gq,a n d Gqincludes Ik,t h e n Gh
+will probably include Ik.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:11
+Based on these paths, we estimate the transition probabilities in GUGandGGIby
+pUG
+iq=μ/summationdisplay
+Gh∈GpUG
+ihrGGhq+ν/summationdisplay
+Ul∈UrUU
+ilpUGlq+(1−μ−ν)/summationdisplay
+Ik∈IpUI
+ikpGIqk, (12)
+pGI
+hk=τ/summationdisplay
+Ui∈UpUG
+ihpUIik+υ/summationdisplay
+Gq∈GrGG
+hqpGIqk+(1−τ−υ)/summationdisplay
+Ij∈IpGI
+hjrII
+jk, (13)
+and the transition probabilities in GUIare estimated in the same way as Equa-
+tion (11).
+We alternately update the three kinds of cross-domain links according to Equa-
+tions (11), (12), and (13) and iteratively conduct the random walk process untilconvergence:
+PUI
+t+1=δ˜RUU
+tPUIt+ηPUI
+t˜RII
+t+(1−δ−η)PUG
+tPGIt, (14)
+PUG
+t+1=μPUG
+t˜RGG
+t+ν˜RUU
+tPUGt+(1−μ−ν)PUI
+t(PGI
+t)T, (15)
+PGI
+t+1=τ(PUG
+t)TPUIt+υ˜RGG
+tPGIt+(1−τ−υ)PGI
+t˜RII
+t. (16)
+We summarize the procedure of the hybrid random walk using the COMPLETE
+strategy in Algorithm 1.
+Algorithm 1: Hybrid Random Walk for User-Image Link Prediction
+Require:
+The within-domain graphs GUU,GGG,GII; The cross-domain graphs GUI,GUG,GGI;
+1:Compute transition probabilities PUU,PGGandPIIusing Eq. (7)
+2:Derive steady-state distributions ˜RUU,˜RGGand˜RIIusing Eq. (9)
+3:Initialize the transition probability matrices PUI
+0,PUG
+0andPGI
+0using Eq. (10).
+4:fort=1:T do
+5: Compute the transition probability matrices PUI
+t,PUG
+tandPGI
+tusing Eq. (14),
+(15), and (16).
+6:end for
+7:Return: ˜GUI=/braceleftbig
+U∪I,PUI/bracerightbig
+.
+Until now, we could derive the completed user-image subgraph ˜GUI, including both
+explicit links and predicted links, which is denoted as user-image interest graph .F o ra
+given user, we can extract the top- kimages with the largest link weights to represent
+user interest and use them to rerank the image search results for the user.
+The time complexity of our Hybrid Random Walk COMPLETE algorithm is O(k(m+
+n+l)(mn+nl+ml)), where mis the user number, nis the group number, lis the
+image number, and kis the iteration number. The memory cost of our algorithm is
+O((m+n+l)2). When the data scale is very large, the links of user-user, user-group,
+user-image, group-image would be very sparse, and we can divide users and groupsinto several small clusters. In this case, the computational complexity of our algorithm
+isO(hcl
+2). Here, hcan be regarded as a constant, which is determined by the max
+number of users or groups in each cluster and the number of iterations; and cis the
+number of clusters. Then the complexity is reduced to the square of the image number,
+which is efﬁcient to process large-scale data. As this algorithm is implemented ofﬂine,
+it can be accelerated in multiple ways. For example, the main cost of our algorithm ison matrix multiplication, which is very suitable for distributed computation.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:12 P. C u i e t a l .
+4. SOCIAL-SENSED IMAGE RERANKING
+In this section, we ﬁrst present how to combine social media platforms and image
+search engines by using the user-image interest graph from social media to rerank the
+image search results from image search engines. Then we present how to measure the
+social relevance of image search results for a certain user and how to fuse the relevancefrom both social and visual aspects, which are two major problems in bridging social
+media platforms and image search engines.
+4.1. Social Relevance and Visual Relevance
+For a given query1, we can derive the image results from search engines, denoted
+byV={(IV
+i,zi)|0≤i≤m}, where IV
+iis the ith image, ziis the ranking level of
+image IV
+i,a n d mis the total number of images in the result list of the query. For a
+given user Ui, we can extract his/her personal interest graph Oi={(Ij,pUI
+ij)|((Ij,pUI
+ij)∈
+GUI)∧(pUI
+ij>ζ )}, where ζis the threshold to select personal interest representative
+images.
+In this article, we consider both social relevance and visual relevance to rerank the
+image search results, where visual relevance measures image relevance with the queryfrom a content or semantic perspective, and social relevance measures image relevance
+with user interest. Visual relevance can be well represented by the ranking from im-
+age search engines, that is, the image with a higher rank level is more relevant to thequery. As the user interest is represented by the representative image set, we mea-
+sure the social relevance of an image by its similarity with the set of representative
+images:
+χ(U
+i,IV
+j)=/summationdisplay
+(Ik,pUI
+ik)∈OipUI
+ikφ(IV
+j,Ik)δρ(φ(IV
+j,Ik)), (17)
+where φ(IV
+j,Ik)measures the content similarity between Ikand IV
+jusing Eq. (1). δρ(a)
+is a delta function, where δρ(a)=1i fa≥ρ,a n d δρ(a)=0 otherwise. ρis the threshold
+to determine whether an image is similar to the representative images. Note that if no
+returned image is similar to the interest representative images (e.g., the image search
+query is purely determined by the user’s immediate information needs with no userinterest factor), the social relevance will be ignored in the reranking process, and the
+returned images from general image search engines will not be reranked. In this case,
+the social-sensed image search will degrade into a general image search.
+Thus for a user U
+i, each image result for the query collected from image search
+engines has two relevance metrics: the visual relevance V, and the social relevance
+SUi={(IV
+j,χ(Ui,IV
+j))|0≤j≤m}. Next we discuss how to fuse these two kinds of
+relevance.
+4.2. Reranking by Fusion
+Now we rerank the images by considering both the social relevance to user interest
+and visual relevance to the query. The main problem is how to fuse the two kinds ofrelevance, especially when they use different metrics. In our case, the social relevance
+1As the reranking processes are the same for different queries, we do not differentiate queries in the follow-
+ing description.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:13
+of images is represented by relevance scores, while the visual relevance of images is
+represented by rank levels. Here we provide two alternatives to solve the problem.
+(1)Averaging Model . In this model, we ﬁrst transform the rank levels in visual rele-
+vance into relevance scores by
+ˆzi=e−zi, (18)
+where ˆzirepresents the visual relevance score of image IV
+i. We then adopt the aver-
+aging model in Hull et al. [1996] to average the log-odds ratios of visual relevance
+and social relevance scores:
+ϕUi(IV
+j)=1
+2(log(χ(Ui,IV
+j)
+1−χ(Ui,IV
+j))+log(ˆzj
+1−ˆzj)), (19)
+where ϕUi(IV
+j)represents the social-visual relevance score of an image to a certain
+user under the given query. This equation treats social relevance and visual rele-
+vance as equally important. In addition, we use a parameter to tune the importance
+of the two sources. The social-visual relevance score is calculated as
+ϕUi(IV
+j)=πlog(χ(Ui,IV
+j)
+1−χ(Ui,IV
+j))+(1−π)log(ˆzj
+1−ˆzj), (20)
+where 0 ≤π≤1 is the weight of social relevance. Finally, we use the social-visual
+relevance scores to rerank the returned images from the image search engines.
+(2)Borda Fusion Model . Borda Count has been widely used for meta-search rerank-
+ing [Aslam and Montague 2001]. Its basic idea is to simulate a democratic voting
+process. Each voter gives a preference rank to dcandidates. For each voter, the
+top-ranked candidate gets dpoints, the second-ranked gets d−1 points, and so on.
+Then for each candidate, the total points gained from all voters are used to rank
+the candidates.In our case, we have two voters: social voter and visual voter. As the social rele-
+vance is given in score metric, we ﬁrst rank them according to the scores. Then we
+conduct the Borda Count process to rerank the images.The time complexity of the online reranking algorithm is O(uvw), where uis the
+number of representative images of the given user; vis the number of images from
+Google image search; and wis the max length of the visual words. In our case,
+both uand wcan be regarded as constants. Thus the online ranking algorithm is
+scalable. Also, its efﬁciency can be further improved by adopting hashing-based
+image matching methods [Xu et al. 2011; Zhu et al. 2013].
+5. EXPERIMENTS
+In this section, we evaluate the proposed framework and algorithms for user interest
+modeling and social-sensed image reranking . As we represent user interest by user-
+image interest graphs, we evaluate user interest modeling using user-image link pre-
+diction performance.
+5.1. Datasets
+In this article, we crawled data from Flickr and Google image search as representativesof social media platforms and general image search engines. The crawling processesfrom Google and Flickr are as follow.
+(1)Queries . According to Choi and Rasmussen [2003], users often use general queries
+in seeking image information. It is intuitive that general queries are more chal-lenging to get satisfactory image results for different users. For the same general
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:14 P. C u i e t a l .
+Table II. Query List
+General Queries USA Europe China landscape travel trip city restaurant portrait
+concert ﬁlm camera car statue fruit vegetable nature
+Speciﬁc Queries rose gold-star-award boat cat NBA beach
+Table III. Flickr Data Details
+Item Number Sparsity
+User 27,076 -
+Image 20,000 -
+Group 1,490 -
+User-Image Link 97,588 1.8e-4
+User-Group Link 87,179 2.1e-3
+Image-Group Link 178,873 6.0e-3
+query, different users may have different requests on the returned results, which
+results in the intention gap problem. This is the issue that social-sensed imagesearch addresses. Thus, we predeﬁne 17 queries (as listed in Table II) to evaluate
+the effectiveness of the proposed methods in alleviating the intention gap. In ad-
+dition, even for speciﬁc queries, different users may have different preferences onthe visual styles of returned images. Here, we also list six relative speciﬁc queries
+(as listed in Table II) to demonstrate the performance of the proposed method in
+this aspect. Note that it is difﬁcult to give a formal deﬁnition to differentiate gen-eral queries from speciﬁc queries. Here we adopt a user study scheme and ask
+ﬁve subjects to judge whether a query indicates a category of physical objects, is
+a named-entity of events or brands, or can trigger a dominant visual impressionin mind. A positive response of this question indicates that this query might be a
+speciﬁc query. Then we use majority voting to decide which queries are speciﬁc and
+leave the remaining to be general queries.
+(2)Data from Google Image Search . For each query in Table II, we use Google image
+search and return the top-500 images together with their rank levels as the search
+result list. In total, we obtain 25,000 images from Google.
+(3)Data from Flickr . We collect the images, users, and groups from Flickr. In addition,
+their relations are collected, including user-image favoring links, user-group links,and group-image links. For experimental purpose, we collect a subset of Flickr
+data in an iterative manner. In order to improve the correlation between the Flickr
+data and Google image search results, we ﬁrst search in Flickr using the querieslisted later to obtain 5,000 seed images. We then collect the users that favored
+these images and the groups that included these images. After that, we collect
+other images in the collected groups and the favorite image lists of the collectedusers, until the image number reaches 20k. Finally, all the relational links among
+users, images, and groups are collected. The details of Flickr data are shown in
+Table III.
+5.2. Evaluation Measures
+(1)User-Image Link Prediction . We only have ground truth for positive links. We know
+that the user is indeed interested in the image if he favored the image. However,if the user did not favor it, that does not mean that the user is not interested in
+it. Another possible explanation is that the user may not have even seen it. Thus
+we only use the actual user-image favoring links as ground truth to evaluate thelink prediction performance. Here we adopt a held-out setting for experiments and
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:15
+use 80% of actual user-image favoring links for training, and the remaining 20%
+of links for testing. We predict the weights of the remaining links and measure
+the accuracy of the predicted results with respect to the ground truth with the
+following criteria.
+—Precision , which is calculated by
+Precision =|{(Ui,Ij)|pUI
+ij≥ξ,LUI
+ij=1}|
+|{(Ui,Ij)|pUI
+ij≥ξ}|, (21)
+where ξis the threshold to determine the user-image favoring links.
+—Recall , which is calculated by
+Recall =|{(Ui,Ij)|pUI
+ij≥ξ,LUI
+ij=1}|
+Np, (22)
+where Npis the number of links which are actual user-image favoring links in
+the testing set.
+—Precision@K , which is calculated by
+Precision @K={(Ui,Ij)|pUI
+ij∈TK,LUI
+ij=1}
+K, (23)
+where TKis the set of links that have the top-K weights in the testing set.
+(2)Social-Sensed Image Reranking . Considering that the social-sensed image search
+should have a good trade-off between social relevance and visual relevance, we use
+the following two measures to evaluate our method in these two aspects, respec-
+tively. We expect that social-sensed image reranking should be able to improve thesocial relevance of search results from general search engine, while well maintain-
+ing the visual relevance of the results.
+—Average Rank (AvgRank). The average rank is commonly used in the evaluation
+of personalized search [Aslam and Montague 2001]. The notion is that if an imageis favored by a user, then the image should be ranked top if it is in the result
+list searched by the user. In our case, we randomly select the testing pairs (U
+i,Ij)
+to construct the testing set Y={(Ui,Ij)|LUI
+ij=1}. We then remove Ijfrom Ui’s
+favorite image set, using the remaining favorite images of Uito rerank the images
+returned from Google. Then Ij’s near duplicates are expected to be ranked higher in
+the results after reranking. In order to guarantee that Ijcan ﬁnd near duplicates in
+the images returned from Google, we ﬁrst conduct near duplicate detection among
+users’ favorite images in Flickr and Google images. We then use Ijthat has dupli-
+cates and their corresponding users to form the testing pairs to calculate AvgRank by
+AvgRank =1
+|Y|/summationdisplay
+(Ui,Ij)∈Y˜zi
+j, (24)
+where ˜zi
+jis the rank of Ijafter reranking when Uiconducts the search. Intuitively,
+smaller AvgRank indicates better reranking from a social relevance aspect.
+—Visual Consistency (VisCons). Although the aim of the article is to leverage so-
+cial media to improve the social relevance of results from Google image search, we
+still expect that the reranked results should be visually relevant. Note that the re-sults from Google image search have good visual relevance. Thus, given a query,
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:16 P. C u i e t a l .
+we measure the visual relevance of the reranked result (for a certain user) by its
+consistency with the Google ranking:
+VisCons =1−2/summationtext
+zj>zkδ(˜zi
+j<˜zi
+k)
+|V|(|V|−1). (25)
+A larger VisCons indicates better reranking from a visual relevance aspect.
+5.3. Baselines
+In order to demonstrate the advantages of the proposed method, we implement the
+following baselines for comparison.
+(1)Collaborative Filtering (CF). Collaborative ﬁltering is commonly used for link pre-
+dictions and recommendations. Item-based CF or user-based CF are two typical
+memory-based CF, where the missing links are inferred from either similar users(measured by co-items) or similar items (measured by co-users). As the user-image
+links are too sparse in our case, most links predicted by either item-based or user-
+based CF are zero. As we have the user-user and image-image similarity informa-tion, we adopt the CF method in Wang et al. [2006] to jointly consider the multiple
+similarity sources.
+(2)RandomWalk without Group (RW-NoGroup). Random-walk-based methods exploit
+more correlation information between items and users than CF methods [Yildirim
+and Krishnamoorthy 2008], which can help to alleviate the user-image sparsity
+problem in our case. However, the rich domains (e.g., interest group domain) insocial data that could help to establish potential relational links between users and
+images are ignored in those methods. Here, we implement the algorithm according
+to Equation (11) by setting δ+η=1 to simulate the case without interest group
+information.
+(3)HRW with DIRECT (Hybrid-DIRECT). This implemented according to Equation
+(11) with the image-group links and user-group links unchanged. In the experi-
+ments, we treat the evidence from different paths equally and set δ=η=1/3.
+In addition to these baselines, we implemented our method, denoted as Hybrid-
+COMPLETE, according to Algorithm 1. Here we treat the paths equally by setting
+μ=ν=τ=υ=1/3, which is demonstrated to be adequate in our experiments. In
+order to further improve performance, the parameters here can be tuned by gradientsearch, ranging from 0 to 1 with a step of 0.1.
+5.4. User Interest Modeling Performance
+Here we evaluate user interest modeling by user-image link-prediction performance.
+We randomly select 80% of actual user-image links for training and the remaining
+links for testing. We conduct the random selection 20 times and compare the averageperformance of the proposed method and other baselines. The performance is evalu-
+ated using the measures of precision, recall, and precision@K, which are presented in
+Figure 4 and Table IV, respectively.
+Figure 4 is generated by adjusting threshold ξin Equations (21) and (22) from 0 to
+1 with step size 0.1. It can be seen that the Hybrid-COMPLETE method achieves the
+best overall performance with respect to precision and recall. At a certain recall, theHybrid-COMPLETE method can always achieve the highest precision when compared
+to other baselines.
+The performance improvement from CF to RW-NoGroup indicates that the random-
+walk-based method can exploit more correlations in data. As CF methods consider only
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:17
+Fig. 4 . The precision-recall curves of different methods.
+Table IV. Link-Prediction Precision at Top-k (%)
+Precision@1 @3 @5 @10
+CF 2.8 2.1 1.5 0.9
+RW-NoGroup 3.4 2.0 1.6 1.0
+Hybrid-DIRECT 3.6 2.4 2.0 1.3
+Hybrid-COMPLETE 3.8 2.7 2.2 1.6
+ﬁrst-order similarities, while random-walk methods make use of high-order similari-
+ties, the advantages of the random-walk method are more obvious, especially in very
+sparse data. The improvement from RW-NoGroup to Hybrid-DIRECT indicates the im-portance of user interest groups. The improvement from Hybrid-DIRECT to Hybrid-
+COMPLETE further indicates that the dense group-image and group-user links can
+signiﬁcantly alleviate the sparsity problem of user-image links.
+From Table IV, we can see that Hybrid-COMPLETE achieves the best performance
+in different precision@K conﬁgurations. It should be noted that the absolute values
+of precision are quite low, which is due to the intrinsic characteristics of the data.With respect to user-image links, the dataset is seriously unbalanced, and only a tiny
+proportion of user-image links are positive. In this case, if we randomly guess the
+weights of user-image links, then the Precision@1 is only
+97588 ∗20%
+27076 ∗20000 −97588 ∗80%=3.6e−
+5, while in our case, the best Precision@1 is 3.8%, which is 1,000 times higher than the
+random method.
+After predicting the user-image links, we select the images whose probability is
+larger than /epsilon1as the representative images of each user. /epsilon1is varied from 5 ∗10−5to
+5∗10−4with step size 5 ∗10−5. For each /epsilon1, we measure the overall performance using
+the F1 measure. Our method performs best in F1 measure when /epsilon1=3∗10−4. Under
+this setting, users have 63 representative images on average. However, without the
+proposed algorithm, the average number of favorite images per user is as low as 4,
+which is too sparse to represent user interests.
+5.5. Image Reranking Performance
+(1)Overall Performance . Based on the user-image interest graph, including predicted
+and actual user-image links, we use Averaging and Borda methods to rerank the
+image search results of 23 queries (as listed in Figure 5) from Google image search
+according to different user interests. We then evaluate the reranking performanceby AvgRank and VisCons, as shown in Table V.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:18 P. C u i e t a l .
+Fig. 5 . The ratio of improvement or reduction of reranked results with respect to Google results over differ-
+ent queries.
+Table V. Social-Sensed Image Reranking Results
+CF NoGroup Direct Hybrid
+AvgRankAveraging 295 286 242 205
+Borda 279 269 231 202
+VisConsAveraging 0.77 0.77 0.80 0.84
+Borda 0.78 0.78 0.81 0.85
+Fig. 6 . The AvgRank-VisCons curve with respect to different social relevance weights π.
+It can be seen that the Hybrid-COMPLETE method achieves the best performance
+using both AvgRank and VisCons measures, which indicates that the results of the
+Hybrid-COMPLETE method can best represent user interest and attain good so-cial relevance while maintaining better consistency with the Google image search
+results to guarantee better visual relevance.
+For the reranking methods, the Borda method achieves slightly better performancethan that of the Averaging method. Both of these methods treat social relevance
+and visual relevance equally. We also conduct experiments to tune the weights of
+social relevance in the averaging model, and show the results in Figure 6. It isapparent that AvgRank decreases and VisCons increases monotonically with in-
+creasing π, which is consistent with our intuitive assumption that a higher weight
+of social relevance would make the results match better with user interest.
+(2)Performance in Different Queries . In order to obtain more insights, we show the
+reranking performance of our method (the combination of Hybrid-COMPLETE and
+Borda) in different queries in Figure 5 and compare with Google image search re-
+sults. As we use the Google results as the ground truth of visual relevance, the
+reranked results will have reductions in VisCons measure. Here we use the ra-tio of change to describe the extent to which the visual relevance is degraded:
+RoC
+VisCons =VisCons Google −VisCons our
+VisCons Google=1−VisCons our. As we use the user-interest
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:19
+Fig. 7 . The showcase of social-sensed image search results for two representative general queries. The red
+rectangles indicate the bad cases of Google search results.
+graph to guide the reranking process, the reranked results will deﬁnitely have im-
+provements in AvgRank measure. We also use the ratio of change to describe the
+extent to which the social relevance is improved with respect to Google results:
+RoC AvgRank =AvgRank Google −AvgRank our
+AvgRank Google.
+Intuitively, we expect RoC AvgRank >RoC VisCons , which indicates that the improve-
+ment of social relevance is larger than the degradation of visual relevance. We can
+see from Figure 5 that this is the case in most queries, except for queries travel and
+statue . The main reason for the two exceptions is that, due to the partial sampling
+of Flickr data, the results of the two queries from Google image search have lit-tle correlation (i.e., similarity in content) with that of the Flickr dataset, and thus
+we can not obtained enough information from social data to guide the reranking
+process.
+(3)Showcase of Social-Sensed Image Search . In order to make the reranked results
+more intuitive, we present two examples for general queries in Figure 7. We select
+two users from the Flickr dataset and show their ten favored images in the ﬁrstrow, which represents their interests at both content level and visual-style level.
+We then select two queries from the query set and present the top-10 search results
+from Google in the second row. Finally, we use the interest models of the selectedusers to rerank the Google image search results and show the top-10 reranked
+results in the third row. It can be seen that for both queries ﬂower and fruit,t h e
+results from social-sensed image search are more relevant to the query (i.e., visu-ally relevant) than Google image search results, and the visual style of the results
+from social-sensed image search is more consistent with the given users’ favorite
+images (i.e., socially relevant).We also present two examples of speciﬁc queries in Figure 8. For the query cat,
+all the favorite images of the given user include a frontal face, no matter whether
+the image is of cat, horse, or dog. By comparing the results from Google and social-sensed image search, we can see that social-sensed image search can implicitly
+capture this preference of the user and reﬂect it in the reranking results. In the
+example of query gold star award , we can guess that the given user is a photogra-
+pher or nature scene lover from his/her favorite images. When he or she searches
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:20 P. C u i e t a l .
+Fig. 8 . The showcase of social-sensed image search results for two representative speciﬁc queries. The red
+rectangles indicate the bad cases of Google search results.
+images using gold star award2, it is much more likely that the user wants the im-
+ages that got the award, rather than the logo of the gold star award, which is also
+reﬂected from the results of social-sensed image search.
+In summary, the proposed social-sensed image search can signiﬁcantly improve im-
+age search results in two ways. First, the results of social-sensed image search are
+more visually relevant to the query when the user has multiple favorite images re-
+lated to the query (i.e., the query is generated by user interest, rather than immediate
+information needs). Second, the social-sensed image search can implicitly capture user
+preferences on visual factors (e.g., visual styles) from their favorite images so that thetop-ranked images in social-sensed image search can better match users’ visual tastes,
+which is especially helpful when users have no clear intention for image search results
+and just browse for entertainment.
+6. CONCLUSION AND FUTURE WORK
+In this article, we proposed a social-sensed image search framework to combine socialmedia platforms and general image search engines so that social knowledge could besensed, harnessed, and extracted from social media platforms to personalize search
+results from general image search engines where social and personal data are scarce.
+In this framework, we ﬁrst proposed an example-based user interest representationand modeling method, where user-image links prediction problem is critical. We then
+proposed the social-sensed image reranking approach which reranks the search re-
+sults from general image search engines by fusing both social relevance and visualrelevance. The experiment results demonstrated that the social-sensed image search
+method can signiﬁcantly improve social relevance while maintaining visual relevance
+well. The proposed framework could be straightforwardly modiﬁed for different appli-cations that aim to leverage social media data to personalize or socialize third-party
+Web services.
+One assumption of this work is that many image search sessions are driven by user
+interests, so the social knowledge (e.g., user interest models) extracted from social
+media are helpful for making the search results better matched with user intentions.
+However, there are still quite a proportion of search sessions driven by immediateinformation needs, where the results from image search engines are hardly correlated
+2An award for most impressive images in Flickr.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:21
+with the representative images from user interest models. In these cases, the results of
+the proposed method would be the same as that of general image search engines. Our
+future work will investigate how to explore more domains in social media data (e.g.,
+user proﬁle) and search logs to further improve the performance of both interest-drivenand immediate-needs-driven search sessions.
+REFERENCES
+Eugene Agichtein, Eric Brill, Susan T. Dumais, and Robert Ragno. 2006. Learning user interaction models
+for predicting web search result preferences. In Proceedings of SIGIR . 3–10.
+Paul Andr ´e, Edward Cutrell, Desney S. Tan, and Greg Smith. 2009. Designing novel image search interfaces
+by understanding unique characteristics and usage. In Proceedings of the 12th IFIPTC 13 International
+Conference on Human-Computer Interaction: Part I (INTERACT) . 340–353.
+Javed A. Aslam and Mark H. Montague. 2001. Models for metasearch. In Proceedings of SIGIR . 275–284.
+Nadav Ben-Haim, Boris Babenko, and Serge Belongie 2006. Improving Web-based image search via con-
+tent based clustering. In Proceedings of the Conference on Computer Vision and Pattern Recognition
+Workshop (CVPRW’06) . IEEE, 106–106.
+Bisheng Chen, Jingdong Wang, Qinghua Huang, and Tao Mei. 2012a. Personalized video recommendation
+through tripartite graph propagation. In Proceedings of the 20th ACM International Conference on Mul-
+timedia . ACM, 1133–1136.
+Lin Chen, Dong Xu, IvorW. Tsang, and Jiebo Luo. 2012b. Tag-based image retrieval improved by augmented
+features and group-based reﬁnement. IEEE Trans. Multimedia 14 , 4, 1057–1067.
+Lin Chen, Dong Xu, Ivor Wai-Hung Tsang, and Jiebo Luo. 2010. Tag-based Web photo retrieval improved by
+batch mode re-tagging. In Proceedings of CVPR . 3440–3446.
+Paul-Alexandru Chirita,Wolfgang Nejdl, Raluca Paiu, and Christian Kohlsch ¨utter. 2005. Using ODP meta-
+data to personalize search. In Proceedings of SIGIR . 178–185.
+Youngok Choi and Edie M. Rasmussen 2003. Searching for images: The analysis of users’ queries for image
+retrieval in American history. J. Amer. Soc. Inf. Sci. Technol. 54 , 6, 498–511.
+Peng Cui, Fei Wang, Shaowei Liu, Mingdong Ou, Shiqiang Yang, and Lifeng Sun. 2011. Who should share
+what?: Item-level social inﬂuence prediction for users and posts ranking. In Proceedings of the 34th
+International ACM SIGIR Conference on Research and Development in Information Retrieval . ACM,
+185–194.
+Ritendra Datta, Dhiraj Joshi, Jia Li, and James Ze Wang 2008. Image retrieval: Ideas, inﬂuences, and trends
+of the new age. ACM Comput. Surv. 40 ,2 .
+Sotiris Diplaris, Symeon Papadopoulos, Ioannis Kompatsiaris, Ayse Goker, Andrew MacFarlane, Jochen
+Spangenberg, Hakim Hacid, Linas Maknavicius, and Matthias Klusch. 2012. Socialsensor: Sensing usergenerated input for improved media discovery and experience. In Proceedings of WWW (Companion
+Volume) . 243–246.
+Yue Gao, Meng Wang, Zheng-Jun Zha, Jialie Shen, Xuelong Li, and Xindong Wu. 2013. Visual-textual joint
+relevance learning for tag-based social image search. IEEE Trans. Image Process. 22 , 1, 363–376.
+Winston H. Hsu, Lyndon S. Kennedy, and Shih-Fu Chang. 2007. Video search reranking through random
+walk over document-level context graph. In Proceedings of the 15th International Conference on Multi-
+media . ACM, 971–980.
+David A. Hull, Jan O. Pedersen, and Hinrich Sch ¨utze. 1996. Method combination for document ﬁltering. In
+Proceedings of SIGIR . 279–287.
+Vidit Jain and Manik Varma 2011. Learning to re-rank: Query-dependent image re-ranking using click data.
+InProceedings of the 20th International Conference on World Wide Web . ACM, 277–286.
+Bernard J. Jansen, Danielle L. Booth, and Amanda Spink. 2007. Determining the user intent of Web search
+engine queries. In Proceedings of WWW . 1149–1150.
+Meng Jiang, Peng Cui, Rui Liu, Qiang Yang, Fei Wang, Wenwu Zhu, and Shiqiang Yang. 2012a. Social
+contextual recommendation. In Proceedings of the 21st ACM International Conference on Information
+and Knowledge Management . ACM, 45–54.
+Meng Jiang, Peng Cui, Fei Wang, Qiang Yang, Wenwu Zhu, and Shiqiang Yang. 2012b. Social recommen-
+dation across multiple relational domains. In Proceedings of the 21st ACM International Conference on
+Information and Knowledge Management . ACM, 1422–1431.
+Yushi Jing and Shumeet Baluja. 2008. VisualRank: Applying PageRank to large-scale image search. IEEE
+Trans. Patt. Anal. Mach. Intell. 30 , 11, 1877–1890.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+i8:22 P. C u i e t a l .
+Martha Larson, Christoph Koﬂer, and Alan Hanjalic. 2011. Reading between the tags to predict real-world
+size-class for visually depicted objects in images. In Proceedings of the 19th ACM International Confer-
+ence on Multimedia (MM) . ACM, New York, NY, 273–282.
+DOI:http://dx.doi.org/10.1145/2072298.2072335.
+Kristina Lerman, Anon Plangprasopchok, and Chio Wong. 2007. Personalizing image search results on
+Flickr. CoRR abs/0704.1676.
+Xirong Li, Cees G. M. Snoek, and Marcel Worring. 2009. Learning social tag relevance by neighbor voting.
+IEEE Trans. Multimedia 11 , 7, 1310–1322.
+Marek Lipczak, Michele Trevisiol, and Alejandro Jaimes. 2013. Analyzing favorite behavior in Flickr. In
+Proceedings of the 19th International Conference on Advances in Multimedia Modeling . Lecture Notes
+in Computer Science, vol. 7732. Springer, 535–545.
+Shaowei Liu, Peng Cui, Huanbo Luan, Wenwu Zhu, Shiqiang Yang, and Qi Tian. 2013. Social visual image
+ranking for Web image search. In Proceedings of the 19th International Conference on Advances in
+Multimedia Modeling . Lecture Notes in Computer Science, vol. 7732. Springer, 239–249.
+Shaowei Liu, Peng Cui, Huanbo Luan, Wenwu Zhu, Shiqiang Yang, and Qi Tian. 2014. Social-oriented visual
+image search. Comput. Vision Image Understand. 118 , 30–39.
+Dongyuan Lu and Qiudan Li. 2011. Personalized search on Flickr based on searcher’s preference prediction.
+InProceedings of WWW (Companion Volume) . 81–82.
+Einat Minkov and William W. Cohen. 2010. Improving graph-walk-based similarity with reranking: Case
+studies for personal information management. ACM Trans. Info. Syst. 29 ,1 ,4 .
+Radu Andrei Negoescu and Daniel Gatica-Perez. 2010. Modeling Flickr communities through probabilistic
+topic-based analysis. IEEE Trans. Multimedia 12 , 5, 399–416.
+David Nist ´er and Henrik Stew ´enius 2006. Scalable recognition with a vocabulary tree. In Proceedings of
+CVPR . 2161–2168.
+Feng Qiu and Junghoo Cho. 2006. Automatic identiﬁcation of user interest for personalized search. In
+Proceedings of WWW . 727–736.
+Jitao Sang, Jing Liu, and Changsheng Xu. 2011. Exploiting user information for image tag reﬁnement. In
+Proceedings of the ACM International Conference on Multimedia (MM) . ACM, New York, NY, 1129–
+1132. DOI:http://dx.doi.org/10.1145/2072298.2071956.
+Jitao Sang, Changsheng Xu, and Dongyuan Lu. 2012. Learn to personalized image search from the photo
+sharing websites. IEEE Trans. Multimedia 14 , 4, 963–974.
+Florian Schroff, Antonio Criminisi, and Andrew Zisserman 2011. Harvesting image databases from the Web.
+IEEE Trans. Patt. Anal. Mach. Intell. 33 , 4, 754–766.
+Ahu Sieg, Bamshad Mobasher, and Robin D. Burke. 2007. Web search personalization with ontological user
+proﬁles. In Proceedings of CIKM . 525–534.
+Barry Smyth. 2007. A community-based approach to personalizing Web search. IEEE Computer 40 , 8, 42–50.
+Kazunari Sugiyama, Kenji Hatano, and Masatoshi Yoshikawa. 2004. Adaptive Web search based on user
+proﬁle constructed without any effort from users. In Proceedings of WWW . 675–684.
+Aixin Sun and Sourav S. Bhowmick. 2010. Quantifying tag representativeness of visual content of social
+images. In Proceedings of the ACM International Conference on Multimedia (MM) . ACM, New York, NY,
+471–480. DOI:http://dx.doi.org/10.1145/1873951.1874029.
+Jian-Tao Sun, Hua-Jun Zeng, Huan Liu, Yuchang Lu, and Zheng Chen. 2005. CubeSVD: A novel approach
+to personalized web search. In Proceedings of WWW . 382–390.
+Jaime Teevan, Susan T. Dumais, and Eric Horvitz 2005. Personalizing search via automated analysis of
+interests and activities. In Proceedings of SIGIR . 449–456.
+Jaime Teevan, Susan T. Dumais, and Daniel J. Liebling. 2008. To personalize or not to personalize: Modeling
+queries with variation in user intent. In Proceedings of the 31st Annual International ACM SIGIR
+Conference on Research and Development in Information Retrieval . ACM, 163–170.
+Jaime Teevan, Meredith Ringel Morris, and Steve Bush. 2009. Discovering and using groups to improve
+personalized search. In Proceedings of the 2nd ACM International Conference on Web Search and Data
+Mining . ACM, 15–24.
+Hanghang Tong, Christos Faloutsos, and Jia-Yu Pan. 2006. Fast random walk with restart and its applica-
+tions. In Proceedings of the International Conference on Data Mining (ICDM) . 613–622.
+Michele Trevisiol, Luca Chiarandini, Luca Maria Aiello, and Alejandro Jaimes 2012. Image ranking based
+on user browsing behavior. In Proceedings of the 35th International ACM SIGIR Conference on Research
+and Development in Information Retrieval . ACM, 445–454.
+Gang Wang and David Forsyth. 2008. Object image retrieval by exploiting online knowledge resources. In
+Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR’08) . IEEE, 1–8.
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.ii
+ii
+i
+ii
+iSocial-Sensed Image Search 8:23
+Jun Wang, Arjen P. de Vries, and Marcel J. T. Reinders. 2006. Unifying user-based and item-based collabo-
+rative ﬁltering approaches by similarity fusion. In Proceedings of SIGIR . 501–508.
+Zhiyu Wang, Peng Cui, Lexing Xie, Hao Chen, Wenwu Zhu, and Shiqiang Yang 2012. Analyzing social me-
+dia via event facets. In Proceedings of the 20th ACM International Conference on Multimedia . ACM,
+1359–1360.
+Ingmar Weber and Alejandro Jaimes. 2011. Who uses web search for what: And how. In Proceedings of the
+4th ACM International Conference on Web Search and Data Mining . ACM, 15–24.
+Xing Xie, Hao Liu, Simon Goumaz, and Wei-Ying Ma. 2005. Learning user interest for image browsing on
+small-form-factor devices. In Proceedings of CHI . 671–680.
+Hao Xu, Jingdong Wang, Xian-Sheng Hua, and Shipeng Li. 2009. Tag reﬁnement by regularized LDA. In
+Proceedings of the 17th ACM International Conference on Multimedia . ACM, 573–576.
+Hao Xu, Jingdong Wang, Zhu Li, Gang Zeng, Shipeng Li, and Nenghai Yu. 2011. Complementary hashing for
+approximate nearest neighbor search. In Proceedings of the IEEE International Conference on Computer
+Vision (ICCV) . IEEE, 1631–1638.
+Shengliang Xu, Shenghua Bao, Ben Fei, Zhong Su, and Yong Yu 2008. Exploring folksonomy for personalized
+search. In Proceedings of SIGIR . 155–162.
+Rong Yan, Alexander Hauptmann, and Rong Jin. 2003. Multimedia search with pseudo-relevance feedback.
+InProceedings of the 2nd International Conference on Image and Video Retrieval . Lecture Notes in
+Computer Science, vol. 2728. Springer, 238–247.
+Yun Yang, Peng Cui, Wenwu Zhu, and Shiqiang Yang. 2013. User interest and social inﬂuence based emotion
+prediction for individuals. In Proceedings of the 21st ACM International Conference on Multimedia .
+ACM, 785–788.
+Hilmi Yildirim and Mukkai S. Krishnamoorthy. 2008. A random walk method for alleviating the sparsity
+problem in collaborative ﬁltering. In Proceedings of the ACM Conference on Recommender Systems
+(RecSys) . 131–138.
+Shiliang Zhang, Qi Tian, Gang Hua, Qingming Huang, and Shipeng Li. 2009. Descriptive visual words
+and visual phrases for image applications. In Proceedings of the 17th ACM International Conference on
+Multimedia . ACM, 75–84.
+Xiaofeng Zhu, Zi Huang, Hong Cheng, Jiangtao Cui, and Heng Tao Shen. 2013. Sparse hashing for fast
+multimedia search. ACM Trans. Inf. Syst. 31 ,2 ,9 .
+Hilal Zitouni, Sare Sevil, Derya Ozkan, and Pinar Duygulu. 2008. Re-ranking of Web image search results
+using a graph algorithm. In Proceedings of the 19th International Conference on Pattern Recognition
+(ICPR’08) . IEEE, 1–4.
+Received March 2013; revised October 2013, January 2014; accepted February 2014
+ACM Transactions on Information Systems, Vol. 32, No. 2, Article 8, Publication date: April 2014.

@@ -1,0 +1,1269 @@
+Semantiﬁcation of Identiﬁers
+in Mathematics for Better Math Information Retrieval
+Moritz Schubotzy, Alexey Grigorevy, Marcus Leichy, Howard S. Cohlz,
+Norman Meuschkex, Bela Gippx, Abdou S. Y oussef]zand Volker Markly
+yTU Berlin, Germany,zNational Institute of Standards and Technology, USA,
+xUniversität Konstanz, Germany,]The George Washington University, USA
+schubotz@tu-berlin.de
+ABSTRACT
+Mathematical formulae are essential in science, but face chal-
+lenges of ambiguity, due to the use of a small number of iden-
+tiers to represent an immense number of concepts. Corre-
+sponding to word sense disambiguation in Natural Language
+Processing, we disambiguate mathematical identiers. By
+regarding formulae and natural text as one monolithic infor-
+mation source, we are able to extract the semantics of identi-
+ers in a process we term Mathematical Language Processing
+(MLP). As scientic communities tend to establish standard
+(identier) notations, we use the document domain to infer
+the actual meaning of an identier. Therefore, we adapt the
+software development concept of namespaces to mathemati-
+cal notation. Thus, we learn namespace denitions by clus-
+tering the MLP results and mapping those clusters to subject
+classication schemata. In addition, this gives fundamental
+insights into the usage of mathematical notations in science,
+technology, engineering and mathematics. Our gold standard
+based evaluation shows that MLP extracts relevant identier-
+denitions. Moreover, we discover that identier namespaces
+improve the performance of automated identier-denition
+extraction, and elevate it to a level that cannot be achieved
+within the document context alone.
+1. PROBLEM AND MOTIVATION
+Mathematical formulae are essential in Science, Technol-
+ogy, Engineering, and Mathematics (STEM). Consequently,
+Mathematical Information Retrieval (MIR) continues to re-
+ceive increasing research attention [13]. Current MIR ap-
+proaches perform well in identifying formulae that contain
+the same set of identiers or have a similar layout tree struc-
+ture [2].
+However, the ambiguity of mathematical notation decreases
+the retrieval eectiveness of current MIR approaches. Since
+the number of mathematical concepts by far exceeds the num-
+ber of established mathematical identiers, the same identi-
+er often denotes various concepts [16]. For instance, ` E'
+may refer to `energy' in physics, `expected value' in statis-
+Publication rights licensed to ACM. ACM acknowledges that this contribution was
+authored or co-authored by an employee, contractor or afﬁliate of the United States gov-
+ernment. As such, the Government retains a nonexclusive, royalty-free right to publish
+or reproduce this article, or to allow others to do so, for Government purposes only.
+SIGIR ’16, July 17 - 21, 2016, Pisa, Italy
+c2016 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+ACM ISBN 978-1-4503-4069-4/16/07. . . $15.00
+DOI:http://dx.doi.org/10.1145/2911451.2911503tics or `elimination matrix' in linear algebra. Analyzing the
+identier-based and structural similarity of formulae without
+considering the context of a formula can therefore lead to the
+retrieval of non-relevant results.
+Ambiguity is a problem that mathematical notation and
+natural language have in common. Since words are also often
+ambiguous [6, 9, 16], Word Sense Disambiguation [15], i.e.,
+identifying the meaning of an ambiguous word in a specic
+context [15], is an integral part of Natural Language Pro-
+cessing. Typical approaches for Word Sense Disambiguation
+replace a word by its meaning [34] or append the meaning to
+the word. For example, if the ambiguous word man has the
+meaning human species in a specic context, one can replace
+it by man species to contrast it from the meaning male adult,
+replaced by man adult. We transfer this idea to ambiguous
+mathematical identiers. If the identier Ehas the mean-
+ingenergy in the context of physics, one could replace Eby
+Eenergy given one can determine that Eis indeed used as
+energy in this context.
+In this paper, we propose a method to semantically en-
+rich mathematical identiers by determining and assigning
+the context (namespace) in which the identier is used, e.g.,
+mathematics or physics. We determine the namespace of
+an identier by analyzing the text surrounding mathemati-
+cal formulae using Natural Language Processing (NLP) tech-
+niques. In software development, a namespace refers to a
+collection of terms that is grouped, because it shares func-
+tionality or purpose. Typically, namespaces are used to pro-
+vide modularity and to resolve name conicts [7]. We extend
+the concept of namespaces to mathematical identiers and
+present an automated method to learn the namespaces that
+occur in a document collection.
+Employing an analysis of natural language to enrich the in-
+formation content of formulae is a new approach, which Pagel
+and Schubotz termed Mathematical Language Process-
+ing(MLP) [26]. Today's MIR systems treat formulae and
+natural language as separate information sources [2]. While
+current systems oer retrieval from both sources (formulae
+and text), they typically do not link them. For example,
+math-aware search systems allow to search in formulae by
+specifying a query using mathematical notation or special-
+ized query languages. To search in the text, MIR systems
+support traditional keyword search [2].
+We deem the MLP approach promising for two reasons.
+First, a large-scale corpus study showed that around 70 per-
+cent of the symbolic elements in scientic papers are explicitly
+denoted in the text [35]. Second, although almost all iden-
+135In physics ,mass–energy 
+equivalence is a concept formulated 
+by Albert Einstein that explains the 
+relationship between mass and 
+energy . It states every mass has an 
+energy equivalent and vice 
+versa—expressed using the formula 
+where Eis the energy of a physical 
+system ,mis the mass of the system, 
+and cis the speed of light in a 
+vacuum (about 3×10 8m/s). In words, 
+energy equals mass multiplied by the 
+speed of light squared. Because the 
+speed of light is a very large number 
+in everyday units, the formula implies 
+that any small amount of matter 
+contains a very large amount of 
+energy. Some of this energy may be 
+released as heat and light by nuclear 
+transformations. This also serves to 
+convert units of mass to units of 
+energy , no matter what system of 
+measurement units used. 
+1Detect formulae 
+2Extract identifiers In physics ,mass–energy 
+equivalence is a concept formulated 
+by Albert Einstein that explains the 
+relationship between mass and 
+energy . It states every mass has an 
+energy equivalent and vice 
+versa—expressed using the formula 
+where Eis the energy of a physical 
+system ,mis the mass of the system, 
+and cis the speed of light in a 
+vacuum (about 3×10 8m/s). In words, 
+energy equals mass multiplied by the 
+speed of light squared. Because the 
+speed of light is a very large number 
+in everyday units, the formula implies 
+3Find identifiers In physics ,mass–energy 
+equivalence is a concept formulated 
+by Albert Einstein that explains the 
+relationship between mass and 
+energy . It states every mass has an 
+energy equivalent and vice 
+versa—expressed using the formula 
+where Eis the energy of a physical 
+system ,mis the mass of the system, 
+and cis the speed of light in a 
+vacuum (about 3×10 8m/s). In words, 
+energy equals mass multiplied by the 
+speed of light squared. Because the 
+speed of light is a very large number 
+in everyday units, the formula implies 
+that any small amount of matter 
+contains a very large amount of 
+energy. Some of this energy may be 
+released as heat and light by nuclear 
+transformations. This also serves to 
+convert units of mass to units of 
+energy , no matter what system of 
+measurement units used. 
+4Find definiens candidates 
+5Score all identifier- 
+definiens pairs 
+E
+energy 2
+5
+10 
+19 
+21 4
+1
+2
+11 
+14 13 
+10 
+5
+2
+522 
+20 
+15 
+5
+3physical system 
+mass 
+speed of light 
+vacuum m c m
+6Generate feature vectors 
+d1
+E_energy 2
+-
+2
+--
+2
+-
+0E_expected_value 
+m_mass 
+m_natural_number d2
+... ... ... ... 
+... 
+energy E
+mexp. value 
+mass natural number 7Cluster feature vectors 
+MSC 
+60Hxx 60Gxx 60Jxx 60-XX 58-XX 62-XX PACS 
+45 44 46 40 50 30 
+energy E
+mexp. value 
+mass natural number 
+Classical mechanics 
+of discrete systems Stochastic analysis 8Map clusters to subject 
+hierarchy Figure 1: Overview of the document based Mathematical Language Processing pipeline (steps 1-5), and the corpus based names-
+pace discovery pipeline (steps 6-8). For each step, a detailed description is available in the corresponding Subsection of Section 2.
+tiers have multiple meanings, mathematical notation obeys
+conventions for choosing identiers [5, 16]. Therefore, we pro-
+pose that identifying the namespace of identiers can improve
+their disambiguation and the capabilities for machine process-
+ing mathematics in general. Improved machine processing of
+mathematics can benet recommender [31] and plagiarism de-
+tection systems [8, 21] for STEM literature. Likewise, formula
+search engines, and assistance tools for authors and students
+could benet.
+In summary, the contributions we make in this paper are:
+(1) a method to extract the semantic meaning of mathemat-
+ical identiers from the text surrounding mathematical
+formulae;
+(2) a method to learn the set of mathematical namespaces
+occurring in a collection;
+(3) a method that utilizes identied mathematical name-
+spaces to improve the disambiguation of mathematical
+identiers; and
+(4) a large scale analysis of identier use as part of the math-
+ematical notation in dierent scientic elds.
+Related Work
+Several approaches extract information from the surrounding
+text to retrieve information about mathematical formulae [17,
+36, 24, 26, 19, 11]. Quoc et al. [24] extract entire formulae and
+link them to natural language descriptions from the surround-
+ing text. Yokoi et al. [36] train a support vector machine to
+extract mathematical expressions and their natural languagephrase. Note, that this phrase also includes function words,
+etc. In [26], we suggest a Mathematical Language Processing
+framework - a statistical approach for relating identiers to
+denientia, in which they compare a pattern based approach
+and the MLP approach with part-of-speech tag based dis-
+tances. They nd the MLP approach to be more eective.
+The ndings of Kristianto et al. [17] conrm these ndings.
+Our approach is the rst that uses the concept of name-
+spaces to improve the extraction of semantics regarding math-
+ematical identiers. While other approaches only use one
+document at a time to extract the description of a specic
+formulae [17, 36, 19], we use a large scale corpus and combine
+information from dierent documents to extract the meaning
+of a specic identier. In contrast, our task is more specic.
+We limit the extraction of mathematical expressions to iden-
+tiers and extract semantic concepts instead of descriptions.
+2. OUR APPROACH
+2.1 Mathematical Language Processing
+The goal of Mathematical Language Processing is to ex-
+tract identier-denitions from a text that uses mathematics.
+Formally, a denition consists of three parts: deniendum ,
+deniens anddenitor .Deniendum is the expression to be
+dened. Deniens is the phrase that denes the deniendum.
+Denitor is the verb that links deniendum and deniens. An
+identier-denition is a denition where the deniendum is
+an identier.
+136According to ISO/IEC 40314: \Content identiers repre-
+sent `mathematical variables' which have properties, but no
+xed value." Identiers have to be dierentiated from sym-
+bols, that refer to `specic, mathematically-dened concepts'
+such as the operator + or the sin function. Identier-deniens
+pairs are candidates for identier-denitions. Since we do not
+use the denitor, we only extract the deniendum (identi-
+er) and the deniens (natural language term), and extract
+in the following, identier-deniens pairs as candidates for
+identier-denitions. To illustrate, we introduce the follow-
+ing running example:
+Example 1: Mass-energy equivalence
+Th
+e relation between energy and mass is described by
+the mass-energy equivalence formula E=mc2, where
+Eis energy,mis mass, and cis the speed of light.
+Th
+isdescriptionincludestheformulaE=mc2,thethreeiden-
+tiersE,m,andc,andthefollowingidentier-denitions:(E,
+energy),(m,mass),and(c,speedoflight).
+Inourapproach(seeFigure1),wedividetheMLPpipeline
+intothefollowingsteps:
+(1)Detectformulae;
+(2)Extractidentiers;
+(3)Findidentiers;
+(4)Finddenienscandidates;and
+(5)Scoreallidentier-denienspairs.
+1Detect formulae
+In a rst step, weneedtodierentiatebetweenformulaeand
+text.Inthispaper,weassumethatallformulaeareexplic-
+itlymarkedasmathematicsandthateverythingmarkedas
+mathematicsactuallyismathematics.However,inrealworld
+documentssuchasconferen cepapers,postersorWikipedia
+articles,someformulaearetypedusingtheunicodesymbols
+insteadofmathmode.Asthistypeofformulaishardtode-
+tect,wedecidedtoexcludeitfromouranalysis.Moreover,
+notallstructuresmarkedasformulaearereallymathemati-
+calformulae.Insomecasesunmarkedtextlikeworkdone
+heatabsorbed
+or ch emicalformulae2H2O!2H2+O2arealsomarkedas
+mathematics.Onemightdevelopheuristicstodiscoverwords
+andchemicalstructureswithinmathematicalmarkup,but
+thisisoutsideofthescopeifthisresearch.
+2Extract identiﬁers
+After havingidentiedtheformulae,weextractthelistof
+identiersfromwithintheformulae.Intheaboveexample,
+thismeanstoextracttheidentiersE,m,andcfromthe
+formulaE=mc2.Mostly,identiers(informulaeandtext),
+arenotexplicitlymarkedasidentiers.Consequently,we
+developaheuristictoextractidentiersbyassumingthefol-
+lowingcharacteristics:anidentierconsistsofonevariableor
+acombinationofavariableandoneormultiplesubscripts.
+Inthefollowing,wewilldiscussadvantagesandlimitations
+ofthisheuristic.Inthisprocess,wedelineatefourlimita-
+tions(specialnotation,symbols,sub-super-script,incorrect
+markup),whichwewillquantifyintheevaluationsection.We
+observethatmorecomplexexpressionsaresometimesused
+onbehalfofidentiers,suchas2forthe`variance',without
+mentioningand`standarddeviation'atallorSfor`change
+inentropy'.Inthiswork,wefocusonatomicidentiersandthusprefertoextractthepair(S,entropy)insteadof(S,
+changeinentropy).Thedisadvantageofthisapproachis
+thatwemisssomespecialnotationsuchascontra-variant
+vectorcomponentslikethecoordinatefunctionsxinEin-
+steinnotation.Inthiscase,weareabletoextract(x,coordi-
+natefunctions)withourapproach,whichisnotincorrectbut
+lessspecicthan(x,coordinatefunctions).Inaddition,we
+falselyextractseveralsymbols,suchastheBesselfunctions
+J;Y,butnotallsymbols,i.e.,wedonotextractsymbols
+thatusesub-super-scriptsliketheHankelfunctionH(1)
+.
+Notethatespeciallythesuperscriptisnotuseduniformly
+(e.g.,itmayrefer topower,n-thderivative,Einsteinnota-
+tion,inversefunction).Themostprominentexampleisthe
+sinsymbol,wheresin2:x7!(sin(x ))2vs.sin 1:sin(x)7!x;
+forallx2[ 1;1]:Farlessdebatable,butevenmorecommon
+istheproblemofincorrectmarkup.Theonevariableas-
+sumptiontokenizesnaturallanguagewordslikeheat intoa
+listoffourvariablesh,e,a,t.
+Identiersoftencontainadditionalsemanticinformation,
+visuallyconveyedbyspecialdiacriticalmarksorfontfeatures.
+Examplesofdiacriticsarehatstodenoteestimates(e.g.,^w),
+barstodenotetheaverage(e.g.,X)orarrowstodenotevec-
+tors(e.g.,~x).Regardingthefontfeatures,boldlowercase
+singlecharactersareoftenusedtodenotevectors(e.g.,w)
+andbolduppercasesinglecharactersdenotematrices(e.g.,
+X),whiledouble-struckfontsareusedforsets(e.g.,R),calli-
+graphicfontsoftendenotespaces(e.g.,H)andsoon.Unfortu-
+nately,thereisnocommonnotationestablishedfordiacritics
+acrossalleldsofmathematicsandthusthereisalotofvari-
+ance.Forexample,avectorcanbedenotedby~x,xorx,and
+thereallinecanbedenotedeitherbyRorR:
+Todecideiftwoidentiersareidentical,weneedacompar-
+isonfunctionthateliminatesinvariantsintheinputformat.
+Forexample,theinputs$c_0$and$c_{0}$producethe
+samepresentationc0inLATEXandthereforehavetobecon-
+sideredasequivalent.Inthiswork,wecomparetheidentiers
+basedonabstractsyntaxtrees,whicheliminatesmostofthe
+complicationsintroducedbytheinvariantsintheinputen-
+coding.Weconsidered toreducetheidentierstotheirroot
+formbydiscardingalladditionalvisualinformation,suchthat
+XbecomesX,wbecomeswandRbecomesR.Thedisad-
+vantageofthisapproachisthelossofadditionalsemantic
+informationabouttheidentierthatarepotentiallyuseful.
+Forinstance,Eusuallydenotestheelectriceld,compared
+toEwhichisoftenusedforenergy.Byremovingthebold
+font,wewouldlosethissemanticinformation.Therefore,we
+decidedagainstunsingtherootforminourapproach.
+3Findidentiﬁer s
+Inanextstep,allidentiersthatarepartoftheformulaehave
+tobeidentiedinthesurroundingtext.Therefo re,weuse
+mathematicalformulaethatonlyconsistofasingleidentier,
+ortextualelementsthatarenotmarkedupasmathematics
+(i.e.,words)andareequivalenttooneoftheidentiersex-
+tractedintheformulaebefore.Intheaboveexample,the
+identiersE,mandchavetobeidentiedinthetext:`The
+relationbetweenenergyandmassisdescribedbythemass-
+energyequivalenceformula[...],whereEisenergy,mismass,
+andcisthespeedoflight.'
+1374Find deﬁniens candidates
+We are not only interested in the identier, but also in its
+deniens. Therefore, we extract identier-deniens pairs (iden-
+tier, deniens) as candidates for identier-denitions. For
+example, (E, energy) is an identier-denition, where Eis an
+identier, and `energy' is the deniens. In this step, we de-
+scribe the methods for extracting and scoring the identier-
+denitions in three sub-steps:
+(1) Math-Aware Part-of-Speech Tagging;
+(2) Part-of-Speech based distances; and
+(3) Scoring of deniens candidates.
+Pagel and Schubotz [26] found the MLP method with a
+Part-of-Speech based distance measure in a probabilistic ap-
+proach to outclass a pattern based method. Thus, we use
+the Part-of-Speech based distances methods here to extract
+identier-denitions. First, we dene deniens candidates:
+(1) noun (singular or plural);
+(2) noun phrases (noun-noun, adjective-noun); and
+(3) special tokens such as inner-wiki links.
+We assume that successive nouns (both singular and plurals),
+possibly modied by an adjective, are candidates for deni-
+entia. Thus, we include noun phrases that either consist of
+two successive nouns (e.g., `mean value' or `speed of light') or
+an adjective and a noun (e.g., `gravitational force').
+Authors often use special markup to highlight semantic
+concepts in written language. For example in Wikipedia ar-
+ticles, Wiki markup, a special markup language for speci-
+fying document layout elements such as headers, lists, text
+formatting and tables, is used. In the Wikipedia markup pro-
+cessing, we retain inner Wikipedia links that link to another
+article that describes the semantic concept, which eliminates
+the ambiguity in the deniens itself. This link is an exam-
+ple for a deniens candidate of type special token. Part-of-
+Speech Tagging (POS Tagging) assigns a tag to each word in
+a given text [15]. Although the POS Tagging task is mainly
+a tool for text processing, it can be adjusted to scientic
+documents with mathematical expressions [29, 26]. There-
+fore, we tag math-related tokens of the text with math spe-
+cic tags [29]. If a math token is only one identier, an
+identier tag is assigned rather that a formula tag. We in-
+troduce another tag for inner-wiki-links. For the extrac-
+tion of deniens candidates, we use common natural lan-
+guage POS tags as well as the following three task specic
+tags:
+(1) identiers;
+(2) formulae; and
+(3) special tokens.
+Generally, the Cartesian product of identiers and deniens
+might serve as identier-denition candidate.
+5Score all identiﬁer-deﬁniens pairs
+To extract the deniens candidates, we make three assump-
+tions, according to [26]:
+(1) deniens are noun phrases or a special token;
+(2) deniens appear close to the identier; and
+(3) if an identier appears in several formulae, the deniens
+can be found in a sentence in close proximity to the rst
+occurrence in a formula.The next step is to select the most probable identier-
+denition by ranking identier-denition candidates by prob-
+ability [26]. The assumption behind this approach is that
+denientia occur closely to their related identiers, and thus
+the closeness can be exploited to model the probability distri-
+bution over identier-denition candidates. Thus, the score
+depends on (1) the distance to the identier of interest and
+(2) the distance to the closest formula that contains this iden-
+tier. The output of this step is a list of identier-deniens
+pairs along with the score. Only the pairs with scores above
+the user specied threshold are retained.
+The candidates are ranked by the following formula:
+R(n;;t;d)=Rd()+Rs(n)+tf(t)
+++:
+In this formula  is the number of tokens between identi-
+er and deniens candidate, Rd() is a zero-mean Gaussian
+that models this distance, parametrized with the variance d,
+andnis the number of sentences between the deniens can-
+didate and the sentence in which the identier occurs for the
+rst time. Moreover, Rs(n) denotes a zero-mean Gaussian,
+parameterized with s, and tf(t) is the frequency of term t
+in a sentence, and the weights ;; combine these quanti-
+ties. Therefore, we reuse the values suggested in [26], namely
+==1 and=0:1.
+We also tested a rened strategy, which takes into account
+that the same denition might be explained multiple times
+in a document and calculated a rened weighting R= ( 
+1) 1Pn
+i=1 iRi. TherebyRiiterates over all weightings from
+within one document that lead to one denition. However,
+this did not lead to a signicant performance increase for the
+task at hand, so we dropped this approach. Note that the
+idea is revived in the Namespace Discovery section, where
+multiple documents are considered at the same time.
+2.2 Namespace Discovery
+In this section, we describe the adaptation of the idea of
+namespaces to identier disambiguation and the process of
+namespace discovery to extract identier-denitions in the
+following steps:
+(1) Automatic Namespace Discovery;
+(2) Document Clustering;
+(3) Building Namespaces; and
+(4) Building Namespace Hierarchy.
+Automatic Namespace Discovery
+Namespaces in well-dened software exhibit low coupling and
+high cohesion [18]. Coupling describes the degree of depen-
+dence between namespaces. Low coupling means that the de-
+pendencies between classes of dierent namespaces are mini-
+mized. Cohesion refers to the dependence within the classes
+of the same namespace. High cohesion principle means that
+the related classes should be put together in the same names-
+pace. We dene a notation Nas a set of pairsf(i;s)g, where i
+is an identier and sis its semantic meaning or deniens, such
+that for any pair ( i;s)2N there is no other pair ( i0;s0)2N
+withi=i0. Two notationsN1andN2conict if there exists a
+pair (i1;s1)2N1and a pair ( i2;s2)2N2such thati1=i2and
+s16=s2.
+Thus, we can dene a namespace as a named notation. For
+example,Nphysics can refer to the notation used in physics.
+For convenience, we use the Java syntax to refer to specic
+entries of a namespace [10]. If Nis a namespace and iis an
+138identier such that ( i;s)2N for somes, thenN.iis a fully
+qualied name of the identier ithat relates ito the deniens
+s. For example, given a namespace Nphysics =f(E;`energy');
+(m;`mass'); (c;`speed of light')g, Nphysics .Erefers to `energy'
+{ the deniens of Ein the namespace `physics'. Analogous
+to denitions in programming language namespaces, one can
+expect that (a) deniens in a given mathematical namespace
+come from the same area of mathematics, and (b) deniens
+from dierent namespaces do not intersect heavily. In other
+words, one can expect namespaces of mathematical notation
+to have the same properties as well-designed software pack-
+ages, namely low coupling and high cohesion.
+To precisely dene these concepts for mathematical name-
+spaces, we represent them via a document-centric model.
+Suppose we have a collection of ndocumentsD=fd1;:::;dng
+and a set of KnamespacesfN1;:::;NKg. A document djcan
+use a namespaceNkby implicitly importing identiers from
+it. Note that real-life scientic documents rarely explicitly use
+import statements. However, we assume that these implicit
+namespace imports exist. In this document-centric model,
+a namespace exhibits low coupling, if only a small subset of
+documents uses it and high cohesion if all documents in this
+subset are related to the same domain.
+We use the extracted identier-denitions (see Section 2.1)
+to discover the namespaces. Since manual discovery of math-
+ematical namespaces is time consuming and error prone, we
+use Machine Learning techniques to discover namespaces au-
+tomatically.
+We utilize clustering methods to nd homogeneous groups
+of documents within a collection. Comparable to NLP identi-
+ers can be regarded as `words' in the mathematical language
+and entire formulae as `sentences'. We use cluster analysis
+techniques developed for text documents represented via the
+`bag-of-words' model for documents with math formulae that
+are represented by `bag-of-identiers'. Some denientia are
+used only once. Since they do not have any discriminative
+power, they are not very useful and are excluded. Once the
+identiers are extracted, we discard the rest of the formula. As
+a result, we have a `bag-of-identiers'. Analogoe to the bag-
+of-word approach, we only retain the counts of occurrences of
+identiers, but do not preserve any structural information.
+6Generate feature vectors
+For clustering, documents are usually represented using the
+Vector Space Models [1, 25]. We apply the same model,
+but use identiers instead of words to represent documents.
+As the vocabulary, we use a set of identier-deniens pairs
+V=I
+Fwhich is an element of the vector product space of
+the identier space Iand the the deniens space F. We rep-
+resent documents as m-dimensional vectors dj=(w 1;:::;wm),
+wherewkis the weight of an identier-deniens pair ikin the
+document djandm=dim(I )dim(F ). We dene an identier-
+document matrix Das a matrix where columns represent
+document vectors and rows represent identier-document co-
+occurrences. We evaluate three ways to incorporate the ex-
+tracted denientia into the model: (1) we use only identi-
+ers without denientia, which reduces the vocabulary to
+V1=PIV, where the projection operator PI:I
+F!I
+reduces the dimensions dim V1= dimI; (2) we use `weak'
+identier-deniens associations that include identiers and
+denientia as separate dimensions, formally V2=PIFV
+where the projector PIF:I
+F!IFreduces the di-
+mension to dim V2= dimI+ dimF; and (3) we use `strong'2
+664d1d2d3
+E 1 0 1
+m 1 1 0
+c1 1 03
+775
+(a) identier only.2
+66666664d1d2d3
+E1 0 1
+m 1 1 0
+c1 1 0
+energy 1 0 1
+mass 1 1 0
+speed of light 1 1 03
+77777775
+(b) weak association.
+2
+664d1d2d3
+Eenergy 1 0 1
+mmass 1 1 0
+cspeed of light 1 1 03
+775
+(c) strong association.
+Figure 2: Illustration of the identier-document matrix
+Dfor the analyzed methods to create features from
+the identiers and denientia, for the mass-energy
+equivalence example and three hypothetical documents
+d1=fE;m;cg;d2=fm;cg;d 3=fEg.
+identier-deniens associations that append a deniens to
+each identier and thus V3=V.
+There is some variability in the denientia: for example, the
+same identier in one document can be assigned to `Cauchy
+stress tensor' and in another to `stress tensor', which is almost
+the same thing. To reduce this variability we perform the fol-
+lowing preprocessing steps: we tokenize the deniens and use
+individual tokens to index dimensions of the space. For ex-
+ample, suppose we have two pairs ( , `Cauchy stress tensor')
+and (, `stress tensor'). In the `weak' association case, we will
+have dimensions ( ;`Cauchy';`stress';`tensor'), while for the
+`strong' association we only use the last term, i.e., ( tensor)
+as additional features.
+7Cluster feature vectors
+At this stage, we aim to nd clusters of documents that are
+reasonable namespace candidates. We vectorize each doc-
+ument using the following weighting function log(tf) =(zdf),
+where tf denotes the term frequency , df the document fre-
+quency and zthe normalization parameter, such that the
+length of each document vector is 1. In addition, we discard all
+identiers with DF <2. We further reduce the dimensionality
+of the resulting dataset via Latent Semantic Analysis (LSA)
+[6], which is implemented using randomized Singular Value
+Decomposition (SVD) [14], see [12]. After the dimension-
+ality reduction, we apply Mini-Batch K-Means with cosine
+distance, since this algorithm showed the best performance
+in our preliminary experiments (refere to [12] for further de-
+tails).
+8Building namespaces
+Once a cluster analysis algorithm assigns documents from our
+collection to clusters, we need to nd namespaces among these
+clusters. We assume that clusters are namespace-dening,
+meaning that they are not only homogeneous in the cluster
+analysis sense (e.g., in the case of K-Means it means that the
+within-cluster sum of squares is minimal), but also contain
+topically similar documents.
+To assess the purity of the clusters, we use the Wikipedia
+category information, which was not used for clustering in
+the rst place. Since each Wikipedia article might have an
+139arbitrary number of categories, we nd the most frequent cat-
+egory of the cluster, and thus dene its purity Cas
+purity(C )=maxicount(ci)
+jCj;
+where theci's are cluster categories . Thus, we can select all
+clusters with purity above a certain threshold and refer to
+them as namespace-dening clusters. In our experiments we
+achieved best results with a threshold of 0.6.
+Afterwards, we convert these clusters into namespaces by
+collecting all identiers and their deniens in the documents of
+each cluster. Therefore, we rst collect all identier-deniens
+pairs, and then group them by identiers. During the extrac-
+tion, each deniens candidate is scored. This score is used
+to determine which deniens will be assigned to an identier
+in the namespace. We group the pairs by identier. If an
+identier has two or more identical deniens, we merge them
+into one. Thus, the score of an identier-deniens pair is the
+sum of scores. There is some lexical variance in the deniens.
+For example, `variance' and `population variance' or `mean'
+and `true mean' are closely related deniens. Thus, it is ben-
+ecial to group them to form one deniens. This can be done
+by fuzzy string matching (or approximate matching) [23]. We
+group related identiers and calculate the sum of their scores.
+Intuitively, the closer a relation is, the higher is the score. A
+high score increases the condence that a deniens is correct.
+In the last step of our pipeline, we label our namespace
+dening clusters with categories from well known classica-
+tions, eectively naming the namespaces we identied. We
+thus achieve two goals. First, we indirectly evaluate our
+dataset. Second, we ease the use of our dataset to improve
+MIR. We use the following ocial classications:
+(1) Mathematics Subject Classication (MSC2010) [3] [Amer-
+ican Mathematical Society];
+(2) Physics and Astronomy Classication Scheme (PACS)
+[4]; and
+(3) ACM Computing Classication System [28] available
+as a Simple Knowledge Organization System (SKOS)
+ontology [22].
+We processed the SKOS ontology graph with RDFLib. All
+categories can be found on our website [30]. After obtaining
+and processing the data, the three classications are merged
+into one. We map namespaces to second-level categories by
+keyword matching. First, we extract all keywords from the
+category. The keywords include the top level category name,
+the subcategory name and all third level category names.
+From each namespace, we extract the namespace category
+and names of the articles that form the namespace. Finally,
+we perform a keyword matching, and compute the cosine sim-
+ilarity between the cluster and each category. The namespace
+is assigned to the category with the largest cosine score. If
+the cosine score is below 0:2 or only one keyword is matched,
+the cluster is assigned to the category `others'.
+Improve identiﬁer-deﬁnition extraction
+We used POS Tagging based distance measures (see Sec-
+tion 2.1) to extract identier-deniens pairs from the text
+surrounding the formula. In a second step, we build name-
+spaces of identiers. This namespaces allows us to study the
+usage of identiers in dierent scientic elds. Many, but
+not all denientia can be found in the text surrounding the
+formulae. Thus, the namespaces can additionally be usedto identify the deniens in cases where the deniens is not
+mentioned in the text.
+2.3 Implementation details
+We use the Big Data framework Apache Flink , which is capa-
+ble of processing our datasets in a distributed shared nothing
+environment, leading to short processing times. Our source-
+code, training, and testing data is openly available from our
+website [30].
+For the MLP part, our implementation follows the open
+source implementation of the Mathematical Language Pro-
+cessing Project [26], with the following improvements: rather
+than converting the Wikipedia formulae via LATExml, we now
+directly extract the identiers from the LATEX parse tree via
+Mathoid [32]. Second, we include a link to Wikidata, so that
+Wikipedia links can be replaced by unique and language in-
+dependent Wikidata identiers (ids). These ids are associ-
+ated with semantic concepts, which include a title, and in
+many cases a short description that simplies disambigua-
+tion. For the POS Tagging, we use the Stanford Core NLP
+library ( StanfordNLP ) [20] for POS Tagging of natural lan-
+guage as well as additional math-aware tags (see Section 2.1).
+In summary, we use the following tags:
+(1) identiers (` ID');
+(2) formulae (` MATH');
+(3) inner-wiki link (` LINK');
+(4) singular noun (` NN');
+(5) plural noun (` NNS');
+(6) adjective (` JJ'); and
+(7) noun phrase (` NOUN_PHRASE ').
+For the Namespace Discovery step in our pipeline (Section
+2.2), we use the following implementation to discover clusters
+that are suitable namespace candidates. Using `TdfVector-
+izer' from scikit-learn [27], we vectorize each document. The
+experiments are performed with (log TF) IDF weighting.
+Therefore, we use the following parameters: `use idf=False',
+`sublinear tf=True'. Additionally, we discard identiers that
+occur only once by setting `min df=2'. The output of `Td-
+fVectorizer' is row-normalized, i.e., all rows have unit length.
+The implementation of randomized SVD is taken from [27] {
+method `randomized svd'. After dimensionality reduction,
+we apply Mini-Batch K-Means (class `MiniBatchKMeans')
+from [27] with cosine distance. In our preliminary experi-
+ments, this algorithm showed the best performance. To im-
+plement it, we use the Python library FuzzyWuzzy. Using
+fuzzy matching we group related identiers and then sum
+over their scores.
+3. EVALUATION
+3.1 Data set
+As our test collection, we use the collection of Wikipedia
+articles from the NTCIR-11 Math Wikipedia task [33] in
+2014. We choose this collection instead of the latest version
+of Wikipedia to be able to compare our results to previous
+experiments.
+After completing the MLP pipeline, we exclude all docu-
+ments containing less than two identiers. This procedure re-
+sults in 22 515 documents with 12 771 distinct identiers that
+occur about 2 million times. Figure 3 shows that identiers
+follow a power law distribution, with about 3 700 identiers
+occurring only once and 1 950 identiers occurring only twice.
+140100xpmn
+101102103104
+index100101102103104105106countsFigure 3: Distribution of identier counts. The most frequent
+identiers are x(125k),p(110k),m(105k), and n(83k).
+The amount of identiers per document also appears to fol-
+low a long tail power law distribution ( p<0:001 for KS test)
+as only a few articles contain a lot of identiers, while most of
+the articles do not. The largest number of identiers in a sin-
+gle document is an article with 22 766 identiers, the second
+largest has only 6 500 identiers. The mean number of iden-
+tiers per document is 33. The distribution of the number
+of distinct identiers per document is less skewed than the
+distribution of all identiers. The largest number of distinct
+identiers in a single document is 287 followed by 194. The
+median of identiers per document is 10. For 12 771 identi-
+ers, the algorithm extracted 115 300 denientia. The num-
+ber of found denientia follows a long tail distribution as well,
+with the median of denientia per page being 4. Moreover,
+we list the most common identier-deniens pairs in Figure 3.
+3.2 Gold standard
+We created a gold standard from the 100 formulae patterns
+included in the NTCIR-11 Wikipedia task [33] and the fol-
+lowing information:
+(1) identiers within the formula;
+(2) deniens of each identier; and
+(3) links to semantic concepts on Wikidata.
+We compared our results with that gold standard and cal-
+culated the three measures: precision, recall, and F1-score,
+to evaluate the quality of our identier-denitions. In a rst
+step, we evaluated the results acquired with the POS Tag-
+ging based distance measures (see Section 2.1). In a second
+step, we evaluated the results acquired by combining the POS
+Tagging based distance measures and the results of the name-
+spaces (see Section 2.2)
+The gold standard (cf. Figure 4) consists of 310 identiers,
+with a maximum of 14 identiers per formula. For 174 of those
+identiers, we could assign the corresponding semantic con-
+cept in Wikidata. For 97, we assigned an individual phrase
+that we could not relate to a Wikidata concept. For an ad-
+ditional 27, we assigned two phrases. For example, for Topic
+32 (cf. Figure 4), we assigned critical temperature in addition
+to the semantic concept of the critical point, since the critical
+temperature is more specic. The full list of assignments is
+available from our website [30]. Note, that the identication
+of the correct identier-denition, was very time consuming.
+For several cases, the process took more than 30 minutes per(1) Van der Waerden's theorem: W(2;k)>2k=k"
+WVan der Waerden number
+kinteger : number that can be written without a
+fractional or decimal component
+"positive number (real number. . . )
+
+(31) Modigliani-Miller theorem: Tc
+Tctax rate : ratio (usually expressed as a percent-
+age) at which a business or person is taxed
+(32) Proximity eect (superconductivity): Tc
+Tccritical temperature, critical point : critical
+point where phase boundaries disappear
+
+(69) Engine eciency: =workdone
+heatabsorbed=Q1 Q2
+Q1
+energy eciency
+Q1heat (energy)
+Q2heat (energy)
+
+(86) Lagrangian mechanics:@L
+@qi=d
+dt@L
+@_qi
+LLagrangian
+qigeneralized coordinates
+ttime (. . . )
+_qigeneralized velocities, generalized coordinates
+Figure 4: Selected entries from the gold standard. Bold font
+indicates that the entry is linked to a language independent
+semantic concept in Wikidata. The descriptions in brackets
+originate from the English Wikidata label and have been
+cropped to optimize the layout of this gure.
+formulae, since multiple Wikipedia pages and tertiary liter-
+ature had to be consumed. The gold standard was checked
+by a mathematician from the Applied and Computational
+Mathematics Division, National Institute of Standards and
+Technology, Gaithersburg, Maryland, USA.
+4. RESULTS
+In this section, we describe the results of our evaluation.
+First, we describe the quality of the MLP process in Sec-
+tion 4.1. Afterwards, we describe the dataset statistics and
+the results of the namespace evaluation in Section 4.2.
+4.1 Mathematical Language Processing
+4.1.1 Identiﬁer extraction
+Our gold standard consists of 310 identiers to be extracted
+from the aforementioned 100 reference formulae. We were
+able to extract 294 identiers (recall 94.8%) from the gold
+standard correctly. We obtained only 16 false negatives, but
+overall 57 false positives (precision 83.7%, F189.0%). Falsely
+detected identiers aect 22% of the reference formulae, show-
+ing that often several falsely extracted identiers belong to
+one formula. In the following, we explain why the errors can
+be attributed to the shortcomings of the heuristics explained
+in Section 2.1.
+141C
+lassical mechanics of discrete systems 45.00 (PACS)
+Categories: Physics, Mechanics, Classical mechanics
+Purity: 61%, matching score: 31%,
+identiers 103, semantic concepts 50,
+ 5
+8,
+4
+,
+4
+2,
+1
+I
+dentier-denitions:
+mmass (quantitative measure of a physical object's
+resistance to acceleration by a force . . . ) [ s29]
+F
+force (inuence that causes an object to change) [ s25]
+v
+velocity (rate of change of the position of an object
+. . . and the direction of that change) [s24]
+tti
+me(dimension in which events can be ordered the past
+through the present into the future) [s19]
+a
+acceleration (rate at which the velocity. . . ) [ s17]
+r
+position (Euclidean vector . . . ) [s14]
+ip
+article [s12]
+Ee
+nergy (physical
+quantity representing the capacity to do work) [ s11]
+vs
+peed (magnitude of velocity) [s10]
+aa
+cceleration [s10]
+Vv
+elocity [s9]
+u
+ow velocity [s8]
+rra
+dius [s8]
+
+E
+electric eld (. . . representing
+the force applied to a charged test particle) [ s6]
+
+cs
+peed of light (speed at which all massless
+particles and associated elds travel in vacuum) [ s3]
+St
+ochastic analysis 60Hxx (MSC)
+Categories: Stochastic processes, Probability theory
+Purity: 92%, matching score: 62%, identiers 54, semantic
+concepts 32,
+ 1
+8,
+0
+,
+3
+0,
+0
+I
+dentier-denitions:
+astochastic process (. . . random variables) [ s12]
+Xs
+tochastic process (. . . random variables) [ s10]
+
+E
+expected value [s2]
+
+Ee
+xpected value s<1
+vfunctions<1
+The
+ory of data 68Pxx (MSC)
+Categories: Information theory, Theoretical computer science
+Purity: 86%, matching score: 35%, identiers 58, semantic
+concepts 10
+Identier-denitions:
+Rrate [s12]
+Xp
+osterior probability [s10]
+nl
+ength [s8]
+
+HIn
+formation entropy (expected value of the amount
+of information delivered by a message) [s 5]
+Im
+utal information [s5]
+ap
+rogram [s5]
+
+ac
+odewords<1
+EXexpected value s<1
+Table 1: Identier-denitions for selected identiers and namespaces extracted from the English Wikipedia, the accumulated
+scoresand the human relevance rankings conrmed (
+ ), partly conrmed (
+ ), not sure (
+ ) and incorrect (
+ ). Discovered
+semantic concepts are printed using bold font. The descriptions were fetched from Wikidata. To improve readability of the
+table, we manually shortened some long description texts.
+Incorrect markup. Errors relating to 8 formulae (33 false
+positive and 8 false negative identiers), were caused by the
+incorrect use of LATEX, especially the use of math mode for
+text or the missing usage of math mode for part of the for-
+mula. An identier Q1that is falsely marked as Q1 (cf. Fig-
+ure 4, Topic 69) in a formula, can easily be identied correctly
+by a human since it looks very similar in the output. As obvi-
+ouslyQ1is meant in the formula, we took Q1as gold standard
+for this identier. But in the MLP process it is impossible
+to extract the identier correctly, as Q1 impliesQtimes 1.
+Symbols. For 8 formulae (9 false positive identiers), Math-
+oid [32] misclassied symbols as identiers, such as din
+d
+dx. Two formulae (2 false positive identiers) are substitu-
+tions (abbreviations that improve the readability of formulae
+without specic meaning).
+Sub-super-script. Two formulae (3 false positive, 2 false
+negative identiers), used sub-super-script such as 2
+y.
+Special notation. For 2 formulae (10 false positive, 2 false
+negative identiers), use special notation like the Einstein
+sum convention.
+We excluded incorrectly extracted identiers from the follow-
+ing processing steps. Thus the upper bound for recall and
+precision are set by the identier extraction step.
+4.1.2 Deﬁnition extraction
+In a rst step, we only assess the denitions that matched
+exactly the semantic concepts materialized as Wikidata item
+in the gold standard. Thus, we found 88 exact matches (recall
+28.4%), but also obtained 337 false negatives, which results
+in a precision of 20.7% ( F123.9%).In addition, we evaluated the performance of partially rele-
+vant matches by manually deciding the relevance for each en-
+try. For example, integer (number that can be written with-
+out a fractional or decimal component) would be classied as
+highly relevant, but the string integers was classied as rel-
+evant. Although this classication is mathematically incor-
+rect, it provides valuable information for a human regarding
+the formulae. With this evaluation, we obtain 208 matches
+(recall 67.1%) and 217 false negatives (precision 48.9%, F1
+56.6%). To interprete these results, we dierentiate between
+denitions that have not been extracted, although all nec-
+essary information is present in the information source, and
+denitions that do not completely exist in the information
+source. Wolska and Grigore [35] found that around 70% of
+objects denoting symbolic expressions are explicitly denoted
+in scientic papers. Since in our data source only 73% of
+the identiers are explained in the text, 73% represents the
+highest achievable recall for systems that do not use world
+knowledge to deduce the most likely meaning of the remain-
+ing identiers. Considering this upper limit, we view a recall
+of 67.1% that was achieved when including partly relevant re-
+sults, as a good result. These results also conrm the ndings
+of Kristianto et al. [17]. Although these overall results match
+with the results of Wolska and Grigore [35], we found major
+dierences between dierent scientic elds. In pure mathe-
+matics, the identiers usually do not link to a specic concept
+and the formulae do not relate to specic real-life-scenarios.
+In contrast, in physics the denientia of the identiers are
+usually mentioned in the surrounding text, like in the mass-
+energy-equivalence example.
+1424.2 Namespace Discovery
+The evaluation of the namespace discovery performance is
+twofold. First, we apply the same procedure as in the eval-
+uation of the MLP process. In a second step, we perform a
+manual quality assessment of the nal namespaces.
+We obtain the following results with regard to the extrac-
+tion performance. For the strict relevance criterion, the recall
+improved by 18% (0.048) to 33.2% (103 exactly correct def-
+initions), and the precision declined only slightly with 420
+false positives to 19.7% ( F124.7%). In the end, 30 identi-
+ers (9.6%) reached the ultimate goal and were identied as a
+semantic concept on Wikidata. For the non strict relevant cri-
+terion, we could measure a recall performance gain of 19.4%,
+while maintaining the precision level. This exceeds the upper
+limit for recall achievable by exclusively analyzing the text of
+a single document of (73%) and extracts 250 denitions cor-
+rectly (recall 80.6%) with only 273 false positives (precision
+47.8%,F160.0%).
+The second part of the evaluation assesses the quality of the
+discovered namespaces. While a detailed performance eval-
+uation of the clustering methods was already carried out in
+[12], we focus on the contents of the discovered namespaces
+here. For evaluating the Namespace Discovery, we evaluated
+6 randomly sampled subject classes. Two independent judges
+rated the categorized identier-deniens pairs regarding their
+assignment to subject classes using the four categories: `con-
+rmed' (
+ ), `partly conrmed' (
+ ), `not sure' (
+ ) and `incor-
+rect' (
+ ), regarding their assignment to the subject class by
+two independent raters. All cases of disagreement (mostly
+vs.
+ ) could be resolved in consensus.
+With strong coupling and a minimal purity of 0.6, 250 clus-
+ters were obtained of which 167 could be mapped to name-
+spaces in the ocial classication schemes (MSC 135, PACS
+22, ACM 8). The purity distribution is as follows: 0.6-0.7: 98,
+0.7-0.8: 57, 0.8-0.9: 44, 0.9-1.0: 51.
+Those namespaces contain 5 618 denitions with an overall
+score>1, of which 2 124 (37.8%) link to semantic concepts.
+We evaluated the recall of 6 discovered namespaces exem-
+plary. The purity of the selected namespaces ranged from 0.6
+to 1. with an average of 0.8. They contained between 14 and
+103 identiers (with a score >1). Here, relevance means that
+the denition is commonly used in that eld. This was de-
+cided by domain experts. However, since this question is not
+always trivial to judge, we introduced an unknown response
+(
+). In total, 129 (43%) of the 278 discovered denitions
+matched the expectation (
+ ) of the implicit namespaces ex-
+pected by the domain experts. For 7 denitions (3%), they
+were clearly wrong (
+ ), for 8 (3%), the denitor was not spe-
+cic enough and for the remaining 144 (52%), the reviewers
+could not assess the relevance (
+ ). Note that the quality of
+namespaces varied. For example cluster (33Cxx, Hypergeo-
+metric functions) had signicantly more clearly wrong results,
+because symbols were classied as identiers, compared to the
+investigated clusters in physics where the denition of specic
+symbols is less common.
+In general, this result was expected, since it is hard to as-
+sess the namespaces that have not been spelled out explicitly
+before. Especially, the recall could not be evaluated, since
+to the best of our knowledge, there is no reference list with
+typical identiers in a specic mathematical eld. For details
+regarding implementation choices, visit our website [30], and
+contribute to our open source software mathosphere.5. CONCLUSION AND OUTLOOK
+We investigated the semantication of identiers in math-
+ematics based on the NTCIR-11 Math Wikipedia test collec-
+tion using Mathematical Language Processing and Names-
+pace Discovery. Previous approaches have already shown
+good performance in extracting descriptions for mathemat-
+ical formulae from the surrounding text in individual docu-
+ments.
+We achieved even better performance (80% recall, while
+maintaining the same level of precision) in the extraction
+of relevant identier-denitions. In cases where identier-
+denitions were absent in the document, we used our fall back
+mechanism of identier-denitions from the namespace that
+we learned from the collection at large. This way, we could
+break the theoretical limit for systems (about 70% recall cf.
+Section 4) that take into account only one document at a time.
+Moreover, the descriptions extracted by other systems are
+language dependent and do not have a specic data structure.
+In contrast, we organized our extracted identier-denitions
+in a hierarchical data structure (i.e., namespaces) which sim-
+plies subsequent data processing tasks such as exploitative
+data analysis.
+For about 10% of the identiers, we were able to assign the
+correct semantic concept on the collaborative knowledge base
+Wikidata. Note, that this allowed extracting even more se-
+mantics beside a natural language description as spelled out in
+Table 1. Namely, one can nd labels and descriptions in multi-
+ple languages, links to relevant Wikipedia articles in dierent
+languages, as well as statements. For example, for the iden-
+tierspeed of light, 100 translations exist. As statements
+one can, for example, retrieve the numeric value (3 108m=s),
+and the fact that the speed of light is a unit of measurement.
+We observed that identier clusters in physics and computer
+science are more useful in the sense that they more often link
+to real-world semantic objects than identier clusters in pure
+mathematics, which often solely specify the type of the vari-
+able.
+During the construction of the gold standard, we noticed
+that even experienced mathematicians often require much
+time to manually gather this kind of semantic information for
+identiers. We assume that a signicant percentage of the 500
+million visitors to Wikipedia every day face similar problems.
+Our approach is a rst step to facilitate this task for users.
+The largest obstacle for obtaining semantic information for
+identiers from Wikidata is the quality of the Wikidata re-
+source itself. For 44% of the identiers in the gold standard,
+Wikidata contains only rather unspecic hypernyms for the
+semantic concept expressed by the identier. We see two op-
+tions to remedy this problem in future research. The rst
+option is to use a dierent semantic net containing more ne-
+grained semantic concepts. The second option is to identify
+unspecic semantic concepts in Wikidata and to split them
+into more specic Wikidata items related to mathematics and
+science.
+Our identier extraction has been rolled out to the Wikime-
+dia production environment. However, at the time of writing,
+incorrect markup is still a major source of errors. To overcome
+this problem, the implementation of procedures that recog-
+nize and highlight incorrect markup for Wikipedia editors is
+scheduled and will encourage editors to improve the markup
+quality. In addition, symbols falsely classied as identiers
+have a noticeable negative impact on the quality of the clus-
+tering step. Improving the recognition of symbols is therefore
+143an issue that future research should address. Moreover, in the
+future our method should be expanded to other datasets be-
+side Wikipedia.
+With regard to math information retrieval applications i.e.,
+math search, we have shown that the discovered namespaces
+can be used to disambiguate identiers. Exposing name-
+spaces to users is one application of identier namespaces.
+Using them as internal data structure for math information
+retrieval applications, such as math search, math understand-
+ing or academic plagiarism detection is another. Regarding
+MIR tasks, identier namespaces allow for quiz like topics
+such as \At constant temperature, is volume directly or in-
+versely related to pressure?". This simplies comparing tradi-
+tional word based question and answering systems with math
+aware methods.
+In conclusion, we regard our namespace concept as a signif-
+icant innovation, which will allow users to better express their
+mathematical information needs, and search engines to dis-
+ambiguate identiers according to their semantics. However,
+more research needs to be done to better understand the in-
+uence of each individual augmentation step of our presented
+pipeline for MIR applications.
+6. REFERENCES
+[1] C. C. Aggarwal
+and C. Zhai. A survey of text clustering algorithms.
+InMining Text Data , pages 77{128. Springer, 2012.
+[2] A. Aizawa, M. Kohlhase, I. Ounis,
+and M. Schubotz. NTCIR-11 Math-2 task overview.
+InProceedings of the 11th NTCIR Conference, 2014.
+[3] American Mathematical Society.
+AMS Mathematics Subject Classication 2010, 2009.
+[4] American
+Physical Society. PACS 2010 Regular Edition, 2009.
+[5] F. Cajori. A history of mathematical
+notations. 1. Notations in elementary mathematics .
+Open Court Publ. Co., Chicago, Ill., 1928.
+[6] S. C. Deerwester, S. T. Dumais, T. K. Landauer,
+G. W. Furnas, and R. A. Harshman. Indexing by
+latent semantic analysis. JAsIs , 41(6):391{407, 1990.
+[7] E. Duval, W. Hodgins,
+S. Sutton, and S. L. Weibel. Metadata principles
+and practicalities. D-lib Magazine , 8(4):16, 2002.
+[8] B. Gipp. Citation-based Plagiarism Detection - Detecting
+Disguised and Cross-language Plagiarism using Citation
+Pattern Analysis . Springer Vieweg Research, 2014.
+[9] A. Gliozzo and
+C. Strapparava. Semantic domains in computational
+linguistics . Springer Science & Business Media, 2009.
+[10] J. Gosling, B. Joy, G. Steele, G. Bracha,
+and A. Buckley. The Java RLanguage Specication.
+Java SE 8 Edition . Addison-Wesley Professional, 2015.
+[11] M. Grigore, M. Wolska, and M. Kohlhase. Towards
+context-based disambiguation of mathematical
+expressions. In ASCM, pages 262{271, 2009.
+[12] A. Grigorev. Identier namespaces in mathematical
+notation. arXiv preprint arXiv:1601.03354 , 2016.
+[13] F. Guidi and C. Sacerdoti Coen. A survey
+on retrieval of mathematical knowledge. In Intelligent
+Computer Mathematics , pages 296{315. 2015.
+[14] N. Halko, P. Martinsson, and A. Tropp. Finding
+structure with randomness: Stochastic algorithms for
+constructing approximate matrix decompositions. 2009.[15] D. Jurafsky and J. H. Martin. Speech
+& language processing. Pearson Education India, 2000.
+[16] M. Kohlhase and I. Sucan. A Search Engine
+for Mathematical Formulae. In Proc. of AISC, number
+4120 in LNAI , pages 241{253. Springer Verlag, 2006.
+[17] G. Y. Kristianto, A. Aizawa, and Others. Extracting
+Textual Descriptions of Mathematical Expressions
+in Scientic Papers. D-Lib Magazine , 20(11):9, 2014.
+[18] C. Larman. Applying UML and patterns: an
+introduction to object-oriented analysis and design and
+iterative development . Pearson Education India, 2005.
+[19] K. Ma, S. C. Hui, and K. Chang.
+Feature extraction and clustering-based retrieval
+for mathematical formulas. In Software Engineering
+and Data Mining (SEDM) , pages 372{377. IEEE, 2010.
+[20] C. D. Manning, M. Surdeanu, J. Bauer, J. Finkel, S. J.
+Bethard, and D. McClosky. The Stanford CoreNLP
+natural language processing toolkit. In ACL, 2014.
+[21] N. Meuschke and B. Gipp. Reducing Computational
+Eort for Plagiarism Detection by using Citation
+Characteristics to Limit Retrieval Space. In JCDL , 2014.
+[22] A. Miles, B. Matthews, M. Wilson, and D. Brickley.
+SKOS Core: Simple Knowledge Organisation
+for the Web. In COLING , pages 1{9, 2005.
+[23] G. Navarro. A guided tour to approximate string
+matching. ACM computing surveys , 33(1):31{88, 2001.
+[24] M.-Q. Nghiem, K. Yokoi, Y. Matsubayashi, and
+A. Aizawa. Mining coreference relations between formu-
+las and text using Wikipedia. In COLING , page 69, 2010.
+[25] N. Oikonomakou and M. Vazirgiannis. A review
+of web document clustering approaches. In Data mining
+and knowledge discovery handbook. Springer, 2005.
+[26] R. Pagel and M. Schubotz. Mathematical language
+processing project. In WIP track at CICM, 2014.
+[27] F. Pedregosa, G. Varoquaux, A. Gramfort, V. Michel,
+B. Thirion, O. Grisel, and Others. Scikit-learn: Machine
+Learning in Python. JMLR , pages 2825{2830, 2011.
+[28] B. Rous. Major
+Update to ACM's Computing Classication System.
+Communications of the ACM , 55(11):12, Nov. 2012.
+[29] U. Sch oneberg and W. Sperber. POS Tagging
+and its Applications for Mathematics. In Intelligent
+Computer Mathematics , pages 213{223. Springer, 2014.
+[30] M. Schubotz. mlp.formulasearchengine.com .
+[31] M. Schubotz, M. Leich, and V. Markl. Querying
+large collections of mathematical publications:
+NTCIR10 math task. In NTCIR-10 , 2013.
+[32] M. Schubotz and G. Wicke.
+Mathoid: Robust, scalable, fast and accessible math
+rendering for wikipedia. In CICM, pages 224{235, 2014.
+[33] M. Schubotz, A. Youssef, V. Markl, and H. S. Cohl.
+Challenges of Mathematical Information Retrievalin
+the NTCIR-11 Math Wikipedia Task. In SIGIR , 2015.
+[34] C. Stokoe,
+M. P. Oakes, and J. Tait. Word sense disambiguation
+in information retrieval revisited. In SIGIR , 2003.
+[35] M. Wolska and M. Grigore. Symbol declarations in math-
+ematical writing. In Proceedings of the 3rd Workshop
+on Digital Mathematics Libraries , pages 119{127, 2010.
+[36] K. Yokoi, M. Nghiem, Y. Matsubayashi, and A. Aizawa.
+Contextual analysis of mathematical expressions
+for advanced mathematical search. In CICLing, 2011.
+144

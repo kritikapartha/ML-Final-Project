@@ -1,0 +1,566 @@
+Affective word ratings for concatenative text-to-speech
+synthesis
+Pirros Tsiakoulis
+Innoetics Ltd
+Artemidos 6 & Epidavrou
+Maroussi, Athens, Greece
+ptsiak@innoetics.com 
+Institute for Language and
+Speech Processing
+Research Center “Athena”
+Artemidos 6 & Epidavrou
+Maroussi, Athens, Greece
+spy@ilsp.gr
+Sotiris Karabetsos
+Institute for Language and
+Speech Processing
+Research Center “Athena”
+Artemidos 6 & Epidavrou
+Maroussi, Athens, Greece
+sotoskar@ilsp.athena-
+innovation.grAimilios Chalamandaris
+Innoetics Ltd
+Artemidos 6 & Epidavrou
+Maroussi, Athens, Greece
+aimilios@innoetics.com
+ABSTRACT
+This work explores aﬀective word ratings as an auxiliary tar-
+get cost for unit-selection-based concatenative speech syn-
+thesis. The method does not require task-specic crafted
+corpora, nor does it rely on additional annotations, mak-
+ing it ideal for found data . Following the general philos-
+ophy of our text-to-speech system, the approach does not
+enforce any explicit prosodic model, instead the aﬀect infor-
+mation is implicitly modeled via its contribution to the unit-
+selection cost function. The auxiliary aﬀective feature vec-
+tor comprises of continuous ratings in three dimensions (va-
+lence, arousal and dominance), extracted at the word level
+via state-of-the-art sentiment analysis techniques. In this
+case study, speech data consists of several professionally-
+produced children's audiobooks totaling about 5 hours of
+speech. The aﬀective dimensions are shown to correlate well
+with acoustic/prosodic features extracted from the speech
+data, highlighting their utility for the aﬀective speech syn-
+thesis. This is further conrmed via a preference listening
+test between the baseline and the aﬀective voice.
+CCS Concepts
+/x88Human-centered computing !Natural language in-
+terfaces; /x88Information systems !Speech / audio search;
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for proﬁt or commercial advantage and that copies bear this notice and the full cita-
+tion on the ﬁrst page. Copyrights for components of this work owned by others than
+ACM must be honored. Abstracting with credit is permitted. To copy otherwise, or re-
+publish, to post on servers or to redistribute to lists, requires prior speciﬁc permission
+and/or a fee. Request permissions from permissions@acm.org.
+PCI2016 November 10–12 2016, Patras, Greece
+© 2016 ACM. ISBN 123-4567-24-567/08/06. . . $15.00
+DOI: 10.475/123 4Keywords
+text-to-speech synthesis, aﬀective speech synthesis, senti-
+ment analysis for speech synthesis
+1. INTRODUCTION
+Speech as an interface has already enabled a variety of ap-
+plications and is gaining popularity as an auxiliary human-
+machine interface, e.g. mobile virtual assistants and voice
+search have become a commodity. Concatenative text-to-
+speech (TTS) synthesis is widely used in such applications,
+since it generates more natural speech compared to statisti-
+cal parametric approaches which can produce more intelli-
+gible speech [10].
+The next frontier for TTS is applications that require not-
+only natural and intelligible speech, but also expressiveness,
+emotion and aﬀect that is in aggrement with the textual
+content. One such challenge is the synthesised audiobooks
+application where the current state-of-the-art does not of-
+fer the necessary speech output to engage the user in long
+listening tasks.
+The quality of the synthetic speech that is genereated by a
+concatenative TTS system is to a large extend determined by
+the source speech corpus. This is why most commercial TTS
+systems are built on carefully designed speech databases that
+are recorded in a controlled manner following a specic, usu-
+ally neutral, speaking style. There are many recent attempts
+that try instead to utilise found data , such as audiobooks,
+to create synthetic voices [19, 21, 2, 14, 1, 4, 6], with the
+promise of more expressive speech synthesis.
+1.1 Expressive speech synthesis
+According to Schr oder [17], the diﬀerent approaches for
+expressive speech synthesis can be broadly classied into
+three categories:
+synthesis by explicit control where the speech is gener-
+ated by applying an explicit prosodic model which isSpyros Raptisusually derived from expressive speech data, e.g. [18,
+12, 16]
+synthesis by playback where diﬀerent speech databases
+for each target emotion / expressive style are used, e.g.
+[20, 22, 23]
+synthesis by implicit control where speech is generated
+with statistical parametric models employing adapta-
+tion and interpolation techniques, e.g. [25]
+A recent review of the above approaches and the issues as-
+sociated with each one of them can be found in [8].
+The focus of this work is the investigation of the synthesis
+by implicit control approach in the context of concatena-
+tive speech synthesis. Our goal is to explore data-driven
+machine learning techniques for annotating, analyzing and
+modeling aﬀective speech, towards building scalable expres-
+sive text-to-speech synthesis systems [15]. To this end, we
+are experimenting with sentiment analysis techniques to ex-
+tract useful aﬀective features to be used as auxiliary cost
+functions in the unit-selection algorithm. In this study, we
+employ an aﬀective lexicon that was automatically extracted
+from textual resources [13]. The experiments were perfomed
+on a speech corpus of several professionally-produced chil-
+dren's audiobooks totaling about 5 hours of speech, that was
+released for the Blizzard Challenge 2016 [11].
+The remainder of this paper is structured as follows. Sec-
+tion 2 gives an overview of our TTS system focusing on the
+unit-selection algorithm. Sections 3 and 4 then describe the
+data used, the experimental procedure and the results. Sec-
+tion 5 presents conclusions.
+2. CONCATENATIVE TEXT-TO-SPEECH
+SYNTHESIS
+A typical TTS system consists of two main components,
+namely the front-end and the back-end components [10].
+The former, also known Natural Language Processing (NLP)
+accounts for every aspect of the linguistic processing of the
+input text. The latter is responsible for the speech sig-
+nal manipulation and the output generation and can also
+be termed as the Back-end Digital Signal Processing unit
+(DSP). The concatenative TTS paradigm uses a select-and-
+paste technique to generate the speech from prerecorded
+speech database. The speech database usually consists of
+a suﬃcient corpus of appropriately selected naturally spo-
+ken utterances, carefully annotated to the unit level. The
+speech units are sub-word chunks, e.g. diphones, that are
+concatenated to produce the synthetic speech output. The
+resulting repository of speech units may have little or great
+redundancy, on which speech variability and overall quality
+is signicantly dependent on. The database also contains all
+the necessary (meta-) data and functional parameters for
+the unit selection stage of the synthesis.
+2.1 Our approach
+Our system follows the typical front-end/back-end archi-
+tecture [24]. The language dependent front-end is mainly
+responsible for parsing, analyzing and transforming the in-
+put text into an intermediate symbolic format, appropriate
+to feed the back-end component. Furthermore, it provides
+all the essential information regarding prosody. The back-
+end is mostly language-agnostic and can be congured towork with varying degrees of input annotations, from plain
+graphemic input to phonetic input with detailed prosodic
+annotation.
+2.1.1 Front-end
+The front-end is composed of a word- and sentence- tok-
+enization module, a text normalizer, a letter-to-sound mod-
+ule and a prosody module. The prosody is modeled implic-
+itly in a data driven manner. The main motivation behind
+such a rather simple approach is that naturalistic prosody
+patterns can be expected to emerge by the corpus through
+the unit selection process, assuming that the corpus is large
+enough and that the major factors aﬀecting prosody have
+been taken into account. Prosody is modeled in terms of
+target pitch values or duration models taking into account
+the distance of the unit from prosodically salient units in
+its vicinity, such as stressed syllables, pauses, and sentence
+boundaries, and the type of these units discriminating be-
+tween declarative, interrogative and exclamatory sentences.
+2.1.2 Back-end
+The back-end is further divided into the the unit selection
+and the overlap add modules.
+The unit selection module performs the selection of the
+speech units from the speech database using explicit match-
+ing criteria [9]. Let udenote a diphone and ujbe the j-th
+instance unit of uin the available speech database. Then
+given an utterance to be synthesised, e.g. a sequence of di-
+phones u1; : : : ; uNwhere Nis the length of the utterance
+in diphones, the algorithms outputs the best path indexes
+j1; : : : ; j Nas:
+path
+best= argmin
+j1;:::;jN(N∑
+i=1CT(ui
+ji) +N∑
+i=2CJ(ui
+ji; ui 1
+ji 1))
+(1)
+where CT(ui
+j) is the weighted sum of NTtarget costs for
+the given unit ui
+j, such as prosodic and phonetic context
+costs, and CJ(ui
+j; ui 1
+k) is the weighted sum of NJjoin costs
+(spectral, prosodic, etc.) between the adjacent units ui
+jiand
+ui 1
+ji 1:
+CT(ui
+j) =NT∑
+c=1wui
+cCT
+c(ui
+j) (2)
+CJ(ui
+j; ui 1
+k) =NJ∑
+c=1wui
+cCJ
+c(ui
+j; ui 1
+k) (3)
+AllCT
+cand CJ
+care congured to lie in the same range
+of values. The weights in the above sums can be diphone
+dependent, as superscripts imply, in order to account for
+diﬀerences between diphones (e.g. no need for F0 cost in
+non-voiced joins).
+The selected sequence of units j1; : : : ; j Nis propagated
+in the overlap add module. Only minor modication is per-
+formed to the resulting pitch contour in order to remove any
+signicant discontinuities at the boundaries of consecutive
+voiced units and to smooth the overall pitch curve. Finally,
+a custom Time Domain Overlap Add (TD-OLA) method is
+used to concatenate the selected units and apply the smooth
+pitch contour.2.1.3 Sentiment analysis features
+For this work, we used an aﬀective lexicon to incorpo-
+rate sentiment analysis features into our TTS system. The
+aﬀective lexicon was generated using a sentiment analysis
+model that assigns word-based continuous aﬀective ratings
+in three dimensions (valence, arousal and dominance). The
+front-end module is expanded in order to assign the aﬀective
+ratings to each word. This three-dimensional vector forms
+an additional word target cost function CT
+affective , which is
+dened as the Euclidean distance between the assigned and
+the source aﬀective feature vector.
+3. EXPERIMENTS
+This section describes the experiments designed to assess
+the validity of the proposed aﬀective target cost. First,
+we investigated the correlation between the aﬀective fea-
+ture vector and acoustic/prosodic features that are known
+to correlate well with aﬀective speech dimensions. Then, we
+performed a listening test comparing the system with and
+without the additional cost function.
+3.1 Data description
+The speech data consists of 50 professionally-produced
+children's audiobooks released for the Blizzard Challenge
+2016 [11]. The audiobooks were split into sentences and were
+automatically aligned to the provided text transcripts. The
+source text was used in this stage, since we wanted to pre-
+serve the punctuation of the original books. The sentences
+were further divided into two groups of phrases which were
+characterised as either narration orimpersonation . The for-
+mer corresponds to the phrases in which the voice actor nar-
+rates the story plot, while the latter consists of the dialog
+phrases in which the actor impersonates the characters of
+the book. The identication of the impersonation segments
+was performed in a semi-supervised manner based on the
+punctuation of the source text, e.g. quoted text. This data
+is summarised in Table 1.
+Table 1: Summary of the speech data.
+Number of phrases Duration
+Impersonation 2608 01h 26m 02s
+Narration 4466 03h 48m 58s
+Total 7074 05h 15m 01s
+3.2 Feature extraction
+The following set of features was extracted at the word
+level:
+Sentiment : the aﬀective continuous ratings of va-
+lence, arousal and dominance
+Rate : duration, syllables per second, phonemes per
+second
+F0: mean value, range, minimum and maximum
+Intensity : mean value, range, minimum and maxi-
+mum
+The F0 and intensity were extracted using the Praat tool
+[3], and statistics were calculated at the word level. The
+rate features were calculated using the force-alignments oftext with the audio, while the number of syllables per word
+was determined by the number of vowels it contained. We
+limited the analysis into these gross statistics since previous
+studies have shown that they are mostly correlated with
+sentiment scores extracted from text [5, 7].
+3.3 Correlation analysis
+The speech data comes from a variety of speaking styles
+corresponding to the various books which target children of
+diﬀerent age groups and language prociency skills. The
+narration and impersonation phrases also diﬀer signicantly
+within each group. Such discrimination is not available in
+the sentiment model, hence the aﬀective word ratings are
+also indiscriminative between the narration and imperson-
+ation groups. The prosodic realization of a word is also
+very diﬀerent into phrase-nal positions. In order to factor
+out these conditions, we performed the correlation analysis
+within each book, narration or impersonation group, and
+whether the word is phrase nal or not. Finally, we ltered
+out unstressed words and words that were not found in the
+aﬀective lexicon.
+Pairwise correlation between the aﬀective word ratings
+and the acoustic features was performed within each book,
+narration or impersonation group, and whether the word is
+phrase nal or not. Some correlations were found for cer-
+tain combinations, however no signicant trend was present.
+Canonical correlation analysis was also performed between
+the aﬀective feature vector and the acoustic feature vector.
+The example shown in Fig. 1 corresponds to the princi-
+pal correlation between the aﬀective word ratings (valence,
+arousal and dominance) and acoustic features (syllable rate,
+mean F0 value and mean intensity value).
+The results of the canonical correlation analysis are sum-
+marised in Table 2. The correlation coeﬃcients are averaged
+across books for each combination of narration/impersonation
+and phrase-nal/non-phrase-nal pair. The results show
+moderate correlations for the rst two signicant compo-
+nents. This result suggests that aﬀective word ratings may
+be useful features for text-to-speech synthesis, provided that
+the synthesizer also considers narration/impersonation dis-
+tinction as well as phrase-nal/non-phrase-nal position of
+the word (which is usually considered by default).
+Table 2: Average canonical correlations between aﬀective
+word ratings and prosodic features.
+Condition Non-phrase-nal Phrase-nal
+Impersonation 0:41j0:24j0:08 0:44j0:27j0:08
+Narration 0:29j0:15j0:04 0:35j0:18j0:07
+3.4 Listening test
+Two diﬀerent synthetic voices were build for our TTS sys-
+tem using the data set described above. The baseline voice
+uses the default conguration while the aﬀective voice also
+incorporates the aﬀective word ratings in the target cost.
+Both voices also include a binary feature that corresponds
+to the narration/impersonation distinction.
+A preference listening test was designed to evaluate the
+proposed method for child-directed speech. Three books
+from the given corpus were selected and synthesised using
+the two synthetic voices, excluding each time the units that
+came from the book to be synthesised. The selected books,−2−1.5 −1−0.5 00.5 11.5 2−3−2−10123
+feuddeath
+romeosensibledisguises
+julietthirteen
+sweetheartexcitingtybalt warning
+montague
+gardenheartproblem
+duelrefuse
+leaves
+gratefulbanishedmantua
+yetthursdaypotioncoma
+daysfuneral
+sense
+workscarefulgrief
+trespassingslainRomeo And Juliet (impersonation − phrase−final)
+ −  0.253*SylRate −  0.039*MeanF0 + 0.028*MeanIntensity −  1.208*Arousal + 6.739*Dominance −  5.103*ValenceFigure 1: Canonical correlation between aﬀective word ratings and prosodic features. The x-axis corresponds to the linear
+combination of acoustic features (syllable rate, mean F0 value and mean Intensity value), while the y-axis corresponds to the
+linear combination of aﬀective word ratings (valence, arousal and dominance)
+namely Stone Soup ,The Daydreamer and There Was A
+Crooked Man , are short in total duration facilitating the
+listening experiment. Five listeners were presented with the
+book script and a pair of synthetic prompts for each phrase,
+and was asked to choose the most appropriate or indicate
+\no preference". The presentation order was randomised,
+and the listeners were allowed to playback the audio multi-
+ple times.
+The results are summarised in Table 3; also showing the
+breakdown according to the book as well as whether the
+phrase was narrative or an impersonation. For each com-
+parison the number of judgements is shown as well as the
+statistical signicance level computed using a one-sided bi-
+nomial test after equally splitting the \no preference" val-
+ues. The statistical tests are clearly not independent from
+one another, however the number of samples does not favour
+testing each combination of the three conditions separately.
+The results show that there is an overall signicant prefer-
+ence for the aﬀective voice. There is a high percentage of the
+\no preference"choice, which is attributed to many synthetic
+prompts that were identical for both voices. When examin-ing the various breakdowns the preference is still in favor of
+the aﬀective voice, but the result is not always statistically
+signicant.
+The preference for the aﬀective voice in the case of imper-
+sonation (15.3%) is lower compared to narration (29.3%),
+although in both cases the preference is higher than the
+baseline voice. This is related to data coverage in these
+two domains. As shown in Table 1 the data mostly contains
+narrative speech, while the impersonations account for less
+than one third of the total duration of available speech. It
+must also be noted the data labeled as Impersonation con-
+tains multiple expressive styles (diﬀerent characters, emo-
+tions, etc), however we did not segment the data into more
+categories becuase the data would be very scarce for each
+subcategory.
+3.5 Discussion
+In agreement with previous ndings [5, 7], we have found
+correlations between aﬀective dimensions extracted from text,
+with gross statistics of acoustic features, such as speaking
+rate, F0 and intensity. It must be noted that our analysisTable 3: Preference results comparing the baseline to the aﬀective voice. Signicant results are shown in
+bold (p <0.05).
+Condition #Judgements Baseline No Preference Aﬀective p-value
+StoneSoup 195 7.7% 75.4% 16.9% 0.197
+Daydreamer 160 18.8% 60.0% 21.3% 0.812
+CrookedMan 85 11.8% 40.0% 48.2% 0.001
+Impersonation 150 9.3% 75.3% 15.3% 0.462
+Narration 290 14.1% 56.6% 29.3% 0.011
+Total 440 12.5% 63.0% 24.5% 0.011
+technique diﬀers from previous studies at level at which the
+statistics are aggregated. It would be interesting to repli-
+cate previous ndings at the phrase-level using this data
+set, however that is out of the scope of this work.
+We perform our analysis at the word level in order to
+investigate the potential use of word-level aﬀective features
+in the context of text-to-speech synthesis. The word-level
+statistics are more noisy than phrase-level statistics, and
+hence pairwise correlations with word-level aﬀective ratings
+were not observed.
+It must also be noted that the aﬀective word ratings were
+automatically generated using general sentiment analysis tech-
+niques and were not designed for the given task. However,
+using canonical correlation analysis and after factoring out
+speaking style, impersonation and phrase-nal position, we
+were able to identify a moderate correlation between the af-
+fective feature vector and the acoustic feature vector. These
+ndings corroborate our initial assumption that aﬀective
+word ratings can be useful features for text-to-speech syn-
+thesis.
+Since the target text-to-speech system is unit-selection
+based, the eﬀect of the aﬀective target cost is to favor the
+selection of units that come from words that have similar
+aﬀective dimensions with the target word. The rest of the
+cost functions deal with the target context / prosody and
+continuity constraints.
+Given the above, the high percentage of the \no prefer-
+ence" choice was anticipated. There are many cases where
+the standard cost functions restrict the candidate units in
+such a way that the aﬀective cost has no signicant eﬀect.
+The weight of the aﬀective cost was set so that its range is
+comparable to the rest of the target cost and no additional
+experiments were performed to ne-tune it. The fact that we
+found a preference bias for the aﬀective voice is an encour-
+aging result, towards using such automated cost functions
+for aﬀective speech synthesis.
+4. CONCLUSIONS
+We have investigated the use of aﬀective word ratings in
+the context of concatenative speech synthesis. The aﬀective
+feature vector comprises of continuous ratings in three di-
+mensions (valence, arousal and dominance), automatically
+extracted from textual resource via state-of-the-art senti-
+ment analysis techniques. The experiments were performed
+on a speech corpus of several professionally-produced chil-
+dren's audiobooks totaling about 5 hours of speech.
+Correlations were found between aﬀective dimensions re-
+trieved from sentiment analysis and acoustic features ex-
+tracted from speech (speaking rate, mean F0 and mean in-tensity values), using canonical correlation analysis. The
+aﬀective feature vector was incorporated in our TTS sys-
+tem as an auxiliary target cost function in the unit selection
+algorithm. Two voices were built from the speech corpus
+diﬀering only in the extra aﬀective cost function.
+A preference listening test designed for children's audio-
+book task showed a signicant preference for the aﬀective
+voice. This is a promising result that highlights potential im-
+provement of concatenative speech synthesis relying on data
+driven techniques, such as sentiment analysis tools, without
+enforcing any explicit model for sentiment in speech.
+5. ACKNOWLEDGEMENTS
+We would like to thank Ms Elisavet Palogiannidi, Techni-
+cal University of Crete, and Prof. Alexandros Potamianos,
+National Technical University of Athens, for providing the
+sentiment analysis resources.
+6. REFERENCES
+[1] X. Anguera, N. Perez, A. Urruela, and N. Oliver.
+Automatic synchronization of electronic and audio
+books via tts alignment and silence ltering. In
+Multimedia and Expo (ICME), 2011 IEEE
+International Conference on , pages 1{6. IEEE, 2011.
+[2] O. Boeﬀard, L. Charonnat, S. Le Maguer, D. Lolive,
+and G. Vidal. Towards fully automatic annotation of
+audio books for tts. In LREC , pages 975{980, 2012.
+[3] P. Boersma et al. Praat, a system for doing phonetics
+by computer. Glot international , 5(9/10):341{345,
+2002.
+[4] N. Braunschweiler, M. J. Gales, and S. Buchholz.
+Lightly supervised recognition for automatic
+alignment of large coherent speech recordings. In
+INTERSPEECH , pages 2222{2225, 2010.
+[5] C. Busso, S. Lee, and S. Narayanan. Analysis of
+emotionally salient aspects of fundamental frequency
+for emotion detection. Audio, Speech, and Language
+Processing, IEEE Transactions on , 17(4):582{596,
+2009.
+[6] A. Chalamandaris, P. Tsiakoulis, S. Karabetsos, and
+S. Raptis. Using audio books for training a
+text-to-speech system. In LREC , pages 3076{3080,
+2014.
+[7] M. Charfuelan and M. Schr oder. Correlation analysis
+of sentiment analysis scores and acoustic features in
+audiobook narratives. In 4th International Workshop
+on Corpora for Research on Emotion Sentiment &
+Social Signals, Istanbul, Turkey , 2012.[8] D. Govind and S. M. Prasanna. Expressive speech
+synthesis: a review. International Journal of Speech
+Technology , 16(2):237{260, 2013.
+[9] A. J. Hunt and A. W. Black. Unit selection in a
+concatenative speech synthesis system using a large
+speech database. In Acoustics, Speech, and Signal
+Processing, 1996. ICASSP-96. Conference
+Proceedings., 1996 IEEE International Conference on ,
+volume 1, pages 373{376. IEEE, 1996.
+[10] S. King. Measuring a decade of progress in
+text-to-speech. Loquens , 1(1):e006, 2014.
+[11] S. King and V. Karaiskos. The Blizzard Challenge
+2016. 2016.
+[12] J. A. Louw, G. Schlunz, W. Van der Walt, F. De Wet,
+and L. Pretorius. The speect text-to-speech system
+entry for the blizzard challenge 2013. 2013.
+[13] E. Palogiannidi, E. Iosif, P. Koutsakis, and
+A. Potamianos. Valence, arousal and dominance
+estimation for english, german, greek, portuguese and
+spanish lexica using semantic models. In Sixteenth
+Annual Conference of the International Speech
+Communication Association , 2015.
+[14] K. Prahallad and A. W. Black. Segmentation of
+monologues in audio books for building synthetic
+voices. Audio, Speech, and Language Processing, IEEE
+Transactions on , 19(5):1444{1449, 2011.
+[15] S. Raptis, S. Karabetsos, A. Chalamandaris, and
+P. Tsiakoulis. A framework towards expressive speech
+analysis and synthesis with preliminary results.
+Journal on Multimodal User Interfaces , 9(4):387{394,
+2015.
+[16] G. I. Schlunz and E. Barnard. A discourse model of
+aﬀect for text-to-speech synthesis. 2013.
+[17] M. Schr oder. Expressive speech synthesis: Past,
+present, and possible futures. In Aﬀective information
+processing , pages 111{126. Springer, 2009.
+[18] M. A. M. Shaikh, A. R. F. Rebordao, and K. Hirose.
+Improving tts synthesis for emotional expressivity by a
+prosodic parameterization of aﬀect based on linguistic
+analysis. In Proceedings of the 5th International
+Conference on Speech Prosody, Chicago, USA , 2010.
+[19] A. Stan, O. Watts, Y. Mamiya, M. Giurgiu, R. A.
+Clark, J. Yamagishi, and S. King. Tundra: a
+multilingual corpus of found data for tts research
+created with light supervision. In INTERSPEECH ,
+pages 2331{2335, 2013.
+[20] I. Steiner, M. Schr oder, M. Charfuelan, and A. Klepp.
+Symbolic vs. acoustics-based style control for
+expressive unit selection. In SSW , pages 114{119,
+2010.
+[21] E. Sz ekely, J. P. Cabral, P. Cahill, and
+J. Carson-Berndsen. Clustering expressive speech
+styles in audiobooks using glottal source parameters.
+InInterspeech , pages 2409{2412, 2011.
+[22] P. Tsiakoulis, C. Breslin, M. Gasic, M. Henderson,
+D. Kim, M. Szummer, B. Thomson, and S. Young.
+Dialogue context sensitive hmm-based speech
+synthesis. In Acoustics, Speech and Signal Processing
+(ICASSP), 2014 IEEE International Conference on ,
+pages 2554{2558. IEEE, 2014.
+[23] P. Tsiakoulis, C. Breslin, M. Gasic, M. Henderson,
+D. Kim, and S. J. Young. Dialogue context sensitivespeech synthesis using factorized decision trees. In
+INTERSPEECH , pages 2937{2941, 2014.
+[24] P. Tsiakoulis, S. Karabetsos, A. Chalamandaris, and
+S. Raptis. An overview of the ilsp unit selection
+text-to-speech synthesis system. In Articial
+Intelligence: Methods and Applications , pages
+370{383. Springer, 2014.
+[25] J. Yamagishi, T. Kobayashi, M. Tachibana, K. Ogata,
+and Y. Nakano. Model adaptation approach to speech
+synthesis with diverse voices and styles. In Acoustics,
+Speech and Signal Processing, 2007. ICASSP 2007.
+IEEE International Conference on , volume 4, pages
+IV{1233. IEEE, 2007.

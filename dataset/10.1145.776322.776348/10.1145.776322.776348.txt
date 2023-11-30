@@ -1,0 +1,976 @@
+Layered Peer-to-PeerStreaming∗
+Yi Cui,KlaraNahrstedt
+Departmentof ComputerScience
+UniversityofIllinoisatUrbana-Champaign
+{yicui, klara }@cs.uiuc.edu
+ABSTRACT
+In this paper, we propose a peer-to-peer streaming solu-
+tion to address the on-demand media distribution problem.
+We identify two issues, namely the asynchrony of user re-
+quests and heterogeneity of peer network bandwidth. Ourkey techniques to address these two issues are cache-and-
+relay and layer-encoded streaming. A unique challenge of
+layered peer-to-peer streaming is that the bandwidth anddata availability (number of layers received)of each receiv-
+ing peer are constrained and heterogeneous, which further
+limits the bandwidth and data availability of its downstreamnode when it acts as the supplying peer. This challenge dis-
+tinguishes our work from existing studies on layered multi-
+cast. Our experiments show that our solution is eﬃcient atutilizing bandwidth resource of supplying peers, scalable atsaving server bandwidth consumption, and optimal at max-
+imizing streaming qualities of all peers.
+CategoriesandSubjectDescriptors
+C.2.2 [Network Protocols ]: Applications; C.2.5 [ Local
+andWide-AreaNetworks ]: Internet; D.4.4 [ Communications
+Management ]: Network Communication; D.4.8 [ Performance ]:
+Simulation
+GeneralTerms
+Algorithms, Design, Performance
+Keywords
+Peer-to-Peer, Layered Streaming, Overlay
+∗This work was supported by the National Science Founda-
+tion under contract number 9870736, the Air Force Grantunder contract number F30602-97-2-0121, National ScienceFoundation Career Grant under contract number NSF CCR
+96-23867, NSF CISE Infrastructure grant under contract
+number NSF EIA 99-72884, and NASA grant under con-tract number NASA NAG 2-1250.
+Permission to make digital or hard copies of all or part of this work for
+personal or classroom use is granted without fee provided that copies arenot made or distributed for proﬁt or commercial advantage and that copies
+bearthisnoticeandthefullcitationontheﬁrstpage. Tocopyotherwise,to
+republish,topostonserversortoredistributetolists,requirespriorspeciﬁcpermission and/orafee.NOSSDAV’03, June 1–3,2003,Monterey, California, USA.
+Copyright2003ACM1-58113-694-3/03/0006...
+$5.00.1. INTRODUCTION
+Large-scale on-demand multimedia distribution has been
+shown as one of the killer applications in current and next-
+generation Internet. In existing solutions, multicast has
+been extensively employed since it can eﬀectively delivermedia data to multiple receivers, while minimizing server
+and network overhead. However, the nature of multicast
+is intrinsically in conﬂict with some important features ofmedia distribution, namely the asynchrony of user requests
+and heterogeneity of client resource capabilities. For asyn-
+chrony, a user may request media data at any time, which isagainst the synchronous transmission manner of multicast.For heterogeneity, clients may request stream of diﬀerent
+qualities due to their own resource constraints, especially
+network bandwidth. Therefore, no single multicast streamcan meet everyone’s requirement. These issues are illus-
+trated in Fig. 1.
+Ethernet DSL
+Dial-upCable ModemServer
+12
+3
+69
+12
+3
+6912
+3
+69
+12
+3
+69
+Figure 1: Asynchrony and Heterogeneity in On-
+DemandMediaDistribution
+Despite the above conﬂicts and numerous solutions to
+resolve them[2][9][11], the most serious problem faced by
+multicast today is the deﬁciency of its deployment in the
+wide-area network infrastructure. Moreover, this problemis likely to persist in the foreseeable future. As an alter-
+native, application-layer multicast [14] is proposed. In this
+approach, end systems, instead of routers, are organized intoan overlay to relay data to each other in a peer-to-peer fash-
+ion. Besides its initial success in addressing the absence of
+IP multicast, application-layer overlay is now believed to of-fer us more, because end system is ﬂexible enough to provide
+more functionalities than simply forwarding packets, such as
+caching[16], data/service indirection[6], resilient routing[1],peer-to-peer streaming[5][4][13], etc. Bearing this in mind,
+162we now revisit the aforementioned issues of asynchrony and
+heterogeneity in peer-to-peer streaming.
+First, recent studies on cache-and-relay[10][16] show promis-
+ing solutions to resolve the conﬂict between asynchronous
+requests and synchronous multicast transmission in peer-to-
+peer streaming. By delaying the received stream throughcaching, an end host could relay it to another peer, who re-
+quests the same data at a later time. Our previous study[16]
+further showed that this approach introduces less server/networkoverhead than IP-multicast-based solutions.
+Second, the layer-encoded streaming approach[11][9][12]
+has the potential to address the issue of heterogeneity. Forexample, in layered multicast[11][12], a stream is encoded
+into multiple layers, then fed into diﬀerent IP multicast ses-
+sions. A receiver with constrained bandwidth only needsto receive a subset of all layers to decode the stream withcertain degraded quality.
+However, existing layered streaming solutions cannot be
+directly applied to peer-to-peer system. The fundamentalreason roots at the dual role of the end host as both sup-
+plying peer and receiving peer. First, as a receiving peer,
+an end host may receive only a subset of all layers, due toits limited inbound bandwidth or processing capabilities. In
+peer-to-peer system, this means that its data availability as
+a supplying peer is also constrained, which further limitsthe data availability of its downstream peers. Second, the
+outbound bandwidth of relaying nodes are limited and het-
+erogeneous. This means that as a supplying peer, it has con-strained bandwidth supply to the downstream nodes. Theseproblems never arise in layered multicast, whereby the end
+host is always the sink of data path. To summarize, these
+unique challenges distinguish our study from previous onesin layered streaming.
+The rest of this paper is organized as follows. In Sec. 2, we
+formulate the problem of layerd peer-to-peer streaming andshow its NP-complete complexity. In Sec. 3, we present our
+solution. Sec. 4 evaluates its performance. Sec. 5 reviews
+the related work. Finally, Sec. 6 concludes.
+2. PROBLEM FORMULATION
+We consider the distribution of a layer-encoded stream
+across a set of peers with heterogeneous inbound and out-
+bound bandwidths. As shown in Fig. 2, a peer can retrievethe stream at any time, requiring arbitrary quality, i.e., arbi-
+trary number of layers. Each peer caches the received stream
+in a local circular buﬀer for a certain amount of time. Inother words, a buﬀer window is kept along the playback
+of the stream, say 5 minutes. In this way, any later peer
+(within 5 minutes)requesting the same stream can receivethe buﬀered data from the current host. Furthermore, itcan retrieve diﬀerent layers from multiple peers in parallel.
+For example, in Fig. 2, H
+3is 3 minutes later than H1and 2
+minutes later than H2.T h u s , H3can stream from H1and
+H2. On the other hand, H4can only stream from H3since
+it is already outside the buﬀer windows of H1andH2.W e
+consider the media server ( H0)as a special peer, which stays
+online permanently and has all layers of the stream.
+A good peer-to-peer streaming solution should consider
+two factors. The ﬁrst factor is the overall streaming qualityof all peers, regarded as the system beneﬁt . The second
+factor is the server bandwidth consumption, regarded as the
+system cost . Therefore, our goal is to maximize the net
+beneﬁt (system beneﬁt excluding system cost), under eachH0 Server
+H1H2 H42310
+10
+10102
+102
+0
+211032
+2310
+00:0100:02
+00:0800:02 Request time
+2 Layer number 0
+H3 102
+00:04Outbound Bandwidth
+Inbound Bandwidth
+Figure2: LayeredPeer-to-peerStreaming
+peer’s bandwidth constraint. We introduce the following
+deﬁnitions.
+•Layer-encodedStream {l0,l1,l2,...,l L},w i t hl0as
+the base layer and others as enhancement layers. Theselayers are accumulative, i.e., l
+ican be only decoded if
+layersl0through li−1are available. For now, we as-
+sume that all layers have identical streaming rate. InSec. 3.4, we will relax this assumption.
+•Peers {H
+0,H 1,H 2,...,H N},w i t hH0as the server.
+H1through HNare sorted based on their requesting
+times. Furthermore, we use IkandOkto denote the
+inbound and outbound bandwidths of Hk.F o r t h e
+purpose of simplicity, IkandOkare measured as the
+number of layers Hkcan receive and send.
+•Streaming Quality Qk, the streaming quality re-
+ceived at Hk,m e a s u r e da sn u m b e ro fr e c e i v e dl a y -
+ers. In particular, Qm
+kis used to denote the number
+of layers received from the supplying peer Hm.C o n -
+sequently, Q0
+ki st h en u m b e ro fl a y e r sr e c e i v e df r o m
+serverH0.
+•LayerAvailability Ak,n u m b e ro fl a y e r sa v a i l a b l ea t
+the cache of Hk. In order to save cache space, Hk
+is allowed to discard some received layers (always the
+highest ones, i.e., the most enhanced ones)after play-
+back. Therefore, Ak≤Qk.
+•Buﬀer Length Bk, measured as the time length of
+Hk’s buﬀer. Note that with the same cache space, Bk
+may vary depending on how many layers Hkcaches.
+•Request Time tk, the time at which Hkstarts to
+playback the stream. For two peers HkandHm,i f
+tk<t mandtm−tk≤Bk,t h e nHkis qualiﬁed as
+Hm’s supplying peer. In other words, Hmfalls within
+the buﬀer window of Hk, denoted as Hk→Hm. Given
+that the server H0can stream to all peers at any given
+time, we have H0→Hk(k=1,...,N ).
+•SupplyingPeerConstraint Ck, which sets the max-
+imum number of supplying peers Hkcan stream from
+in parallel. We do so to lower the synchronization com-plexity of parallel streaming. If the streaming quality
+163Qkstill cannot be met by all the supplying peers due
+to their limited outbound bandwidth or layer availabil-ity, we allow the server H
+0to send the missing layers
+toHk.
+Given above deﬁnitions, we can now formalize our goal as
+maximize/summationtextN
+k=1(Qk−Q0
+k)
+subjectto (1) Qk≤Ik(1≤k≤N)
+(2)/summationtext
+Hk→HmQk
+m≤Ok(1≤k≤N)
+The ﬁrst constraint states that the streaming quality (num-
+ber of layers received)of each peer Hkshould not exceed
+its inbound bandwidth. The second constraint is that as a
+supplying peer, Hkcannot output more layers than its out-
+bound bandwidth allows to send.
+Theorem1: Layered Peer-to-peer Streaming problem is
+NP-complete.
+Proof is provided in Appendix A.
+3. LAYEREDPEER-TO-PEERSTREAMING
+SOLUTION
+We now present our solution. We have following design
+objectives.
+First, each peer Hkshould conﬁgure its own streaming
+session (what layers to stream from which peer) locally.A s
+Theorem 1 showed that having global view and control does
+not help to reduce the problem complexity, this approach is
+more practical and cost-eﬀective1.
+Second, as the client requests come at diﬀerent times, our
+solution should be incremental , i.e., the streaming quality
+of existing peers must be preserved when admitting newpeers. As such, a new client H
+kcan only utilize the residual
+outbound bandwidth of its supplying peers.
+3.1 BasicAlgorithm
+We ﬁrst present the basic algorithm, which assumes that
+Hkis allowed to receive data from unlimited number of
+senders. The algorithm is a greedy approach, in that it
+always maximally utilizes the outbound bandwidth of thepeer with the smallest number of layers.
+Executed by H
+k, the algorithm takes the following inputs:
+(1)Ik, the inbound bandwidth of Hk;( 2 )S={H1,...,H M},
+a set of hosts qualiﬁed as the supplying peers of Hk.T h i s
+means that Hkfalls within the buﬀer windows of H1through
+HM. These peers are sorted such that A1≤A2≤...≤AM.
+The algorithm returns the streaming quality Qk, and collects
+the selected supplying peers into set P.
+Fig. 3 illustrates our algorithm. Hk’s inbound bandwidth
+allows to receive 11 layers, as represented by the white bar.It requests individual layers from supplying peers H
+1through
+H4.H1has 3 layers in its cache, as represented by its bar.
+Likewise, H2has 4 layers and so on. The shadowed squares
+1In order to do so, Hkneeds to know who are qualiﬁed
+as its supplying peers and their layer availability and cur-
+rent outbound bandwidth. The dissemination and acqui-sition of such information can be done through any pub-lish/subscribe service, which is considered orthogonal and
+not covered in this paper. Interested readers are also refer-
+eed to our previous study[15], which proposed a time-basedpublish/subscribe solution to address this problem.UnconstrainedSenders (Ik,H 1,...,H M)
+/* Calculation of Qk*/
+1Qk←0
+2P←φ
+3m=1
+4repeat
+5 Qm
+k←min(Om,A m−Qk,Ik−Qk)
+6 enque(P,H m)
+7 Qk←Qk+Qm
+k
+8 m←m+1
+9untilQk=Ikorm>M
+/* Layer Allocation */
+10index ←0
+11repeat
+12 Hm←deque(P)
+13allocatelayers/summationtextindex +Qm
+k−1
+i=index litoHm
+14 Om←Om−Qm
+k
+15 index ←index+Qm
+k
+16untilP=φ
+Table1: BasicAlgorithm
+ofH1through H4represent the number of layers their out-
+bound bandwidths allow to send. Note that these shadowed
+squares only indicates how many layers one can send. For
+example, H3has six layers available in its cache, and is able
+to output any ﬁve of them. Black squares represent layers
+which are already allocated.
+H1
+H3H2
+layer 
+numberQk
+012 3Qk
+HkH4H1
+H3H2
+layer number
+012 3HkH4H1
+H3H2
+layer number
+012 3HkH4Qk
+(a)(b)(c)
+H1
+H3H2
+layer number
+012 3HkH4from serverH1
+H3H2
+layer number
+012 3HkH4QkH1
+H3H2
+layer number
+012 3HkH4
+Qk
+(d)(e)(f)
+Figure3: SampleIllustratingtheBasicAlgorithm
+Initially, QkatHkis 0 (Fig. 3 (a)). Hkﬁrst uses up the
+outbound bandwidth of H1and increases Qkto 2 (Fig. 3
+(b)). Then, although H2is able to output four layers, Hk
+only needs two layers from it, since the lower two are already
+allocated to H1(Fig. 3 (c)). For the same reason, H3only
+needs to output two layers. Note that its allocated layers
+shift up, since H3is free to output any layers available in its
+cache (Fig. 3 (d)). After H4is done, Sbecomes empty and
+Qkis still two layers lower than the expected quality of Hk
+164(Fig. 3 (e)). Finally, we ask the server to send the missing
+layers to Hk(Fig. 3 (f)).
+Theorem2: The basic algorithm can allocate maximum
+number of layers for Hk.
+We leave the proof in Appendix B.
+3.2 EnhancedAlgorithmunderSupplyingPeer
+Constraint
+We now turn to a more constrained scenario, where Hk
+can only stream from ﬁnite number of supplying peers. As-
+suming the existence of S={H1,...,H M}deﬁned in Sec. 3.1,
+let us denote Q∗
+k(M,1)as the optimal solution if Hkcan
+only choose one supplying peer from H1through HM.T h i s
+solution is straightforward: we only need to ﬁnd the peerwhich can send the largest number of layers. Then for
+Q
+∗
+k(M,2), assuming Q∗
+k(m,1)is already known, we can ﬁnd
+the one from Hm+1toHMthat is able to further contribute
+the most layers, denoted as Qmax(Hm+1,...,H M).T h e n
+Q∗
+k(m,1)+Qmax(Hm+1,...,H M)is a candidate answer to
+Q∗
+k(M,2). Repeating this procedure from m=1t oM−1,
+the best solution can be found as
+Q∗
+k(M,2)=max[Q∗
+k(m,1)+Qmax(Hm+1...H M)]
+1≤m<M
+In general, we have
+Q∗
+k(M,C k)=max[Q∗
+k(m,C k−1)+Qmax(Hm+1...H M)]
+Ck−1≤m<M
+This is a typical dynamic programming problem. We show
+our algorithm in Tab. 2.
+Theorem 3: Under constraint Ck, the enhanced algo-
+rithm can allocate maximum number of layers for Hk.
+We leave the proof in Appendix C. The algorithm com-
+plexity is O(CkM2).
+3.3 NodeDeparture
+Node departure can happen frequently, due to user logout,
+machine crash or network failure. Upon losing a supplying
+peerHm, the receiving peer Hkshould reconﬁgure its ses-
+sion by rerunning the layer allocation algorithm. However,
+during this transient period , its streaming quality may de-
+grade. Here we discuss how our solution can adapt to thissituation.
+First, if H
+mdeparts normally, it will notify Hkto recon-
+ﬁgure its session. Meanwhile, Hmcontinues to stream data
+remained in its buﬀer to Hkas normal. Therefore, as long
+as the reconﬁguration of Hk’s session ﬁnishes before Hm’s
+buﬀer is drained, Hkwill stay unaﬀected. Otherwise, Hm
+can be regarded as failed, which will be addressed below.
+IfHmfails, upon detecting it, Hkhas two options. First,
+It can temporally request from the server the layers which
+were allocated to Hm, until its session reconﬁguration is ﬁn-
+ished. In other words, during this time, the server acts as
+Hm. Second, if the server bandwidth is already fully occu-
+pied, then the streaming quality of Hkhas to be degraded
+gracefully. As an example, in Fig. 4, Hkinitially received
+data from supplying peers H1through H4.W h e n H2fails,
+Hkasks other peers to stream as usual. However, H3’s lay-
+ers are shifted down to meet the gap left by H2.H4’s layersConstrainedSenders (Ik,C k,H 1,...,H M)
+/* Initialization */
+1forc←0toCk
+2form←0toM
+3 Q∗
+k(m,c)←0
+4 P∗(m,c)←φ
+/* Calculation of Q∗(M,C k)*/
+6forc←1toCk
+7form←ctoM−Ck+c
+8fort←mtoM−Ck+c
+9 Q/prime←min(Ot,A t−Q∗
+k(m−1,c−1),
+Ik−Q∗
+k(m−1,c−1))
+10ifQ∗
+k(t−1,c)>Q∗
+k(t,c)or
+11 Q∗
+k(m−1,c−1)+Q/prime>Q∗
+k(t,c)
+12begin
+13ifQ∗
+k(t−1,c)<Q∗
+k(m−1,c−1)+Q/prime
+14then
+15 fori←1tom−1
+16 Qi∗
+k(t,c)←Qi∗
+k(m−1,c−1)
+17 Qt∗
+k(t,c)←Q/prime
+18 P∗(t,c)←P∗(m−1,c−1)∪{Ht}
+19 Q∗
+k(t,c)←Q∗
+k(m−1,c−1)+Qt∗
+k(t,c)
+20else
+21 fori←1tot−1
+22 Qi∗
+k(t,c)←Qi∗
+k(t−1,c)
+23 P∗(t,c)←P∗(t−1,c)
+24 Q∗
+k(t,c)←Q∗
+k(t−1,c)
+25end
+/* Layer Allocation */
+26index ←0
+27repeat
+28 Hm←deque(P∗(M,C k))
+29 Qm
+k←Qm∗
+k(M,C k)
+30allocatelayers/summationtextindex +Qm
+k−1
+i=index litoHm
+31 Om←Om−Qm
+k
+32 index ←index+Qm∗
+k(M,C k)
+33untilP∗(M,C k)=φ
+Table2: EnhancedAlgorithm
+H1
+H3H2
+layer 
+number 012 3HkH4Failed
+layer number
+012 3H1
+H3
+HkH4degraded quality
+Figure4: GracefulDegradationofStreamingQual-
+ity(whenserverbandwidthisfullyoccupied)
+165are shifted down likewise. Thus, Hk’s quality only drops by
+H2’s share.
+Another concern is that the quality degradation of Hk
+could further cause the quality degradation of its children.
+In this case, Hkcan be regarded as normal departure. As
+explained earlier in this subsection, the streaming quality ofH
+k’s children will not be aﬀected until Hk’s buﬀer is drained.
+Therefore, buﬀering can eﬀectively absorb the propagation
+of quality degradation.
+3.4 LayerRate Heterogeneity
+So far in this paper, we have assumed that all layers have
+identical streaming rate. In practice, however, this is oftennot the case[12]. To show the complexity of this problem,
+we ﬁrst go through the following (re)deﬁnitions.
+•r
+i, the streaming rate of a layer li(Kbps).
+•IkandOk, the inbound and outbound bandwidth of
+Hk, measured as raw data rate (Kbps).
+We deﬁne the Heterogeneous-Rate Layer Allocation Prob-
+lemas follows. Given a set of layers {l0,...,l L}with diﬀer-
+ent streaming rates {r0,...,r L}, the receiving peer Hk,a n d
+a set of supplying peers S={H1,...,H M}, ﬁnd an optimal
+solution, which allocates maximum number of layers for Hk.
+Theorem4: Heterogeneous-Rate Layer Allocation Prob-
+lem is NP-complete.
+We leave the proof in Appendix D. We modify existing
+algorithms (Tab. 1 and Tab. 2)to accommodate the layerrate heterogeneity. They are shown in Tab. 3 and Tab. 4,respectively. To save space, we only show the modiﬁed part
+of each algorithm.
+UnconstrainedSenders (Ik,H 1,...,H M)
+...
+4repeat
+5 Qm
+k←max(n|/summationtextQk+n
+i=Qkri≤Om,/summationtextQk+n
+i=0ri≤Ik
+Qk+n≤Am)
+6 enque(P,H m)
+7 Qk←Qk+Qm
+k
+8 m←m+1
+9until/summationtextQk
+i=0ri>I korm>M
+...
+Table 3: Modiﬁed Basic Algorithm for Layer Rate
+Heterogeneity
+ConstrainedSenders (Ik,C k,H 1,...,H M)
+...
+9 Q/prime←max(n|/summationtextQ∗
+k(m−1,c−1)+ n
+i=Q∗
+k(m−1,c−1)ri≤Ot,
+/summationtextQ∗
+k(m−1,c−1)+ n
+i=0 ri≤Ik,
+O∗
+k(m−1,c−1)+n≤At)
+...
+Table 4: Modiﬁed Enhanced Algorithm for Layer
+RateHeterogeneity4. PERFORMANCEEVALUATION
+We simulate a peer-to-peer streaming system of total 40000
+peers. We categorize peers into three classes: (1)Modem/ISDNpeers, which take 50% of the population with maximum to-
+tal bandwidth of 112 Kbps; (2)Cable Modem/DSL peers,
+which take 35% of the population with maximum total band-width of 1 Mbps; and (3)Ethernet peers, which take rest of
+the population with maximum total bandwidth of 10 Mbps.
+Each peer requests the 60-minute video at diﬀerent times
+during the 24-hour run. The layer rate of the video is20Kbps. Its full-quality streaming rate is 1 Mbps,w h i c h
+consists of 50 layers.
+4.1 OverallStreamingQualityandScalability
+We compare our solution with versioned streaming ,a n -
+other commonly used solution to address the end host het-erogeneity. In our experiment, the video is encoded into50 versions with diﬀerent streaming rates. Each version is
+distributed using an independent application-layer multicast
+tree.
+00.10.20.30.40.50.60.70.80.91
+0.60.811.21.41.61.82average quality satisfaction
+average outbound/inbound bandwidth ratiolayered
+versioned
+Figure 5: Overall Streaming Quality (RequestRate= 120req/hr,BuﬀerLength= 5min)
+We ﬁrst test these two solutions at utilizing the outbound
+bandwidth of supplying peers. Since each peer may ex-
+pect diﬀerent streaming qualities, we propose a new met-ricStreaming Quality Satisfaction , which is deﬁned as the
+ratio of received quality and expected quality of a peer H
+k,
+namely Qk/Ik. The maximum value is 1. As shown in Fig. 5,
+when the average ratio of each peer’s outbound/inbound
+bandwidth is greater or equal to 1, the average quality sat-
+isfaction of layered approach is almost 1, which means thatthe peers can virtually self-support. On the other hand,
+the curve of versioned approach never goes over 0.7. More-
+over, when the outbound/inbound ratio is below 1, the per-formance of layered approach degrades linearly, which in-dicates that it is always able to fully utilize the marginal
+outbound bandwidth of supplying peers. In comparison,
+the curve of versioned approach drops suddenly since mostsupplying peers’ outbound bandwidth cannot send out the
+entire video. This reveals that the layered approach is more
+adapted to the bandwidth asymmetricity (outbound band-width less than inbound bandwidth), which is often the case
+for Cable Modem and ADSL users.
+We then test the scalability of these two solutions at sav-
+ing server bandwidth. Fig. 6 shows that, when client request
+rate grows, the server bandwidth consumption of layered
+approach actually drops. The main reason is that, when arequesting peer joins, it also acts as a supplying peer to the
+1660100200300400500600700
+0102030405060708090100server bandwidth (KBytes/hour)
+rate (requests/hour)layered
+versioned
+Figure 6: Server Bandwidth Consumption (Aver-
+ageOutbound/InboundBandwidthRatio= 1,Buﬀer
+Length= 5min)
+following requesting peer, which in turn forms a chain. This
+chain gets longer when the average interarrival time of dif-
+ferent peers shortens. Such a chain eﬀect also happens in thecase of versioned streaming. However, since this approach
+always requires enough outbound bandwidth to output the
+entire video, only few supplying peers qualify, which causesthe chain to be easily broken.
+4.2 ImpactofDesignParameters
+0.840.860.880.90.920.940.960.981
+2030405060708090100average quality satisfaction
+rate (req/hr)No Constraint
+Constraint=4
+Constraint=2
+Figure 7: Impact of Supplying Peer Constraint(Average Outbound/Inbound Bandwidth Ratio= 1,
+BuﬀerLength= 5min)
+For a receiving peer, limiting the number of supplying
+peers can help lowering the operation and synchronizationcomplexity. On the other hand, it does not guarantee to
+maximally utilize the outbound bandwidth of all supplying
+peers, compared to the unconstrained case. Fig. 7 showsthat constraining the number of senders to 4 already ac-quires nearly identical performance to the unconstrained
+case, in terms of average quality satisfaction.
+Another important design parameter is the buﬀer length
+of each supplying peer. Apparently, longer buﬀer enables
+a supplying peer to help more later-coming peers, thus im-
+proving the overall streaming quality. As revealed in Fig. 8,this is true when request rate is low. This can help keep the
+peers chain (Sec. 4.1)from broken. Further increasing buﬀer
+size has very little improvement space, since it can help lit-tle at prolonging the chain. This ﬁnding suggests that with
+small-to-medium sized cache space (3 or 5 minutes out of
+an 1-hour video), the system can acquire great performancegain.0.450.50.550.60.650.70.750.80.850.90.95
+020040060080010001200average quality satisfaction
+buffer time length (s)60 req/hr
+120 req/hr
+240 req/hr
+Figure 8: Impact of Buﬀer Length (Average Out-bound/InboundBandwidthRatio= 0.8)
+4.3 Fairness
+As revealed in Fig. 5, when the average ratio of each peer’s
+outbound/inbound bandwidth is below 1, the average qual-
+ity satisfaction drops correspondingly, i.e., not every peer’s
+streaming quality can be as good as expected. As such, a fairsolution should ensure that such deviation does not greatlyvary from one peer to another.
+00.20.40.60.81
+0 0.2 0.4 0.6 0.8 1cumulative percentage of requests
+quality satisfactionOutbound/Inbound Ratio = 0.5
+Outbound/Inbound Ratio = 0.6
+Outbound/Inbound Ratio = 0.7
+Outbound/Inbound Ratio = 0.8
+Outbound/Inbound Ratio = 0.9
+Outbound/Inbound Ratio = 1.0
+Outbound/Inbound Ratio = 1.5
+(a)DiﬀerentOutbound/InboundBandwidthRatios
+00.20.40.60.81
+0 0.2 0.4 0.6 0.8 1cumulative percentage of requests
+quality satisfactionModem/ISDN
+Cable Modem/DSL
+Ethernet
+(b)DiﬀerentPeerClasses(Outbound/InboundRatio=1)
+Figure 9: Cumulative Distribution of Qual-ity Satisfaction (Request Rate= 120req/hr, Buﬀer
+Length= 5min)
+We plot the cumulative distribution of peers with diﬀer-
+ent quality satisfaction in Fig. 9 (a). When the average out-
+bound/inbound ratio is 0 .5, about 50% of the peers acquire
+the expected streaming quality. Then the quality satisfac-tion decreases almost linearly among the rest of the peers.
+We observe the similar trend when increasing the average
+outbound/inbound ratio. However, when the ratio becomesgreater or equal than 1, only 90% of the population receive
+167the full quality satisfaction. Furthermore, this percentage
+stays unimproved when we further enlarge the outboundbandwidth of supplying peers. We ﬁnd the answer in Fig. 9(b).
+In Fig. 9 (b), we study the distribution of quality sat-
+isfaction over diﬀerent peer classes when the average out-bound/inbound bandwidth ratio is 1. Although all Mo-
+dem/ISDN peers receive the full quality satisfaction, this
+is not the case for 5% of Cable Modem/DSL peers. ForEthernet peers, over 40% of them do not receive the stream
+quality as expected. The main reason is that when a peer
+of higher class (e.g., Ethernet)joins, it can happen that allits supplying peers belong to the lower classes (e.g., Cable
+Modem or ISDN). Therefore, even when these peers have
+available outbound bandwidth, they still do not have higherstream layers, which are requested by the peer of higherclass.
+00.20.40.60.81
+0 0.2 0.4 0.6 0.8 1cumulative percentage of requests
+bandwidth contributionOutbound/Inbound Ratio = 0.5
+Outbound/Inbound Ratio = 1.0
+Outbound/Inbound Ratio = 1.1
+Outbound/Inbound Ratio = 1.2
+Outbound/Inbound Ratio = 1.3
+Outbound/Inbound Ratio = 1.4
+Outbound/Inbound Ratio = 1.5
+(a)DiﬀerentOutbound/InboundBandwidthRatios
+00.20.40.60.81
+0 0.2 0.4 0.6 0.8 1cumulative percentage of requests
+bandwidth contributionModem/ISDN
+Cable Modem/DSL
+Ethernet
+(b)DiﬀerentPeerClasses(Outbound/InboundRatio=1)
+Figure 10: Cumulative Distribution of Outbound
+Bandwidth Contribution(Request Rate= 120req/hr,
+BuﬀerLength= 5min)
+We then evaluate whether our solution enables each peer
+to fairly contribute its outbound bandwidth. As shown inFig. 10 (a), when the outbound/inbound ratio is 0.5, each
+peer contributes all of its bandwidth. When the ratio is 1,
+only 90% of all peers contribute all of its bandwidth. Thecontribution decreases linearly among the rest of the peers.
+Again, this can be explained when we plot the distribution of
+bandwidth contribution over diﬀerent peer classes in Fig. 10(b).
+Fig. 10 (b)exhibits the similar pattern with Fig. 9 (b) . All
+Modem/ISDN peers contribute all of their bandwidths. Thisis mainly due to the greedy nature of our layer allocation
+algorithm, which always ﬁrst exploit the peers with smallest
+number of layers. Almost 40% of the Ethernet peers onlypartially contribute their bandwidth. This is mainly becausethat they mostly stream to the lower-class peers, who always
+ﬁrst request layers from supplying peers of the same class,if any. To this end, we conclude that both data availability
+constraint andbandwidth availability constraint of supplying
+peers have impact on the issue of fairness.
+4.4 Robustness
+To test the robustness of our solution, we inject random
+node departures/failures into our simulation. We are mainly
+interested with the ability of our solution at absorbing the
+transient failure during stream session reconﬁguration viabuﬀering (Recall Sec. 3.3). In our experiment, 50% of the
+supplying peers depart early before the playback is ﬁnished.
+These peers are further categorized into normal departure
+peersand failed peers . A normal departure peer notiﬁes
+its children upon leaving, but continues to stream until its
+buﬀer is drained. The children will stay unaﬀected if theycan ﬁnish reconﬁguring their sessions before the buﬀer isdrained. Otherwise, they have to experience temporal qual-
+ity degradation, as depicted in Fig. 4. On the other hand, if
+a peer fails, its children will be deﬁnitely aﬀected. We useFailure Ratio to denote the percentage of failed ones among
+all departure peers.
+00.20.40.60.81
+5101520253035404550percentage of affected peers
+reconfiguration time (s)No Constraint, Failure Ratio 1.0
+Constraint=2, Failure Ratio 1.0
+No Constraint, Failure Ratio 0.5
+Constraint=2, Failure Ratio 0.5
+Figure 11: Percentage of Aﬀected Peers (RequestRate= 120req/hr,BuﬀerLength= 5min,AverageOut-
+bound/InboundBandwidthRatio=1)
+As shown in Fig. 11, buﬀering can eﬀectively “mask”
+more than half of the peer departures, when the average
+session reconﬁguration time is small (5 seconds). The eﬀect
+of buﬀering diminishes as the failure ratio grows. Eventu-ally, it is rendered useless when all departure peers are failed
+ones. Also, one can impose supplying peer constraint to ef-
+fectively lower the percentage of aﬀected peers. However,as a side eﬀect, the average quality degradation is higherthan the unconstrained case (Fig. 12). The reason is that
+when the number of supplying peers is constrained, in order
+to maximize the streaming quality, the enhanced layer allo-cation algorithm (Sec. 3.2)always chooses supplying peers
+that can contribute most number of layers. Therefore, when
+one of them departs or fails, it is likely to incur more qualitydegradation.
+4.5 LayerRateHeterogeneity
+Encoding a stream into more layers can help us better
+utilize the marginal inbound/outbound bandwidth of peers,therefore increases the average streaming quality and helps
+save server cost. However, the price is that we have to put re-
+dundant information into each layer. Such ineﬃciency addsup as we increase the number of layers.
+1681.71.81.922.12.22.32.42.52.6
+5101520253035404550average quality degradation (# of layers)
+reconfiguration time (s)No Constraint, Failure Ratio 1.0
+Constraint=2, Failure Ratio 1.0
+No Constraint, Failure Ratio 0.5
+Constraint=2, Failure Ratio 0.5
+Figure 12: Average Quality Degradation (Request
+Rate= 120req/hr,BuﬀerLength= 5min,AverageOut-
+bound/InboundBandwidthRatio=1)
+So far in this section, we have only adopted the ﬂat rate
+scheme, i.e., the rate of all layers are identical. We now
+explore several other layer rate allocation schemes as follows.
+•Natural Number Scheme Assuming that the rate
+of base layer l0isr0,t h er a t eo fl a y e r lk(k>0)is
+rk=k·r0. In this way, the original 50 layers in the
+ﬂat rate scheme are collapsed into 10 layers.
+•ExponentialScheme In this scheme, it follows that
+rk=r0·2k. The original 50 layers are collapsed into
+6l a y e r s .
+•Fibonacci Scheme In this scheme, r1=2r0.T h e
+rates of other layers satisfy that rk=rk−1+rk−2.
+The original 50 layers are collapsed into 7 layers.
+To save space, we only report the performance comparison
+results of these schemes in the case of unconstrained supply-ing peers. In terms of average quality satisfaction (Fig. 13
+(a)), all three of them show the similar growing trend as the
+ﬂat rate scheme, when increasing the outbound/inbound ra-tio. Among them, the natural number scheme performs the
+best, as it exhibits ﬁner layer rate granularity than the other
+two. For the same reason, the exponential scheme ends upwith the worst performance. Reﬂected in Fig. 13 (b), the
+server bandwidth consumption of natural number scheme
+remains the closest to the ﬂat rate scheme. On the otherhand, the server cost of exponential scheme is the highest.
+Despite their performance losses, we show that the new
+schemes can eﬀectively save the operation and synchroniza-tion complexity of parallel downloading. In Fig. 13 (c), all
+of them constantly limit the average number of supplying
+peers within 1 .8. In contrast, the average number of sup-
+plying peers in the ﬂat rate scheme continuously increases.Plus, considering the fact that having fewer number of layers
+can reduce the aforementioned data ineﬃciency, the actual
+performance losses in Fig. 13 (a)and (b)can be even less.
+From Fig. 13, we may draw the general conclusion that
+ﬁner layer rate granularity introduces more performance gain,
+as well as higher operation complexity. In practice, however,exploring the “sweetspot” of such tradeoﬀ can be hard. Un-
+like livecast, where the source could modify layer rate on the
+ﬂy according to network dynamics[12], the playback stream-ing requires the layer rate to be determined oﬄine, or ad-
+justed with limited ﬂexibility. Therefore, an optimal layer
+rate allocation scheme is impossible without extensive mea-surement study on crucial factors, including the populationof diﬀerent peer classes, peers’ joining sequence and their
+streaming access patterns, etc.
+00.20.40.60.81
+0.60.811.21.41.61.82average quality satisfaction
+average outbound/inbound bandwidth ratioFlat
+Natural
+Fibonacci
+Exponential
+(a)OverallStreamingQuality
+01002003004005006007008009001000
+0.60.811.21.41.61.82server bandwidth (KBytes/hour)
+average outbound/inbound bandwidth ratioFlat
+Natural
+Fibonacci
+Exponential
+(b)ServerCost
+1.21.41.61.822.22.42.62.8
+0.60.811.21.41.61.82average number of supplying peers
+average outbound/inbound bandwidth ratioFlat
+Natural
+Fibonacci
+Exponential
+(c)AverageNumberofSupplyingPeers
+Figure 13: Performance Comparison of DiﬀerentLayer Rate Allocation Schemes (Average Request
+Rate= 120req/hr,BuﬀerLength= 5min)
+5. RELATEDWORK
+The issues of asynchrony and heterogeneity in multimedia
+distribution have been extensively studied in the context of
+IP multicast. For asynchrony, various solutions ( batching,
+patching, merging, periodic broadcasting, etc.)have beenproposed to address the conﬂict between asynchronous user
+requests and synchronous nature of multicast communica-
+tion. [2] provides a wrap-up review of these solutions andincludes them into a uniﬁed analytical model. The basic
+idea of these techniques is to let a client joins single or mul-
+tiple on-going multicast channels, which were assigned toprevious clients. Although the missing initial part has to
+be unicast or multicast from the server, the cost is greatly
+reduced compared to the complete retransmission. This re-quires the client to have suﬃcient caching space, as well as
+169enough bandwidth to receive multiple streams simultane-
+ously.
+For heterogeneity, layered multicast[11] was proposed, where
+a stream is separated into multiple layers, then transmitted
+through diﬀerent multicast channels. A client only needs
+to subscribe a subset of all layers, based on its bandwidthand processing capabilities. Many follow-up studies work
+on layer rate allocation mechanisms to maximize the over-
+all streaming quality[12], ensure max-min fairness[3], enforcecongestion control[7], or any combination of the above goals.
+The layered streaming approach has also been used in the
+context of unicast congestion control[9].
+Before our work, several studies have explored the peer-to-
+peer streaming from diﬀerent aspects. [5] by Xu et al. is one
+of the pioneering works that proposed the concept of peer-to-peer streaming. It mainly focuses on the analysis of thecapacity of a peer-to-peer streaming system. ZIGZAG[4] by
+Tran et al. tries to construct an application-layer multicast
+tree, such that it minimizes the end-to-end delay (boundedtree height)and maximizes the utilization of peers’ band-
+width (bounded node degree). The CoopNet[13] proposes a
+hybrid architecture, which integrates the client-server andpeer-to-peer models. This architecture is proved scalable
+and robust against the “ﬂash crowd”, upon which happens
+the peers will relay data to each other to protect the serverfrom being overwhelmed.
+6. CONCLUSION
+We presented a layered peer-to-peer streaming solution
+to address the asynchrony and heterogeneity issues in on-
+demand media distribution. Given the experimental results,
+we are conﬁdent to claim that our solution is optimal atmaximizing the streaming quality of heterogeneous peers,
+scalable at saving server bandwidth. and eﬃcient at utiliz-
+ing bandwidth resource of supplying peers. We also evalu-ated our solution to see: (1)whether it establishes fairnessamong peers, in terms of streaming quality satisfaction and
+bandwidth contribution, and (2)whether it is robust against
+unexpected peer departures/failures.
+Our initial conclusions heavily depend on our experimen-
+tal assumptions on peer class population, their network band-
+width characteristics, their join/access patterns, etc. Thesefactors deserve extensive measurement and statistical stud-
+ies, as well as the design of new evaluation methodologies, all
+of which constitute the possible directions of future work.
+7. REFERENCES
+[1] D. Andersen, H. Balakrishnan, M. Kaashoek and R.
+Morris. Resilient overlay networks. In ACM
+Symposium on Operating Systems Principles (SOSP) ,
+2001.
+[2] D. Eager, M. Vernon, and J. Zahorjan. Minimizing
+bandwidth requirements for on-demand data delivery.
+IEEE Transaction on Knowledge and Data
+Engineering , 13(5), 2001.
+[3] D. Rubenstein, J. Kurose, and D. Towsley. The
+impact of multicast layering on network fairness.
+IEEE/ACM Transactions on Networking , 10(2), 2002.
+[4] D. Tran, K. Hua and S. Sheu. Zigzag: An eﬃcient
+peer-to-peer scheme for media streaming. In IEEE
+INFOCOM , 2003.[5] D. Xu, M. Hefeeda, S. Hambrusch and B. Bhargava.
+On peer-to-peer media streaming. In IEEE
+International Conference on Distributed ComputingSystems (ICDCS) , 2001.
+[6] I. Stoica, D. Adkins, S. Zhuang, S. Shenker, and S.
+Surana. Internet indirection infrastructure. In ACM
+SIGCOMM , 2002.
+[7] J. Byers, M. Luby and M. Mitzenmacher. Fine-grained
+layered multicast. In IEEE INFOCOM , 2003.
+[8] M. Garey and D. Johnson. Computers and
+Intractability: A Guide to the Theory of
+NP-Completeness . 1979.
+[9] R. Rejaie, M. Handley, and D. Estrin. Layered quality
+adaptation for internet video streaming. IEEE Journal
+on Selected Areas of Communications, Special issue on
+Internet QoS , 2000.
+[10] S. Jin and A. Bestavros. Cache-and-relay streaming
+media delivery for asynchronous clients. In
+International Workshop on Networked Group
+Communication (NGC) , 2002.
+[11] S. McCanne, V. Jacobson and M. Vetterli.
+Receiver-driven layered multicast. In ACM
+SIGCOMM , 1996.
+[12] T. Kim and M. Ammar. A comparison of layering and
+stream replication video multicast scheme. InInternational Workshop on Network and OperatingSystems Support for Digital Audio and Video
+(NOSSDAV) , 2001.
+[13] V. Padmanabhan, H. Wang, P. Chou, and K.
+Sripanidkulchai. Distributing streaming media contentusing cooperative networking. In International
+Workshop on Network and Operating Systems Support
+for Digital Audio and Video (NOSSDAV) , 2002.
+[14] Y. Chu, S. Rao, and H. Zhang. A case for end system
+multicast. In ACM International Conference on
+Measurement and Modeling of Computer Systems
+(SIGMETRICS) , 2000.
+[15] Y. Cui and K. Nahrstedt. Proxy-based asynchronous
+multicast for eﬃcient on-demand media distribution.
+InSPIE Conference on Multimedia Computing and
+Networking Multimedia (MMCN) , 2003.
+[16] Y. Cui, B. Li and K. Nahrstedt. oStream:
+Asynchronous streaming multicast in application-layeroverlay networks. to appear in IEEE Journal on
+Selected Areas of Communications, Special Issue on
+Recent Advances in Service Overlay Networks , 2003.
+APPENDIX
+A. PROOFOFTHEOREM 1
+We only need to prove that a special case of Layered Peer-
+to-peer Streaming is NP-complete. Let Qk=Ak=Ik=
+L+1a n d Ck=1(k=1,...,N ). This means that every
+peerHkis able, and willing to receive full-quality stream.
+Furthermore, Hkcan only stream from one supplying peer.
+If not all layers can be streamed due to sender’s outbound
+bandwidth constraint, the server H0will stream the missing
+layers to Hk. To ensure that Qkis met for every client, we
+further assume that H0has enough outbound bandwidth to
+help each of them, i.e., O0is∞. We refer to this problem
+asSingle-Sender Full-Quality Streaming .
+We construct the following graph as shown in Fig. 14.
+170The graph consists of three types of nodes. Receiving Nodes
+{R2,...,R N}represent receiving peers. Supplying Nodes
+{S1,...,S N−1}represent supplying peers2.A n e d g e i s d i -
+rected from a sending node Skto a receiving node Rm,i fHk
+could stream to Hmfrom its own cache ( Hk→Hm).T h e
+edge capacity is Im, the inbound bandwidth of Hm. Finally,
+aVirtual Node Vdirects an edge to each sending node Sk.
+The edge capacity is Ok, the outbound bandwidth of Sk.
+Now we can restate the Single-Sender Full-Quality Stream-
+ingproblem as allocating a ﬂow fkfromVto each receiving
+nodeRk, such that the ﬂow sum/summationtextN
+k=2fkis maximized.
+This is known as the Single-Source Unsplittable Flow prob-
+lem, which is NP-complete[8]. It is also obvious that any
+particular ﬂow allocation solution can be veriﬁed in lin-
+ear time. Therefore, the Single-Sender Full-Quality Stream-
+ingproblem is NP-complete and so is Layered Peer-to-peer
+Streaming ./squaresolid
+VS1
+S2
+S3
+S4R2
+R3
+R4
+R510
+10
+10
+10
+10
+10
+10
+1017
+6
+12
+5
+Figure14: Single-SenderFull-QualityStreaming
+B. PROOF OFTHEOREM 2
+We use induction to prove that the basic algorithm al-
+ways allocates maximum number of layers from the peersdequeued from Sso far. We use Q
+m
+kto denote the number
+of layers allocated, if mpeers has been dequeued from S.
+Basis. The ﬁrst peer dequeued from SisH1.Q1
+kis the
+maximum of H1’s outbound bandwidth ( O1)or layer avail-
+ability ( A1). Obviously, this is the maximum number of
+layersH1can contribute.
+Induction Steps . Assume Hmis dequeued, and Qkis
+the maximum number of layers that the previous peers H1
+through Hm−1can contribute. We show that we cannot in-
+c r e a s et h en u m b e ro fl a y e r sf r o m H1through Hm−1to be
+more than Qm−1
+kby rearranging their existing layer alloca-
+tion.
+There are two cases as shown in Fig. 15. In the ﬁrst case
+(Fig. 15 (a)), Qm−1
+k=Am−1. This means that the peers H1
+through Hm−1already contribute the maximum number of
+layers allowed by their layer availability.
+In the second case (Fig. 15 (b)), Qm−1
+k<A m−1.T h i s
+means that the outbound bandwidth of Hm−1has already
+been used up. We further go back to Qm−2
+k.I fQm−2
+k=
+Am−2,t h e na sw eh a v es h o w ni nt h eﬁ r s tc a s e ,p e e r s H1
+through Hm−2cannot further contribute any layers. There-
+fore,Qm−1
+kis the maximum number of layers H1through
+Hm−1can contribute. On the other hand, if Qm−2
+k<A m−2,
+2R1is missing because as the ﬁrst receiver, H1has to receive
+the stream from the server. Similarly, SNis missing since
+no other peers come after HN.it means that the outbound bandwidth of Hm−2has also
+been used up. As such, we can go back continuously for atmostmsteps, until at some point n,w h e r e Q
+m−n
+k=Am−n.
+In this case, peers H1through Hm−ncannot further con-
+tribute any layers; Hm−n+1through Hm−1have already
+used up their own outbound bandwidths. Therefore, Qm−1
+k
+is still the maximum number of layers H1through Hm−1
+can contribute.
+layer 
+number 012 3HkQk Hm-1
+HmHm-1
+layer 
+number 012 3HkHmQk
+(a)(b)
+Figure15: ProofofTheorem 2
+Now we can conclude that Qm−1
+kcannot be increased
+by rearranging the existing layer allocation on H1through
+Hm−1. Therefore, Hmonly needs to calculate Qm
+kbased on
+the existing layer allocation of H1through Hm−1./squaresolid
+C. PROOFOFTHEOREM 3
+The enhanced algorithm still employs the greedy approach
+of the basic algorithm. As shown in Theorem 2, each step
+of the algorithm can produce optimal result out of the sup-plying peers processed so far. Therefore, Q
+m
+k(deﬁned in
+Appendix B)is qualiﬁed as the value function in dynamic
+programming, which traverses all combinations of Ckout of
+Mpeers. Therefore, the optimal solution can be acquired. /squaresolid
+D. PROOFOFTHEOREM 4
+We only need to prove that a special case of this problem
+is NP-complete. For S={H1,...,H M},l e tA1=...=
+AM=L+1a n d O1=...=OM=O. This means that all
+supplying peers have L+ 1 layers available in their cache.
+They also have the same outbound bandwidth O. We restate
+the problem as follows.
+We regard {l0,...,l n}(n≤L)as a ﬁnite set with n+
+1 items. Each item liis associated with a size ri.O u r
+target is to ﬁnd a partition, which separates this set into
+disjoint sets U1through UM, such that the sum of the items
+in each set Ui(1≤i≤M)is less than O. We repeat the
+above procedure while increasing n,u n t i ln=Lor a valid
+solution cannot be found. This is known as the Minimum
+Bin Packing problem, which is NP-complete[8]. It is also
+obvious that any particular set partition solution can beveriﬁed in linear time. Therefore, the Heterogeneous-Rate
+Layer Allocation problem is NP-complete. /squaresolid
+171
